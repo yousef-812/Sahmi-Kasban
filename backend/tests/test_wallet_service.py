@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -9,6 +7,7 @@ from app.models import Subscription, WalletAccount
 from app.services.auth import register_user
 from app.services.wallet import (
     InsufficientBalanceError,
+    WalletTransactionConflictError,
     debit_points,
     get_wallet_account,
     grant_due_weekly_points,
@@ -61,6 +60,27 @@ def test_debit_is_idempotent_and_cannot_make_balance_negative(db_session: Sessio
         )
     db_session.rollback()
     assert get_wallet_account(db_session, user.id).balance_points == 200
+
+
+def test_reused_transaction_id_must_match_original_operation(db_session: Session) -> None:
+    user = create_registered_user(db_session)
+    debit_points(
+        db_session,
+        user_id=user.id,
+        amount_points=50,
+        transaction_id="discussion:one",
+        entry_type="discussion_debit",
+    )
+    db_session.commit()
+
+    with pytest.raises(WalletTransactionConflictError):
+        debit_points(
+            db_session,
+            user_id=user.id,
+            amount_points=100,
+            transaction_id="discussion:one",
+            entry_type="discussion_debit",
+        )
 
 
 def test_weekly_grant_is_unique_for_user_and_week(db_session: Session) -> None:
