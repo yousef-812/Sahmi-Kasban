@@ -26,6 +26,10 @@ class InsufficientBalanceError(WalletError):
     """Raised when a debit would make the wallet balance negative."""
 
 
+class WalletTransactionConflictError(WalletError):
+    """Raised when an idempotency key is reused for different operation data."""
+
+
 def points_to_coins(points: int) -> str:
     return f"{Decimal(points) / Decimal(POINTS_PER_COIN):.2f}"
 
@@ -35,7 +39,7 @@ def cairo_week_start(moment: datetime | None = None) -> date:
     zone = ZoneInfo(settings.market_timezone)
     current = moment or datetime.now(UTC)
     local_date = current.astimezone(zone).date()
-    return local_date.fromordinal(local_date.toordinal() - local_date.weekday())
+    return date.fromordinal(local_date.toordinal() - local_date.weekday())
 
 
 def _locked_wallet_query(user_id: UUID) -> Select[tuple[WalletAccount]]:
@@ -54,6 +58,23 @@ def get_wallet_account(db: Session, user_id: UUID, *, lock: bool = False) -> Wal
     if account is None:
         raise WalletAccountNotFoundError("Wallet account is not provisioned")
     return account
+
+
+def _validate_existing_entry(
+    entry: WalletEntry,
+    *,
+    user_id: UUID,
+    expected_amount: int,
+    entry_type: str,
+) -> None:
+    if (
+        entry.user_id != user_id
+        or entry.amount_points != expected_amount
+        or entry.entry_type != entry_type
+    ):
+        raise WalletTransactionConflictError(
+            "Transaction ID was already used with different wallet operation data"
+        )
 
 
 def credit_points(
@@ -75,6 +96,12 @@ def credit_points(
         select(WalletEntry).where(WalletEntry.transaction_id == transaction_id)
     )
     if existing is not None:
+        _validate_existing_entry(
+            existing,
+            user_id=user_id,
+            expected_amount=amount_points,
+            entry_type=entry_type,
+        )
         return existing
 
     account.balance_points += amount_points
@@ -113,6 +140,12 @@ def debit_points(
         select(WalletEntry).where(WalletEntry.transaction_id == transaction_id)
     )
     if existing is not None:
+        _validate_existing_entry(
+            existing,
+            user_id=user_id,
+            expected_amount=-amount_points,
+            entry_type=entry_type,
+        )
         return existing
     if account.balance_points < amount_points:
         raise InsufficientBalanceError("Insufficient wallet balance")
@@ -187,6 +220,7 @@ def grant_due_weekly_points(
     moment: datetime | None = None,
 ) -> int:
     current = moment or datetime.now(UTC)
+    week_start = cairo_week_start(current)
     subscriptions = db.scalars(
         select(Subscription)
         .where(
@@ -205,7 +239,7 @@ def grant_due_weekly_points(
         before = db.scalar(
             select(WeeklyGrant.id).where(
                 WeeklyGrant.user_id == subscription.user_id,
-                WeeklyGrant.week_start == cairo_week_start(current),
+                WeeklyGrant.week_start == week_start,
             )
         )
         grant_weekly_points_for_subscription(db, subscription, moment=current)
