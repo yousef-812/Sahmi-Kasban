@@ -13,7 +13,7 @@
 
 ## 2026-07-25 — المرحلة 0: تثبيت المتطلبات والبنية
 
-**الحالة:** بانتظار نتيجة CI والدمج
+**الحالة:** مكتملة وجاهزة للدمج عبر Pull Request رقم 3
 
 ### النطاق المعتمد
 
@@ -111,10 +111,32 @@
 - تثبيت 3 عملات أسبوعيًا للخطة المجانية.
 - وجود unique constraint لمعرف عملية المحفظة.
 
-تم توسيع GitHub Actions إلى وظيفتين:
+تم تقسيم GitHub Actions إلى أربع وظائف مستقلة:
 
-- فحص محركات التحليل الحالية.
-- فحص الـBackend باستخدام PostgreSQL 16، وتشغيل Ruff وPytest وAlembic upgrade/downgrade/upgrade.
+- `core-lint`: فحص تنسيق محركات التحليل والـAI.
+- `core-tests`: compilation واختبارات المحركات.
+- `backend-lint`: فحص تنسيق الـBackend وAlembic.
+- `backend-tests`: اختبارات الـBackend على PostgreSQL 16 وتشغيل Alembic `upgrade → downgrade base → upgrade`.
+
+### الملاحظات التي ظهرت أثناء CI وكيف عولجت
+
+- ظهرت 7 مخالفات Ruff غير منطقية: ترتيب imports، type annotations مقتبسة، وسطران أطول من الحد.
+- تم إصلاح مخالفة في `src/sahmi_kasban/ai/client.py` وست مخالفات في ملفات الـBackend والاختبارات.
+- تم ضبط Ruff على اعتبار `app` حزمة first-party داخل مشروع الـBackend.
+- تم اكتشاف أن تشغيل Ruff مباشرة عبر arguments الخاصة بالـAction كان غير مستقر للمسار الأساسي؛ تم اعتماد تثبيت Ruff عبر الـAction ثم تشغيل أمر `ruff check` صراحة.
+- تمت إزالة صلاحية كتابة Pull Request وخطوات التعليقات التشخيصية المؤقتة بعد انتهاء التصحيح.
+
+### نتيجة التحقق النهائية
+
+نجح Workflow رقم `17`، Run ID `30133904672`، في جميع الوظائف الأربع:
+
+- Core lint: ناجح.
+- Core compilation and tests: ناجحة.
+- Backend lint: ناجح.
+- Backend compilation and tests: ناجحة.
+- Alembic upgrade إلى أحدث مخطط: ناجح.
+- Alembic downgrade إلى قاعدة فارغة: ناجح.
+- Alembic upgrade مرة أخرى: ناجح.
 
 ### الملفات الرئيسية المضافة أو المعدلة
 
@@ -133,6 +155,7 @@
 - `.dockerignore`
 - `README.md`
 - `IMPLEMENTATION_LOG.md`
+- `src/sahmi_kasban/ai/client.py`
 
 ### القرارات التقنية
 
@@ -144,8 +167,6 @@
 - تخزين العملات كنقاط صحيحة؛ 100 نقطة تساوي عملة واحدة.
 - عدم إنشاء الجداول تلقائيًا عند تشغيل FastAPI.
 
-### المتبقي لإغلاق المرحلة 0
+### الخطوة التالية بعد الدمج
 
-- نجاح GitHub Actions لجميع وظائف المحركات والـBackend.
-- معالجة أي ملاحظات تظهر من Ruff أو Pytest أو Alembic.
-- دمج Pull Request في `main`.
+المرحلة 1: الحسابات والملف الشخصي وWallet Ledger والتوزيع الأسبوعي للخطة المجانية.
