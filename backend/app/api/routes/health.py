@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
@@ -7,6 +9,7 @@ from app.core.config import get_settings
 from app.db.session import database_is_ready, get_db
 
 router = APIRouter(prefix="/health", tags=["health"])
+DatabaseSession = Annotated[Session, Depends(get_db)]
 
 
 class HealthResponse(BaseModel):
@@ -31,7 +34,7 @@ def health_check() -> HealthResponse:
 
 
 @router.get("/database", response_model=DatabaseHealthResponse)
-def database_health_check(db: Session = Depends(get_db)) -> DatabaseHealthResponse:
+def database_health_check(db: DatabaseSession) -> DatabaseHealthResponse:
     try:
         database_is_ready(db)
     except SQLAlchemyError as exc:
