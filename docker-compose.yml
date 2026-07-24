@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sahmi_kasban
+      POSTGRES_USER: sahmi
+      POSTGRES_PASSWORD: sahmi_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - sahmi_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sahmi -d sahmi_kasban"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: development
+      DEBUG: "true"
+      SECRET_KEY: development-only-secret-key-change-before-deployment
+      DATABASE_URL: postgresql+psycopg://sahmi:sahmi_dev_password@db:5432/sahmi_kasban
+      CORS_ORIGINS: http://localhost:3000,http://localhost:8080
+      MARKET_TIMEZONE: Africa/Cairo
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >-
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+volumes:
+  sahmi_postgres_data:
