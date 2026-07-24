@@ -6,6 +6,14 @@
 
 تم اعتماد خطة المنتج الكاملة لتطبيق Flutter والـBackend والاشتراكات والمناقشات ونظام التوقعات في ملف [ROADMAP.md](ROADMAP.md).
 
+## سجل التنفيذ
+
+يتم تسجيل كل أعمال التطوير والقرارات والاختبارات في ملف [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md).
+
+## الـBackend
+
+بدأ تنفيذ Backend مستقل باستخدام FastAPI وPostgreSQL وAlembic داخل مجلد [backend](backend/README.md). يمكن تشغيل بيئة التطوير كاملة باستخدام `docker compose up --build`.
+
 ## المحركات الموجودة
 
 - **Market Environment**: تحديد حالة السوق صاعد/هابط/عرضي ومستوى المخاطرة.
