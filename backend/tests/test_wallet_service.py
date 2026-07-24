@@ -14,7 +14,6 @@ from app.services.wallet import (
     grant_weekly_points_for_subscription,
 )
 
-
 PASSWORD = "StrongPass123"
 
 
