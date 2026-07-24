@@ -19,7 +19,7 @@ def test_cors_origins_are_parsed_from_comma_separated_value() -> None:
         _env_file=None,
         cors_origins="https://one.example, https://two.example",
     )
-    assert settings.cors_origins == (
+    assert settings.cors_origin_list == (
         "https://one.example",
         "https://two.example",
     )
