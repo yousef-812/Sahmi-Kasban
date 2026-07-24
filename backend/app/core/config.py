@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import StrEnum
 from functools import lru_cache
 
-from pydantic import field_validator, model_validator
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
     secret_key: str = ""
-    cors_origins: tuple[str, ...] = ()
+    cors_origins: str = ""
 
     database_url: str = "sqlite+pysqlite:///./sahmi_kasban_dev.db"
     database_pool_size: int = 10
@@ -37,13 +37,6 @@ class Settings(BaseSettings):
     market_data_fallback: str = "yfinance"
     market_timezone: str = "Africa/Cairo"
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, value: object) -> object:
-        if isinstance(value, str):
-            return tuple(item.strip() for item in value.split(",") if item.strip())
-        return value
-
     @model_validator(mode="after")
     def validate_sensitive_settings(self) -> "Settings":
         if self.app_env in {Environment.STAGING, Environment.PRODUCTION}:
@@ -52,6 +45,14 @@ class Settings(BaseSettings):
             if not self.database_url.startswith("postgresql"):
                 raise ValueError("PostgreSQL is required outside development and test environments")
         return self
+
+    @property
+    def cors_origin_list(self) -> tuple[str, ...]:
+        return tuple(
+            item.strip()
+            for item in self.cors_origins.split(",")
+            if item.strip()
+        )
 
     @property
     def is_production(self) -> bool:
