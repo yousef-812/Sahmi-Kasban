@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v3
         with:
-          args: version
+          args: --version
       - name: Check core style
         id: lint
         continue-on-error: true
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v3
         with:
-          args: version
+          args: --version
       - name: Check backend style
         id: lint
         continue-on-error: true
