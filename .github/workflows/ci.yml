@@ -40,12 +40,12 @@ jobs:
       - uses: astral-sh/ruff-action@v3
         with:
           args: --version
-      - name: Check backend style
+      - name: Show backend style diff
         id: lint
         continue-on-error: true
         run: >-
           ruff check backend/app backend/tests backend/alembic/env.py
-          --config backend/pyproject.toml --output-format concise
+          --config backend/pyproject.toml --fix --diff
           > backend-ruff-phase1.txt 2>&1
       - name: Publish backend Ruff diagnostics
         if: github.event_name == 'pull_request' && steps.lint.outcome == 'failure'
@@ -58,7 +58,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `<!-- backend-ruff-phase1 -->\n### Phase 1 backend Ruff diagnostics\n\`\`\`text\n${report}\n\`\`\``
+              body: `<!-- backend-ruff-phase1-diff -->\n### Phase 1 backend Ruff formatting diff\n\`\`\`diff\n${report}\n\`\`\``
             });
       - name: Enforce backend Ruff result
         if: steps.lint.outcome == 'failure'
