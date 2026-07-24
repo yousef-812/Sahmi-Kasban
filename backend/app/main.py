@@ -5,6 +5,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 
 settings = get_settings()
+cors_origins = settings.cors_origin_list
 
 app = FastAPI(
     title=settings.app_name,
@@ -15,10 +16,10 @@ app = FastAPI(
     openapi_url=None if settings.is_production else "/openapi.json",
 )
 
-if settings.cors_origins:
+if cors_origins:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=list(settings.cors_origins),
+        allow_origins=list(cors_origins),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
