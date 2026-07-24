@@ -38,12 +38,16 @@ class Settings(BaseSettings):
     market_timezone: str = "Africa/Cairo"
 
     @model_validator(mode="after")
-    def validate_sensitive_settings(self) -> "Settings":
+    def validate_sensitive_settings(self) -> Settings:
         if self.app_env in {Environment.STAGING, Environment.PRODUCTION}:
             if len(self.secret_key.strip()) < 32:
-                raise ValueError("SECRET_KEY must contain at least 32 characters outside development")
+                raise ValueError(
+                    "SECRET_KEY must contain at least 32 characters outside development"
+                )
             if not self.database_url.startswith("postgresql"):
-                raise ValueError("PostgreSQL is required outside development and test environments")
+                raise ValueError(
+                    "PostgreSQL is required outside development and test environments"
+                )
         return self
 
     @property
