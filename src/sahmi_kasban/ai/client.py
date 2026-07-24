@@ -26,7 +26,7 @@ class AIClientConfig:
     temperature: float = 0.2
 
     @classmethod
-    def from_env(cls) -> "AIClientConfig":
+    def from_env(cls) -> AIClientConfig:
         raw_keys = os.getenv("GROQ_API_KEYS", "")
         keys = tuple(key.strip() for key in raw_keys.split(",") if key.strip())
         return cls(
