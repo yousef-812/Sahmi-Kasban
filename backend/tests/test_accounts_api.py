@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 
-
 EMAIL = "user@example.com"
 PASSWORD = "StrongPass123"
 NEW_PASSWORD = "NewStrongPass456"
