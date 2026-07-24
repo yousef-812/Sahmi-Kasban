@@ -112,7 +112,11 @@ class StockAnalysis(TimestampMixin, Base):
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     ticker: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
-    data_as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
+    data_as_of: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        nullable=False,
+    )
     cache_key: Mapped[str] = mapped_column(String(180), unique=True, nullable=False)
     status: Mapped[str] = mapped_column(String(24), default="complete", nullable=False)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
