@@ -34,20 +34,6 @@ jobs:
     needs: repository-lint
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: sahmi_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d sahmi_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
       APP_ENV: test
       DEBUG: "false"
@@ -57,16 +43,45 @@ jobs:
       CI_RESULTS_DIR: ${{ github.workspace }}/.github/.ci-results
       RUN_LIVE_SMOKE: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/tradingview-provider' }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          show-progress: false
+      - name: Fetch exact repository revision
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --silent --show-error \
+            "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${GITHUB_SHA}" \
+            | tar -xz --strip-components=1
+
+      - name: Start repository test database
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --detach --rm \
+            --name sahmi-ci-postgres \
+            --env POSTGRES_DB=sahmi_test \
+            --env POSTGRES_USER=postgres \
+            --env POSTGRES_PASSWORD=postgres \
+            --publish 5432:5432 \
+            postgres:16-alpine >/dev/null 2>&1
+          for attempt in {1..30}; do
+            if docker exec sahmi-ci-postgres \
+              pg_isready -U postgres -d sahmi_test >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs sahmi-ci-postgres
+          exit 1
 
       - name: Run repository-local tests
         shell: bash
         env:
           RUN_MODE: tests
         run: bash .github/actions/repository-ci/run.sh
+
+      - name: Stop repository test database
+        if: always()
+        shell: bash
+        run: docker rm --force sahmi-ci-postgres >/dev/null 2>&1 || true
 
   flutter-checks:
     runs-on: ubuntu-latest
