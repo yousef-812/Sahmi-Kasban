@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sahmi-kasban-api"
-version = "0.3.0"
+version = "0.4.0"
 description = "FastAPI backend for Sahmi Kasban"
 requires-python = ">=3.11"
 dependencies = [
@@ -12,12 +12,16 @@ dependencies = [
   "email-validator>=2.2",
   "fastapi>=0.115",
   "httpx>=0.27",
+  "numpy>=1.26",
+  "pandas>=2.2",
   "psycopg[binary]>=3.2",
   "pwdlib[argon2]>=0.2",
   "pydantic-settings>=2.6",
   "pyjwt>=2.9",
   "sqlalchemy>=2.0",
+  "ta>=0.11",
   "uvicorn[standard]>=0.30",
+  "websockets>=14,<16",
   "yfinance>=1.5,<2",
 ]
 
@@ -27,6 +31,9 @@ dev = [
   "pytest-cov>=5.0",
   "ruff>=0.7",
 ]
+
+[tool.setuptools]
+py-modules = ["reusable_data_fetcher"]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -38,10 +45,10 @@ testpaths = ["tests"]
 
 [tool.ruff]
 target-version = "py311"
-line-length = 100
+line-length = 110
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app"]
+known-first-party = ["app", "reusable_data_fetcher"]
