@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Generator
+
+os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault(
+    "SECRET_KEY",
+    "test-only-secret-key-with-at-least-32-characters",
+)
 
 import pytest
 from fastapi.testclient import TestClient
