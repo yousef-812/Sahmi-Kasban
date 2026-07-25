@@ -54,7 +54,7 @@ def build_profile_response(db: DatabaseSession, user: CurrentUser) -> ProfileRes
 def avatar_options() -> AvatarOptionsResponse:
     return AvatarOptionsResponse(
         avatars=[
-            AvatarOption(key=key, asset_path=f"assets/avatars/{key}.png")
+            AvatarOption(key=key, asset_path=f"assets/avatars/{key}.webp")
             for key in AVATAR_KEYS
         ]
     )

@@ -64,3 +64,42 @@ jobs:
         env:
           RUN_MODE: tests
         run: bash .github/actions/repository-ci/run.sh
+
+  flutter-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Install Flutter inside repository workspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [ ! -x "$FLUTTER_HOME/bin/flutter" ]; then
+            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          fi
+          echo "$FLUTTER_HOME/bin" >> "$GITHUB_PATH"
+          "$FLUTTER_HOME/bin/flutter" config --no-analytics
+          "$FLUTTER_HOME/bin/flutter" --version
+
+      - name: Fetch Flutter packages
+        working-directory: mobile
+        run: $FLUTTER_HOME/bin/flutter pub get
+
+      - name: Verify Flutter formatting
+        working-directory: mobile
+        run: $FLUTTER_HOME/bin/dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze Flutter application
+        working-directory: mobile
+        run: $FLUTTER_HOME/bin/flutter analyze
+
+      - name: Run Flutter tests
+        working-directory: mobile
+        run: $FLUTTER_HOME/bin/flutter test
