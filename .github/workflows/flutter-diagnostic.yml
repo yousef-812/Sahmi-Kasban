@@ -1,0 +1,32 @@
+name: Flutter Analyze Diagnostic
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'agent/flutter-core-app'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter-diagnostic
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub-diagnostic
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - name: Print analyze findings only
+        shell: bash
+        run: |
+          set -uo pipefail
+          git clone -q --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          cd mobile
+          "$FLUTTER_HOME/bin/flutter" pub get >/dev/null
+          set +e
+          "$FLUTTER_HOME/bin/flutter" analyze > /tmp/flutter-analyze.log 2>&1
+          status=$?
+          grep -E "(error|warning|info) •|issues found|No issues found" /tmp/flutter-analyze.log || cat /tmp/flutter-analyze.log
+          exit "$status"
