@@ -1,0 +1,69 @@
+name: Generate Flutter Platforms
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-platforms:
+    if: github.head_ref == 'agent/flutter-core-app'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter-platforms
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub-platforms
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Generate Android and iOS projects and clean this helper
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone -q --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          cp mobile/pubspec.yaml /tmp/pubspec.yaml
+          cp mobile/analysis_options.yaml /tmp/analysis_options.yaml
+          cp mobile/README.md /tmp/mobile-readme.md
+          cd mobile
+          "$FLUTTER_HOME/bin/flutter" create \
+            --platforms=android,ios \
+            --org com.sahmikasban \
+            --project-name sahmi_kasban_mobile \
+            . >/dev/null
+          cp /tmp/pubspec.yaml pubspec.yaml
+          cp /tmp/analysis_options.yaml analysis_options.yaml
+          cp /tmp/mobile-readme.md README.md
+          rm -f test/widget_test.dart
+          python - <<'PY'
+          from pathlib import Path
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          content = manifest.read_text()
+          content = content.replace('android:label="sahmi_kasban_mobile"', 'android:label="سهمي كسبان"')
+          manifest.write_text(content)
+
+          plist = Path('ios/Runner/Info.plist')
+          content = plist.read_text()
+          content = content.replace(
+              '<string>sahmi_kasban_mobile</string>',
+              '<string>سهمي كسبان</string>',
+              1,
+          )
+          plist.write_text(content)
+          PY
+          "$FLUTTER_HOME/bin/flutter" pub get >/dev/null
+          "$FLUTTER_HOME/bin/dart" format lib test >/dev/null
+          cd ..
+          rm -f .github/workflows/flutter-platform-scaffold.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Platform scaffolding already exists."
+            exit 0
+          fi
+          git commit -m "Generate Android and iOS Flutter projects"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
