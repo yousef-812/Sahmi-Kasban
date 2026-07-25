@@ -133,6 +133,11 @@ class Discussion(TimestampMixin, Base):
             "submission_key",
             name="uq_discussions_user_submission",
         ),
+        UniqueConstraint(
+            "user_id",
+            "content_fingerprint",
+            name="uq_discussions_user_content_fingerprint",
+        ),
         CheckConstraint(
             "period_type IN ('next_session', 'week', 'month')",
             name="discussion_period_type_allowed",
@@ -161,6 +166,7 @@ class Discussion(TimestampMixin, Base):
         nullable=False,
     )
     submission_key: Mapped[str | None] = mapped_column(String(64))
+    content_fingerprint: Mapped[str | None] = mapped_column(String(64))
     wallet_hold_transaction_id: Mapped[str | None] = mapped_column(
         String(120),
         unique=True,
