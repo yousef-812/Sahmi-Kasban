@@ -186,7 +186,7 @@ class _LoadingList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ListView(
+    return ListView(
       children: [
         SizedBox(height: 220),
         Center(child: CircularProgressIndicator()),

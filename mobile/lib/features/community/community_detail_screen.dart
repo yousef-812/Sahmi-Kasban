@@ -159,7 +159,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: discussion.when(
-          loading: () => const ListView(
+          loading: () => ListView(
             children: [
               SizedBox(height: 240),
               Center(child: CircularProgressIndicator()),
