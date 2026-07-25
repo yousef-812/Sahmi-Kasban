@@ -1,0 +1,122 @@
+name: Phase 6 Roadmap Status Update
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  update-roadmap:
+    if: github.head_ref == 'agent/phase-6-community-core'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Record current Phase 6 state and remove this helper
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('ROADMAP.md')
+          text = path.read_text()
+
+          old_header = '''> النسخة: 1.3  
+          > الحالة: قيد التنفيذ — المراحل 0–5 مكتملة ومدمجة، والمرحلة 6 هي التالية  
+          > النطاق: تطبيق Flutter + Backend Python + PostgreSQL + محركات التحليل + الذكاء الاصطناعي + المجتمع + تحقيق الدخل
+          > آخر تحديث تنفيذي: 2026-07-25  
+          > المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4، 5  
+          > المرحلة التالية: 6 — المجتمع والمناقشات  
+          > الفرع المرجعي: `main`
+          '''
+          new_header = '''> النسخة: 1.4  
+          > الحالة: قيد التنفيذ — المراحل 0–5 مكتملة ومدمجة، والمرحلة 6 جارية داخل Draft PR #15  
+          > النطاق: تطبيق Flutter + Backend Python + PostgreSQL + محركات التحليل + الذكاء الاصطناعي + المجتمع + تحقيق الدخل
+          > آخر تحديث تنفيذي: 2026-07-26  
+          > المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4، 5  
+          > المرحلة الحالية: 6 — المجتمع والمناقشات  
+          > الفرع المرجعي: `agent/phase-6-community-core`  
+          > بوابة الدمج: استكمال واجهات Flutter واختباراتها ثم نجاح CI النهائي
+          '''
+          if old_header not in text:
+              raise SystemExit('Roadmap header block was not found')
+          text = text.replace(old_header, new_header, 1)
+
+          old_phase = '''## المرحلة 6 — المجتمع والمناقشات
+
+          ### الأعمال
+
+          - إنشاء المناقشة وحجز الرصيد.
+          - قواعد Regex.
+          - مراجعة AI.
+          - النشر أو الرفض والاسترجاع.
+          - صفحة المجتمع.
+          - الإبلاغ والكتم.
+          - صفحة مناقشاتي.
+
+          ### معيار الاكتمال
+
+          - المناقشة المرفوضة لا تكلف المستخدم شيئًا نهائيًا.
+          - لا تظهر بيانات تواصل أو روابط محظورة.
+          - يمكن للإدارة مراجعة الحالات المختلف عليها.
+          '''
+          new_phase = '''## المرحلة 6 — المجتمع والمناقشات 🚧 قيد التنفيذ
+
+          ### المنجز على Draft PR #15
+
+          - [x] جداول المناقشات والبلاغات والكتم وسجلات المراجعة والإدارة.
+          - [x] حجز 50 نقطة عند الإرسال وتأكيده عند القبول أو تحريره مرة واحدة عند الرفض.
+          - [x] منع بيانات التواصل والروابط والإعلانات والإساءة وادعاءات الربح المضمون بقواعد ثابتة.
+          - [x] مراجعة AI واستخراج التوقع المجمد مع مسار آمن عند فشل المزود.
+          - [x] منع التكرار والسبام وحدود 3/15 دقيقة و10/24 ساعة مع `Retry-After`.
+          - [x] APIs المجتمع ومناقشاتي والتفاصيل والبلاغ والكتم وإلغاء الكتم.
+          - [x] طابور الإدارة والقبول والرفض والإخفاء والاستعادة والحظر وسجل التدقيق.
+          - [x] استئناف واحد للمناقشة المرفوضة أو المخفية مع دورة خصم آمنة عند إعادة النشر.
+          - [x] Flutter community models وrepository وproviders واختبارات parsing وpagination والأخطاء.
+
+          ### المتبقي قبل الدمج
+
+          - [ ] صفحة Community Feed بالعربية وRTL مع فلتر السهم والتحديث والسحب لإعادة التحميل.
+          - [ ] صفحة تفاصيل المناقشة والإبلاغ والكتم وإلغاء الكتم.
+          - [ ] نموذج إنشاء المناقشة بمفتاح إرسال ثابت وتنبيه حجز 0.5 عملة.
+          - [ ] صفحة مناقشاتي وحالات المراجعة والرفض والإخفاء.
+          - [ ] واجهة إنشاء الاستئناف وعرض حالته.
+          - [ ] تحديث الرصيد بعد العمليات المالية واختبارات Widget/Repository النهائية.
+          - [ ] Flutter format/analyze/tests وبناء Android debug APK ثم إزالة Draft والدمج.
+
+          ### معيار الاكتمال
+
+          - [x] المناقشة المرفوضة لا تكلف المستخدم شيئًا نهائيًا.
+          - [x] لا تظهر بيانات تواصل أو روابط محظورة.
+          - [x] يمكن للإدارة مراجعة الحالات المختلف عليها والاستئنافات.
+          - [ ] رحلة Flutter كاملة من Feed حتى الإنشاء والاستئناف.
+          - [ ] نجاح CI النهائي على آخر commit عادي قبل الدمج.
+          '''
+          if old_phase not in text:
+              raise SystemExit('Phase 6 roadmap block was not found')
+          text = text.replace(old_phase, new_phase, 1)
+
+          old_status = '''- [ ] المناقشات والتقييم.
+          - [ ] لوحة الإدارة والإشعارات.
+          '''
+          new_status = '''- [ ] المجتمع والمناقشات — Backend والإدارة والاستئنافات وطبقة Flutter للبيانات منفذة على Draft PR #15؛ واجهات Flutter والدمج النهائي متبقية.
+          - [ ] تقييم التوقعات — المرحلة 7 لم تبدأ.
+          - [ ] لوحة الإدارة والإشعارات — Backend إدارة المجتمع منفذ جزئيًا داخل المرحلة 6؛ اللوحة المرئية والإشعارات متبقية.
+          '''
+          if old_status not in text:
+              raise SystemExit('Current components checklist block was not found')
+          text = text.replace(old_status, new_status, 1)
+
+          path.write_text(text)
+          PY
+          rm .github/workflows/phase6-update-roadmap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Update roadmap for active Phase 6 work'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
