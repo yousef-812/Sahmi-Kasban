@@ -39,7 +39,8 @@ ResponseBody _jsonBody(Map<String, dynamic> payload, int statusCode) {
 
 void main() {
   group('ApiClient', () {
-    test('shares one refresh request across concurrent 401 responses', () async {
+    test('shares one refresh request across concurrent 401 responses',
+        () async {
       final tokenStore = _MockTokenStore();
       var accessToken = 'old-access';
       var refreshToken = 'refresh-one';
