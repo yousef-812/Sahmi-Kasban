@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Never
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -66,8 +67,10 @@ def _admin_discussion_response(view: AdminDiscussionView) -> AdminDiscussionResp
     )
 
 
-def _raise_admin_error(exc: Exception) -> None:
-    if isinstance(exc, (DiscussionNotFoundError, CommunityAdminTargetNotFoundError)):
+def _raise_admin_error(exc: Exception) -> Never:
+    if isinstance(exc, DiscussionNotFoundError) or isinstance(
+        exc, CommunityAdminTargetNotFoundError
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
