@@ -67,7 +67,7 @@ jobs:
 
   flutter-checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     env:
       FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
       PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
@@ -103,3 +103,9 @@ jobs:
       - name: Run Flutter tests
         working-directory: mobile
         run: $FLUTTER_HOME/bin/flutter test
+
+      - name: Build Android debug APK
+        working-directory: mobile
+        run: >-
+          $FLUTTER_HOME/bin/flutter build apk --debug
+          --dart-define=API_BASE_URL=https://example.invalid
