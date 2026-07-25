@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     app_env: Environment = Environment.DEVELOPMENT
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
-    secret_key: str = ""
+    secret_key: str = "development-only-key"
     cors_origins: str = ""
     app_public_url: str = "http://localhost:8000"
 
