@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
@@ -156,18 +156,35 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                 if (_results.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   for (final instrument in _results)
-                    RadioListTile<MarketInstrument>(
-                      value: instrument,
-                      groupValue: _selected,
-                      onChanged: (value) => setState(() => _selected = value),
-                      title: Text(
-                        instrument.ticker,
-                        textDirection: TextDirection.ltr,
-                      ),
-                      subtitle: Text(
-                        '${instrument.exchange} — ${instrument.providerSymbol}',
-                        textDirection: TextDirection.ltr,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final selected =
+                            _selected?.ticker == instrument.ticker;
+                        return Card(
+                          color: selected
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .secondaryContainer
+                              : null,
+                          child: ListTile(
+                            onTap: () =>
+                                setState(() => _selected = instrument),
+                            leading: Icon(
+                              selected
+                                  ? Icons.radio_button_checked_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                            ),
+                            title: Text(
+                              instrument.ticker,
+                              textDirection: TextDirection.ltr,
+                            ),
+                            subtitle: Text(
+                              '${instrument.exchange} — ${instrument.providerSymbol}',
+                              textDirection: TextDirection.ltr,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                 ],
                 const SizedBox(height: 16),
