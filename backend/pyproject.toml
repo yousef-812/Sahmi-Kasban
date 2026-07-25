@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sahmi-kasban-api"
-version = "0.2.0"
+version = "0.3.0"
 description = "FastAPI backend for Sahmi Kasban"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,6 +18,7 @@ dependencies = [
   "pyjwt>=2.9",
   "sqlalchemy>=2.0",
   "uvicorn[standard]>=0.30",
+  "yfinance>=1.5,<2",
 ]
 
 [project.optional-dependencies]
