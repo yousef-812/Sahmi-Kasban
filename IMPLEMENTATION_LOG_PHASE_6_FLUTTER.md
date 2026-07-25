@@ -1,8 +1,9 @@
 # Phase 6 Flutter Community Implementation Log
 
 > Branch: `agent/phase-6-community-core`  
-> Pull request: Draft PR #15  
-> Updated: 2026-07-26
+> Pull request: PR #15  
+> Updated: 2026-07-26  
+> Status: implementation complete; final merge gate running
 
 ## Scope implemented
 
@@ -24,12 +25,22 @@
 - The server remains responsible for holds, confirmation, release, moderation, rejection, and appeal charging.
 - Wallet and profile providers are refreshed after a submission that can change the balance.
 
-## Validation progress
+## Validation completed
 
-- Flutter formatting passed on workflow `30179336926`.
-- The first analyzer pass found only two `const_with_non_const` errors in loading-state `ListView` widgets.
-- Both invalid `const` modifiers were removed without suppressing analyzer rules.
-- The temporary analyzer output and helper workflows were removed from the branch.
-- This normal commit starts the complete validation gate again: repository lint, backend/PostgreSQL/Alembic tests, Flutter analyze/tests, and Android debug APK.
+Workflow `30179575341` succeeded on the complete Phase 6 implementation:
 
-PR #15 remains Draft until every required job succeeds on the latest normal commit.
+- repository-local lint;
+- Backend and Core tests;
+- PostgreSQL integration tests and Alembic upgrade/downgrade cycle;
+- Flutter formatting;
+- Flutter static analysis;
+- all Flutter tests, including community models, repository, HTTP errors, pagination, and widgets;
+- Android debug APK build.
+
+The initial analyzer diagnostics contained only two invalid `const` modifiers in loading-state `ListView` widgets, and the initial widget-test failure was caused by a lazy form button being outside the test viewport. Both were fixed without weakening production validation or suppressing analyzer rules. All temporary diagnostic files and workflows were removed.
+
+## Roadmap handoff
+
+`ROADMAP.md` is now version 1.5. Phase 6 is marked complete and Phase 7 — prediction evaluation and rewards — is the next implementation stage after PR #15 is merged.
+
+This documentation commit is the final normal branch commit used for the merge-gate workflow. PR #15 must be marked ready and merged only after that workflow is fully green.
