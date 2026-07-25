@@ -37,6 +37,9 @@ def upgrade() -> None:
     with op.batch_alter_table("discussions") as batch:
         batch.add_column(sa.Column("submission_key", sa.String(length=64), nullable=True))
         batch.add_column(
+            sa.Column("content_fingerprint", sa.String(length=64), nullable=True)
+        )
+        batch.add_column(
             sa.Column(
                 "wallet_hold_transaction_id",
                 sa.String(length=120),
@@ -51,6 +54,10 @@ def upgrade() -> None:
         batch.create_unique_constraint(
             "uq_discussions_user_submission",
             ["user_id", "submission_key"],
+        )
+        batch.create_unique_constraint(
+            "uq_discussions_user_content_fingerprint",
+            ["user_id", "content_fingerprint"],
         )
         batch.create_unique_constraint(
             "uq_discussions_wallet_hold_transaction_id",
@@ -69,6 +76,12 @@ def upgrade() -> None:
         "ix_discussions_published_at",
         "discussions",
         ["published_at"],
+        unique=False,
+    )
+    op.create_index(
+        "ix_discussions_user_created_at",
+        "discussions",
+        ["user_id", "created_at"],
         unique=False,
     )
 
@@ -222,6 +235,7 @@ def downgrade() -> None:
     op.drop_index("ix_discussion_reports_discussion_id", table_name="discussion_reports")
     op.drop_table("discussion_reports")
 
+    op.drop_index("ix_discussions_user_created_at", table_name="discussions")
     op.drop_index("ix_discussions_published_at", table_name="discussions")
     with op.batch_alter_table("discussions") as batch:
         batch.drop_constraint(
@@ -237,6 +251,10 @@ def downgrade() -> None:
             type_="unique",
         )
         batch.drop_constraint(
+            "uq_discussions_user_content_fingerprint",
+            type_="unique",
+        )
+        batch.drop_constraint(
             "uq_discussions_user_submission",
             type_="unique",
         )
@@ -244,4 +262,5 @@ def downgrade() -> None:
         batch.drop_column("reviewed_at")
         batch.drop_column("rejection_code")
         batch.drop_column("wallet_hold_transaction_id")
+        batch.drop_column("content_fingerprint")
         batch.drop_column("submission_key")
