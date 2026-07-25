@@ -48,9 +48,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
         ? config.admobAndroidBannerId
         : config.admobIosBannerId;
     final width = MediaQuery.sizeOf(context).width.truncate();
-    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
-      width,
-    );
+    final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
     if (!mounted || size == null) {
       _loading = false;
       return;
