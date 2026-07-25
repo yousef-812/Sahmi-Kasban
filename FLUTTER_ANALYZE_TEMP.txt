@@ -1,6 +1,0 @@
-Analyzing mobile...                                             
-
-  error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/reports/market_report_screen.dart:261:50 • undefined_getter
-  error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/wallet/wallet_history_screen.dart:149:40 • undefined_getter
-
-2 issues found. (ran in 7.9s)

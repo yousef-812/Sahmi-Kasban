@@ -158,17 +158,13 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                   for (final instrument in _results)
                     Builder(
                       builder: (context) {
-                        final selected =
-                            _selected?.ticker == instrument.ticker;
+                        final selected = _selected?.ticker == instrument.ticker;
                         return Card(
                           color: selected
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .secondaryContainer
+                              ? Theme.of(context).colorScheme.secondaryContainer
                               : null,
                           child: ListTile(
-                            onTap: () =>
-                                setState(() => _selected = instrument),
+                            onTap: () => setState(() => _selected = instrument),
                             leading: Icon(
                               selected
                                   ? Icons.radio_button_checked_rounded
