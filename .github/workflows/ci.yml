@@ -109,3 +109,49 @@ jobs:
         run: >-
           $FLUTTER_HOME/bin/flutter build apk --debug
           --dart-define=API_BASE_URL=https://example.invalid
+
+  phase5-finalize-roadmap:
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/phase-5-monetization' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Phase 5 branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 2
+          show-progress: false
+
+      - name: Record Phase 5 completion and restore CI
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("ROADMAP.md")
+          text = path.read_text(encoding="utf-8")
+          replacements = {
+              "> النسخة: 1.2  ": "> النسخة: 1.3  ",
+              "> الحالة: قيد التنفيذ — المراحل 0–4 مكتملة ومدمجة والمرحلة 5 هي التالية  ": "> الحالة: قيد التنفيذ — المراحل 0–4 مكتملة ومدمجة، والمرحلة 5 مكتملة برمجيًا وجاهزة للدمج، والمرحلة 6 هي التالية  ",
+              "> المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4  ": "> المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4؛ المرحلة 5 مكتملة برمجيًا وجاهزة للدمج  ",
+              "> المرحلة التالية: 5 — الإعلانات والاشتراكات  ": "> المرحلة التالية: 6 — المجتمع والمناقشات  ",
+              "> الفرع المرجعي: `main`": "> الفرع المرجعي: `agent/phase-5-monetization`",
+              "## المرحلة 5 — الإعلانات والاشتراكات\n": "## المرحلة 5 — الإعلانات والاشتراكات ✅ مكتملة برمجيًا\n",
+              "- الخطة المجانية تمنح 3 عملات أسبوعيًا وتظل الإعلانات مفعلة.\n": "- الخطة المجانية تمنح 3 عملات أسبوعيًا وتظل الإعلانات مفعلة.\n\n> **تحذير إطلاق:** تم اختبار الإعلانات التجريبية وStub SSV ومسارات الشراء التجريبية آليًا، لكن لم يتم بعد تنفيذ شراء حقيقي من Google Play Internal Testing أو استقبال AdMob SSV حي موقّع من وحدة المشروع. تظل هذه اختبارات قبول إلزامية قبل الإنتاج.\n",
+              "- [ ] Flutter application — قيد التنفيذ في المرحلة 4.\n": "- [x] Flutter application — المرحلة 4 مكتملة ومدمجة.\n",
+              "- [ ] الإعلانات والاشتراكات المدفوعة.\n": "- [x] الإعلانات والاشتراكات — مكتملة برمجيًا؛ اختبار Google Play وAdMob الحي مؤجل إلى بوابة الإطلاق.\n",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f"ROADMAP replacement target not found: {old!r}")
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+          git show HEAD^:.github/workflows/ci.yml > .github/workflows/ci.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ROADMAP.md .github/workflows/ci.yml
+          git commit -m "Mark Phase 5 complete in roadmap"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
