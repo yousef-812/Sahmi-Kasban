@@ -2,6 +2,9 @@
 
 This document separates the implemented application behavior from the external Google Play and AdMob setup required before a production release.
 
+> [!WARNING]
+> **Live monetization has not been tested yet.** No real purchase has been completed through a Google Play Internal Testing build, and no real signed AdMob Server-Side Verification callback has been received from this project's own AdMob rewarded ad unit. Repository tests, Stub mode, Google sample ads, and a successful debug APK build verify the code paths only; they do **not** prove that the live Play Console, service-account permissions, product configuration, billing acknowledgement/consumption, AdMob app/ad-unit configuration, or SSV callback registration are correct. Production release is blocked until the acceptance procedure in section 9 is completed and its evidence is recorded.
+
 ## 1. Server-authoritative rules
 
 The mobile application is never the source of truth for money, coins, subscriptions, or rewarded-ad grants.
@@ -177,6 +180,9 @@ The Flutter release pipeline must separately verify native AdMob app IDs and ban
 
 ## 9. Internal testing procedure
 
+> [!IMPORTANT]
+> This procedure is still pending. Phase 5 must not be described as live-payment-tested until every item below is completed using the real Play Console and AdMob configuration and the evidence is appended to the implementation log.
+
 1. Create and activate all Play products.
 2. Upload a signed Android App Bundle to an Internal Testing track.
 3. Add license testers and install the build through Google Play.
@@ -197,4 +203,4 @@ Repository CI verifies models, migrations, idempotency, encryption, limits, Flut
 - a signed build installed through a Play testing track;
 - real AdMob app/ad-unit configuration and SSV callback registration.
 
-Those remain release-environment acceptance tests, not reasons to trust the client. Production verification remains disabled until the required secrets and live modes are explicitly configured.
+**Current acceptance status: NOT TESTED LIVE.** These remain release-environment acceptance tests, not reasons to trust the client. Production verification remains disabled until the required secrets and live modes are explicitly configured.
