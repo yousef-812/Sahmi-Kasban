@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -28,6 +29,15 @@ def _series_from_snapshot(snapshot: MarketDataSnapshot) -> CandleSeries:
         data_as_of=_as_utc(snapshot.data_as_of),
         fingerprint=snapshot.fingerprint,
         candles=tuple(candles),
+    )
+
+
+def _snapshot_identity_query(series: CandleSeries):
+    return select(MarketDataSnapshot).where(
+        MarketDataSnapshot.ticker == series.ticker,
+        MarketDataSnapshot.provider == series.provider,
+        MarketDataSnapshot.interval == series.interval,
+        MarketDataSnapshot.period == series.period,
     )
 
 
@@ -70,14 +80,7 @@ async def get_cached_or_fresh_history(
         )
 
     expires_at = current + timedelta(minutes=settings.market_data_cache_minutes)
-    snapshot = db.scalar(
-        select(MarketDataSnapshot).where(
-            MarketDataSnapshot.ticker == normalized_ticker,
-            MarketDataSnapshot.provider == series.provider,
-            MarketDataSnapshot.interval == series.interval,
-            MarketDataSnapshot.period == series.period,
-        )
-    )
+    snapshot = db.scalar(_snapshot_identity_query(series))
     if snapshot is None:
         snapshot = MarketDataSnapshot(
             ticker=normalized_ticker,
@@ -99,5 +102,13 @@ async def get_cached_or_fresh_history(
         snapshot.fingerprint = series.fingerprint
         snapshot.candle_count = series.candle_count
         snapshot.payload = {"candles": list(series.candles)}
-    db.flush()
+
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raced = db.scalar(_snapshot_identity_query(series))
+        if raced is None:
+            raise
+        return _series_from_snapshot(raced), True
     return series, False
