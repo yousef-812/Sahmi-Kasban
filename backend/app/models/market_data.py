@@ -26,9 +26,17 @@ class MarketDataSnapshot(TimestampMixin, Base):
     provider: Mapped[str] = mapped_column(String(40), nullable=False)
     interval: Mapped[str] = mapped_column(String(16), nullable=False)
     period: Mapped[str] = mapped_column(String(16), nullable=False)
-    data_as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
+    data_as_of: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        nullable=False,
+    )
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        nullable=False,
+    )
     fingerprint: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     candle_count: Mapped[int] = mapped_column(Integer, nullable=False)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
