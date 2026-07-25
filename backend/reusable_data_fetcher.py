@@ -30,7 +30,7 @@ import pandas as pd
 import websockets
 import yfinance as yf
 from ta.momentum import ROCIndicator, RSIIndicator, StochasticOscillator, WilliamsRIndicator
-from ta.trend import ADXIndicator, CCIIndicator, EMAIndicator, MACD, SMAIndicator
+from ta.trend import MACD, ADXIndicator, CCIIndicator, EMAIndicator, SMAIndicator
 from ta.volatility import AverageTrueRange, BollingerBands
 from ta.volume import MFIIndicator, VolumeWeightedAveragePrice
 
