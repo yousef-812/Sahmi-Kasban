@@ -9,7 +9,8 @@ Map<String, dynamic> _discussionJson({
     'id': 'discussion-1',
     'ticker': 'COMI',
     'title': 'توقع حركة سهم البنك التجاري الدولي',
-    'content': 'أتوقع استمرار الاتجاه الصاعد خلال الجلسة القادمة مع مراقبة الحجم.',
+    'content':
+        'أتوقع استمرار الاتجاه الصاعد خلال الجلسة القادمة مع مراقبة الحجم.',
     'period_type': 'next_session',
     'status': status,
     'moderation_result': <String, dynamic>{'source': 'ai'},
@@ -20,9 +21,7 @@ Map<String, dynamic> _discussionJson({
     'rejection_code': rejectionCode,
     'created_at': '2026-07-26T00:15:00+03:00',
     'reviewed_at': '2026-07-26T00:16:00+03:00',
-    'published_at': status == 'published'
-        ? '2026-07-26T00:16:00+03:00'
-        : null,
+    'published_at': status == 'published' ? '2026-07-26T00:16:00+03:00' : null,
     'author': <String, dynamic>{
       'user_id': 'user-1',
       'display_name': 'مستخدم تجريبي',
@@ -86,7 +85,8 @@ void main() {
           'discussion_id': 'discussion-1',
           'user_id': 'user-1',
           'source_status': 'rejected',
-          'message': 'أطلب مراجعة القرار لأن المناقشة مرتبطة مباشرة بحركة السهم.',
+          'message':
+              'أطلب مراجعة القرار لأن المناقشة مرتبطة مباشرة بحركة السهم.',
           'status': 'accepted',
           'created_at': '2026-07-26T00:20:00+03:00',
           'resolved_at': '2026-07-26T00:25:00+03:00',

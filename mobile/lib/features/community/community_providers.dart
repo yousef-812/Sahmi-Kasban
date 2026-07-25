@@ -10,9 +10,9 @@ final communityTickerFilterProvider = StateProvider.autoDispose<String?>((ref) {
 final communityFeedProvider =
     FutureProvider.autoDispose<CommunityDiscussionPage>((ref) {
       final ticker = ref.watch(communityTickerFilterProvider);
-      return ref.watch(communityRepositoryProvider).listDiscussions(
-        ticker: ticker,
-      );
+      return ref
+          .watch(communityRepositoryProvider)
+          .listDiscussions(ticker: ticker);
     });
 
 final myDiscussionsProvider =
@@ -20,13 +20,13 @@ final myDiscussionsProvider =
       return ref.watch(communityRepositoryProvider).listMyDiscussions();
     });
 
-final myAppealsProvider = FutureProvider.autoDispose<CommunityAppealPage>((ref) {
+final myAppealsProvider = FutureProvider.autoDispose<CommunityAppealPage>((
+  ref,
+) {
   return ref.watch(communityRepositoryProvider).listMyAppeals();
 });
 
 final communityDiscussionProvider = FutureProvider.autoDispose
     .family<CommunityDiscussion, String>((ref, discussionId) {
-      return ref
-          .watch(communityRepositoryProvider)
-          .getDiscussion(discussionId);
+      return ref.watch(communityRepositoryProvider).getDiscussion(discussionId);
     });

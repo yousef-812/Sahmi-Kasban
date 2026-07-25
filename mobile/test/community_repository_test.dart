@@ -49,7 +49,8 @@ Map<String, dynamic> _discussionJson() {
     'id': 'discussion-1',
     'ticker': 'COMI',
     'title': 'توقع حركة سهم البنك التجاري الدولي',
-    'content': 'أتوقع استمرار الاتجاه الصاعد خلال الجلسة القادمة مع مراقبة الحجم.',
+    'content':
+        'أتوقع استمرار الاتجاه الصاعد خلال الجلسة القادمة مع مراقبة الحجم.',
     'period_type': 'next_session',
     'status': 'published',
     'moderation_result': <String, dynamic>{},
