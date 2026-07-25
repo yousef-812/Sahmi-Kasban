@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../domain/models.dart';
 import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
@@ -8,6 +9,9 @@ import '../features/bootstrap/splash_screen.dart';
 import '../features/home/dashboard_screen.dart';
 import '../features/onboarding/onboarding_controller.dart';
 import '../features/onboarding/onboarding_screen.dart';
+import '../features/profile/profile_edit_screen.dart';
+import '../features/reports/market_report_screen.dart';
+import '../features/wallet/wallet_history_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final onboarding = ref.watch(onboardingControllerProvider);
@@ -49,6 +53,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
+      GoRoute(
+        path: '/wallet/history',
+        builder: (context, state) => const WalletHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/reports/:reportId',
+        builder: (context, state) => MarketReportScreen(
+          reportId: state.pathParameters['reportId']!,
+          preview: state.extra is MarketReportPreview
+              ? state.extra! as MarketReportPreview
+              : null,
+        ),
       ),
     ],
     redirect: (context, state) {
