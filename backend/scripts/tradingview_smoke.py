@@ -3,35 +3,48 @@ from __future__ import annotations
 import asyncio
 import json
 
-from app.market_data.tradingview import TradingViewMarketDataProvider
+from reusable_data_fetcher import StockDataFetcher
 
 
 async def main() -> None:
-    provider = TradingViewMarketDataProvider()
-    series = await provider.get_history(
-        "COMI",
-        period="1y",
-        interval="1d",
-    )
-    if series.candle_count < 200:
+    fetcher = StockDataFetcher(tv_token="unauthorized_user_token")
+    try:
+        data = await fetcher.get_full_data("COMI", market="EGX")
+    finally:
+        await fetcher.close()
+
+    historical = data["historical"]
+    indicators = data["indicators"]
+    price = data["price"]
+    fundamentals = data["fundamentals"]
+
+    if len(historical) < 200:
         raise RuntimeError(
-            f"TradingView returned only {series.candle_count} candles for COMI"
+            f"TradingView returned only {len(historical)} COMI candles"
         )
-    last_candle = series.candles[-1]
-    close_price = float(last_candle["close"])
-    if close_price <= 0:
+    last_close = float(historical[-1]["close"])
+    if last_close <= 0:
         raise RuntimeError("TradingView returned a non-positive COMI close")
+    if indicators.get("rsi") is None:
+        raise RuntimeError("Technical indicators were not calculated")
+
     print(
         json.dumps(
             {
                 "status": "ok",
-                "provider": series.provider,
-                "ticker": series.ticker,
-                "candle_count": series.candle_count,
-                "data_as_of": series.data_as_of.isoformat(),
-                "last_close": close_price,
-                "last_volume": float(last_candle["volume"]),
-                "fingerprint_prefix": series.fingerprint[:12],
+                "symbol": data["symbol"],
+                "market": data["market"],
+                "price": price.get("price"),
+                "price_source": price.get("source"),
+                "candle_count": len(historical),
+                "last_timestamp": historical[-1]["timestamp"],
+                "last_close": last_close,
+                "last_volume": float(historical[-1]["volume"]),
+                "rsi": indicators.get("rsi"),
+                "macd": indicators.get("macd"),
+                "trend": indicators.get("trend"),
+                "company_name": fundamentals.get("company_name"),
+                "market_cap": fundamentals.get("market_cap"),
             },
             ensure_ascii=False,
             indent=2,
