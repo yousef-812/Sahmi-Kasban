@@ -114,3 +114,55 @@ def test_bulk_weekly_job_does_not_duplicate_grants(db_session: Session) -> None:
     assert second_run == 0
     assert get_wallet_account(db_session, first_user.id).balance_points == 600
     assert get_wallet_account(db_session, second_user.id).balance_points == 600
+
+
+def test_bulk_weekly_job_uses_active_paid_plan_allocation(db_session: Session) -> None:
+    user = create_registered_user(db_session, "paid-weekly@example.com")
+    moment = datetime(2026, 8, 10, 9, tzinfo=UTC)
+    paid = Subscription(
+        user_id=user.id,
+        plan_code="basic",
+        status="active",
+        weekly_points=1_000,
+        ads_enabled=False,
+        started_at=moment - timedelta(days=2),
+        expires_at=moment + timedelta(days=28),
+    )
+    db_session.add(paid)
+    db_session.commit()
+
+    first_run = grant_due_weekly_points(db_session, moment=moment)
+    db_session.commit()
+    second_run = grant_due_weekly_points(db_session, moment=moment)
+    db_session.commit()
+
+    assert first_run == 1
+    assert second_run == 0
+    assert get_wallet_account(db_session, user.id).balance_points == 1_300
+
+
+def test_bulk_weekly_job_falls_back_to_free_after_paid_expiry(
+    db_session: Session,
+) -> None:
+    user = create_registered_user(db_session, "expired-weekly@example.com")
+    moment = datetime(2026, 8, 17, 9, tzinfo=UTC)
+    expired_paid = Subscription(
+        user_id=user.id,
+        plan_code="pro",
+        status="active",
+        weekly_points=5_000,
+        ads_enabled=False,
+        started_at=moment - timedelta(days=40),
+        expires_at=moment - timedelta(minutes=1),
+    )
+    db_session.add(expired_paid)
+    db_session.commit()
+
+    first_run = grant_due_weekly_points(db_session, moment=moment)
+    db_session.commit()
+    second_run = grant_due_weekly_points(db_session, moment=moment)
+    db_session.commit()
+
+    assert first_run == 1
+    assert second_run == 0
+    assert get_wallet_account(db_session, user.id).balance_points == 600
