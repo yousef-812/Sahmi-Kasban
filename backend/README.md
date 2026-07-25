@@ -89,6 +89,55 @@ python -m app.jobs.grant_weekly_points
 
 تشغيل الأمر أكثر من مرة في الأسبوع نفسه لا يكرر المكافأة.
 
+## بيانات EGX وتحليل السهم
+
+المسارات الجديدة:
+
+```text
+GET  /api/v1/market/instruments
+POST /api/v1/stocks/{ticker}/analysis
+```
+
+مسار الرموز يعرض Seed Registry من 154 رمزًا بعد إزالة التكرارات من القائمة القديمة. هذه القائمة مناسبة للتطوير والاختبارات، لكنها ليست بديلًا عن Master List رسمي ومحدث من البورصة أو مزود بيانات مرخص.
+
+طلب التحليل يحتاج Access Token، ويقبل جسمًا اختياريًا:
+
+```json
+{
+  "language": "ar"
+}
+```
+
+قواعد التنفيذ:
+
+- تكلفة التحليل الجديد `50` نقطة = `0.50` عملة.
+- لا يحدث الخصم إلا بعد اكتمال محركات التحليل بنجاح وإنشاء النتيجة.
+- إذا فشل مزود البيانات أو المحركات أو قاعدة البيانات، تُلغى المعاملة ولا يُخصم الرصيد.
+- إذا كانت بصمة البيانات وإصدار المحرك وإعداداته لم تتغير، تُعاد النتيجة المخزنة دون خصم.
+- Snapshot الأسعار، نتيجة التحليل، وLedger debit تُحفظ داخل معاملة قاعدة بيانات واحدة.
+- فشل خدمة AI لا يلغي التحليل الرقمي؛ يُستخدم شرح عربي ثابت ويُوضح المصدر داخل `explanation_source`.
+- كل تقرير يحتوي وقت البيانات، المزود الفعلي، عدد الشموع، بصمة البيانات، إصدار المحرك، وإخلاء مسؤولية واضح.
+
+إعدادات السوق والتحليل الأساسية:
+
+```text
+MARKET_DATA_PRIMARY=yfinance
+MARKET_DATA_FALLBACK=
+MARKET_TIMEZONE=Africa/Cairo
+MARKET_DATA_PERIOD=1y
+MARKET_DATA_INTERVAL=1d
+MARKET_DATA_CACHE_MINUTES=30
+MARKET_DATA_TIMEOUT_SECONDS=20
+MARKET_DATA_MIN_CANDLES=200
+ANALYSIS_COST_POINTS=50
+ANALYSIS_DEFAULT_CAPITAL=150000
+ANALYSIS_RISK_PER_TRADE=0.01
+ANALYSIS_MAX_POSITION_VALUE=40000
+ANALYSIS_ENGINE_VERSION=core-v1
+```
+
+`yfinance` هو Adapter تطويري وبحثي في المرحلة الحالية. قبل الإطلاق العام يجب اعتماد مزود رسمي أو تجاري مرخص، ومراجعة شروط التخزين وإعادة العرض.
+
 ## البريد الإلكتروني
 
 في Development وTest، إذا لم يتم ضبط SMTP تُكتب رسالة تحذير في السجل بدل إرسال البريد. في Staging وProduction يجب ضبط:
