@@ -17,6 +17,51 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base, TimestampMixin
 
 
+class DiscussionAppeal(TimestampMixin, Base):
+    __tablename__ = "discussion_appeals"
+    __table_args__ = (
+        UniqueConstraint(
+            "discussion_id",
+            name="uq_discussion_appeals_discussion",
+        ),
+        CheckConstraint(
+            "status IN ('open', 'accepted', 'rejected')",
+            name="discussion_appeal_status_allowed",
+        ),
+        CheckConstraint(
+            "source_status IN ('rejected', 'hidden')",
+            name="discussion_appeal_source_status_allowed",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    discussion_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("discussions.id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    source_status: Mapped[str] = mapped_column(String(24), nullable=False)
+    message: Mapped[str] = mapped_column(String(2000), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), default="open", index=True, nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_by_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+    )
+    resolution_reason_code: Mapped[str | None] = mapped_column(String(64))
+    resolution_details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    publish_transaction_id: Mapped[str | None] = mapped_column(String(120), unique=True)
+
+
 class DiscussionReport(TimestampMixin, Base):
     __tablename__ = "discussion_reports"
     __table_args__ = (
