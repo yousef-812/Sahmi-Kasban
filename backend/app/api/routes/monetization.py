@@ -5,7 +5,6 @@ from urllib.parse import parse_qsl
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.dependencies import CurrentUser, DatabaseSession
-from app.core.config import get_settings
 from app.schemas.monetization import (
     GooglePlayPurchaseRequest,
     GooglePlayPurchaseResponse,
@@ -19,6 +18,7 @@ from app.services.monetization import (
     MonetizationError,
     PurchaseNotCompletedError,
     PurchaseOwnershipConflictError,
+    RewardedAdEligibility,
     RewardedAdSessionError,
     RewardedAdsUnavailableError,
     UnsupportedProductError,
@@ -197,7 +197,9 @@ async def verify_google_play_purchase(
     )
 
 
-def _eligibility_response(eligibility: object) -> RewardedAdEligibilityResponse:
+def _eligibility_response(
+    eligibility: RewardedAdEligibility,
+) -> RewardedAdEligibilityResponse:
     return RewardedAdEligibilityResponse(
         eligible=eligibility.eligible,
         reason=eligibility.reason,
