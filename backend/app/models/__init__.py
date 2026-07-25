@@ -1,5 +1,10 @@
 from app.models.accounts import AccountToken, AuthSession, WalletAccount, WeeklyGrant
-from app.models.community import DiscussionModerationEvent, DiscussionReport, UserMute
+from app.models.community import (
+    CommunityAdminEvent,
+    DiscussionModerationEvent,
+    DiscussionReport,
+    UserMute,
+)
 from app.models.entities import (
     Discussion,
     MarketReport,
@@ -18,6 +23,7 @@ __all__ = [
     "AccountToken",
     "AuthSession",
     "BillingPurchase",
+    "CommunityAdminEvent",
     "Discussion",
     "DiscussionModerationEvent",
     "DiscussionReport",
