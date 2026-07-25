@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from urllib.parse import parse_qsl
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
+from sqlalchemy import select
 
 from app.api.dependencies import CurrentUser, DatabaseSession
+from app.core.config import Environment, get_settings
+from app.models import RewardedAdSession
 from app.schemas.monetization import (
     GooglePlayPurchaseRequest,
     GooglePlayPurchaseResponse,
@@ -13,6 +18,8 @@ from app.schemas.monetization import (
     RewardedAdEligibilityResponse,
     RewardedAdSessionRequest,
     RewardedAdSessionResponse,
+    RewardedAdSimulationRequest,
+    RewardedAdSimulationResponse,
 )
 from app.services.monetization import (
     MonetizationError,
@@ -74,6 +81,7 @@ def start_rewarded_ad_session(
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> RewardedAdSessionResponse:
+    settings = get_settings()
     try:
         result = create_rewarded_ad_session(
             db,
@@ -89,6 +97,66 @@ def start_rewarded_ad_session(
         ad_unit_id=result.session.ad_unit_id,
         custom_data=result.custom_data,
         expires_at=result.session.expires_at,
+        test_mode=settings.admob_ssv_verification_mode == "stub",
+    )
+
+
+@router.post(
+    "/rewarded-ads/sessions/{session_id}/simulate",
+    response_model=RewardedAdSimulationResponse,
+    include_in_schema=False,
+)
+async def simulate_rewarded_ad_callback(
+    session_id: UUID,
+    payload: RewardedAdSimulationRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> RewardedAdSimulationResponse:
+    settings = get_settings()
+    allowed_environment = settings.app_env in {
+        Environment.DEVELOPMENT,
+        Environment.TEST,
+    }
+    if not allowed_environment or settings.admob_ssv_verification_mode != "stub":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    ad_session = db.scalar(
+        select(RewardedAdSession).where(
+            RewardedAdSession.id == session_id,
+            RewardedAdSession.user_id == current_user.id,
+        )
+    )
+    if ad_session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rewarded-ad session does not exist",
+        )
+
+    now = datetime.now(UTC)
+    callback_payload = {
+        "ad_network": "stub-development-network",
+        "ad_unit": ad_session.ad_unit_id,
+        "custom_data": payload.custom_data,
+        "reward_amount": "1",
+        "reward_item": settings.admob_reward_item,
+        "timestamp": str(int(now.timestamp() * 1000)),
+        "transaction_id": f"stub:{ad_session.id}",
+    }
+    try:
+        result = await process_rewarded_ad_callback(
+            db,
+            raw_payload=callback_payload,
+            moment=now,
+            settings=settings,
+        )
+        db.commit()
+    except (RewardedAdSessionError, RewardedAdsUnavailableError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return RewardedAdSimulationResponse(
+        idempotent=result.idempotent,
+        balance_points=result.balance_points,
+        balance_coins=points_to_coins(result.balance_points),
     )
 
 
