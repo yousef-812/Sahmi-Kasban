@@ -30,6 +30,10 @@ class WalletTransactionConflictError(WalletError):
     """Raised when an idempotency key is reused for different operation data."""
 
 
+class WalletHoldStateError(WalletError):
+    """Raised when a held debit cannot be confirmed or released safely."""
+
+
 def points_to_coins(points: int) -> str:
     return f"{Decimal(points) / Decimal(POINTS_PER_COIN):.2f}"
 
@@ -75,6 +79,14 @@ def _validate_existing_entry(
         raise WalletTransactionConflictError(
             "Transaction ID was already used with different wallet operation data"
         )
+
+
+def _locked_wallet_entry(db: Session, transaction_id: str) -> WalletEntry | None:
+    return db.scalar(
+        select(WalletEntry)
+        .where(WalletEntry.transaction_id == transaction_id)
+        .with_for_update()
+    )
 
 
 def credit_points(
@@ -165,6 +177,148 @@ def debit_points(
     db.add(entry)
     db.flush()
     return entry
+
+
+def hold_points(
+    db: Session,
+    *,
+    user_id: UUID,
+    amount_points: int,
+    transaction_id: str,
+    entry_type: str,
+    reference_type: str | None = None,
+    reference_id: str | None = None,
+    details: dict | None = None,
+) -> WalletEntry:
+    """Reserve points by removing them from spendable balance until review finishes."""
+    if amount_points <= 0:
+        raise ValueError("Hold amount must be positive")
+
+    account = get_wallet_account(db, user_id, lock=True)
+    existing = _locked_wallet_entry(db, transaction_id)
+    if existing is not None:
+        _validate_existing_entry(
+            existing,
+            user_id=user_id,
+            expected_amount=-amount_points,
+            entry_type=entry_type,
+        )
+        if existing.status not in {"held", "confirmed", "released"}:
+            raise WalletHoldStateError("Wallet hold has an unsupported state")
+        return existing
+    if account.balance_points < amount_points:
+        raise InsufficientBalanceError("Insufficient wallet balance")
+
+    account.balance_points -= amount_points
+    entry = WalletEntry(
+        user_id=user_id,
+        transaction_id=transaction_id,
+        entry_type=entry_type,
+        amount_points=-amount_points,
+        status="held",
+        reference_type=reference_type,
+        reference_id=reference_id,
+        details=details or {},
+        confirmed_at=None,
+    )
+    db.add(entry)
+    db.flush()
+    return entry
+
+
+def confirm_hold(
+    db: Session,
+    *,
+    user_id: UUID,
+    amount_points: int,
+    transaction_id: str,
+    entry_type: str,
+    moment: datetime | None = None,
+) -> WalletEntry:
+    """Convert a held debit into a final debit without changing balance again."""
+    entry = _locked_wallet_entry(db, transaction_id)
+    if entry is None:
+        raise WalletHoldStateError("Wallet hold does not exist")
+    _validate_existing_entry(
+        entry,
+        user_id=user_id,
+        expected_amount=-amount_points,
+        entry_type=entry_type,
+    )
+    if entry.status == "confirmed":
+        return entry
+    if entry.status == "released":
+        raise WalletHoldStateError("A released wallet hold cannot be confirmed")
+    if entry.status != "held":
+        raise WalletHoldStateError("Wallet hold is not awaiting confirmation")
+
+    entry.status = "confirmed"
+    entry.confirmed_at = moment or datetime.now(UTC)
+    db.flush()
+    return entry
+
+
+def release_hold(
+    db: Session,
+    *,
+    user_id: UUID,
+    amount_points: int,
+    transaction_id: str,
+    entry_type: str,
+    release_transaction_id: str,
+    release_entry_type: str,
+    reference_type: str | None = None,
+    reference_id: str | None = None,
+    details: dict | None = None,
+) -> WalletEntry:
+    """Release a held debit exactly once and return its compensating credit entry."""
+    hold = _locked_wallet_entry(db, transaction_id)
+    if hold is None:
+        raise WalletHoldStateError("Wallet hold does not exist")
+    _validate_existing_entry(
+        hold,
+        user_id=user_id,
+        expected_amount=-amount_points,
+        entry_type=entry_type,
+    )
+
+    if hold.status == "confirmed":
+        raise WalletHoldStateError("A confirmed wallet hold cannot be released")
+    if hold.status == "released":
+        refund = db.scalar(
+            select(WalletEntry).where(
+                WalletEntry.transaction_id == release_transaction_id
+            )
+        )
+        if refund is None:
+            raise WalletHoldStateError("Released wallet hold is missing its refund entry")
+        _validate_existing_entry(
+            refund,
+            user_id=user_id,
+            expected_amount=amount_points,
+            entry_type=release_entry_type,
+        )
+        return refund
+    if hold.status != "held":
+        raise WalletHoldStateError("Wallet hold is not awaiting release")
+
+    refund = credit_points(
+        db,
+        user_id=user_id,
+        amount_points=amount_points,
+        transaction_id=release_transaction_id,
+        entry_type=release_entry_type,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        details=details,
+    )
+    hold.status = "released"
+    hold.details = {
+        **hold.details,
+        "release_transaction_id": release_transaction_id,
+    }
+    db.flush()
+    return refund
 
 
 def grant_weekly_points_for_subscription(
