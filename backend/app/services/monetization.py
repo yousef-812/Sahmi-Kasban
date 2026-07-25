@@ -16,7 +16,6 @@ from app.models import (
     RewardedAdClaim,
     RewardedAdSession,
     Subscription,
-    WalletAccount,
 )
 from app.services.monetization_catalog import (
     COIN_PACKS,
@@ -29,7 +28,6 @@ from app.services.monetization_catalog import (
 )
 from app.services.monetization_security import (
     GooglePlayVerifier,
-    MonetizationVerificationError,
     PurchaseTokenCipher,
     VerifiedPurchase,
     hash_secret,

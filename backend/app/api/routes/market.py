@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.market_data.egx_symbols import EGX_SEED_SYMBOLS, list_instruments
@@ -22,7 +23,6 @@ from app.services.stock_analysis import (
     get_stock_ai_service,
 )
 from app.services.wallet import InsufficientBalanceError, points_to_coins
-from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(tags=["market"])
 MarketProvider = Annotated[MarketDataProvider, Depends(get_market_data_provider)]

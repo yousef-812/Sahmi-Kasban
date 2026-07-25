@@ -39,7 +39,7 @@ class PurchaseTokenCipher:
             key = configured.encode("ascii")
         else:
             digest = hashlib.sha256(
-                f"billing:{self._settings.secret_key}".encode("utf-8")
+                f"billing:{self._settings.secret_key}".encode()
             ).digest()
             key = base64.urlsafe_b64encode(digest)
         try:
