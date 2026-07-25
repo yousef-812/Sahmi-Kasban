@@ -9,27 +9,36 @@ permissions:
   contents: read
 
 jobs:
-  diagnose-backend-ruff:
-    if: github.event_name == 'pull_request'
+  autofix-imports:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/tradingview-provider'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+    permissions:
+      contents: write
     steps:
-      - name: Show Ruff-corrected import block
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+
+      - name: Apply Ruff import fix
         shell: bash
         run: |
           set -Eeuo pipefail
           python -m pip install --quiet "ruff>=0.7"
-          mkdir -p /tmp/sahmi-source
-          curl --fail --silent --show-error --location \
-            "https://github.com/${GITHUB_REPOSITORY}/archive/${SOURCE_SHA}.tar.gz" \
-            | tar -xz --strip-components=1 -C /tmp/sahmi-source
-          cd /tmp/sahmi-source
           python -m ruff check backend/reusable_data_fetcher.py \
             --config backend/pyproject.toml \
             --fix
-          sed -n '1,45p' backend/reusable_data_fetcher.py
+          if git diff --quiet -- backend/reusable_data_fetcher.py; then
+            echo "No import changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/reusable_data_fetcher.py
+          git commit -m "Fix reusable fetcher import order"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
 
   repository-lint:
     runs-on: ubuntu-latest
