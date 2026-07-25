@@ -120,90 +120,70 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          fetch-depth: 2
           show-progress: false
 
-      - name: Record Phase 5 completion and restore CI
+      - name: Record Phase 5 completion
         shell: bash
         run: |
           set -Eeuo pipefail
           python - <<'PY'
           from pathlib import Path
-          import re
 
           path = Path("ROADMAP.md")
-          text = path.read_text(encoding="utf-8")
-
-          text = re.sub(r"^> النسخة: .*?$", "> النسخة: 1.3  ", text, count=1, flags=re.MULTILINE)
-          text = re.sub(
-              r"^> الحالة: .*?$",
-              "> الحالة: قيد التنفيذ — المراحل 0–4 مكتملة ومدمجة، والمرحلة 5 مكتملة برمجيًا وجاهزة للدمج، والمرحلة 6 هي التالية  ",
-              text,
-              count=1,
-              flags=re.MULTILINE,
-          )
-          text = re.sub(
-              r"^> المراحل المكتملة والمدمجة: .*?$",
-              "> المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4؛ المرحلة 5 مكتملة برمجيًا وجاهزة للدمج  ",
-              text,
-              count=1,
-              flags=re.MULTILINE,
-          )
-          text = re.sub(
-              r"^> المرحلة التالية: .*?$",
-              "> المرحلة التالية: 6 — المجتمع والمناقشات  ",
-              text,
-              count=1,
-              flags=re.MULTILINE,
-          )
-          text = re.sub(
-              r"^> الفرع المرجعي: .*?$",
-              "> الفرع المرجعي: `agent/phase-5-monetization`",
-              text,
-              count=1,
-              flags=re.MULTILINE,
-          )
-          text = text.replace(
-              "## المرحلة 5 — الإعلانات والاشتراكات\n",
-              "## المرحلة 5 — الإعلانات والاشتراكات ✅ مكتملة برمجيًا\n",
-              1,
-          )
-
+          lines = path.read_text(encoding="utf-8").splitlines()
+          output: list[str] = []
           warning = (
               "> **تحذير إطلاق:** تم اختبار الإعلانات التجريبية وStub SSV ومسارات "
               "الشراء التجريبية آليًا، لكن لم يتم بعد تنفيذ شراء حقيقي من Google Play "
               "Internal Testing أو استقبال AdMob SSV حي موقّع من وحدة المشروع. تظل "
               "هذه اختبارات قبول إلزامية قبل الإنتاج."
           )
-          anchor = "- الخطة المجانية تمنح 3 عملات أسبوعيًا وتظل الإعلانات مفعلة."
-          if warning not in text and anchor in text:
-              text = text.replace(anchor, f"{anchor}\n\n{warning}", 1)
+          warning_present = any("تحذير إطلاق" in line for line in lines)
 
-          text = text.replace(
-              "- [ ] Flutter application — قيد التنفيذ في المرحلة 4.",
-              "- [x] Flutter application — المرحلة 4 مكتملة ومدمجة.",
-              1,
-          )
-          text = text.replace(
-              "- [ ] الإعلانات والاشتراكات المدفوعة.",
-              "- [x] الإعلانات والاشتراكات — مكتملة برمجيًا؛ اختبار Google Play وAdMob الحي مؤجل إلى بوابة الإطلاق.",
-              1,
-          )
+          for line in lines:
+              if line.startswith("> النسخة:"):
+                  line = "> النسخة: 1.3  "
+              elif line.startswith("> الحالة:"):
+                  line = "> الحالة: قيد التنفيذ — المراحل 0–4 مكتملة ومدمجة، والمرحلة 5 مكتملة برمجيًا وجاهزة للدمج، والمرحلة 6 هي التالية  "
+              elif line.startswith("> المراحل المكتملة والمدمجة:"):
+                  line = "> المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4؛ المرحلة 5 مكتملة برمجيًا وجاهزة للدمج  "
+              elif line.startswith("> المرحلة التالية:"):
+                  line = "> المرحلة التالية: 6 — المجتمع والمناقشات  "
+              elif line.startswith("> الفرع المرجعي:"):
+                  line = "> الفرع المرجعي: `agent/phase-5-monetization`"
+              elif line == "## المرحلة 5 — الإعلانات والاشتراكات":
+                  line = "## المرحلة 5 — الإعلانات والاشتراكات ✅ مكتملة برمجيًا"
+              elif line == "- [ ] Flutter application — قيد التنفيذ في المرحلة 4.":
+                  line = "- [x] Flutter application — المرحلة 4 مكتملة ومدمجة."
+              elif line == "- [ ] الإعلانات والاشتراكات المدفوعة.":
+                  line = "- [x] الإعلانات والاشتراكات — مكتملة برمجيًا؛ اختبار Google Play وAdMob الحي مؤجل إلى بوابة الإطلاق."
 
-          required = (
+              output.append(line)
+              if (
+                  not warning_present
+                  and line == "- الخطة المجانية تمنح 3 عملات أسبوعيًا وتظل الإعلانات مفعلة."
+              ):
+                  output.extend(["", warning])
+                  warning_present = True
+
+          text = "\n".join(output) + "\n"
+          markers = (
               "> النسخة: 1.3",
               "## المرحلة 5 — الإعلانات والاشتراكات ✅ مكتملة برمجيًا",
               "> المرحلة التالية: 6 — المجتمع والمناقشات",
-              warning,
+              "تحذير إطلاق",
           )
-          missing = [marker for marker in required if marker not in text]
+          missing = [marker for marker in markers if marker not in text]
           if missing:
-              raise SystemExit(f"ROADMAP final markers missing: {missing}")
+              raise SystemExit(f"ROADMAP markers missing: {missing}")
           path.write_text(text, encoding="utf-8")
           PY
-          git show HEAD^:.github/workflows/ci.yml > .github/workflows/ci.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ROADMAP.md .github/workflows/ci.yml
+          git add ROADMAP.md
+          if git diff --cached --quiet; then
+            echo "ROADMAP already finalized"
+            exit 0
+          fi
           git commit -m "Mark Phase 5 complete in roadmap"
           git push origin "HEAD:${GITHUB_HEAD_REF}"
