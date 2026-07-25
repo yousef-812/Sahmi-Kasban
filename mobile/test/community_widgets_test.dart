@@ -59,6 +59,10 @@ void main() {
     expect(find.text('إنشاء مناقشة'), findsOneWidget);
     expect(find.textContaining('حجز 0.5 عملة مؤقتًا'), findsOneWidget);
     expect(find.text('اختر السهم'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -700));
+    await tester.pumpAndSettle();
+
     expect(find.text('إرسال للمراجعة'), findsOneWidget);
   });
 }
