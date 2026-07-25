@@ -1,12 +1,6 @@
 Analyzing mobile...                                             
 
-  error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/market/stock_analysis_tab.dart:138:48 • undefined_getter
-   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/market/stock_analysis_tab.dart:161:23 • deprecated_member_use
-   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/market/stock_analysis_tab.dart:162:23 • deprecated_member_use
-  error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/market/stock_analysis_tab.dart:165:54 • undefined_getter
-  error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/market/stock_analysis_tab.dart:169:54 • undefined_getter
-  error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/market/stock_analysis_tab.dart:228:44 • undefined_getter
   error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/reports/market_report_screen.dart:261:50 • undefined_getter
   error • The getter 'ltr' isn't defined for the type 'TextDirection'. Try importing the library that defines 'ltr', correcting the name to the name of an existing getter, or defining a getter or field named 'ltr' • lib/features/wallet/wallet_history_screen.dart:149:40 • undefined_getter
 
-8 issues found. (ran in 8.1s)
+2 issues found. (ran in 7.9s)
