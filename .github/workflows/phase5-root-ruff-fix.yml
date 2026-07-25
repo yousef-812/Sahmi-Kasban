@@ -1,0 +1,39 @@
+name: Phase 5 Root Ruff Fix
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  root-ruff-fix:
+    if: github.head_ref == 'agent/phase-5-monetization'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Match permanent CI Ruff context and clean helpers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install -q 'ruff>=0.7'
+          python -m ruff check \
+            backend/app backend/tests backend/alembic/env.py backend/scripts \
+            backend/reusable_data_fetcher.py \
+            --config backend/pyproject.toml \
+            --fix
+          python -m ruff check \
+            backend/app backend/tests backend/alembic/env.py backend/scripts \
+            backend/reusable_data_fetcher.py \
+            --config backend/pyproject.toml
+          rm -f PHASE5_LINT_RESULT.txt
+          rm .github/workflows/phase5-root-ruff-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Match permanent CI Ruff import context'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
