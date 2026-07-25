@@ -5,11 +5,10 @@ import json
 import logging
 from datetime import UTC, datetime
 
-from reusable_data_fetcher import TradingViewConnector, get_tv_symbol
-
 from app.core.config import get_settings
 from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
+from reusable_data_fetcher import TradingViewConnector, get_tv_symbol
 
 logger = logging.getLogger(__name__)
 
