@@ -5,6 +5,7 @@ ROOT_DIR="${GITHUB_WORKSPACE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 PIP_CACHE_DIR="${PIP_CACHE_DIR:-$ROOT_DIR/.github/.cache/pip}"
 CI_RESULTS_DIR="${CI_RESULTS_DIR:-$ROOT_DIR/.github/.ci-results}"
 SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-$CI_RESULTS_DIR/summary.md}"
+RUN_MODE="${RUN_MODE:-tests}"
 
 mkdir -p "$PIP_CACHE_DIR" "$CI_RESULTS_DIR"
 export PIP_CACHE_DIR
@@ -38,7 +39,16 @@ run_check() {
   return "$status"
 }
 
+case "$RUN_MODE" in
+  lint|tests) ;;
+  *)
+    echo "Unsupported RUN_MODE: $RUN_MODE" >&2
+    exit 2
+    ;;
+esac
+
 printf "## Sahmi Kasban repository-local CI\n\n" > "$SUMMARY_FILE"
+printf "Mode: \`%s\`\n\n" "$RUN_MODE" >> "$SUMMARY_FILE"
 printf "Cache directory: \`%s\`\n\n" "$PIP_CACHE_DIR" >> "$SUMMARY_FILE"
 
 python - <<'PY'
@@ -54,23 +64,30 @@ run_check "Install Python dependencies" "install.log" \
 run_check "Install project packages" "install-project.log" \
   python -m pip install --quiet -e ".[dev]" -e "backend[dev]"
 
-run_check "Core compile" "core-compile.log" \
-  python -m compileall -q src tests
-run_check "Core Ruff" "core-ruff.log" \
-  python -m ruff check src tests --output-format concise
+if [[ "$RUN_MODE" == "lint" ]]; then
+  run_check "Core compile" "core-compile.log" \
+    python -m compileall -q src tests
+  run_check "Core Ruff" "core-ruff.log" \
+    python -m ruff check src tests --output-format concise
+
+  run_check "Backend compile" "backend-compile.log" \
+    python -m compileall -q \
+      backend/app backend/tests backend/alembic backend/scripts \
+      backend/reusable_data_fetcher.py
+  run_check "Backend Ruff" "backend-ruff.log" \
+    python -m ruff check \
+      backend/app backend/tests backend/alembic/env.py backend/scripts \
+      backend/reusable_data_fetcher.py \
+      --config backend/pyproject.toml \
+      --output-format concise
+
+  printf "\nLint logs were written under \`%s\`.\n" "$CI_RESULTS_DIR" >> "$SUMMARY_FILE"
+  echo "Repository-local lint completed successfully."
+  exit 0
+fi
+
 run_check "Core tests" "core-tests.log" \
   python -m pytest -q tests
-
-run_check "Backend compile" "backend-compile.log" \
-  python -m compileall -q \
-    backend/app backend/tests backend/alembic backend/scripts \
-    backend/reusable_data_fetcher.py
-run_check "Backend Ruff" "backend-ruff.log" \
-  python -m ruff check \
-    backend/app backend/tests backend/alembic/env.py backend/scripts \
-    backend/reusable_data_fetcher.py \
-    --config backend/pyproject.toml \
-    --output-format concise
 run_check "Backend tests" "backend-tests.log" \
   python -m pytest -q backend/tests
 
@@ -88,5 +105,5 @@ else
   printf -- "- ⏭️ TradingView live COMI smoke skipped\n" >> "$SUMMARY_FILE"
 fi
 
-printf "\nAll logs were written under \`%s\` during this job.\n" "$CI_RESULTS_DIR" >> "$SUMMARY_FILE"
-echo "Repository-local CI completed successfully."
+printf "\nTest logs were written under \`%s\`.\n" "$CI_RESULTS_DIR" >> "$SUMMARY_FILE"
+echo "Repository-local tests completed successfully."
