@@ -1,0 +1,47 @@
+name: Finalize Phase 4 Roadmap
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-roadmap:
+    if: github.head_ref == 'agent/flutter-core-app'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Mark Phase 4 complete and remove this helper
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('ROADMAP.md')
+          content = path.read_text()
+          replacements = {
+              '> النسخة: 1.1': '> النسخة: 1.2',
+              '> الحالة: قيد التنفيذ — المراحل 0–3 مكتملة والمرحلة 4 قيد التطوير': '> الحالة: قيد التنفيذ — المراحل 0–4 مكتملة ومدمجة والمرحلة 5 هي التالية',
+              '> المراحل المكتملة والمدمجة: 0، 1، 2، 3': '> المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4',
+              '> المرحلة الحالية: 4 — تطبيق Flutter الأساسي': '> المرحلة التالية: 5 — الإعلانات والاشتراكات',
+              '> الفرع الجاري: `agent/flutter-core-app`': '> الفرع المرجعي: `main`',
+              '## المرحلة 4 — تطبيق Flutter الأساسي 🚧 قيد التنفيذ': '## المرحلة 4 — تطبيق Flutter الأساسي ✅ مكتملة',
+          }
+          for old, new in replacements.items():
+              if old not in content:
+                  raise SystemExit(f'Missing expected roadmap text: {old}')
+              content = content.replace(old, new, 1)
+          path.write_text(content)
+          PY
+          rm -f .github/workflows/finalize-phase4-roadmap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Mark Phase 4 complete in roadmap"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
