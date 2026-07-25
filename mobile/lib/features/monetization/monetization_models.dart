@@ -171,12 +171,14 @@ class RewardedAdSessionModel {
     required this.adUnitId,
     required this.customData,
     required this.expiresAt,
+    required this.testMode,
   });
 
   final String sessionId;
   final String adUnitId;
   final String customData;
   final DateTime expiresAt;
+  final bool testMode;
 
   factory RewardedAdSessionModel.fromJson(Map<String, dynamic> json) {
     return RewardedAdSessionModel(
@@ -184,6 +186,29 @@ class RewardedAdSessionModel {
       adUnitId: json['ad_unit_id'] as String,
       customData: json['custom_data'] as String,
       expiresAt: DateTime.parse(json['expires_at'] as String),
+      testMode: json['test_mode'] as bool? ?? false,
+    );
+  }
+}
+
+class RewardedAdSimulationResultModel {
+  const RewardedAdSimulationResultModel({
+    required this.idempotent,
+    required this.balancePoints,
+    required this.balanceCoins,
+  });
+
+  final bool idempotent;
+  final int balancePoints;
+  final String balanceCoins;
+
+  factory RewardedAdSimulationResultModel.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return RewardedAdSimulationResultModel(
+      idempotent: json['idempotent'] as bool,
+      balancePoints: json['balance_points'] as int,
+      balanceCoins: json['balance_coins'] as String,
     );
   }
 }
