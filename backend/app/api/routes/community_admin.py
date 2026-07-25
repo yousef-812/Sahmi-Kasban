@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Never
+from typing import Annotated, Never
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -28,6 +28,10 @@ from app.services.community_admin import (
 )
 
 router = APIRouter(prefix="/admin/community", tags=["community-admin"])
+AdminDiscussionStatusQuery = Annotated[
+    DiscussionStatus | None,
+    Query(),
+]
 
 
 def _discussion_response(view: DiscussionView) -> DiscussionResponse:
@@ -85,7 +89,7 @@ def _raise_admin_error(exc: Exception) -> Never:
 def admin_discussion_queue(
     db: DatabaseSession,
     _admin: CurrentAdmin,
-    discussion_status: DiscussionStatus | None = Query(default="pending_review"),
+    discussion_status: AdminDiscussionStatusQuery = "pending_review",
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> AdminDiscussionListResponse:
