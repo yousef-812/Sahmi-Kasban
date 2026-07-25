@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 DiscussionPeriod = Literal["next_session", "week", "month"]
 DiscussionStatus = Literal["pending_review", "published", "rejected", "hidden"]
+AppealStatus = Literal["open", "accepted", "rejected"]
 ReportReason = Literal[
     "spam",
     "abuse",
@@ -17,6 +18,7 @@ ReportReason = Literal[
     "other",
 ]
 AdminDiscussionAction = Literal["approve", "reject", "hide", "restore"]
+AdminAppealDecision = Literal["accept", "reject"]
 PredictionDirection = Literal["up", "down", "neutral"]
 
 
@@ -99,6 +101,43 @@ class UserMuteResponse(BaseModel):
     idempotent: bool
 
 
+class DiscussionAppealCreateRequest(BaseModel):
+    message: str = Field(min_length=20, max_length=2000)
+
+    @field_validator("message")
+    @classmethod
+    def normalize_message(cls, value: str) -> str:
+        cleaned = value.strip()
+        if len(cleaned) < 20:
+            raise ValueError("Appeal message must contain at least 20 characters")
+        return cleaned
+
+
+class DiscussionAppealResponse(BaseModel):
+    id: UUID
+    discussion_id: UUID
+    user_id: UUID
+    source_status: Literal["rejected", "hidden"]
+    message: str
+    status: AppealStatus
+    created_at: datetime
+    resolved_at: datetime | None
+    resolution_reason_code: str | None
+    resolution_details: dict
+
+
+class DiscussionAppealSubmissionResponse(BaseModel):
+    appeal: DiscussionAppealResponse
+    idempotent: bool
+
+
+class DiscussionAppealListResponse(BaseModel):
+    items: list[DiscussionAppealResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(gt=0)
+    offset: int = Field(ge=0)
+
+
 class AdminPredictionInput(BaseModel):
     direction: PredictionDirection
     target_price: float | None = Field(default=None, gt=0)
@@ -162,6 +201,47 @@ class AdminDiscussionResponse(BaseModel):
 
 class AdminDiscussionListResponse(BaseModel):
     items: list[AdminDiscussionResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(gt=0)
+    offset: int = Field(ge=0)
+
+
+class AdminAppealResolveRequest(BaseModel):
+    decision: AdminAppealDecision
+    reason_code: str | None = Field(default=None, min_length=2, max_length=64)
+    details: str = Field(default="", max_length=1000)
+    prediction: AdminPredictionInput | None = None
+
+    @field_validator("reason_code")
+    @classmethod
+    def normalize_appeal_reason(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip().lower()
+        return cleaned or None
+
+    @field_validator("details")
+    @classmethod
+    def normalize_appeal_details(cls, value: str) -> str:
+        return value.strip()
+
+    @model_validator(mode="after")
+    def validate_rejection_reason(self) -> AdminAppealResolveRequest:
+        if self.decision == "reject" and not self.reason_code:
+            raise ValueError("Rejecting an appeal requires a reason code")
+        return self
+
+
+class AdminAppealResponse(BaseModel):
+    appeal: DiscussionAppealResponse
+    discussion: DiscussionResponse
+    charged_points: int = Field(ge=0)
+    charged_coins: str
+    idempotent: bool
+
+
+class AdminAppealListResponse(BaseModel):
+    items: list[AdminAppealResponse]
     total: int = Field(ge=0)
     limit: int = Field(gt=0)
     offset: int = Field(ge=0)
