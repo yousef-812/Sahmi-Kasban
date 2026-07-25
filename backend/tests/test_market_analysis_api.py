@@ -172,7 +172,6 @@ def test_analysis_charges_after_success_then_reuses_cache_for_free(
     assert second_payload["balance_points"] == 250
     assert provider.calls == 1
 
-    assert db_session.scalar(select(StockAnalysis).count()) is None
     analyses = db_session.scalars(select(StockAnalysis)).all()
     snapshots = db_session.scalars(select(MarketDataSnapshot)).all()
     debits = db_session.scalars(
