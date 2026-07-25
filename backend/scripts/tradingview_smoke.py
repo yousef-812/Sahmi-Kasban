@@ -18,6 +18,8 @@ async def main() -> None:
     price = data["price"]
     fundamentals = data["fundamentals"]
 
+    if data["errors"]:
+        raise RuntimeError(f"Fetcher reported errors: {data['errors']}")
     if len(historical) < 200:
         raise RuntimeError(
             f"TradingView returned only {len(historical)} COMI candles"
@@ -25,6 +27,8 @@ async def main() -> None:
     last_close = float(historical[-1]["close"])
     if last_close <= 0:
         raise RuntimeError("TradingView returned a non-positive COMI close")
+    if float(price.get("price") or 0) <= 0:
+        raise RuntimeError("TradingView returned no usable COMI price")
     if indicators.get("rsi") is None:
         raise RuntimeError("Technical indicators were not calculated")
 
@@ -32,7 +36,7 @@ async def main() -> None:
         json.dumps(
             {
                 "status": "ok",
-                "symbol": data["symbol"],
+                "ticker": data["ticker"],
                 "market": data["market"],
                 "price": price.get("price"),
                 "price_source": price.get("source"),
@@ -42,7 +46,6 @@ async def main() -> None:
                 "last_volume": float(historical[-1]["volume"]),
                 "rsi": indicators.get("rsi"),
                 "macd": indicators.get("macd"),
-                "trend": indicators.get("trend"),
                 "company_name": fundamentals.get("company_name"),
                 "market_cap": fundamentals.get("market_cap"),
             },
