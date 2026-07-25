@@ -78,6 +78,21 @@ All 12 backend failures had the same cause: `jwt.exceptions.InvalidKeyError: HMA
 
 A fresh local `ruff check` and `pytest` run is required to identify any remaining import-only findings and confirm that all 38 backend tests now pass.
 
+## Repository-local GitHub Action experiment
+
+At the repository owner's request, CI storage and execution logic were moved into the repository itself:
+
+- Added `.github/actions/repository-ci/action.yml`.
+- Added `.github/actions/repository-ci/run.sh`.
+- Replaced five separate jobs with one `repository-ci` job.
+- Removed `astral-sh/ruff-action`.
+- Removed `actions/setup-python` and its external pip cache integration.
+- Stored pip downloads under `.github/.cache/pip` during the job.
+- Stored check logs under `.github/.ci-results` during the job.
+- Added both generated directories to `.gitignore`.
+
+Workflow run `30158915914` still failed before `Checkout repository` or any other step was created. GitHub returned `steps: None` for the single `repository-ci` job. This proves the remaining GitHub Actions failure happens before repository code, the local action, cache, or logs can run. The likely remaining causes are GitHub Actions account/repository availability, hosted-runner allocation, billing/minute limits, or an account-level Actions restriction.
+
 ## Storage incident
 
-The earlier connector error (`No shard mapper found ... tmp_high_replication_nanobase_backfill`) was a transient internal storage failure while replacing a long Markdown file. Repository reads and small writes now work. The live result is stored in this separate short log to avoid repeatedly replacing the larger migration log through that unstable path.
+The earlier connector error (`No shard mapper found ... tmp_high_replication_nanobase_backfill`) was a transient internal storage failure while replacing a long Markdown file. Repository reads and writes now work. The live result and CI experiments are stored in this separate log to avoid repeatedly replacing the larger migration log through that previously unstable path.
