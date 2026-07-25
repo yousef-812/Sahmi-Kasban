@@ -11,8 +11,8 @@ final walletSummaryProvider = FutureProvider.autoDispose<WalletSummary>((ref) {
 
 final latestReportPreviewProvider =
     FutureProvider.autoDispose<MarketReportPreview?>((ref) {
-      return ref.watch(backendRepositoryProvider).getLatestReportPreview();
-    });
+  return ref.watch(backendRepositoryProvider).getLatestReportPreview();
+});
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -95,8 +95,8 @@ class _HomeTab extends ConsumerWidget {
           Text(
             'الأسهم الأعلى تقييمًا وفق التحليل الآلي للجلسة القادمة',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
           const SizedBox(height: 22),
           preview.when(
@@ -142,8 +142,8 @@ class _ReportPreviewCard extends StatelessWidget {
                   child: Text(
                     'تقرير جلسة ${target.day}/${target.month}/${target.year}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
                 ),
               ],
@@ -292,9 +292,9 @@ class _WalletTab extends ConsumerWidget {
                     Text(
                       '${summary.balanceCoins} عملة',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                            fontWeight: FontWeight.w900,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                     ),
                     const SizedBox(height: 14),
                     Text('الخطة: ${summary.planCode}'),

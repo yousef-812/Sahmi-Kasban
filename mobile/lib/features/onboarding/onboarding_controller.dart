@@ -25,5 +25,5 @@ class OnboardingController extends StateNotifier<AsyncValue<bool>> {
 
 final onboardingControllerProvider =
     StateNotifierProvider<OnboardingController, AsyncValue<bool>>((ref) {
-      return OnboardingController();
-    });
+  return OnboardingController();
+});

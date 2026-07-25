@@ -32,9 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
     setState(() => _submitting = true);
     try {
-      await ref
-          .read(sessionControllerProvider.notifier)
-          .login(
+      await ref.read(sessionControllerProvider.notifier).login(
             email: _emailController.text,
             password: _passwordController.text,
           );
@@ -144,13 +142,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     setState(() => _submitting = true);
     try {
-      final result = await ref
-          .read(sessionControllerProvider.notifier)
-          .register(
-            email: _emailController.text,
-            password: _passwordController.text,
-            displayName: _nameController.text,
-          );
+      final result =
+          await ref.read(sessionControllerProvider.notifier).register(
+                email: _emailController.text,
+                password: _passwordController.text,
+                displayName: _nameController.text,
+              );
       if (!mounted) {
         return;
       }
@@ -284,17 +281,17 @@ class _AuthScaffold extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     subtitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      height: 1.6,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                          height: 1.6,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                   const SizedBox(height: 28),
                   child,

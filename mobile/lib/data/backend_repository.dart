@@ -10,8 +10,8 @@ class BackendRepository {
   BackendRepository({
     required ApiClient apiClient,
     required TokenStore tokenStore,
-  }) : _apiClient = apiClient,
-       _tokenStore = tokenStore;
+  })  : _apiClient = apiClient,
+        _tokenStore = tokenStore;
 
   final ApiClient _apiClient;
   final TokenStore _tokenStore;
