@@ -9,11 +9,13 @@ from app.models.entities import (
     User,
     WalletEntry,
 )
+from app.models.market_data import MarketDataSnapshot
 
 __all__ = [
     "AccountToken",
     "AuthSession",
     "Discussion",
+    "MarketDataSnapshot",
     "MarketReport",
     "MarketReportItem",
     "PredictionVerification",
