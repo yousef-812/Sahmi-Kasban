@@ -9,12 +9,11 @@ from functools import lru_cache
 from typing import Any
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.ai import SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
@@ -53,6 +52,9 @@ def _json_default(value: Any) -> object:
     item = getattr(value, "item", None)
     if callable(item):
         return item()
+    tolist = getattr(value, "tolist", None)
+    if callable(tolist):
+        return tolist()
     raise TypeError(f"Unsupported JSON value: {type(value).__name__}")
 
 
@@ -162,7 +164,7 @@ async def execute_stock_analysis(
             language=language,
         )
         explanation_source = "ai"
-    except AIProviderError as exc:
+    except Exception as exc:
         logger.info("AI explanation fallback for %s: %s", series.ticker, exc)
 
     payload = {
