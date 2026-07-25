@@ -11,6 +11,7 @@ def test_foundational_tables_are_registered() -> None:
         "subscriptions",
         "auth_sessions",
         "account_tokens",
+        "market_data_snapshots",
         "market_reports",
         "market_report_items",
         "stock_analyses",
