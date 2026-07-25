@@ -72,6 +72,15 @@ class Settings(BaseSettings):
     analysis_max_position_value: float = 40_000.0
     analysis_engine_version: str = "core-v1"
 
+    egx_holidays: str = ""
+    daily_scan_hour: int = 17
+    daily_scan_minute: int = 0
+    daily_scan_max_concurrency: int = 4
+    daily_scan_min_average_turnover_egp: float = 1_000_000.0
+    daily_scan_min_nonzero_volume_ratio: float = 0.80
+    daily_report_size: int = 10
+    daily_report_cost_points: int = 100
+
     @model_validator(mode="after")
     def validate_sensitive_settings(self) -> Settings:
         if self.app_env in {Environment.STAGING, Environment.PRODUCTION}:
@@ -109,6 +118,22 @@ class Settings(BaseSettings):
             )
         if self.analysis_max_position_value <= 0:
             raise ValueError("ANALYSIS_MAX_POSITION_VALUE must be positive")
+        if not 0 <= self.daily_scan_hour <= 23:
+            raise ValueError("DAILY_SCAN_HOUR must be between 0 and 23")
+        if not 0 <= self.daily_scan_minute <= 59:
+            raise ValueError("DAILY_SCAN_MINUTE must be between 0 and 59")
+        if not 1 <= self.daily_scan_max_concurrency <= 20:
+            raise ValueError("DAILY_SCAN_MAX_CONCURRENCY must be between 1 and 20")
+        if self.daily_scan_min_average_turnover_egp < 0:
+            raise ValueError("DAILY_SCAN_MIN_AVERAGE_TURNOVER_EGP cannot be negative")
+        if not 0 <= self.daily_scan_min_nonzero_volume_ratio <= 1:
+            raise ValueError(
+                "DAILY_SCAN_MIN_NONZERO_VOLUME_RATIO must be between 0 and 1"
+            )
+        if not 1 <= self.daily_report_size <= 10:
+            raise ValueError("DAILY_REPORT_SIZE must be between 1 and 10")
+        if self.daily_report_cost_points <= 0:
+            raise ValueError("DAILY_REPORT_COST_POINTS must be positive")
         return self
 
     @property
