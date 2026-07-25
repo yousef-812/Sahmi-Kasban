@@ -4,13 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sahmi-kasban-api"
-version = "0.4.0"
+version = "0.5.0"
 description = "FastAPI backend for Sahmi Kasban"
 requires-python = ">=3.11"
 dependencies = [
   "alembic>=1.13",
+  "cryptography>=44",
   "email-validator>=2.2",
   "fastapi>=0.115",
+  "google-auth[requests]>=2.38",
   "httpx>=0.27",
   "numpy>=1.26",
   "pandas>=2.2",
