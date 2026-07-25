@@ -87,9 +87,9 @@ if [[ "$RUN_MODE" == "lint" ]]; then
 fi
 
 run_check "Core tests" "core-tests.log" \
-  python -m pytest -q tests
+  python -m pytest -q --tb=short tests
 run_check "Backend tests" "backend-tests.log" \
-  python -m pytest -q backend/tests
+  python -m pytest -q --tb=short backend/tests
 
 run_check "Alembic upgrade" "alembic-upgrade.log" \
   bash -lc "cd backend && python -m alembic upgrade head"

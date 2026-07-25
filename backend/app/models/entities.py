@@ -127,6 +127,26 @@ class StockAnalysis(TimestampMixin, Base):
 
 class Discussion(TimestampMixin, Base):
     __tablename__ = "discussions"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "submission_key",
+            name="uq_discussions_user_submission",
+        ),
+        UniqueConstraint(
+            "user_id",
+            "content_fingerprint",
+            name="uq_discussions_user_content_fingerprint",
+        ),
+        CheckConstraint(
+            "period_type IN ('next_session', 'week', 'month')",
+            name="discussion_period_type_allowed",
+        ),
+        CheckConstraint(
+            "status IN ('pending_review', 'published', 'rejected', 'hidden')",
+            name="discussion_status_allowed",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
@@ -139,10 +159,27 @@ class Discussion(TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(180), nullable=False)
     content: Mapped[str] = mapped_column(String(5000), nullable=False)
     period_type: Mapped[str] = mapped_column(String(24), nullable=False)
-    status: Mapped[str] = mapped_column(String(24), default="pending_review", index=True)
+    status: Mapped[str] = mapped_column(
+        String(24),
+        default="pending_review",
+        index=True,
+        nullable=False,
+    )
+    submission_key: Mapped[str | None] = mapped_column(String(64))
+    content_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    wallet_hold_transaction_id: Mapped[str | None] = mapped_column(
+        String(120),
+        unique=True,
+    )
     moderation_result: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     frozen_prediction: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    rejection_code: Mapped[str | None] = mapped_column(String(64))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+    )
+    hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class PredictionVerification(TimestampMixin, Base):

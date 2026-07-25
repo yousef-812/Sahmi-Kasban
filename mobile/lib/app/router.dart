@@ -6,6 +6,9 @@ import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
 import '../features/bootstrap/splash_screen.dart';
+import '../features/community/community_create_screen.dart';
+import '../features/community/community_detail_screen.dart';
+import '../features/community/my_discussions_screen.dart';
 import '../features/home/dashboard_screen.dart';
 import '../features/monetization/monetization_page.dart';
 import '../features/onboarding/onboarding_controller.dart';
@@ -65,6 +68,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/monetization',
         builder: (context, state) => const MonetizationPage(),
+      ),
+      GoRoute(
+        path: '/community/new',
+        builder: (context, state) => const CommunityCreateScreen(),
+      ),
+      GoRoute(
+        path: '/community/mine',
+        builder: (context, state) => const MyDiscussionsScreen(),
+      ),
+      GoRoute(
+        path: '/community/:discussionId',
+        builder: (context, state) => CommunityDetailScreen(
+          discussionId: state.pathParameters['discussionId']!,
+        ),
       ),
       GoRoute(
         path: '/reports/:reportId',
