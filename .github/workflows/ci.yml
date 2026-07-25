@@ -37,6 +37,7 @@ jobs:
           cd ..
           rm -f .github/workflows/phase5-flutter-preflight.yml
           rm -f .github/scripts/phase5_preflight.py
+          git fetch origin main --depth=1
           git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
