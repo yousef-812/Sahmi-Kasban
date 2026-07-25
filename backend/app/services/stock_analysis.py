@@ -23,7 +23,7 @@ from app.services.wallet import (
     get_wallet_account,
 )
 from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import SahmiAIService
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +164,7 @@ async def execute_stock_analysis(
             language=language,
         )
         explanation_source = "ai"
-    except Exception as exc:
+    except AIProviderError as exc:
         logger.info("AI explanation fallback for %s: %s", series.ticker, exc)
 
     payload = {
