@@ -10,8 +10,6 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -29,6 +27,8 @@ from app.models import (
 )
 from app.services.stock_analysis import DISCLAIMER_AR
 from app.services.wallet import debit_points, get_wallet_account
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 logger = logging.getLogger(__name__)
 

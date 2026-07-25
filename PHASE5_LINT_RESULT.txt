@@ -1,9 +1,0 @@
-backend/alembic/env.py:1:1: I001 [*] Import block is un-sorted or un-formatted
-backend/app/api/routes/market.py:1:1: I001 [*] Import block is un-sorted or un-formatted
-backend/app/services/daily_reports.py:1:1: I001 [*] Import block is un-sorted or un-formatted
-backend/app/services/stock_analysis.py:1:1: I001 [*] Import block is un-sorted or un-formatted
-backend/tests/test_market_analysis_api.py:1:1: I001 [*] Import block is un-sorted or un-formatted
-Found 5 errors.
-[*] 5 fixable with the `--fix` option.
-
-exit_code=1
