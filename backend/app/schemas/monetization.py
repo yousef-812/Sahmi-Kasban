@@ -52,6 +52,17 @@ class RewardedAdSessionResponse(BaseModel):
     ad_unit_id: str
     custom_data: str
     expires_at: datetime
+    test_mode: bool
+
+
+class RewardedAdSimulationRequest(BaseModel):
+    custom_data: str = Field(min_length=20, max_length=256)
+
+
+class RewardedAdSimulationResponse(BaseModel):
+    idempotent: bool
+    balance_points: int = Field(ge=0)
+    balance_coins: str
 
 
 class GooglePlayPurchaseRequest(BaseModel):
