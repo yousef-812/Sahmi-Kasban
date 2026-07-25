@@ -210,8 +210,77 @@ def upgrade() -> None:
         ["action"],
     )
 
+    op.create_table(
+        "community_admin_events",
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("actor_user_id", sa.Uuid(), nullable=True),
+        sa.Column("target_user_id", sa.Uuid(), nullable=True),
+        sa.Column("discussion_id", sa.Uuid(), nullable=True),
+        sa.Column("action", sa.String(length=40), nullable=False),
+        sa.Column("reason_code", sa.String(length=64), nullable=True),
+        sa.Column("details", sa.JSON(), nullable=False),
+        *_timestamps(),
+        sa.ForeignKeyConstraint(
+            ["actor_user_id"],
+            ["users.id"],
+            name="fk_community_admin_events_actor_user_id_users",
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["target_user_id"],
+            ["users.id"],
+            name="fk_community_admin_events_target_user_id_users",
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["discussion_id"],
+            ["discussions.id"],
+            name="fk_community_admin_events_discussion_id_discussions",
+            ondelete="SET NULL",
+        ),
+        sa.PrimaryKeyConstraint("id", name="pk_community_admin_events"),
+    )
+    op.create_index(
+        "ix_community_admin_events_actor_user_id",
+        "community_admin_events",
+        ["actor_user_id"],
+    )
+    op.create_index(
+        "ix_community_admin_events_target_user_id",
+        "community_admin_events",
+        ["target_user_id"],
+    )
+    op.create_index(
+        "ix_community_admin_events_discussion_id",
+        "community_admin_events",
+        ["discussion_id"],
+    )
+    op.create_index(
+        "ix_community_admin_events_action",
+        "community_admin_events",
+        ["action"],
+    )
+
 
 def downgrade() -> None:
+    op.drop_index(
+        "ix_community_admin_events_action",
+        table_name="community_admin_events",
+    )
+    op.drop_index(
+        "ix_community_admin_events_discussion_id",
+        table_name="community_admin_events",
+    )
+    op.drop_index(
+        "ix_community_admin_events_target_user_id",
+        table_name="community_admin_events",
+    )
+    op.drop_index(
+        "ix_community_admin_events_actor_user_id",
+        table_name="community_admin_events",
+    )
+    op.drop_table("community_admin_events")
+
     op.drop_index(
         "ix_discussion_moderation_events_action",
         table_name="discussion_moderation_events",
