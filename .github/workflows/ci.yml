@@ -66,7 +66,6 @@ jobs:
         run: bash .github/actions/repository-ci/run.sh
 
   flutter-checks:
-    if: ${{ github.event_name != 'pull_request' || github.head_ref != 'agent/phase-5-monetization' }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -110,42 +109,3 @@ jobs:
         run: >-
           $FLUTTER_HOME/bin/flutter build apk --debug
           --dart-define=API_BASE_URL=https://example.invalid
-
-  phase5-apk-diagnostic:
-    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/phase-5-monetization' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    permissions:
-      contents: write
-    env:
-      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter-phase5-apk
-      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub-phase5-apk
-    steps:
-      - name: Checkout Phase 5 branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          show-progress: false
-      - name: Capture Android build output
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git clone -q --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
-          cd mobile
-          "$FLUTTER_HOME/bin/flutter" pub get >/dev/null
-          set +e
-          "$FLUTTER_HOME/bin/flutter" build apk --debug \
-            --dart-define=API_BASE_URL=https://example.invalid \
-            > ../PHASE5_ANDROID_BUILD_FULL.log 2>&1
-          status=$?
-          set -e
-          cd ..
-          tail -n 180 PHASE5_ANDROID_BUILD_FULL.log > PHASE5_ANDROID_BUILD_TEMP.txt
-          printf '\nexit_code=%s\n' "$status" >> PHASE5_ANDROID_BUILD_TEMP.txt
-          rm PHASE5_ANDROID_BUILD_FULL.log
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add PHASE5_ANDROID_BUILD_TEMP.txt
-          git commit -m "Capture Phase 5 Android build result"
-          git push origin "HEAD:${GITHUB_HEAD_REF}"
-          exit "$status"
