@@ -1,0 +1,101 @@
+name: Phase 6 Roadmap Finalizer
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-roadmap:
+    if: github.head_ref == 'agent/phase-6-community-core'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Mark Phase 6 complete and remove helper
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('ROADMAP.md')
+          text = path.read_text()
+
+          old_header = '''> النسخة: 1.4  
+          > الحالة: قيد التنفيذ — المراحل 0–5 مكتملة ومدمجة، والمرحلة 6 جارية داخل Draft PR #15  
+          > النطاق: تطبيق Flutter + Backend Python + PostgreSQL + محركات التحليل + الذكاء الاصطناعي + المجتمع + تحقيق الدخل
+          > آخر تحديث تنفيذي: 2026-07-26  
+          > المراحل المكتملة والمدمجة: 0، 1، 2، 3، 4، 5  
+          > المرحلة الحالية: 6 — المجتمع والمناقشات  
+          > الفرع المرجعي: `agent/phase-6-community-core`  
+          > بوابة الدمج: استكمال واجهات Flutter واختباراتها ثم نجاح CI النهائي
+          '''
+          new_header = '''> النسخة: 1.5  
+          > الحالة: المرحلة 6 مكتملة ومتحققة على PR #15، والمرحلة 7 هي التالية  
+          > النطاق: تطبيق Flutter + Backend Python + PostgreSQL + محركات التحليل + الذكاء الاصطناعي + المجتمع + تحقيق الدخل
+          > آخر تحديث تنفيذي: 2026-07-26  
+          > المراحل المكتملة والمدمجة قبل PR #15: 0، 1، 2، 3، 4، 5  
+          > المرحلة المكتملة على PR #15: 6 — المجتمع والمناقشات  
+          > المرحلة التالية: 7 — تقييم التوقعات والمكافآت  
+          > بوابة التحقق الأخيرة: Workflow `30179575341` — Lint وBackend/PostgreSQL/Alembic وFlutter وAPK كلها خضراء
+          '''
+          if old_header not in text:
+              raise SystemExit('Roadmap header block not found')
+          text = text.replace(old_header, new_header, 1)
+
+          text = text.replace(
+              '## المرحلة 6 — المجتمع والمناقشات 🚧 قيد التنفيذ',
+              '## المرحلة 6 — المجتمع والمناقشات ✅ مكتملة',
+              1,
+          )
+          text = text.replace(
+              '### المنجز على Draft PR #15',
+              '### المنجز على PR #15',
+              1,
+          )
+          text = text.replace(
+              '### المتبقي قبل الدمج',
+              '### واجهات Flutter والتحقق النهائي',
+              1,
+          )
+
+          phase6_items = {
+              '- [ ] صفحة Community Feed بالعربية وRTL مع فلتر السهم والتحديث والسحب لإعادة التحميل.': '- [x] صفحة Community Feed بالعربية وRTL مع فلتر السهم والتحديث والسحب لإعادة التحميل.',
+              '- [ ] صفحة تفاصيل المناقشة والإبلاغ والكتم وإلغاء الكتم.': '- [x] صفحة تفاصيل المناقشة والإبلاغ والكتم وإلغاء الكتم.',
+              '- [ ] نموذج إنشاء المناقشة بمفتاح إرسال ثابت وتنبيه حجز 0.5 عملة.': '- [x] نموذج إنشاء المناقشة بمفتاح إرسال ثابت وتنبيه حجز 0.5 عملة.',
+              '- [ ] صفحة مناقشاتي وحالات المراجعة والرفض والإخفاء.': '- [x] صفحة مناقشاتي وحالات المراجعة والرفض والإخفاء.',
+              '- [ ] واجهة إنشاء الاستئناف وعرض حالته.': '- [x] واجهة إنشاء الاستئناف وعرض حالته.',
+              '- [ ] تحديث الرصيد بعد العمليات المالية واختبارات Widget/Repository النهائية.': '- [x] تحديث الرصيد بعد العمليات المالية واختبارات Widget/Repository النهائية.',
+              '- [ ] Flutter format/analyze/tests وبناء Android debug APK ثم إزالة Draft والدمج.': '- [x] Flutter format/analyze/tests وبناء Android debug APK نجحت في Workflow `30179575341`.',
+              '- [ ] رحلة Flutter كاملة من Feed حتى الإنشاء والاستئناف.': '- [x] رحلة Flutter كاملة من Feed حتى الإنشاء والاستئناف.',
+              '- [ ] نجاح CI النهائي على آخر commit عادي قبل الدمج.': '- [x] نجاح CI النهائي على آخر commit عادي قبل الدمج — Workflow `30179575341`.',
+          }
+          for old, new in phase6_items.items():
+              if old not in text:
+                  raise SystemExit(f'Phase 6 item not found: {old}')
+              text = text.replace(old, new, 1)
+
+          old_component = '- [ ] المجتمع والمناقشات — Backend والإدارة والاستئنافات وطبقة Flutter للبيانات منفذة على Draft PR #15؛ واجهات Flutter والدمج النهائي متبقية.'
+          new_component = '- [x] المجتمع والمناقشات — Backend والمراجعة والإدارة والاستئنافات وواجهات Flutter واختباراتها مكتملة على PR #15.'
+          if old_component not in text:
+              raise SystemExit('Community component status not found')
+          text = text.replace(old_component, new_component, 1)
+          text = text.replace(
+              '- [ ] تقييم التوقعات — المرحلة 7 لم تبدأ.',
+              '- [ ] تقييم التوقعات والمكافآت — المرحلة 7 هي التالية بعد دمج PR #15.',
+              1,
+          )
+
+          path.write_text(text)
+          PY
+          rm .github/workflows/phase6-finalize-roadmap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Mark Phase 6 complete in roadmap'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
