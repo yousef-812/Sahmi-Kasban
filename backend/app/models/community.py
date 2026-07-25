@@ -99,3 +99,27 @@ class DiscussionModerationEvent(TimestampMixin, Base):
     action: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
     reason_code: Mapped[str | None] = mapped_column(String(64))
     details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class CommunityAdminEvent(TimestampMixin, Base):
+    __tablename__ = "community_admin_events"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    actor_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+    )
+    target_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+    )
+    discussion_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("discussions.id", ondelete="SET NULL"),
+        index=True,
+    )
+    action: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    reason_code: Mapped[str | None] = mapped_column(String(64))
+    details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
