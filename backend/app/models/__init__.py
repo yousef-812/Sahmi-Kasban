@@ -10,6 +10,7 @@ from app.models.entities import (
     WalletEntry,
 )
 from app.models.market_data import MarketDataSnapshot
+from app.models.market_reports import MarketReportUnlock, MarketScanRun
 
 __all__ = [
     "AccountToken",
@@ -18,6 +19,8 @@ __all__ = [
     "MarketDataSnapshot",
     "MarketReport",
     "MarketReportItem",
+    "MarketReportUnlock",
+    "MarketScanRun",
     "PredictionVerification",
     "StockAnalysis",
     "Subscription",
