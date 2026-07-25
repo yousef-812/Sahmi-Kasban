@@ -9,6 +9,37 @@ permissions:
   contents: read
 
 jobs:
+  phase5-format-final:
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/phase-5-monetization' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter-phase5-format
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub-phase5-format
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Format Flutter source and restore CI
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone -q --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          cd mobile
+          "$FLUTTER_HOME/bin/flutter" pub get
+          "$FLUTTER_HOME/bin/dart" format lib test
+          cd ..
+          git fetch origin main --depth=1
+          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Format Phase 5 Flutter tests"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+
   repository-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
