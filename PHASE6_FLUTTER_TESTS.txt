@@ -1,0 +1,81 @@
+Resolving dependencies...
+Downloading packages...
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_riverpod 2.6.1 (3.3.2 available)
+  flutter_secure_storage 9.2.4 (10.3.1 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.1 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.0.2 available)
+  flutter_secure_storage_web 1.2.1 (2.1.1 available)
+  flutter_secure_storage_windows 3.1.2 (4.2.2 available)
+  go_router 14.8.1 (17.3.0 available)
+  hooks 2.0.2 (2.1.0 available)
+  js 0.6.7 (0.7.2 available)
+  lints 5.1.1 (6.1.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.18.0 (1.19.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  record_use 0.6.0 (1.0.0 available)
+  riverpod 2.6.1 (3.3.2 available)
+  test_api 0.7.11 (0.7.13 available)
+  vector_math 2.2.0 (2.4.1 available)
+  win32 5.15.0 (6.3.0 available)
+Got dependencies!
+20 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/phase4_models_test.dart
+00:00 +0: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/phase4_models_test.dart: parses paginated wallet history
+00:00 +1: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/phase4_models_test.dart: parses paid analysis result and cached billing state
+00:00 +2: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/phase4_models_test.dart: parses unlocked Top 10 report and ranked items
+00:00 +3: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/phase4_models_test.dart: avatar options use generated WebP assets
+00:00 +4: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_repository_test.dart: loads filtered community page with pagination
+00:00 +5: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_repository_test.dart: maps 429 response and Retry-After header
+00:00 +6: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_repository_test.dart: extracts FastAPI validation messages from 422 response
+00:00 +7: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/token_store_test.dart: stores reads and clears the rotating token pair
+00:00 +8: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/widget_smoke_test.dart: generated avatar registry is complete and deterministic
+00:00 +9: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/widget_smoke_test.dart: structured data card renders and expands JSON payload
+00:01 +10: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/widget_smoke_test.dart: structured data card renders and expands JSON payload
+00:01 +11: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/widget_smoke_test.dart: structured data card renders and expands JSON payload
+00:01 +12: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/widget_smoke_test.dart: structured data card renders and expands JSON payload
+00:01 +13: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/domain_models_test.dart: TokenPair parses the backend token response
+00:01 +14: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/domain_models_test.dart: MarketReportPreview parses dates, cost, and market summary
+00:01 +15: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/domain_models_test.dart: RegistrationResult keeps the free weekly grant default
+00:02 +16: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/api_client_test.dart: ApiClient shares one refresh request across concurrent 401 responses
+00:02 +17: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/api_client_test.dart: ApiClient anonymous request does not read or attach an access token
+00:02 +18: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: community discussion card renders Arabic summary and ticker
+00:03 +19: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: community discussion card renders Arabic summary and ticker
+00:03 +20: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: community discussion card renders Arabic summary and ticker
+00:03 +21: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: community discussion card renders Arabic summary and ticker
+00:03 +22: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: community discussion card renders Arabic summary and ticker
+00:03 +23: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: discussion creation screen explains wallet hold
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "إرسال للمراجعة": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart:62:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart line 62
+The test description was:
+  discussion creation screen explains wallet hold
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:04 +23 -1: /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: discussion creation screen explains wallet hold [E]
+  Test failed. See exception logs above.
+  The test description was: discussion creation screen explains wallet hold
+  
+00:04 +23 -1: Some tests failed.
+
+Failing tests:
+  /home/runner/work/Sahmi-Kasban/Sahmi-Kasban/mobile/test/community_widgets_test.dart: discussion creation screen explains wallet hold
+
+exit_status=1
