@@ -8,7 +8,8 @@
 **Merge commit:** `be09cc4edab1b0d087cf3cb273b09b6083720966`  
 **Final validated branch commit:** `93da707d20fbf60c08e5319a55df62dd827ac0d7`  
 **Final workflow:** `30173768103`  
-**Status:** Completed and merged into `main`.
+**Roadmap finalization:** PR #13  
+**Status:** Completed and merged into `main`; roadmap header corrected to show Phase 5 as merged.
 
 ## Final repository gates
 
