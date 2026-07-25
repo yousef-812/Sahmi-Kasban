@@ -9,7 +9,23 @@ permissions:
   contents: read
 
 jobs:
-  repository-ci:
+  repository-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PIP_CACHE_DIR: ${{ github.workspace }}/.github/.cache/pip
+      CI_RESULTS_DIR: ${{ github.workspace }}/.github/.ci-results
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run repository-local lint
+        uses: ./.github/actions/repository-ci
+        with:
+          mode: lint
+
+  repository-tests:
+    needs: repository-lint
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -37,7 +53,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run checks stored inside the repository
+      - name: Run repository-local tests
         uses: ./.github/actions/repository-ci
         with:
+          mode: tests
           run-live-smoke: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/tradingview-provider' }}
