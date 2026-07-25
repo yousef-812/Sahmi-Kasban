@@ -3,7 +3,7 @@ from __future__ import annotations
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select, update
@@ -267,6 +267,7 @@ async def process_google_play_purchase(
     now = moment or datetime.now(UTC)
     active_cipher = cipher or PurchaseTokenCipher()
     purchase = BillingPurchase(
+        id=uuid4(),
         user_id=user_id,
         platform="google_play",
         product_id=product_id,
@@ -455,6 +456,7 @@ def _replace_active_subscription(
         .where(
             Subscription.user_id == user_id,
             Subscription.status == "active",
+            Subscription.plan_code != "free",
         )
         .values(status="replaced", expires_at=moment)
     )
