@@ -23,11 +23,13 @@ class CurrentPasswordInvalidError(RuntimeError):
 
 
 def get_active_subscription(db: Session, user_id: UUID) -> Subscription:
+    now = datetime.now(UTC)
     subscription = db.scalar(
         select(Subscription)
         .where(
             Subscription.user_id == user_id,
             Subscription.status == "active",
+            (Subscription.expires_at.is_(None) | (Subscription.expires_at > now)),
         )
         .order_by(Subscription.started_at.desc())
     )
