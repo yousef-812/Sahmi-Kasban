@@ -1,6 +1,7 @@
 from app.models.accounts import AccountToken, AuthSession, WalletAccount, WeeklyGrant
 from app.models.community import (
     CommunityAdminEvent,
+    DiscussionAppeal,
     DiscussionModerationEvent,
     DiscussionReport,
     UserMute,
@@ -25,6 +26,7 @@ __all__ = [
     "BillingPurchase",
     "CommunityAdminEvent",
     "Discussion",
+    "DiscussionAppeal",
     "DiscussionModerationEvent",
     "DiscussionReport",
     "MarketDataSnapshot",
