@@ -10,8 +10,8 @@ class BackendRepository {
   BackendRepository({
     required ApiClient apiClient,
     required TokenStore tokenStore,
-  })  : _apiClient = apiClient,
-        _tokenStore = tokenStore;
+  }) : _apiClient = apiClient,
+       _tokenStore = tokenStore;
 
   final ApiClient _apiClient;
   final TokenStore _tokenStore;
@@ -37,6 +37,40 @@ class BackendRepository {
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
+  }
+
+  Future<String> verifyEmail(String token) {
+    return _anonymousMessage(
+      path: '/auth/verify-email',
+      data: <String, dynamic>{'token': token.trim()},
+    );
+  }
+
+  Future<String> resendVerification(String email) {
+    return _anonymousMessage(
+      path: '/auth/resend-verification',
+      data: <String, dynamic>{'email': email.trim()},
+    );
+  }
+
+  Future<String> forgotPassword(String email) {
+    return _anonymousMessage(
+      path: '/auth/forgot-password',
+      data: <String, dynamic>{'email': email.trim()},
+    );
+  }
+
+  Future<String> resetPassword({
+    required String token,
+    required String newPassword,
+  }) {
+    return _anonymousMessage(
+      path: '/auth/reset-password',
+      data: <String, dynamic>{
+        'token': token.trim(),
+        'new_password': newPassword,
+      },
+    );
   }
 
   Future<TokenPair> login({
@@ -109,6 +143,23 @@ class BackendRepository {
         return null;
       }
       throw _apiClient.mapError(error);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<String> _anonymousMessage({
+    required String path,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        path,
+        data: data,
+        options: Options(extra: <String, dynamic>{'anonymous': true}),
+      );
+      final payload = _requiredData(response);
+      return payload['message'] as String? ?? 'تم تنفيذ الطلب بنجاح.';
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
