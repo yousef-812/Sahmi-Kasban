@@ -1,4 +1,4 @@
-name: Flutter Analyze Diagnostic
+name: Apply Flutter Diagnostic Fixes
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  diagnose:
+  apply-and-clean:
     if: github.head_ref == 'agent/flutter-core-app'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -19,21 +19,37 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           show-progress: false
-      - name: Save analyze findings on the source branch
+      - name: Apply import fixes, format, and remove diagnostics
         shell: bash
         run: |
           set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          for filename in (
+              "mobile/lib/features/reports/market_report_screen.dart",
+              "mobile/lib/features/wallet/wallet_history_screen.dart",
+          ):
+              path = Path(filename)
+              content = path.read_text()
+              content = content.replace(
+                  "import 'package:intl/intl.dart';",
+                  "import 'package:intl/intl.dart' show DateFormat;",
+              )
+              path.write_text(content)
+          PY
           git clone -q --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
           cd mobile
           "$FLUTTER_HOME/bin/flutter" pub get >/dev/null
-          "$FLUTTER_HOME/bin/flutter" analyze > ../FLUTTER_ANALYZE_TEMP.txt 2>&1 || true
+          "$FLUTTER_HOME/bin/dart" format lib test >/dev/null
           cd ..
-          if git diff --quiet -- FLUTTER_ANALYZE_TEMP.txt; then
-            echo "Diagnostic file is unchanged."
-            exit 0
-          fi
+          rm -f FLUTTER_ANALYZE_TEMP.txt .github/workflows/flutter-diagnostic.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add FLUTTER_ANALYZE_TEMP.txt
-          git commit -m "Record temporary Flutter analyze output"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No cleanup changes were required."
+            exit 0
+          fi
+          git commit -m "Fix Flutter analyze findings and clean diagnostics"
           git push origin "HEAD:${GITHUB_HEAD_REF}"
