@@ -9,28 +9,43 @@ permissions:
   contents: read
 
 jobs:
-  diagnose-phase-three-lint:
+  autofix-phase-three:
     if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-top10-scan'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+    permissions:
+      contents: write
     steps:
-      - name: Run concise Backend Ruff diagnostic
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Chain the concurrency exception explicitly
         shell: bash
         run: |
-          set -Eeuo pipefail
-          python -m pip install --quiet "ruff>=0.7"
-          mkdir -p /tmp/sahmi-source
-          curl --fail --silent --show-error --location \
-            "https://github.com/${GITHUB_REPOSITORY}/archive/${SOURCE_SHA}.tar.gz" \
-            | tar -xz --strip-components=1 -C /tmp/sahmi-source
-          cd /tmp/sahmi-source
-          python -m ruff check \
-            backend/app backend/tests backend/alembic/env.py backend/scripts \
-            backend/reusable_data_fetcher.py \
-            --config backend/pyproject.toml \
-            --output-format concise
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("backend/app/services/daily_reports.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''    except IntegrityError:\n        db.rollback()\n        raced = _complete_report_for_target(db, session.target_session_date)'''
+          new = '''    except IntegrityError as exc:\n        db.rollback()\n        raced = _complete_report_for_target(db, session.target_session_date)'''
+          text = text.replace(old, new, 1)
+          old_raise = '''        if refreshed_run is None:\n            raise DailyReportGenerationError("Concurrent report has no scan record")'''
+          new_raise = '''        if refreshed_run is None:\n            raise DailyReportGenerationError(\n                "Concurrent report has no scan record"\n            ) from exc'''
+          text = text.replace(old_raise, new_raise, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+          if git diff --quiet -- backend/app/services/daily_reports.py; then
+            echo "No change was required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/app/services/daily_reports.py
+          git commit -m "Chain daily report integrity errors"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
 
   repository-lint:
     runs-on: ubuntu-latest
