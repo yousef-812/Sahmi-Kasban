@@ -91,7 +91,7 @@ python -m app.jobs.grant_weekly_points
 
 ## بيانات EGX وتحليل السهم
 
-المسارات الجديدة:
+المسارات:
 
 ```text
 GET  /api/v1/market/instruments
@@ -121,8 +121,8 @@ POST /api/v1/stocks/{ticker}/analysis
 إعدادات السوق والتحليل الأساسية:
 
 ```text
-MARKET_DATA_PRIMARY=yfinance
-MARKET_DATA_FALLBACK=
+MARKET_DATA_PRIMARY=tradingview
+MARKET_DATA_FALLBACK=yfinance
 MARKET_TIMEZONE=Africa/Cairo
 MARKET_DATA_PERIOD=1y
 MARKET_DATA_INTERVAL=1d
@@ -136,7 +136,60 @@ ANALYSIS_MAX_POSITION_VALUE=40000
 ANALYSIS_ENGINE_VERSION=core-v1
 ```
 
-`yfinance` هو Adapter تطويري وبحثي في المرحلة الحالية. قبل الإطلاق العام يجب اعتماد مزود رسمي أو تجاري مرخص، ومراجعة شروط التخزين وإعادة العرض.
+TradingView هو المصدر الأساسي الحالي للشموع والسعر اللحظي، و`yfinance` fallback للشموع ومصدر للبيانات الأساسية. قبل الإطلاق العام يجب مراجعة التراخيص وشروط التخزين وإعادة العرض واعتماد مصدر رسمي أو تجاري مناسب.
+
+## تقرير أفضل 10 للجلسة القادمة
+
+يتم تشغيل المسح اليومي الساعة 5:00 مساءً بتوقيت القاهرة:
+
+```bash
+python -m app.jobs.generate_daily_top10
+```
+
+المهمة تتحقق داخليًا من:
+
+- أن اليوم جلسة تداول فعلية من الأحد إلى الخميس.
+- أن اليوم ليس ضمن `EGX_HOLIDAYS`.
+- أن وقت التنفيذ وصل إلى الموعد المحدد.
+- أن آخر شمعة لكل سهم تخص جلسة اليوم، وليست بيانات قديمة.
+- أن السهم اجتاز حد التاريخ والسيولة وانتظام الحجم.
+- أن المحركات أعادت `BUY` أو `WATCH`.
+
+يتم ترتيب المرشحين حتميًا حسب التأهيل، القرار، الدرجة، الثقة، والسيولة. الـAI لا يختار الأسهم ولا يرتبها؛ يستخدم فقط لشرح أفضل 10 بعد اختيارهم، مع شرح ثابت عند تعطل مزود AI.
+
+لو لم ينتج المسح 10 أسهم مؤهلة، لا يتم نشر تقرير جزئي ويُسجل فشل المسح للتدقيق.
+
+مسارات المستخدم:
+
+```text
+GET  /api/v1/market/reports/latest/preview
+POST /api/v1/market/reports/{report_id}/unlock
+GET  /api/v1/market/reports/{report_id}
+```
+
+قواعد الفتح:
+
+- الـPreview مجاني ولا يعرض أسماء أو تفاصيل الأسهم.
+- فتح التقرير يكلف `100` نقطة = `1.00` عملة.
+- نفس المستخدم لا يُخصم منه مرتين لنفس التقرير.
+- الخصم وسجل الفتح يتمان داخل معاملة واحدة.
+- التقرير الناقص أو غير الموجود لا يستهلك الرصيد.
+- التقرير الكامل يظل مفتوحًا للمستخدم بعد الدفع.
+
+أهم الإعدادات:
+
+```text
+EGX_HOLIDAYS=
+DAILY_SCAN_HOUR=17
+DAILY_SCAN_MINUTE=0
+DAILY_SCAN_MAX_CONCURRENCY=4
+DAILY_SCAN_MIN_AVERAGE_TURNOVER_EGP=1000000
+DAILY_SCAN_MIN_NONZERO_VOLUME_RATIO=0.80
+DAILY_REPORT_SIZE=10
+DAILY_REPORT_COST_POINTS=100
+```
+
+تفاصيل التشغيل والصيانة موجودة في `docs/DAILY_TOP10_PIPELINE.md`.
 
 ## البريد الإلكتروني
 
