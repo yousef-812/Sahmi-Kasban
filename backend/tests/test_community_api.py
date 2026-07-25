@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -100,8 +102,9 @@ def test_community_submission_list_report_and_mute_flow(
     assert repeated.json()["balance_points"] == 250
 
     discussion_id = submitted_payload["discussion"]["id"]
+    discussion_uuid = UUID(discussion_id)
     discussion = db_session.scalar(
-        select(Discussion).where(Discussion.id == discussion_id)
+        select(Discussion).where(Discussion.id == discussion_uuid)
     )
     assert discussion is not None
     apply_moderation_decision(
