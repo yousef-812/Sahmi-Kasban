@@ -16,25 +16,19 @@ jobs:
       PIP_CACHE_DIR: ${{ github.workspace }}/.github/.cache/pip
       CI_RESULTS_DIR: ${{ github.workspace }}/.github/.ci-results
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          show-progress: false
+      - name: Fetch exact repository revision
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --silent --show-error \
+            "https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${GITHUB_SHA}" \
+            | tar -xz --strip-components=1
 
       - name: Run repository-local lint
         shell: bash
         env:
           RUN_MODE: lint
         run: bash .github/actions/repository-ci/run.sh
-
-      - name: Upload lint failure logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: repository-lint-failure-${{ github.run_id }}
-          path: .github/.ci-results/*.log
-          if-no-files-found: error
-          retention-days: 1
 
   repository-tests:
     needs: repository-lint
