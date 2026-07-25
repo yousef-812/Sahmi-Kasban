@@ -24,6 +24,12 @@
 - The server remains responsible for holds, confirmation, release, moderation, rejection, and appeal charging.
 - Wallet and profile providers are refreshed after a submission that can change the balance.
 
-## Validation gate
+## Validation progress
 
-The Flutter formatter was applied to `mobile/lib` and `mobile/test` after navigation wiring. This documentation commit intentionally triggers the complete repository workflow on a normal user-authored commit. PR #15 must remain Draft until repository lint, backend/PostgreSQL/Alembic checks, Flutter analyze/tests, and Android debug APK all succeed on the latest code.
+- Flutter formatting passed on workflow `30179336926`.
+- The first analyzer pass found only two `const_with_non_const` errors in loading-state `ListView` widgets.
+- Both invalid `const` modifiers were removed without suppressing analyzer rules.
+- The temporary analyzer output and helper workflows were removed from the branch.
+- This normal commit starts the complete validation gate again: repository lint, backend/PostgreSQL/Alembic tests, Flutter analyze/tests, and Android debug APK.
+
+PR #15 remains Draft until every required job succeeds on the latest normal commit.
