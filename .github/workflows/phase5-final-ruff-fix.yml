@@ -1,0 +1,35 @@
+name: Phase 5 Final Ruff Fix
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  final-ruff-fix:
+    if: github.head_ref == 'agent/phase-5-monetization'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Apply safe Ruff fixes and remove this helper
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install -q 'ruff>=0.7'
+          cd backend
+          ruff check app tests alembic/env.py scripts reusable_data_fetcher.py \
+            --config pyproject.toml --fix
+          ruff check app tests alembic/env.py scripts reusable_data_fetcher.py \
+            --config pyproject.toml
+          cd ..
+          rm .github/workflows/phase5-final-ruff-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Apply final Phase 5 Ruff formatting'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
