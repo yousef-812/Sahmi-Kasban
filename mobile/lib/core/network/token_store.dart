@@ -2,10 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StoredTokens {
-  const StoredTokens({
-    required this.accessToken,
-    required this.refreshToken,
-  });
+  const StoredTokens({required this.accessToken, required this.refreshToken});
 
   final String accessToken;
   final String refreshToken;
@@ -26,10 +23,7 @@ class TokenStore {
     if (accessToken == null || refreshToken == null) {
       return null;
     }
-    return StoredTokens(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    );
+    return StoredTokens(accessToken: accessToken, refreshToken: refreshToken);
   }
 
   Future<String?> readAccessToken() => _storage.read(key: _accessKey);

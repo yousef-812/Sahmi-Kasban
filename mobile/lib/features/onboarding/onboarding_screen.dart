@@ -23,7 +23,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     (
       icon: Icons.calendar_month_rounded,
       title: 'أفضل الفرص للجلسة القادمة',
-      body: 'تقرير يومي ثابت بعد الإغلاق، مبني على قواعد رقمية وليس وعودًا بالربح.',
+      body:
+          'تقرير يومي ثابت بعد الإغلاق، مبني على قواعد رقمية وليس وعودًا بالربح.',
     ),
     (
       icon: Icons.account_balance_wallet_rounded,
@@ -80,9 +81,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           width: 132,
                           height: 132,
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(42),
                           ),
                           child: Icon(
@@ -95,22 +96,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         Text(
                           item.title,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
+                          style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           item.body,
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    height: 1.7,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                height: 1.7,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     );

@@ -8,18 +8,12 @@ import 'api_exception.dart';
 import 'token_store.dart';
 
 class ApiClient {
-  ApiClient({
-    required String baseUrl,
-    required TokenStore tokenStore,
-    Dio? dio,
-  })  : _tokenStore = tokenStore,
-        _dio = dio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')) {
+  ApiClient({required String baseUrl, required TokenStore tokenStore, Dio? dio})
+    : _tokenStore = tokenStore,
+      _dio = dio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')) {
     _refreshDio = Dio(BaseOptions(baseUrl: '$baseUrl/api/v1'));
     _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: _onRequest,
-        onError: _onError,
-      ),
+      InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
     );
   }
 
@@ -50,7 +44,8 @@ class ApiClient {
     ErrorInterceptorHandler handler,
   ) async {
     final request = error.requestOptions;
-    final shouldRefresh = error.response?.statusCode == 401 &&
+    final shouldRefresh =
+        error.response?.statusCode == 401 &&
         request.extra['anonymous'] != true &&
         request.extra['retried'] != true &&
         !request.path.endsWith('/auth/refresh');

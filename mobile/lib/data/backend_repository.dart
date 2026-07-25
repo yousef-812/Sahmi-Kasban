@@ -10,8 +10,8 @@ class BackendRepository {
   BackendRepository({
     required ApiClient apiClient,
     required TokenStore tokenStore,
-  })  : _apiClient = apiClient,
-        _tokenStore = tokenStore;
+  }) : _apiClient = apiClient,
+       _tokenStore = tokenStore;
 
   final ApiClient _apiClient;
   final TokenStore _tokenStore;
@@ -46,10 +46,7 @@ class BackendRepository {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
         '/auth/login',
-        data: <String, dynamic>{
-          'email': email.trim(),
-          'password': password,
-        },
+        data: <String, dynamic>{'email': email.trim(), 'password': password},
         options: Options(extra: <String, dynamic>{'anonymous': true}),
       );
       final tokens = TokenPair.fromJson(_requiredData(response));
@@ -92,7 +89,9 @@ class BackendRepository {
 
   Future<WalletSummary> getWallet() async {
     try {
-      final response = await _apiClient.dio.get<Map<String, dynamic>>('/wallet');
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/wallet',
+      );
       return WalletSummary.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);

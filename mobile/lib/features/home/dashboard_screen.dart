@@ -11,8 +11,8 @@ final walletSummaryProvider = FutureProvider.autoDispose<WalletSummary>((ref) {
 
 final latestReportPreviewProvider =
     FutureProvider.autoDispose<MarketReportPreview?>((ref) {
-  return ref.watch(backendRepositoryProvider).getLatestReportPreview();
-});
+      return ref.watch(backendRepositoryProvider).getLatestReportPreview();
+    });
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,12 +24,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _index = 0;
 
-  static const _titles = <String>[
-    'الرئيسية',
-    'تحليل سهم',
-    'المحفظة',
-    'حسابي',
-  ];
+  static const _titles = <String>['الرئيسية', 'تحليل سهم', 'المحفظة', 'حسابي'];
 
   @override
   Widget build(BuildContext context) {
@@ -92,16 +87,16 @@ class _HomeTab extends ConsumerWidget {
         children: [
           Text(
             'أهلًا ${session.profile?.displayName ?? ''}',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(
             'الأسهم الأعلى تقييمًا وفق التحليل الآلي للجلسة القادمة',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 22),
           preview.when(
@@ -147,8 +142,8 @@ class _ReportPreviewCard extends StatelessWidget {
                   child: Text(
                     'تقرير جلسة ${target.day}/${target.month}/${target.year}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -235,9 +230,9 @@ class _AnalysisTab extends StatelessWidget {
               children: [
                 Text(
                   'تحليل سهم محدد',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 10),
                 const Text(
@@ -296,11 +291,10 @@ class _WalletTab extends ConsumerWidget {
                     const SizedBox(height: 8),
                     Text(
                       '${summary.balanceCoins} عملة',
-                      style:
-                          Theme.of(context).textTheme.displaySmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Text('الخطة: ${summary.planCode}'),
@@ -345,9 +339,9 @@ class _ProfileTab extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(
                   profile?.displayName ?? '',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -400,7 +394,10 @@ class _ErrorCard extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 14),
-            OutlinedButton(onPressed: onRetry, child: const Text('إعادة المحاولة')),
+            OutlinedButton(
+              onPressed: onRetry,
+              child: const Text('إعادة المحاولة'),
+            ),
           ],
         ),
       ),

@@ -8,22 +8,15 @@ import '../../domain/models.dart';
 enum SessionStatus { loading, unauthenticated, authenticated }
 
 class SessionState {
-  const SessionState({
-    required this.status,
-    this.profile,
-    this.errorMessage,
-  });
+  const SessionState({required this.status, this.profile, this.errorMessage});
 
   const SessionState.loading() : this(status: SessionStatus.loading);
 
   const SessionState.unauthenticated({String? errorMessage})
-      : this(
-          status: SessionStatus.unauthenticated,
-          errorMessage: errorMessage,
-        );
+    : this(status: SessionStatus.unauthenticated, errorMessage: errorMessage);
 
   const SessionState.authenticated(UserProfile profile)
-      : this(status: SessionStatus.authenticated, profile: profile);
+    : this(status: SessionStatus.authenticated, profile: profile);
 
   final SessionStatus status;
   final UserProfile? profile;
@@ -34,9 +27,9 @@ class SessionController extends StateNotifier<SessionState> {
   SessionController({
     required BackendRepository repository,
     required TokenStore tokenStore,
-  })  : _repository = repository,
-        _tokenStore = tokenStore,
-        super(const SessionState.loading()) {
+  }) : _repository = repository,
+       _tokenStore = tokenStore,
+       super(const SessionState.loading()) {
     restore();
   }
 
@@ -61,10 +54,7 @@ class SessionController extends StateNotifier<SessionState> {
     }
   }
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     state = const SessionState.loading();
     try {
       await _repository.login(email: email, password: password);
@@ -104,8 +94,8 @@ class SessionController extends StateNotifier<SessionState> {
 
 final sessionControllerProvider =
     StateNotifierProvider<SessionController, SessionState>((ref) {
-  return SessionController(
-    repository: ref.watch(backendRepositoryProvider),
-    tokenStore: ref.watch(tokenStoreProvider),
-  );
-});
+      return SessionController(
+        repository: ref.watch(backendRepositoryProvider),
+        tokenStore: ref.watch(tokenStoreProvider),
+      );
+    });

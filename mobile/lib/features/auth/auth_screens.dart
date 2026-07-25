@@ -32,15 +32,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
     setState(() => _submitting = true);
     try {
-      await ref.read(sessionControllerProvider.notifier).login(
+      await ref
+          .read(sessionControllerProvider.notifier)
+          .login(
             email: _emailController.text,
             password: _passwordController.text,
           );
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) {
@@ -77,9 +79,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 labelText: 'كلمة المرور',
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
-                  onPressed: () => setState(
-                    () => _obscurePassword = !_obscurePassword,
-                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                   icon: Icon(
                     _obscurePassword
                         ? Icons.visibility_outlined
@@ -87,9 +88,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-              validator: (value) => value == null || value.isEmpty
-                  ? 'أدخل كلمة المرور.'
-                  : null,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'أدخل كلمة المرور.' : null,
               onFieldSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 22),
@@ -144,7 +144,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     setState(() => _submitting = true);
     try {
-      final result = await ref.read(sessionControllerProvider.notifier).register(
+      final result = await ref
+          .read(sessionControllerProvider.notifier)
+          .register(
             email: _emailController.text,
             password: _passwordController.text,
             displayName: _nameController.text,
@@ -163,9 +165,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       context.go('/login');
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) {
@@ -215,9 +217,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 helperText: '10 أحرف على الأقل وحرف كبير وصغير ورقم.',
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
-                  onPressed: () => setState(
-                    () => _obscurePassword = !_obscurePassword,
-                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                   icon: Icon(
                     _obscurePassword
                         ? Icons.visibility_outlined
@@ -283,18 +284,17 @@ class _AuthScaffold extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     subtitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          height: 1.6,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      height: 1.6,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 28),
                   child,

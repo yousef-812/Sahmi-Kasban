@@ -26,9 +26,9 @@ class SplashScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               'سهمي كسبان',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 20),
             const SizedBox(
