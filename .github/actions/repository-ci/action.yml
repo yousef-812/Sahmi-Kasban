@@ -1,7 +1,11 @@
 name: Repository-local CI
-description: Run all Sahmi Kasban checks from scripts stored in this repository.
+description: Run Sahmi Kasban checks from scripts stored in this repository.
 
 inputs:
+  mode:
+    description: Check group to run: lint or tests.
+    required: false
+    default: "tests"
   run-live-smoke:
     description: Run the live TradingView COMI smoke test.
     required: false
@@ -13,5 +17,6 @@ runs:
     - name: Run repository-local checks
       shell: bash
       env:
+        RUN_MODE: ${{ inputs.mode }}
         RUN_LIVE_SMOKE: ${{ inputs.run-live-smoke }}
       run: bash "$GITHUB_ACTION_PATH/run.sh"
