@@ -39,7 +39,8 @@ ResponseBody _jsonBody(Map<String, dynamic> payload, int statusCode) {
 
 void main() {
   group('ApiClient', () {
-    test('shares one refresh request across concurrent 401 responses', () async {
+    test('shares one refresh request across concurrent 401 responses',
+        () async {
       final tokenStore = _MockTokenStore();
       when(tokenStore.readAccessToken).thenAnswer((_) async => 'old-access');
       when(tokenStore.readRefreshToken).thenAnswer((_) async => 'refresh-one');
@@ -51,7 +52,8 @@ void main() {
       ).thenAnswer((_) async {});
 
       var refreshCalls = 0;
-      final refreshDio = Dio(BaseOptions(baseUrl: 'https://example.test/api/v1'));
+      final refreshDio =
+          Dio(BaseOptions(baseUrl: 'https://example.test/api/v1'));
       refreshDio.httpClientAdapter = _CallbackAdapter((options) async {
         refreshCalls += 1;
         await Future<void>.delayed(const Duration(milliseconds: 25));
@@ -86,7 +88,8 @@ void main() {
       ]);
 
       expect(responses, hasLength(2));
-      expect(responses.every((response) => response.data?['ok'] == true), isTrue);
+      expect(
+          responses.every((response) => response.data?['ok'] == true), isTrue);
       expect(refreshCalls, 1);
       verify(
         () => tokenStore.save(
