@@ -23,7 +23,6 @@ from app.services.community import (
     DiscussionReportError,
     DiscussionView,
     UserMuteError,
-    create_discussion,
     get_discussion_view,
     list_published_discussions,
     list_user_discussions,
@@ -34,6 +33,10 @@ from app.services.community import (
 from app.services.community_ai import (
     get_community_ai_service,
     review_pending_discussion,
+)
+from app.services.community_safety import (
+    CommunityRateLimitError,
+    create_safe_discussion,
 )
 from app.services.wallet import (
     InsufficientBalanceError,
@@ -85,7 +88,7 @@ async def submit_discussion(
     ai_service: CommunityAIService,
 ) -> DiscussionSubmissionResponse:
     try:
-        result = create_discussion(
+        result = create_safe_discussion(
             db,
             user=current_user,
             submission_key=payload.submission_key,
@@ -110,6 +113,13 @@ async def submit_discussion(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
+        ) from exc
+    except CommunityRateLimitError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after_seconds)},
         ) from exc
     except CommunityConflictError as exc:
         db.rollback()
