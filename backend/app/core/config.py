@@ -81,6 +81,26 @@ class Settings(BaseSettings):
     daily_report_size: int = 10
     daily_report_cost_points: int = 100
 
+    google_play_package_name: str = "com.sahmikasban.app"
+    google_play_verification_mode: str = "disabled"
+    google_play_service_account_json: str = ""
+    billing_token_encryption_key: str = ""
+
+    admob_ssv_verification_mode: str = "disabled"
+    admob_ssv_keys_url: str = (
+        "https://www.gstatic.com/admob/reward/verifier-keys.json"
+    )
+    admob_android_rewarded_ad_unit_id: str = (
+        "ca-app-pub-3940256099942544/5224354917"
+    )
+    admob_ios_rewarded_ad_unit_id: str = "ca-app-pub-3940256099942544/1712485313"
+    admob_reward_item: str = "coins"
+    ad_reward_points: int = 75
+    ad_reward_daily_limit: int = 4
+    ad_reward_cooldown_seconds: int = 900
+    ad_reward_session_minutes: int = 15
+    admob_ssv_max_callback_age_seconds: int = 3_600
+
     @model_validator(mode="after")
     def validate_sensitive_settings(self) -> Settings:
         if self.app_env in {Environment.STAGING, Environment.PRODUCTION}:
@@ -96,6 +116,22 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "SMTP_HOST is required outside development and test environments"
                 )
+            if self.google_play_verification_mode != "live":
+                raise ValueError("Google Play verification must use live mode outside development")
+            if not self.google_play_service_account_json.strip():
+                raise ValueError(
+                    "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is required outside development"
+                )
+            if not self.billing_token_encryption_key.strip():
+                raise ValueError(
+                    "BILLING_TOKEN_ENCRYPTION_KEY is required outside development"
+                )
+            if self.admob_ssv_verification_mode != "live":
+                raise ValueError("AdMob SSV verification must use live mode outside development")
+            if "3940256099942544" in self.admob_android_rewarded_ad_unit_id:
+                raise ValueError("Replace the Android AdMob test ad unit outside development")
+            if "3940256099942544" in self.admob_ios_rewarded_ad_unit_id:
+                raise ValueError("Replace the iOS AdMob test ad unit outside development")
         if self.market_data_cache_minutes <= 0:
             raise ValueError("MARKET_DATA_CACHE_MINUTES must be positive")
         if self.market_data_timeout_seconds <= 0:
@@ -134,6 +170,30 @@ class Settings(BaseSettings):
             raise ValueError("DAILY_REPORT_SIZE must be between 1 and 10")
         if self.daily_report_cost_points <= 0:
             raise ValueError("DAILY_REPORT_COST_POINTS must be positive")
+        if self.google_play_verification_mode not in {"disabled", "stub", "live"}:
+            raise ValueError(
+                "GOOGLE_PLAY_VERIFICATION_MODE must be disabled, stub, or live"
+            )
+        if self.admob_ssv_verification_mode not in {"disabled", "stub", "live"}:
+            raise ValueError(
+                "ADMOB_SSV_VERIFICATION_MODE must be disabled, stub, or live"
+            )
+        if not self.google_play_package_name.strip():
+            raise ValueError("GOOGLE_PLAY_PACKAGE_NAME must not be empty")
+        if not self.admob_ssv_keys_url.startswith("https://"):
+            raise ValueError("ADMOB_SSV_KEYS_URL must use https://")
+        if self.ad_reward_points <= 0:
+            raise ValueError("AD_REWARD_POINTS must be positive")
+        if not 1 <= self.ad_reward_daily_limit <= 20:
+            raise ValueError("AD_REWARD_DAILY_LIMIT must be between 1 and 20")
+        if self.ad_reward_cooldown_seconds < 0:
+            raise ValueError("AD_REWARD_COOLDOWN_SECONDS cannot be negative")
+        if not 1 <= self.ad_reward_session_minutes <= 60:
+            raise ValueError("AD_REWARD_SESSION_MINUTES must be between 1 and 60")
+        if not 60 <= self.admob_ssv_max_callback_age_seconds <= 86_400:
+            raise ValueError(
+                "ADMOB_SSV_MAX_CALLBACK_AGE_SECONDS must be between 60 and 86400"
+            )
         return self
 
     @property
