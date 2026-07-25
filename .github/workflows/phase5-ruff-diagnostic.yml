@@ -4,7 +4,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   ruff-diagnostic:
@@ -14,11 +14,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref }}
           show-progress: false
-      - name: Print concise Ruff findings
+      - name: Save concise Ruff findings and remove this helper
         shell: bash
         run: |
+          set -Eeuo pipefail
           python -m pip install -q 'ruff>=0.7'
           cd backend
+          set +e
           ruff check app tests alembic/env.py scripts reusable_data_fetcher.py \
-            --config pyproject.toml --output-format concise
+            --config pyproject.toml --output-format concise \
+            > ../PHASE5_RUFF_TEMP.txt 2>&1
+          set -e
+          cd ..
+          rm .github/workflows/phase5-ruff-diagnostic.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add PHASE5_RUFF_TEMP.txt .github/workflows/phase5-ruff-diagnostic.yml
+          git commit -m 'Record Phase 5 Ruff findings'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
