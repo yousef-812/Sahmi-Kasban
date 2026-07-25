@@ -27,6 +27,15 @@ jobs:
           RUN_MODE: lint
         run: bash .github/actions/repository-ci/run.sh
 
+      - name: Upload lint failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-lint-failure-${{ github.run_id }}
+          path: .github/.ci-results/*.log
+          if-no-files-found: error
+          retention-days: 1
+
   repository-tests:
     needs: repository-lint
     runs-on: ubuntu-latest
