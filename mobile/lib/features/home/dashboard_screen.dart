@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../data/backend_repository.dart';
+import '../../core/avatar_assets.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
-
-final walletSummaryProvider = FutureProvider.autoDispose<WalletSummary>((ref) {
-  return ref.watch(backendRepositoryProvider).getWallet();
-});
-
-final latestReportPreviewProvider =
-    FutureProvider.autoDispose<MarketReportPreview?>((ref) {
-  return ref.watch(backendRepositoryProvider).getLatestReportPreview();
-});
+import '../market/stock_analysis_tab.dart';
+import '../reports/report_providers.dart';
+import '../wallet/wallet_providers.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -34,7 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         index: _index,
         children: const [
           _HomeTab(),
-          _AnalysisTab(),
+          StockAnalysisTab(),
           _WalletTab(),
           _ProfileTab(),
         ],
@@ -87,9 +82,9 @@ class _HomeTab extends ConsumerWidget {
         children: [
           Text(
             'أهلًا ${session.profile?.displayName ?? ''}',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -164,99 +159,27 @@ class _ReportPreviewCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
-              onPressed: null,
+              onPressed: () => context.push(
+                '/reports/${report.reportId}',
+                extra: report,
+              ),
               icon: Icon(
                 report.unlocked
                     ? Icons.visibility_rounded
                     : Icons.lock_open_rounded,
               ),
               label: Text(
-                report.unlocked ? 'عرض التقرير' : 'فتح التقرير — قريبًا',
+                report.unlocked ? 'عرض التقرير' : 'فتح التقرير',
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _EmptyReportCard extends StatelessWidget {
-  const _EmptyReportCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(
-              Icons.event_busy_rounded,
-              size: 42,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'لا يوجد تقرير جاهز حاليًا. سيظهر التقرير بعد اكتمال مسح جلسة التداول.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AnalysisTab extends StatelessWidget {
-  const _AnalysisTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'تحليل سهم محدد',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'سيتم ربط البحث، اختيار رمز EGX، وتنفيذ التحليل المدفوع في الجزء التالي من المرحلة.',
-                ),
-                const SizedBox(height: 18),
-                const TextField(
-                  enabled: false,
-                  decoration: InputDecoration(
-                    labelText: 'رمز السهم',
-                    hintText: 'COMI',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const FilledButton(
-                  onPressed: null,
-                  child: Text('تحليل السهم — 0.5 عملة'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -304,6 +227,12 @@ class _WalletTab extends ConsumerWidget {
                           ? 'الإعلانات مفعلة'
                           : 'الخطة بدون إعلانات',
                     ),
+                    const SizedBox(height: 18),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push('/wallet/history'),
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      label: const Text('عرض سجل العمليات'),
+                    ),
                   ],
                 ),
               ),
@@ -330,18 +259,17 @@ class _ProfileTab extends ConsumerWidget {
             child: Column(
               children: [
                 CircleAvatar(
-                  radius: 38,
-                  child: Text(
-                    profile?.displayName.characters.firstOrNull ?? 'س',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  radius: 48,
+                  backgroundImage: AssetImage(
+                    avatarAssetPath(profile?.avatarKey ?? avatarKeys.first),
                   ),
                 ),
                 const SizedBox(height: 14),
                 Text(
                   profile?.displayName ?? '',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -349,7 +277,16 @@ class _ProfileTab extends ConsumerWidget {
                   textDirection: TextDirection.ltr,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                const SizedBox(height: 8),
+                Text('الخطة: ${profile?.planCode ?? '-'}'),
+                Text('الرصيد: ${profile?.balanceCoins ?? '0'} عملة'),
                 const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => context.push('/profile/edit'),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('تعديل الاسم والصورة'),
+                ),
+                const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () =>
                       ref.read(sessionControllerProvider.notifier).logout(),
@@ -361,6 +298,29 @@ class _ProfileTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _EmptyReportCard extends StatelessWidget {
+  const _EmptyReportCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Icon(Icons.event_busy_rounded, size: 42),
+            SizedBox(height: 14),
+            Text(
+              'لا يوجد تقرير جاهز حاليًا. سيظهر التقرير بعد اكتمال مسح جلسة التداول.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
