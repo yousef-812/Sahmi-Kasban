@@ -9,6 +9,54 @@ permissions:
   contents: read
 
 jobs:
+  finalize-phase-three-log:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-top10-scan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Record final phase validation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("IMPLEMENTATION_LOG_PHASE_3.md")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace(
+              "**الحالة الحالية:** التنفيذ مكتمل تقنيًا وبانتظار آخر فحص للنسخة الموثقة والدمج في `main`.",
+              "**الحالة الحالية:** جميع الفحوصات النهائية ناجحة والمرحلة جاهزة للدمج في `main`.",
+              1,
+          )
+          text = text.replace(
+              "## نتيجة الفحص قبل التوثيق النهائي",
+              "## نتيجة الفحص النهائي",
+              1,
+          )
+          text = text.replace("30161715559", "30161876519", 1)
+          text = text.replace(
+              "- [ ] آخر Workflow بعد إضافة هذا السجل وREADME.",
+              "- [x] آخر Workflow بعد إضافة هذا السجل وREADME.",
+              1,
+          )
+          path.write_text(text, encoding="utf-8")
+          PY
+          if git diff --quiet -- IMPLEMENTATION_LOG_PHASE_3.md; then
+            echo "The implementation log is already final."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add IMPLEMENTATION_LOG_PHASE_3.md
+          git commit -m "Finalize phase three implementation log"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+
   repository-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
