@@ -39,17 +39,21 @@ ResponseBody _jsonBody(Map<String, dynamic> payload, int statusCode) {
 
 void main() {
   group('ApiClient', () {
-    test('shares one refresh request across concurrent 401 responses',
-        () async {
+    test('shares one refresh request across concurrent 401 responses', () async {
       final tokenStore = _MockTokenStore();
-      when(tokenStore.readAccessToken).thenAnswer((_) async => 'old-access');
-      when(tokenStore.readRefreshToken).thenAnswer((_) async => 'refresh-one');
+      var accessToken = 'old-access';
+      var refreshToken = 'refresh-one';
+      when(tokenStore.readAccessToken).thenAnswer((_) async => accessToken);
+      when(tokenStore.readRefreshToken).thenAnswer((_) async => refreshToken);
       when(
         () => tokenStore.save(
           accessToken: any(named: 'accessToken'),
           refreshToken: any(named: 'refreshToken'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((invocation) async {
+        accessToken = invocation.namedArguments[#accessToken] as String;
+        refreshToken = invocation.namedArguments[#refreshToken] as String;
+      });
 
       var refreshCalls = 0;
       final refreshDio =
@@ -89,8 +93,12 @@ void main() {
 
       expect(responses, hasLength(2));
       expect(
-          responses.every((response) => response.data?['ok'] == true), isTrue);
+        responses.every((response) => response.data?['ok'] == true),
+        isTrue,
+      );
       expect(refreshCalls, 1);
+      expect(accessToken, 'new-access');
+      expect(refreshToken, 'refresh-two');
       verify(
         () => tokenStore.save(
           accessToken: 'new-access',
