@@ -16,7 +16,7 @@ jobs:
     env:
       SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - name: Run concise Backend Ruff diagnostic
+      - name: Show Ruff-corrected import block
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -26,11 +26,10 @@ jobs:
             "https://github.com/${GITHUB_REPOSITORY}/archive/${SOURCE_SHA}.tar.gz" \
             | tar -xz --strip-components=1 -C /tmp/sahmi-source
           cd /tmp/sahmi-source
-          python -m ruff check \
-            backend/app backend/tests backend/alembic/env.py backend/scripts \
-            backend/reusable_data_fetcher.py \
+          python -m ruff check backend/reusable_data_fetcher.py \
             --config backend/pyproject.toml \
-            --output-format concise
+            --fix
+          sed -n '1,45p' backend/reusable_data_fetcher.py
 
   repository-lint:
     runs-on: ubuntu-latest
