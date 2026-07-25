@@ -27,102 +27,108 @@ jobs:
 
           router = Path('mobile/lib/app/router.dart')
           text = router.read_text()
-          import_needle = "import '../features/bootstrap/splash_screen.dart';\n"
-          import_replacement = import_needle + """import '../features/community/community_create_screen.dart';
-          import '../features/community/community_detail_screen.dart';
-          import '../features/community/my_discussions_screen.dart';
-          """
-          if import_needle not in text:
-              raise SystemExit('Router import anchor not found')
-          text = text.replace(import_needle, import_replacement, 1)
+          import_anchor = "import '../features/bootstrap/splash_screen.dart';\n"
+          community_imports = (
+              "import '../features/community/community_create_screen.dart';\n"
+              "import '../features/community/community_detail_screen.dart';\n"
+              "import '../features/community/my_discussions_screen.dart';\n"
+          )
+          if community_imports not in text:
+              if import_anchor not in text:
+                  raise SystemExit('Router import anchor not found')
+              text = text.replace(
+                  import_anchor,
+                  import_anchor + community_imports,
+                  1,
+              )
 
-          route_needle = """      GoRoute(
-                  path: '/monetization',
-                  builder: (context, state) => const MonetizationPage(),
-                ),
-          """
-          route_replacement = route_needle + """      GoRoute(
-                  path: '/community/new',
-                  builder: (context, state) => const CommunityCreateScreen(),
-                ),
-                GoRoute(
-                  path: '/community/mine',
-                  builder: (context, state) => const MyDiscussionsScreen(),
-                ),
-                GoRoute(
-                  path: '/community/:discussionId',
-                  builder: (context, state) => CommunityDetailScreen(
-                    discussionId: state.pathParameters['discussionId']!,
-                  ),
-                ),
-          """
-          if route_needle not in text:
-              raise SystemExit('Router route anchor not found')
-          router.write_text(text.replace(route_needle, route_replacement, 1))
+          reports_anchor = (
+              "      GoRoute(\n"
+              "        path: '/reports/:reportId',\n"
+          )
+          community_routes = (
+              "      GoRoute(\n"
+              "        path: '/community/new',\n"
+              "        builder: (context, state) => const CommunityCreateScreen(),\n"
+              "      ),\n"
+              "      GoRoute(\n"
+              "        path: '/community/mine',\n"
+              "        builder: (context, state) => const MyDiscussionsScreen(),\n"
+              "      ),\n"
+              "      GoRoute(\n"
+              "        path: '/community/:discussionId',\n"
+              "        builder: (context, state) => CommunityDetailScreen(\n"
+              "          discussionId: state.pathParameters['discussionId']!,\n"
+              "        ),\n"
+              "      ),\n"
+          )
+          if "path: '/community/new'" not in text:
+              if reports_anchor not in text:
+                  raise SystemExit('Router reports anchor not found')
+              text = text.replace(
+                  reports_anchor,
+                  community_routes + reports_anchor,
+                  1,
+              )
+          router.write_text(text)
 
           dashboard = Path('mobile/lib/features/home/dashboard_screen.dart')
           text = dashboard.read_text()
           dashboard_import = "import '../auth/session_controller.dart';\n"
-          dashboard_import_replacement = (
-              dashboard_import
-              + "import '../community/community_feed_tab.dart';\n"
+          community_import = "import '../community/community_feed_tab.dart';\n"
+          if community_import not in text:
+              if dashboard_import not in text:
+                  raise SystemExit('Dashboard import anchor not found')
+              text = text.replace(
+                  dashboard_import,
+                  dashboard_import + community_import,
+                  1,
+              )
+
+          old_titles = (
+              "  static const _titles = <String>"
+              "['الرئيسية', 'تحليل سهم', 'المحفظة', 'حسابي'];"
           )
-          if dashboard_import not in text:
-              raise SystemExit('Dashboard import anchor not found')
-          text = text.replace(
-              dashboard_import,
-              dashboard_import_replacement,
-              1,
+          new_titles = (
+              "  static const _titles = <String>["
+              "'الرئيسية', 'تحليل سهم', 'المجتمع', 'المحفظة', 'حسابي'];"
           )
+          if "'المجتمع'" not in text:
+              if old_titles not in text:
+                  raise SystemExit('Dashboard titles anchor not found')
+              text = text.replace(old_titles, new_titles, 1)
 
-          titles = """  static const _titles = <String>['الرئيسية', 'تحليل سهم', 'المحفظة', 'حسابي'];
-          """
-          new_titles = """  static const _titles = <String>[
-              'الرئيسية',
-              'تحليل سهم',
-              'المجتمع',
-              'المحفظة',
-              'حسابي',
-            ];
-          """
-          if titles not in text:
-              raise SystemExit('Dashboard titles anchor not found')
-          text = text.replace(titles, new_titles, 1)
+          analysis_child = "          StockAnalysisTab(),\n"
+          community_child = "          CommunityFeedTab(),\n"
+          if community_child not in text:
+              if analysis_child not in text:
+                  raise SystemExit('Dashboard child anchor not found')
+              text = text.replace(
+                  analysis_child,
+                  analysis_child + community_child,
+                  1,
+              )
 
-          children = """        children: const [
-                  _HomeTab(),
-                  StockAnalysisTab(),
-                  _WalletTab(),
-                  _ProfileTab(),
-                ],
-          """
-          new_children = """        children: const [
-                  _HomeTab(),
-                  StockAnalysisTab(),
-                  CommunityFeedTab(),
-                  _WalletTab(),
-                  _ProfileTab(),
-                ],
-          """
-          if children not in text:
-              raise SystemExit('Dashboard children anchor not found')
-          text = text.replace(children, new_children, 1)
-
-          destination = """          NavigationDestination(
-                    icon: Icon(Icons.account_balance_wallet_outlined),
-                    selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-                    label: 'المحفظة',
-                  ),
-          """
-          new_destination = """          NavigationDestination(
-                    icon: Icon(Icons.forum_outlined),
-                    selectedIcon: Icon(Icons.forum_rounded),
-                    label: 'المجتمع',
-                  ),
-          """ + destination
-          if destination not in text:
-              raise SystemExit('Dashboard destination anchor not found')
-          dashboard.write_text(text.replace(destination, new_destination, 1))
+          wallet_destination = (
+              "          NavigationDestination(\n"
+              "            icon: Icon(Icons.account_balance_wallet_outlined),\n"
+          )
+          community_destination = (
+              "          NavigationDestination(\n"
+              "            icon: Icon(Icons.forum_outlined),\n"
+              "            selectedIcon: Icon(Icons.forum_rounded),\n"
+              "            label: 'المجتمع',\n"
+              "          ),\n"
+          )
+          if "icon: Icon(Icons.forum_outlined)" not in text:
+              if wallet_destination not in text:
+                  raise SystemExit('Dashboard wallet destination anchor not found')
+              text = text.replace(
+                  wallet_destination,
+                  community_destination + wallet_destination,
+                  1,
+              )
+          dashboard.write_text(text)
           PY
           if [ ! -x "$FLUTTER_HOME/bin/flutter" ]; then
             git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
