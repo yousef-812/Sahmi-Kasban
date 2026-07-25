@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.community import router as community_router
 from app.api.routes.health import router as health_router
 from app.api.routes.market import router as market_router
 from app.api.routes.monetization import router as monetization_router
@@ -16,3 +17,4 @@ api_router.include_router(wallet_router)
 api_router.include_router(market_router)
 api_router.include_router(reports_router)
 api_router.include_router(monetization_router)
+api_router.include_router(community_router)
