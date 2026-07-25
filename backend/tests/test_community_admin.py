@@ -18,7 +18,7 @@ def register_and_login(
     *,
     email: str,
     display_name: str,
-) -> tuple[dict, User]:
+) -> dict:
     registered = client.post(
         "/api/v1/auth/register",
         json={
@@ -41,7 +41,7 @@ def register_and_login(
         json={"email": email, "password": PASSWORD},
     )
     assert login.status_code == 200
-    return login.json(), registered.json()["user"]
+    return login.json()
 
 
 def headers(tokens: dict) -> dict[str, str]:
@@ -87,13 +87,13 @@ def test_admin_access_manual_review_hide_and_restore(
 ) -> None:
     admin_email = "community-admin@example.com"
     monkeypatch.setenv("ADMIN_EMAILS", admin_email)
-    admin_tokens, _admin_payload = register_and_login(
+    admin_tokens = register_and_login(
         client,
         fake_email_service,
         email=admin_email,
         display_name="Community Admin",
     )
-    author_tokens, _author_payload = register_and_login(
+    author_tokens = register_and_login(
         client,
         fake_email_service,
         email="community-author-admin-test@example.com",
@@ -200,9 +200,9 @@ def test_admin_access_manual_review_hide_and_restore(
     assert restored.json()["hidden_at"] is None
 
     actions = db_session.scalars(
-        select(CommunityAdminEvent.action).where(
-            CommunityAdminEvent.discussion_id == discussion.id
-        )
+        select(CommunityAdminEvent.action)
+        .where(CommunityAdminEvent.discussion_id == discussion.id)
+        .order_by(CommunityAdminEvent.created_at, CommunityAdminEvent.id)
     ).all()
     assert actions == [
         "discussion_approve",
@@ -220,13 +220,13 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
     admin_email = "block-admin@example.com"
     target_email = "blocked-community-user@example.com"
     monkeypatch.setenv("ADMIN_EMAILS", admin_email)
-    admin_tokens, _ = register_and_login(
+    admin_tokens = register_and_login(
         client,
         fake_email_service,
         email=admin_email,
         display_name="Block Admin",
     )
-    target_tokens, _ = register_and_login(
+    target_tokens = register_and_login(
         client,
         fake_email_service,
         email=target_email,
@@ -338,9 +338,11 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
     assert new_access.status_code == 200
 
     user_actions = db_session.scalars(
-        select(CommunityAdminEvent.action).where(
+        select(CommunityAdminEvent.action)
+        .where(
             CommunityAdminEvent.target_user_id == target.id,
             CommunityAdminEvent.discussion_id.is_(None),
         )
+        .order_by(CommunityAdminEvent.created_at, CommunityAdminEvent.id)
     ).all()
     assert user_actions == ["user_blocked", "user_unblocked"]
