@@ -1,13 +1,12 @@
 import json
 
-from reusable_data_fetcher import TradingViewConnector
-
 from app.core.config import Settings
 from app.market_data.tradingview import (
     _history_count,
     _normalize_candles,
     _tradingview_interval,
 )
+from reusable_data_fetcher import TradingViewConnector
 
 
 def test_connection_defaults_match_legacy_egx_pilot() -> None:
