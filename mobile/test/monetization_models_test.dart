@@ -42,10 +42,10 @@ void main() {
       'ad_reward_cooldown_seconds': 900,
     });
 
-    expect(
-      catalog.storeProductIds,
-      <String>{'sahmi_basic_monthly', 'sahmi_coins_5'},
-    );
+    expect(catalog.storeProductIds, <String>{
+      'sahmi_basic_monthly',
+      'sahmi_coins_5',
+    });
     expect(catalog.isCoinPack('sahmi_coins_5'), isTrue);
     expect(catalog.isCoinPack('sahmi_basic_monthly'), isFalse);
     expect(catalog.adRewardPoints, 75);
@@ -66,21 +66,19 @@ void main() {
   });
 
   test('purchase verification result keeps server entitlement decision', () {
-    final result = PurchaseVerificationResultModel.fromJson(
-      <String, dynamic>{
-        'purchase_id': '28f87fb5-081b-4a13-8f30-c24bdbd73752',
-        'product_id': 'sahmi_coins_5',
-        'product_type': 'coins',
-        'purchase_state': 'purchased',
-        'acknowledgement_state': 'acknowledged',
-        'entitlement_granted': true,
-        'idempotent': false,
-        'plan_code': 'free',
-        'balance_points': 800,
-        'balance_coins': '8.00',
-        'subscription_expires_at': null,
-      },
-    );
+    final result = PurchaseVerificationResultModel.fromJson(<String, dynamic>{
+      'purchase_id': '28f87fb5-081b-4a13-8f30-c24bdbd73752',
+      'product_id': 'sahmi_coins_5',
+      'product_type': 'coins',
+      'purchase_state': 'purchased',
+      'acknowledgement_state': 'acknowledged',
+      'entitlement_granted': true,
+      'idempotent': false,
+      'plan_code': 'free',
+      'balance_points': 800,
+      'balance_coins': '8.00',
+      'subscription_expires_at': null,
+    });
 
     expect(result.entitlementGranted, isTrue);
     expect(result.idempotent, isFalse);
