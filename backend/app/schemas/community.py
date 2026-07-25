@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 DiscussionPeriod = Literal["next_session", "week", "month"]
 DiscussionStatus = Literal["pending_review", "published", "rejected", "hidden"]
@@ -16,6 +16,8 @@ ReportReason = Literal[
     "off_topic",
     "other",
 ]
+AdminDiscussionAction = Literal["approve", "reject", "hide", "restore"]
+PredictionDirection = Literal["up", "down", "neutral"]
 
 
 class DiscussionCreateRequest(BaseModel):
@@ -94,4 +96,90 @@ class DiscussionReportResponse(BaseModel):
 class UserMuteResponse(BaseModel):
     muted_user_id: UUID
     muted: bool
+    idempotent: bool
+
+
+class AdminPredictionInput(BaseModel):
+    direction: PredictionDirection
+    target_price: float | None = Field(default=None, gt=0)
+    deadline: str | None = Field(default=None, max_length=120)
+    claims: list[str] = Field(default_factory=list, max_length=10)
+    specificity: float = Field(default=0.0, ge=0, le=1)
+
+    @field_validator("deadline")
+    @classmethod
+    def strip_optional_deadline(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        return cleaned or None
+
+    @field_validator("claims")
+    @classmethod
+    def normalize_claims(cls, value: list[str]) -> list[str]:
+        claims: list[str] = []
+        for item in value:
+            cleaned = item.strip()
+            if cleaned and cleaned not in claims:
+                claims.append(cleaned[:300])
+        return claims
+
+
+class AdminDiscussionActionRequest(BaseModel):
+    action: AdminDiscussionAction
+    reason_code: str | None = Field(default=None, min_length=2, max_length=64)
+    details: str = Field(default="", max_length=1000)
+    prediction: AdminPredictionInput | None = None
+
+    @field_validator("reason_code")
+    @classmethod
+    def strip_optional_reason(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip().lower()
+        return cleaned or None
+
+    @field_validator("details")
+    @classmethod
+    def strip_admin_details(cls, value: str) -> str:
+        return value.strip()
+
+    @model_validator(mode="after")
+    def validate_action_fields(self) -> AdminDiscussionActionRequest:
+        if self.action == "approve" and self.prediction is None:
+            raise ValueError("Manual approval requires a structured prediction")
+        if self.action in {"reject", "hide"} and not self.reason_code:
+            raise ValueError(f"{self.action} requires a reason code")
+        return self
+
+
+class AdminDiscussionResponse(BaseModel):
+    discussion: DiscussionResponse
+    hidden_at: datetime | None
+    open_report_count: int = Field(ge=0)
+    idempotent: bool = False
+
+
+class AdminDiscussionListResponse(BaseModel):
+    items: list[AdminDiscussionResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(gt=0)
+    offset: int = Field(ge=0)
+
+
+class AdminUserActionRequest(BaseModel):
+    reason_code: str = Field(min_length=2, max_length=64)
+    details: str = Field(default="", max_length=1000)
+
+    @field_validator("reason_code", "details")
+    @classmethod
+    def normalize_admin_user_text(cls, value: str) -> str:
+        return value.strip()
+
+
+class AdminUserActionResponse(BaseModel):
+    user_id: UUID
+    status: str
+    pending_rejected: int = Field(ge=0)
+    published_hidden: int = Field(ge=0)
     idempotent: bool
