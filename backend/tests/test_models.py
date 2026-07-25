@@ -6,7 +6,11 @@ def test_foundational_tables_are_registered() -> None:
     assert {
         "users",
         "wallet_entries",
+        "wallet_accounts",
+        "weekly_grants",
         "subscriptions",
+        "auth_sessions",
+        "account_tokens",
         "market_reports",
         "market_report_items",
         "stock_analyses",

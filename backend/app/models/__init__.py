@@ -1,3 +1,4 @@
+from app.models.accounts import AccountToken, AuthSession, WalletAccount, WeeklyGrant
 from app.models.entities import (
     Discussion,
     MarketReport,
@@ -10,6 +11,8 @@ from app.models.entities import (
 )
 
 __all__ = [
+    "AccountToken",
+    "AuthSession",
     "Discussion",
     "MarketReport",
     "MarketReportItem",
@@ -17,5 +20,7 @@ __all__ = [
     "StockAnalysis",
     "Subscription",
     "User",
+    "WalletAccount",
     "WalletEntry",
+    "WeeklyGrant",
 ]

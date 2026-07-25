@@ -30,6 +30,9 @@ class User(TimestampMixin, Base):
     avatar_key: Mapped[str] = mapped_column(String(80), default="avatar_01", nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="active", nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    auth_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class WalletEntry(TimestampMixin, Base):
