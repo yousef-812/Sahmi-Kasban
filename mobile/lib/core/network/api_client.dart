@@ -13,10 +13,10 @@ class ApiClient {
     required TokenStore tokenStore,
     Dio? dio,
     Dio? refreshDio,
-  })  : _tokenStore = tokenStore,
-        _dio = dio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')),
-        _refreshDio =
-            refreshDio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')) {
+  }) : _tokenStore = tokenStore,
+       _dio = dio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')),
+       _refreshDio =
+           refreshDio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')) {
     _dio.interceptors.add(
       InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
     );
@@ -49,7 +49,8 @@ class ApiClient {
     ErrorInterceptorHandler handler,
   ) async {
     final request = error.requestOptions;
-    final shouldRefresh = error.response?.statusCode == 401 &&
+    final shouldRefresh =
+        error.response?.statusCode == 401 &&
         request.extra['anonymous'] != true &&
         request.extra['retried'] != true &&
         !request.path.endsWith('/auth/refresh');

@@ -39,74 +39,76 @@ ResponseBody _jsonBody(Map<String, dynamic> payload, int statusCode) {
 
 void main() {
   group('ApiClient', () {
-    test('shares one refresh request across concurrent 401 responses',
-        () async {
-      final tokenStore = _MockTokenStore();
-      var accessToken = 'old-access';
-      var refreshToken = 'refresh-one';
-      when(tokenStore.readAccessToken).thenAnswer((_) async => accessToken);
-      when(tokenStore.readRefreshToken).thenAnswer((_) async => refreshToken);
-      when(
-        () => tokenStore.save(
-          accessToken: any(named: 'accessToken'),
-          refreshToken: any(named: 'refreshToken'),
-        ),
-      ).thenAnswer((invocation) async {
-        accessToken = invocation.namedArguments[#accessToken] as String;
-        refreshToken = invocation.namedArguments[#refreshToken] as String;
-      });
+    test(
+      'shares one refresh request across concurrent 401 responses',
+      () async {
+        final tokenStore = _MockTokenStore();
+        var accessToken = 'old-access';
+        var refreshToken = 'refresh-one';
+        when(tokenStore.readAccessToken).thenAnswer((_) async => accessToken);
+        when(tokenStore.readRefreshToken).thenAnswer((_) async => refreshToken);
+        when(
+          () => tokenStore.save(
+            accessToken: any(named: 'accessToken'),
+            refreshToken: any(named: 'refreshToken'),
+          ),
+        ).thenAnswer((invocation) async {
+          accessToken = invocation.namedArguments[#accessToken] as String;
+          refreshToken = invocation.namedArguments[#refreshToken] as String;
+        });
 
-      var refreshCalls = 0;
-      final refreshDio =
-          Dio(BaseOptions(baseUrl: 'https://example.test/api/v1'));
-      refreshDio.httpClientAdapter = _CallbackAdapter((options) async {
-        refreshCalls += 1;
-        await Future<void>.delayed(const Duration(milliseconds: 25));
-        return _jsonBody(
-          <String, dynamic>{
+        var refreshCalls = 0;
+        final refreshDio = Dio(
+          BaseOptions(baseUrl: 'https://example.test/api/v1'),
+        );
+        refreshDio.httpClientAdapter = _CallbackAdapter((options) async {
+          refreshCalls += 1;
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+          return _jsonBody(<String, dynamic>{
             'access_token': 'new-access',
             'refresh_token': 'refresh-two',
-          },
-          200,
+          }, 200);
+        });
+
+        final mainDio = Dio(
+          BaseOptions(baseUrl: 'https://example.test/api/v1'),
         );
-      });
+        mainDio.httpClientAdapter = _CallbackAdapter((options) async {
+          final authorization = options.headers['Authorization'];
+          if (authorization == 'Bearer new-access') {
+            return _jsonBody(<String, dynamic>{'ok': true}, 200);
+          }
+          return _jsonBody(<String, dynamic>{'detail': 'expired'}, 401);
+        });
 
-      final mainDio = Dio(BaseOptions(baseUrl: 'https://example.test/api/v1'));
-      mainDio.httpClientAdapter = _CallbackAdapter((options) async {
-        final authorization = options.headers['Authorization'];
-        if (authorization == 'Bearer new-access') {
-          return _jsonBody(<String, dynamic>{'ok': true}, 200);
-        }
-        return _jsonBody(<String, dynamic>{'detail': 'expired'}, 401);
-      });
+        final client = ApiClient(
+          baseUrl: 'https://example.test',
+          tokenStore: tokenStore,
+          dio: mainDio,
+          refreshDio: refreshDio,
+        );
 
-      final client = ApiClient(
-        baseUrl: 'https://example.test',
-        tokenStore: tokenStore,
-        dio: mainDio,
-        refreshDio: refreshDio,
-      );
+        final responses = await Future.wait([
+          client.dio.get<Map<String, dynamic>>('/protected'),
+          client.dio.get<Map<String, dynamic>>('/protected'),
+        ]);
 
-      final responses = await Future.wait([
-        client.dio.get<Map<String, dynamic>>('/protected'),
-        client.dio.get<Map<String, dynamic>>('/protected'),
-      ]);
-
-      expect(responses, hasLength(2));
-      expect(
-        responses.every((response) => response.data?['ok'] == true),
-        isTrue,
-      );
-      expect(refreshCalls, 1);
-      expect(accessToken, 'new-access');
-      expect(refreshToken, 'refresh-two');
-      verify(
-        () => tokenStore.save(
-          accessToken: 'new-access',
-          refreshToken: 'refresh-two',
-        ),
-      ).called(1);
-    });
+        expect(responses, hasLength(2));
+        expect(
+          responses.every((response) => response.data?['ok'] == true),
+          isTrue,
+        );
+        expect(refreshCalls, 1);
+        expect(accessToken, 'new-access');
+        expect(refreshToken, 'refresh-two');
+        verify(
+          () => tokenStore.save(
+            accessToken: 'new-access',
+            refreshToken: 'refresh-two',
+          ),
+        ).called(1);
+      },
+    );
 
     test('anonymous request does not read or attach an access token', () async {
       final tokenStore = _MockTokenStore();

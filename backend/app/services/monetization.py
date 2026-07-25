@@ -185,6 +185,8 @@ def create_rewarded_ad_session(
     settings: Settings | None = None,
 ) -> RewardedAdSessionResult:
     current_settings = settings or get_settings()
+    if current_settings.admob_ssv_verification_mode == "disabled":
+        raise RewardedAdsUnavailableError("verification_disabled")
     now = moment or datetime.now(UTC)
     eligibility = rewarded_ad_eligibility(
         db,

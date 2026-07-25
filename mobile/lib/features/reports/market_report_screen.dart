@@ -11,11 +11,7 @@ import '../wallet/wallet_providers.dart';
 import 'report_providers.dart';
 
 class MarketReportScreen extends ConsumerStatefulWidget {
-  const MarketReportScreen({
-    required this.reportId,
-    this.preview,
-    super.key,
-  });
+  const MarketReportScreen({required this.reportId, this.preview, super.key});
 
   final String reportId;
   final MarketReportPreview? preview;
@@ -141,9 +137,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('تقرير أفضل 10')),
-      body: SafeArea(
-        child: _buildBody(context),
-      ),
+      body: SafeArea(child: _buildBody(context)),
     );
   }
 
@@ -197,8 +191,10 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
         ],
       );
     }
-    final target =
-        DateFormat('EEEE d MMMM yyyy', 'ar').format(report.targetSessionDate);
+    final target = DateFormat(
+      'EEEE d MMMM yyyy',
+      'ar',
+    ).format(report.targetSessionDate);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -215,9 +211,9 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
                 const SizedBox(height: 4),
                 Text(
                   target,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -227,10 +223,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
             ),
           ),
         ),
-        StructuredDataCard(
-          title: 'ملخص السوق',
-          data: report.marketSummary,
-        ),
+        StructuredDataCard(title: 'ملخص السوق', data: report.marketSummary),
         for (final item in report.items) _ReportItemCard(item: item),
       ],
     );
@@ -260,18 +253,15 @@ class _ReportItemCard extends StatelessWidget {
                     item.ticker,
                     textDirection: TextDirection.ltr,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
                 Chip(label: Text('${item.score.toStringAsFixed(2)} / 100')),
               ],
             ),
             const SizedBox(height: 10),
-            StructuredDataCard(
-              title: 'تفاصيل السهم',
-              data: item.payload,
-            ),
+            StructuredDataCard(title: 'تفاصيل السهم', data: item.payload),
           ],
         ),
       ),
@@ -296,7 +286,9 @@ class _ErrorCard extends StatelessWidget {
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 10),
             OutlinedButton(
-                onPressed: retry, child: const Text('إعادة المحاولة')),
+              onPressed: retry,
+              child: const Text('إعادة المحاولة'),
+            ),
           ],
         ),
       ),

@@ -77,9 +77,9 @@ class MonetizationCatalog {
   final int adRewardCooldownSeconds;
 
   Set<String> get storeProductIds => <String>{
-        ...plans.map((plan) => plan.productId).whereType<String>(),
-        ...coinPacks.map((pack) => pack.productId),
-      };
+    ...plans.map((plan) => plan.productId).whereType<String>(),
+    ...coinPacks.map((pack) => pack.productId),
+  };
 
   bool isCoinPack(String productId) {
     return coinPacks.any((pack) => pack.productId == productId);
@@ -90,9 +90,9 @@ class MonetizationCatalog {
       plans: _list(json['plans'])
           .map((value) => MonetizationPlan.fromJson(_map(value)))
           .toList(growable: false),
-      coinPacks: _list(json['coin_packs'])
-          .map((value) => CoinPack.fromJson(_map(value)))
-          .toList(growable: false),
+      coinPacks: _list(
+        json['coin_packs'],
+      ).map((value) => CoinPack.fromJson(_map(value))).toList(growable: false),
       adRewardPoints: json['ad_reward_points'] as int,
       adRewardCoins: json['ad_reward_coins'] as String,
       adRewardDailyLimit: json['ad_reward_daily_limit'] as int,
@@ -202,9 +202,7 @@ class RewardedAdSimulationResultModel {
   final int balancePoints;
   final String balanceCoins;
 
-  factory RewardedAdSimulationResultModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory RewardedAdSimulationResultModel.fromJson(Map<String, dynamic> json) {
     return RewardedAdSimulationResultModel(
       idempotent: json['idempotent'] as bool,
       balancePoints: json['balance_points'] as int,
@@ -240,9 +238,7 @@ class PurchaseVerificationResultModel {
   final String balanceCoins;
   final DateTime? subscriptionExpiresAt;
 
-  factory PurchaseVerificationResultModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory PurchaseVerificationResultModel.fromJson(Map<String, dynamic> json) {
     return PurchaseVerificationResultModel(
       purchaseId: json['purchase_id'] as String,
       productId: json['product_id'] as String,

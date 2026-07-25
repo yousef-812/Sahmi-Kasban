@@ -39,7 +39,9 @@ class _WalletHistoryScreenState extends ConsumerState<WalletHistoryScreen> {
       }
     });
     try {
-      final page = await ref.read(backendRepositoryProvider).getWalletHistory(
+      final page = await ref
+          .read(backendRepositoryProvider)
+          .getWalletHistory(
             limit: _pageSize,
             offset: reset ? 0 : _items.length,
           );
@@ -137,9 +139,7 @@ class _WalletEntryCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         leading: CircleAvatar(
-          child: Icon(
-            positive ? Icons.add_rounded : Icons.remove_rounded,
-          ),
+          child: Icon(positive ? Icons.add_rounded : Icons.remove_rounded),
         ),
         title: Text(_entryLabel(entry)),
         subtitle: Text('$date\nالحالة: ${entry.status}'),
@@ -148,11 +148,11 @@ class _WalletEntryCard extends StatelessWidget {
           amount,
           textDirection: TextDirection.ltr,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: positive
-                    ? Colors.green.shade700
-                    : Theme.of(context).colorScheme.error,
-              ),
+            fontWeight: FontWeight.w800,
+            color: positive
+                ? Colors.green.shade700
+                : Theme.of(context).colorScheme.error,
+          ),
         ),
       ),
     );

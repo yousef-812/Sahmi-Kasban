@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     daily_report_size: int = 10
     daily_report_cost_points: int = 100
 
-    google_play_package_name: str = "com.sahmikasban.app"
+    google_play_package_name: str = "com.sahmikasban.sahmi_kasban_mobile"
     google_play_verification_mode: str = "disabled"
     google_play_service_account_json: str = ""
     billing_token_encryption_key: str = ""

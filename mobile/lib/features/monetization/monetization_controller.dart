@@ -72,11 +72,11 @@ class MonetizationController extends StateNotifier<MonetizationState> {
     required InAppPurchase store,
     required RewardedAdGateway rewardedAdGateway,
     required Future<void> Function() onEntitlementChanged,
-  })  : _repository = repository,
-        _store = store,
-        _rewardedAdGateway = rewardedAdGateway,
-        _onEntitlementChanged = onEntitlementChanged,
-        super(const MonetizationState()) {
+  }) : _repository = repository,
+       _store = store,
+       _rewardedAdGateway = rewardedAdGateway,
+       _onEntitlementChanged = onEntitlementChanged,
+       super(const MonetizationState()) {
     _purchaseSubscription = _store.purchaseStream.listen(
       _handlePurchaseUpdates,
       onError: _handlePurchaseStreamError,
@@ -138,8 +138,8 @@ class MonetizationController extends StateNotifier<MonetizationState> {
     final platform = Platform.isAndroid
         ? 'android'
         : Platform.isIOS
-            ? 'ios'
-            : null;
+        ? 'ios'
+        : null;
     if (platform == null) {
       state = state.copyWith(error: 'الإعلانات متاحة على Android وiOS فقط.');
       return;
@@ -175,10 +175,7 @@ class MonetizationController extends StateNotifier<MonetizationState> {
       }
     } on Object catch (error) {
       if (mounted) {
-        state = state.copyWith(
-          adBusy: false,
-          error: error.toString(),
-        );
+        state = state.copyWith(adBusy: false, error: error.toString());
       }
     }
   }
@@ -196,9 +193,7 @@ class MonetizationController extends StateNotifier<MonetizationState> {
     final catalog = state.catalog;
     final product = state.products[productId];
     if (catalog == null || product == null) {
-      state = state.copyWith(
-        error: 'المنتج غير متاح في Google Play حاليًا.',
-      );
+      state = state.copyWith(error: 'المنتج غير متاح في Google Play حاليًا.');
       return;
     }
 
@@ -263,9 +258,7 @@ class MonetizationController extends StateNotifier<MonetizationState> {
     return false;
   }
 
-  Future<void> _handlePurchaseUpdates(
-    List<PurchaseDetails> purchases,
-  ) async {
+  Future<void> _handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
       switch (purchase.status) {
         case PurchaseStatus.pending:
@@ -275,6 +268,7 @@ class MonetizationController extends StateNotifier<MonetizationState> {
               message: 'عملية الشراء معلّقة لدى Google Play.',
             );
           }
+          break;
         case PurchaseStatus.error:
           if (mounted) {
             state = state.copyWith(
@@ -282,6 +276,7 @@ class MonetizationController extends StateNotifier<MonetizationState> {
               error: purchase.error?.message ?? 'فشلت عملية الشراء.',
             );
           }
+          break;
         case PurchaseStatus.canceled:
           if (mounted) {
             state = state.copyWith(
@@ -289,9 +284,11 @@ class MonetizationController extends StateNotifier<MonetizationState> {
               message: 'تم إلغاء عملية الشراء.',
             );
           }
+          break;
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
           await _verifyAndComplete(purchase);
+          break;
       }
     }
   }
@@ -371,15 +368,18 @@ final rewardedAdGatewayProvider = Provider<RewardedAdGateway>((ref) {
   return const GoogleRewardedAdGateway();
 });
 
-final monetizationControllerProvider = StateNotifierProvider.autoDispose<
-    MonetizationController, MonetizationState>((ref) {
-  return MonetizationController(
-    repository: ref.watch(monetizationRepositoryProvider),
-    store: ref.watch(inAppPurchaseProvider),
-    rewardedAdGateway: ref.watch(rewardedAdGatewayProvider),
-    onEntitlementChanged: () async {
-      ref.invalidate(walletSummaryProvider);
-      await ref.read(sessionControllerProvider.notifier).refreshProfile();
-    },
-  );
-});
+final monetizationControllerProvider =
+    StateNotifierProvider.autoDispose<
+      MonetizationController,
+      MonetizationState
+    >((ref) {
+      return MonetizationController(
+        repository: ref.watch(monetizationRepositoryProvider),
+        store: ref.watch(inAppPurchaseProvider),
+        rewardedAdGateway: ref.watch(rewardedAdGatewayProvider),
+        onEntitlementChanged: () async {
+          ref.invalidate(walletSummaryProvider);
+          await ref.read(sessionControllerProvider.notifier).refreshProfile();
+        },
+      );
+    });

@@ -36,9 +36,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/verify-email',
-        builder: (context, state) => VerifyEmailScreen(
-          email: state.uri.queryParameters['email'],
-        ),
+        builder: (context, state) =>
+            VerifyEmailScreen(email: state.uri.queryParameters['email']),
       ),
       GoRoute(
         path: '/forgot-password',

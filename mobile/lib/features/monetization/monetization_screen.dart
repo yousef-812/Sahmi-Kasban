@@ -33,10 +33,7 @@ class MonetizationScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(18),
                 children: [
                   if (state.error case final error?)
-                    _NoticeCard(
-                      message: _cleanError(error),
-                      isError: true,
-                    ),
+                    _NoticeCard(message: _cleanError(error), isError: true),
                   if (state.message case final message?)
                     _NoticeCard(message: message),
                   if (status != null) _CurrentPlanCard(status: status),
@@ -52,8 +49,8 @@ class MonetizationScreen extends ConsumerWidget {
                   Text(
                     'خطط الاشتراك',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   if (catalog != null)
@@ -64,7 +61,7 @@ class MonetizationScreen extends ConsumerWidget {
                         price: plan.productId == null
                             ? 'مجانية'
                             : state.products[plan.productId]?.price ??
-                                'غير متاح حاليًا',
+                                  'غير متاح حاليًا',
                         storeAvailable: state.storeAvailable,
                         busy: state.purchasingProductId == plan.productId,
                         onPurchase: plan.productId == null
@@ -75,8 +72,8 @@ class MonetizationScreen extends ConsumerWidget {
                   Text(
                     'باقات العملات',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -87,7 +84,8 @@ class MonetizationScreen extends ConsumerWidget {
                     for (final pack in catalog.coinPacks)
                       _CoinPackCard(
                         pack: pack,
-                        price: state.products[pack.productId]?.price ??
+                        price:
+                            state.products[pack.productId]?.price ??
                             'غير متاح حاليًا',
                         storeAvailable: state.storeAvailable,
                         busy: state.purchasingProductId == pack.productId,
@@ -141,8 +139,8 @@ class _CurrentPlanCard extends StatelessWidget {
                   Text(
                     _planName(status.planCode),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   Text('${status.weeklyCoins} عملة أسبوعيًا'),
                   Text(
@@ -193,8 +191,8 @@ class _RewardedAdCard extends StatelessWidget {
                   child: Text(
                     'شاهد إعلانًا واحصل على ${catalog.adRewardCoins} عملة',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -268,8 +266,8 @@ class _PlanCard extends StatelessWidget {
                   child: Text(
                     plan.displayNameAr,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
                 if (current) const Chip(label: Text('الخطة الحالية')),
@@ -280,18 +278,16 @@ class _PlanCard extends StatelessWidget {
             Text('سجل التقارير: ${plan.reportHistoryDays} يوم'),
             const SizedBox(height: 12),
             FilledButton.tonal(
-              onPressed: current ||
-                      onPurchase == null ||
-                      !storeAvailable ||
-                      busy
+              onPressed:
+                  current || onPurchase == null || !storeAvailable || busy
                   ? null
                   : onPurchase,
               child: Text(
                 busy
                     ? 'جارٍ فتح Google Play...'
                     : current
-                        ? 'مفعّلة'
-                        : price,
+                    ? 'مفعّلة'
+                    : price,
               ),
             ),
           ],
@@ -408,5 +404,7 @@ String _eligibilityMessage(RewardedAdEligibilityModel eligibility) {
 }
 
 String _cleanError(String value) {
-  return value.replaceFirst('ApiException: ', '').replaceFirst('Bad state: ', '');
+  return value
+      .replaceFirst('ApiException: ', '')
+      .replaceFirst('Bad state: ', '');
 }
