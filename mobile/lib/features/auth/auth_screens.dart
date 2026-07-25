@@ -37,10 +37,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             password: _passwordController.text,
           );
     } on ApiException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      if (error.statusCode == 403) {
+        final email = Uri.encodeQueryComponent(_emailController.text.trim());
+        context.go('/verify-email?email=$email');
       }
     } finally {
       if (mounted) {
@@ -90,7 +95,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   value == null || value.isEmpty ? 'أدخل كلمة المرور.' : null,
               onFieldSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: 22),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton(
+                onPressed: () => context.go('/forgot-password'),
+                child: const Text('نسيت كلمة المرور؟'),
+              ),
+            ),
+            const SizedBox(height: 8),
             FilledButton(
               onPressed: _submitting ? null : _submit,
               child: _submitting
@@ -159,12 +171,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         ),
       );
-      context.go('/login');
+      final email = Uri.encodeQueryComponent(result.email);
+      context.go('/verify-email?email=$email');
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
       }
     } finally {
       if (mounted) {
@@ -290,7 +303,8 @@ class _AuthScaffold extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           height: 1.6,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                   const SizedBox(height: 28),
