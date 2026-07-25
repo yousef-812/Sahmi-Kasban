@@ -105,9 +105,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _verifying ? null : _verify,
-          child: _verifying
-              ? const _ButtonLoader()
-              : const Text('تأكيد البريد'),
+          child:
+              _verifying ? const _ButtonLoader() : const Text('تأكيد البريد'),
         ),
         const SizedBox(height: 28),
         const Divider(),
@@ -191,8 +190,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return _AccountActionScaffold(
       icon: Icons.lock_reset_rounded,
       title: 'نسيت كلمة المرور؟',
-      subtitle:
-          'أدخل بريدك وسنرسل تعليمات الاستعادة دون الكشف عن وجود الحساب.',
+      subtitle: 'أدخل بريدك وسنرسل تعليمات الاستعادة دون الكشف عن وجود الحساب.',
       children: [
         TextField(
           controller: _emailController,
@@ -407,8 +405,7 @@ class _AccountActionScaffold extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           height: 1.6,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                   const SizedBox(height: 28),
