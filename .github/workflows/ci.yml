@@ -9,31 +9,26 @@ permissions:
   contents: read
 
 jobs:
-  diagnose-lint:
+  diagnose-local-lint:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - name: Run concise lint diagnostics
+      - name: Run repository lint script without checkout noise
         shell: bash
         run: |
           set -Eeuo pipefail
-          python -m pip install --quiet "ruff>=0.7"
           mkdir -p /tmp/sahmi-source
           curl --fail --silent --show-error --location \
             "https://github.com/${GITHUB_REPOSITORY}/archive/${SOURCE_SHA}.tar.gz" \
             | tar -xz --strip-components=1 -C /tmp/sahmi-source
-          cd /tmp/sahmi-source
-          echo "=== Core Ruff ==="
-          python -m ruff check src tests --output-format concise
-          echo "=== Backend Ruff ==="
-          python -m ruff check \
-            backend/app backend/tests backend/alembic/env.py backend/scripts \
-            backend/reusable_data_fetcher.py \
-            --config backend/pyproject.toml \
-            --output-format concise
+          GITHUB_WORKSPACE=/tmp/sahmi-source \
+          RUN_MODE=lint \
+          CI_RESULTS_DIR=/tmp/sahmi-source/.github/.ci-results \
+          PIP_CACHE_DIR=/tmp/sahmi-source/.github/.cache/pip \
+            bash /tmp/sahmi-source/.github/actions/repository-ci/run.sh
 
   repository-lint:
     runs-on: ubuntu-latest
