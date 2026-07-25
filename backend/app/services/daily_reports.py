@@ -651,7 +651,7 @@ async def generate_daily_top10_report(
             "failures": failures,
         }
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
         raced = _complete_report_for_target(db, session.target_session_date)
         if raced is None:
@@ -659,7 +659,9 @@ async def generate_daily_top10_report(
             raise
         refreshed_run = db.get(MarketScanRun, run.id)
         if refreshed_run is None:
-            raise DailyReportGenerationError("Concurrent report has no scan record")
+            raise DailyReportGenerationError(
+                "Concurrent report has no scan record"
+            ) from exc
         return DailyReportGenerationResult(
             report=raced,
             scan_run=refreshed_run,
