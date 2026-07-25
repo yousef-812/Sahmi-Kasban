@@ -9,6 +9,25 @@ permissions:
   contents: read
 
 jobs:
+  diagnose-phase-three-lint:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-top10-scan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - name: Run concise Backend Ruff diagnostic
+        shell: bash
+        run: |
+          python -m pip install --quiet "ruff>=0.7"
+          python -m ruff check \
+            backend/app backend/tests backend/alembic/env.py backend/scripts \
+            backend/reusable_data_fetcher.py \
+            --config backend/pyproject.toml \
+            --output-format concise
+
   repository-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
