@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
 import '../features/bootstrap/splash_screen.dart';
@@ -29,6 +30,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
+        path: '/verify-email',
+        builder: (context, state) => VerifyEmailScreen(
+          email: state.uri.queryParameters['email'],
+        ),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => ResetPasswordScreen(
+          initialToken: state.uri.queryParameters['token'],
+          email: state.uri.queryParameters['email'],
+        ),
+      ),
+      GoRoute(
         path: '/home',
         builder: (context, state) => const DashboardScreen(),
       ),
@@ -47,11 +65,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       final authenticated = session.status == SessionStatus.authenticated;
-      final authRoute = location == '/login' || location == '/register';
+      final publicAccountRoutes = <String>{
+        '/login',
+        '/register',
+        '/verify-email',
+        '/forgot-password',
+        '/reset-password',
+      };
+      final publicAccountRoute = publicAccountRoutes.contains(location);
       if (!authenticated) {
-        return authRoute ? null : '/login';
+        return publicAccountRoute ? null : '/login';
       }
-      if (authRoute || location == '/splash' || location == '/onboarding') {
+      if (publicAccountRoute ||
+          location == '/splash' ||
+          location == '/onboarding') {
         return '/home';
       }
       return null;
