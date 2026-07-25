@@ -7,7 +7,8 @@ import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
 
-final avatarOptionsProvider = FutureProvider.autoDispose<List<AvatarOption>>((ref) {
+final avatarOptionsProvider =
+    FutureProvider.autoDispose<List<AvatarOption>>((ref) {
   return ref.watch(backendRepositoryProvider).getAvatarOptions();
 });
 

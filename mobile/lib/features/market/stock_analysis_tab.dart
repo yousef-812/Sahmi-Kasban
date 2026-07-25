@@ -172,8 +172,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                 ],
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  onPressed:
-                      _selected == null || _analyzing ? null : _analyze,
+                  onPressed: _selected == null || _analyzing ? null : _analyze,
                   icon: _analyzing
                       ? const SizedBox.square(
                           dimension: 20,

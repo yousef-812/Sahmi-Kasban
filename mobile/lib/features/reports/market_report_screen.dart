@@ -21,8 +21,7 @@ class MarketReportScreen extends ConsumerStatefulWidget {
   final MarketReportPreview? preview;
 
   @override
-  ConsumerState<MarketReportScreen> createState() =>
-      _MarketReportScreenState();
+  ConsumerState<MarketReportScreen> createState() => _MarketReportScreenState();
 }
 
 class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
@@ -198,8 +197,8 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
         ],
       );
     }
-    final target = DateFormat('EEEE d MMMM yyyy', 'ar')
-        .format(report.targetSessionDate);
+    final target =
+        DateFormat('EEEE d MMMM yyyy', 'ar').format(report.targetSessionDate);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -296,7 +295,8 @@ class _ErrorCard extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 10),
-            OutlinedButton(onPressed: retry, child: const Text('إعادة المحاولة')),
+            OutlinedButton(
+                onPressed: retry, child: const Text('إعادة المحاولة')),
           ],
         ),
       ),
