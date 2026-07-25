@@ -72,26 +72,39 @@ All 12 backend failures had the same cause: `jwt.exceptions.InvalidKeyError: HMA
 - Added a short development-only default JWT key in `Settings` so local Development/Test runs do not require a `.env` file.
 - Kept the default shorter than 32 characters, so Staging/Production validation still rejects startup unless a real secret is provided.
 - Restored `conftest.py` to a clean import-only header rather than mutating environment variables between import blocks.
-- Corrected confirmed First Party import ordering in:
-  - `backend/app/market_data/tradingview.py`
-  - `backend/tests/test_tradingview_provider.py`
+- Corrected First Party import ordering in the TradingView provider and tests.
+- Used Ruff's own fix output to correct the remaining `ta.trend` import order in `backend/reusable_data_fetcher.py`.
 
-A fresh local `ruff check` and `pytest` run is required to identify any remaining import-only findings and confirm that all 38 backend tests now pass.
+## Repository-local GitHub Actions implementation
 
-## Repository-local GitHub Action experiment
-
-At the repository owner's request, CI storage and execution logic were moved into the repository itself:
+At the repository owner's request, CI execution and temporary storage were moved into the repository workspace:
 
 - Added `.github/actions/repository-ci/action.yml`.
 - Added `.github/actions/repository-ci/run.sh`.
-- Replaced five separate jobs with one `repository-ci` job.
 - Removed `astral-sh/ruff-action`.
-- Removed `actions/setup-python` and its external pip cache integration.
-- Stored pip downloads under `.github/.cache/pip` during the job.
-- Stored check logs under `.github/.ci-results` during the job.
+- Removed `actions/setup-python` pip-cache integration.
+- Stored pip downloads under `.github/.cache/pip` during each job.
+- Stored check logs under `.github/.ci-results` during each job.
 - Added both generated directories to `.gitignore`.
+- Split CI into `repository-lint` and `repository-tests` jobs.
+- The workflow calls the repository-owned `run.sh` directly after checkout. A direct script call was retained because the same script passed while the composite wrapper path failed in the PR merge environment.
 
-Workflow run `30158915914` still failed before `Checkout repository` or any other step was created. GitHub returned `steps: None` for the single `repository-ci` job. This proves the remaining GitHub Actions failure happens before repository code, the local action, cache, or logs can run. The likely remaining causes are GitHub Actions account/repository availability, hosted-runner allocation, billing/minute limits, or an account-level Actions restriction.
+The private repository had exhausted its included GitHub Actions allowance and returned `steps: None` before runner allocation. After the repository was made public, standard hosted runners started normally.
+
+## Final CI verification
+
+Workflow run `30160274508` completed successfully on commit `5988d945e8110e1f58b0831614337fc859a1ce0b`:
+
+- `repository-lint`: success.
+- `repository-tests`: success.
+- PostgreSQL 16 service initialization: success.
+- Core compile and Ruff: success.
+- Backend compile and Ruff: success.
+- Core and backend test suites: success.
+- Alembic upgrade, downgrade to base, and rebuild: success.
+- Live TradingView `COMI` smoke test: success.
+
+The repository-owned script is fail-fast, so the successful job confirms every listed command completed with exit code zero. This closes the TradingView migration and verification gate.
 
 ## Storage incident
 
