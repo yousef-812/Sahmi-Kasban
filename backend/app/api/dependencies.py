@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.admin import is_admin_email
 from app.core.security import InvalidAccessTokenError, decode_access_token
 from app.db.session import get_db
 from app.models import User
@@ -40,3 +41,15 @@ def get_current_user(db: DatabaseSession, credentials: BearerCredentials) -> Use
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_current_admin(current_user: CurrentUser) -> User:
+    if not is_admin_email(current_user.email):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Community administrator access required",
+        )
+    return current_user
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]
