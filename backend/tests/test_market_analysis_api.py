@@ -3,10 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
+from sahmi_kasban.ai import AIProviderError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
-from sahmi_kasban.ai import AIProviderError
 
 from app.main import app
 from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
