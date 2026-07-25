@@ -9,6 +9,92 @@ permissions:
   contents: read
 
 jobs:
+  update-phase-four-roadmap:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/flutter-core-app'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+
+      - name: Record actual roadmap progress
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("ROADMAP.md")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace("> النسخة: 1.0", "> النسخة: 1.1", 1)
+          text = text.replace(
+              "> الحالة: معتمدة للتنفيذ",
+              "> الحالة: قيد التنفيذ — المراحل 0–3 مكتملة والمرحلة 4 قيد التطوير",
+              1,
+          )
+          scope = "> النطاق: تطبيق Flutter + Backend Python + PostgreSQL + محركات التحليل + الذكاء الاصطناعي + المجتمع + تحقيق الدخل"
+          snapshot = """
+          > آخر تحديث تنفيذي: 2026-07-25  
+          > المراحل المكتملة والمدمجة: 0، 1، 2، 3  
+          > المرحلة الحالية: 4 — تطبيق Flutter الأساسي  
+          > الفرع الجاري: `agent/flutter-core-app`
+          """.strip()
+          if snapshot not in text:
+              text = text.replace(scope, f"{scope}\n{snapshot}", 1)
+
+          replacements = {
+              "## المرحلة 0 — تثبيت المتطلبات والبنية": "## المرحلة 0 — تثبيت المتطلبات والبنية ✅ مكتملة",
+              "## المرحلة 1 — الحسابات والمحفظة": "## المرحلة 1 — الحسابات والمحفظة ✅ مكتملة",
+              "## المرحلة 2 — بيانات السوق ومحركات التحليل": "## المرحلة 2 — بيانات السوق ومحركات التحليل ✅ مكتملة",
+              "## المرحلة 3 — تقرير أفضل 10": "## المرحلة 3 — تقرير أفضل 10 ✅ مكتملة",
+              "## المرحلة 4 — تطبيق Flutter الأساسي": "## المرحلة 4 — تطبيق Flutter الأساسي 🚧 قيد التنفيذ",
+          }
+          for old, new in replacements.items():
+              text = text.replace(old, new, 1)
+
+          old_status = """- [x] نقل وتنظيم محركات التحليل الأساسية.
+          - [x] إضافة تكامل Groq / Open-WebUI.
+          - [x] إضافة خدمات AI للتحليل والمراجعة واستخراج التوقع والتقييم.
+          - [x] اختبارات أساسية للمحركات والـAI.
+          - [ ] Backend التطبيق وقاعدة البيانات.
+          - [ ] Flutter application.
+          - [ ] Wallet Ledger والاشتراكات.
+          - [ ] المسح اليومي وأفضل 10.
+          - [ ] المناقشات والتقييم.
+          - [ ] لوحة الإدارة.
+          - [ ] الإطلاق على Google Play."""
+          new_status = """- [x] نقل وتنظيم محركات التحليل الأساسية.
+          - [x] إضافة تكامل Groq / Open-WebUI.
+          - [x] إضافة خدمات AI للتحليل والمراجعة واستخراج التوقع والتقييم.
+          - [x] اختبارات أساسية للمحركات والـAI.
+          - [x] Backend التطبيق وقاعدة البيانات.
+          - [x] الحسابات والملف الشخصي وWallet Ledger والخطة المجانية.
+          - [x] بيانات EGX وتحليل السهم والكاش والخصم بعد النجاح.
+          - [x] المسح اليومي وتقرير أفضل 10 وفتح التقرير.
+          - [ ] Flutter application — قيد التنفيذ في المرحلة 4.
+          - [ ] الإعلانات والاشتراكات المدفوعة.
+          - [ ] المناقشات والتقييم.
+          - [ ] لوحة الإدارة والإشعارات.
+          - [ ] سجل الأداء والجودة.
+          - [ ] الإطلاق على Google Play."""
+          text = text.replace(old_status, new_status, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+
+          if git diff --quiet -- ROADMAP.md; then
+            echo "ROADMAP.md is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ROADMAP.md
+          git commit -m "Update roadmap for Phase 4"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+
   repository-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -64,3 +150,42 @@ jobs:
         env:
           RUN_MODE: tests
         run: bash .github/actions/repository-ci/run.sh
+
+  flutter-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Install Flutter inside repository workspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [ ! -x "$FLUTTER_HOME/bin/flutter" ]; then
+            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          fi
+          echo "$FLUTTER_HOME/bin" >> "$GITHUB_PATH"
+          "$FLUTTER_HOME/bin/flutter" config --no-analytics
+          "$FLUTTER_HOME/bin/flutter" --version
+
+      - name: Fetch Flutter packages
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Verify Flutter formatting
+        working-directory: mobile
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze Flutter application
+        working-directory: mobile
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        working-directory: mobile
+        run: flutter test
