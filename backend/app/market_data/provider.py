@@ -12,13 +12,19 @@ import yfinance as yf
 
 from app.core.config import get_settings
 from app.market_data.egx_symbols import normalize_egx_ticker, to_yahoo_symbol
+from app.market_data.tradingview import TradingViewMarketDataProvider
 from app.market_data.types import CandleSeries, MarketDataProvider, MarketDataUnavailableError
 
 logger = logging.getLogger(__name__)
 
 
 def _fingerprint_candles(candles: list[dict[str, object]]) -> str:
-    canonical = json.dumps(candles, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    canonical = json.dumps(
+        candles,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -90,10 +96,18 @@ class YFinanceMarketDataProvider:
         timestamps = pd.to_datetime(normalized.index, errors="coerce", utc=True)
         normalized = normalized.assign(timestamp=timestamps)
         for column in required:
-            normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
-        normalized = normalized.dropna(subset=["timestamp", "open", "high", "low", "close"])
+            normalized[column] = pd.to_numeric(
+                normalized[column],
+                errors="coerce",
+            )
+        normalized = normalized.dropna(
+            subset=["timestamp", "open", "high", "low", "close"]
+        )
         normalized["volume"] = normalized["volume"].fillna(0).clip(lower=0)
-        normalized = normalized.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
+        normalized = normalized.sort_values("timestamp").drop_duplicates(
+            "timestamp",
+            keep="last",
+        )
 
         candles: list[dict[str, object]] = []
         for row in normalized.itertuples(index=False):
@@ -137,20 +151,31 @@ class FallbackMarketDataProvider:
         failures: list[str] = []
         for provider in self.providers:
             try:
-                return await provider.get_history(ticker, period=period, interval=interval)
+                return await provider.get_history(
+                    ticker,
+                    period=period,
+                    interval=interval,
+                )
             except MarketDataUnavailableError as exc:
                 failures.append(f"{provider.name}: {exc}")
                 logger.warning("Market data provider failed: %s", exc)
-        raise MarketDataUnavailableError(" | ".join(failures) or "No provider returned data")
+        raise MarketDataUnavailableError(
+            " | ".join(failures) or "No provider returned data"
+        )
 
 
 def _provider_from_name(name: str) -> MarketDataProvider | None:
     normalized = name.strip().lower()
     if not normalized:
         return None
+    if normalized == "tradingview":
+        return TradingViewMarketDataProvider()
     if normalized == "yfinance":
         return YFinanceMarketDataProvider()
-    logger.warning("Configured market-data provider is not implemented: %s", normalized)
+    logger.warning(
+        "Configured market-data provider is not implemented: %s",
+        normalized,
+    )
     return None
 
 
@@ -159,11 +184,16 @@ def get_market_data_provider() -> MarketDataProvider:
     settings = get_settings()
     providers: list[MarketDataProvider] = []
     seen: set[str] = set()
-    for name in (settings.market_data_primary, settings.market_data_fallback):
+    for name in (
+        settings.market_data_primary,
+        settings.market_data_fallback,
+    ):
         provider = _provider_from_name(name)
         if provider is not None and provider.name not in seen:
             seen.add(provider.name)
             providers.append(provider)
     if not providers:
-        raise MarketDataUnavailableError("No supported market-data provider is configured")
+        raise MarketDataUnavailableError(
+            "No supported market-data provider is configured"
+        )
     return FallbackMarketDataProvider(tuple(providers))
