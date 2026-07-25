@@ -86,6 +86,18 @@ class SessionController extends StateNotifier<SessionState> {
     state = SessionState.authenticated(profile);
   }
 
+  Future<UserProfile> updateProfile({
+    required String displayName,
+    required String avatarKey,
+  }) async {
+    final profile = await _repository.updateProfile(
+      displayName: displayName,
+      avatarKey: avatarKey,
+    );
+    state = SessionState.authenticated(profile);
+    return profile;
+  }
+
   Future<void> logout() async {
     await _repository.logout();
     state = const SessionState.unauthenticated();
