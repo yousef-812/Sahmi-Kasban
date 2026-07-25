@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-
 from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession
