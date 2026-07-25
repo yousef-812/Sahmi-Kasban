@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.schemas.community import (
@@ -30,9 +31,19 @@ from app.services.community import (
     report_discussion,
     unmute_user,
 )
-from app.services.wallet import InsufficientBalanceError, points_to_coins
+from app.services.community_ai import (
+    get_community_ai_service,
+    review_pending_discussion,
+)
+from app.services.wallet import (
+    InsufficientBalanceError,
+    get_wallet_account,
+    points_to_coins,
+)
+from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(prefix="/community", tags=["community"])
+CommunityAIService = Annotated[SahmiAIService, Depends(get_community_ai_service)]
 
 
 def _discussion_response(
@@ -67,10 +78,11 @@ def _discussion_response(
     response_model=DiscussionSubmissionResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def submit_discussion(
+async def submit_discussion(
     payload: DiscussionCreateRequest,
     db: DatabaseSession,
     current_user: CurrentUser,
+    ai_service: CommunityAIService,
 ) -> DiscussionSubmissionResponse:
     try:
         result = create_discussion(
@@ -83,6 +95,16 @@ def submit_discussion(
             period_type=payload.period_type,
         )
         db.commit()
+
+        discussion = result.discussion
+        if discussion.status == "pending_review":
+            ai_review = await review_pending_discussion(
+                db,
+                discussion_id=discussion.id,
+                ai_service=ai_service,
+            )
+            discussion = ai_review.discussion
+            db.commit()
     except InsufficientBalanceError as exc:
         db.rollback()
         raise HTTPException(
@@ -102,18 +124,15 @@ def submit_discussion(
             detail=str(exc),
         ) from exc
 
-    view = DiscussionView(discussion=result.discussion, author=result.author)
-    held_points = (
-        DISCUSSION_COST_POINTS
-        if result.discussion.status == "pending_review"
-        else 0
-    )
+    account = get_wallet_account(db, current_user.id)
+    view = DiscussionView(discussion=discussion, author=result.author)
+    held_points = DISCUSSION_COST_POINTS if discussion.status == "pending_review" else 0
     return DiscussionSubmissionResponse(
         discussion=_discussion_response(view, include_moderation=True),
         held_points=held_points,
         held_coins=points_to_coins(held_points),
-        balance_points=result.balance_points,
-        balance_coins=points_to_coins(result.balance_points),
+        balance_points=account.balance_points,
+        balance_coins=points_to_coins(account.balance_points),
         idempotent=result.idempotent,
     )
 
