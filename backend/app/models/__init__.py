@@ -11,10 +11,12 @@ from app.models.entities import (
 )
 from app.models.market_data import MarketDataSnapshot
 from app.models.market_reports import MarketReportUnlock, MarketScanRun
+from app.models.monetization import BillingPurchase, RewardedAdClaim, RewardedAdSession
 
 __all__ = [
     "AccountToken",
     "AuthSession",
+    "BillingPurchase",
     "Discussion",
     "MarketDataSnapshot",
     "MarketReport",
@@ -22,6 +24,8 @@ __all__ = [
     "MarketReportUnlock",
     "MarketScanRun",
     "PredictionVerification",
+    "RewardedAdClaim",
+    "RewardedAdSession",
     "StockAnalysis",
     "Subscription",
     "User",

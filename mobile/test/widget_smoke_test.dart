@@ -8,10 +8,7 @@ void main() {
     expect(avatarKeys, hasLength(12));
     expect(avatarKeys.toSet(), hasLength(12));
     expect(avatarAssetPath('avatar_01'), 'assets/avatars/avatar_01.webp');
-    expect(
-      avatarAssetPath('unsupported'),
-      'assets/avatars/avatar_01.webp',
-    );
+    expect(avatarAssetPath('unsupported'), 'assets/avatars/avatar_01.webp');
   });
 
   testWidgets('structured data card renders and expands JSON payload', (
@@ -22,10 +19,7 @@ void main() {
         home: Scaffold(
           body: StructuredDataCard(
             title: 'تفاصيل التحليل',
-            data: <String, dynamic>{
-              'ticker': 'COMI',
-              'score': 87.5,
-            },
+            data: <String, dynamic>{'ticker': 'COMI', 'score': 87.5},
           ),
         ),
       ),

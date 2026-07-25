@@ -5,5 +5,5 @@ import '../../domain/models.dart';
 
 final latestReportPreviewProvider =
     FutureProvider.autoDispose<MarketReportPreview?>((ref) {
-  return ref.watch(backendRepositoryProvider).getLatestReportPreview();
-});
+      return ref.watch(backendRepositoryProvider).getLatestReportPreview();
+    });

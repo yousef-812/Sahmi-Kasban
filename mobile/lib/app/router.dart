@@ -7,6 +7,7 @@ import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
 import '../features/bootstrap/splash_screen.dart';
 import '../features/home/dashboard_screen.dart';
+import '../features/monetization/monetization_page.dart';
 import '../features/onboarding/onboarding_controller.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
@@ -35,9 +36,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/verify-email',
-        builder: (context, state) => VerifyEmailScreen(
-          email: state.uri.queryParameters['email'],
-        ),
+        builder: (context, state) =>
+            VerifyEmailScreen(email: state.uri.queryParameters['email']),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -61,6 +61,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/wallet/history',
         builder: (context, state) => const WalletHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/monetization',
+        builder: (context, state) => const MonetizationPage(),
       ),
       GoRoute(
         path: '/reports/:reportId',

@@ -13,10 +13,10 @@ class SessionState {
   const SessionState.loading() : this(status: SessionStatus.loading);
 
   const SessionState.unauthenticated({String? errorMessage})
-      : this(status: SessionStatus.unauthenticated, errorMessage: errorMessage);
+    : this(status: SessionStatus.unauthenticated, errorMessage: errorMessage);
 
   const SessionState.authenticated(UserProfile profile)
-      : this(status: SessionStatus.authenticated, profile: profile);
+    : this(status: SessionStatus.authenticated, profile: profile);
 
   final SessionStatus status;
   final UserProfile? profile;
@@ -27,9 +27,9 @@ class SessionController extends StateNotifier<SessionState> {
   SessionController({
     required BackendRepository repository,
     required TokenStore tokenStore,
-  })  : _repository = repository,
-        _tokenStore = tokenStore,
-        super(const SessionState.loading()) {
+  }) : _repository = repository,
+       _tokenStore = tokenStore,
+       super(const SessionState.loading()) {
     restore();
   }
 
@@ -106,8 +106,8 @@ class SessionController extends StateNotifier<SessionState> {
 
 final sessionControllerProvider =
     StateNotifierProvider<SessionController, SessionState>((ref) {
-  return SessionController(
-    repository: ref.watch(backendRepositoryProvider),
-    tokenStore: ref.watch(tokenStoreProvider),
-  );
-});
+      return SessionController(
+        repository: ref.watch(backendRepositoryProvider),
+        tokenStore: ref.watch(tokenStoreProvider),
+      );
+    });

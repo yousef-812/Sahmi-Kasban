@@ -124,9 +124,9 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
               children: [
                 Text(
                   'تحليل سهم من البورصة المصرية',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -211,10 +211,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
         if (_analysis case final analysis?) ...[
           const SizedBox(height: 16),
           _AnalysisHeader(analysis: analysis),
-          StructuredDataCard(
-            title: 'تفاصيل التحليل',
-            data: analysis.payload,
-          ),
+          StructuredDataCard(title: 'تفاصيل التحليل', data: analysis.payload),
         ],
       ],
     );
@@ -228,8 +225,10 @@ class _AnalysisHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timestamp = DateFormat('d MMM yyyy، h:mm a', 'ar')
-        .format(analysis.dataAsOf.toLocal());
+    final timestamp = DateFormat(
+      'd MMM yyyy، h:mm a',
+      'ar',
+    ).format(analysis.dataAsOf.toLocal());
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -239,9 +238,9 @@ class _AnalysisHeader extends StatelessWidget {
             Text(
               analysis.ticker,
               textDirection: TextDirection.ltr,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             Text('البيانات حتى: $timestamp'),

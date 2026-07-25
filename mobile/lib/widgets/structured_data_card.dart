@@ -18,10 +18,7 @@ class StructuredDataCard extends StatelessWidget {
     return Card(
       child: ExpansionTile(
         initiallyExpanded: true,
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           Container(
@@ -35,9 +32,9 @@ class StructuredDataCard extends StatelessWidget {
               formatted,
               textDirection: TextDirection.ltr,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontFamily: 'monospace',
-                    height: 1.5,
-                  ),
+                fontFamily: 'monospace',
+                height: 1.5,
+              ),
             ),
           ),
         ],

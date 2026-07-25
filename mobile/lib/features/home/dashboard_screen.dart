@@ -82,16 +82,16 @@ class _HomeTab extends ConsumerWidget {
         children: [
           Text(
             'أهلًا ${session.profile?.displayName ?? ''}',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(
             'الأسهم الأعلى تقييمًا وفق التحليل الآلي للجلسة القادمة',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 22),
           preview.when(
@@ -137,8 +137,8 @@ class _ReportPreviewCard extends StatelessWidget {
                   child: Text(
                     'تقرير جلسة ${target.day}/${target.month}/${target.year}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -159,23 +159,17 @@ class _ReportPreviewCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.',
-            ),
+            const Text('المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.'),
             const SizedBox(height: 18),
             FilledButton.icon(
-              onPressed: () => context.push(
-                '/reports/${report.reportId}',
-                extra: report,
-              ),
+              onPressed: () =>
+                  context.push('/reports/${report.reportId}', extra: report),
               icon: Icon(
                 report.unlocked
                     ? Icons.visibility_rounded
                     : Icons.lock_open_rounded,
               ),
-              label: Text(
-                report.unlocked ? 'عرض التقرير' : 'فتح التقرير',
-              ),
+              label: Text(report.unlocked ? 'عرض التقرير' : 'فتح التقرير'),
             ),
           ],
         ),
@@ -215,9 +209,9 @@ class _WalletTab extends ConsumerWidget {
                     Text(
                       '${summary.balanceCoins} عملة',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Text('الخطة: ${summary.planCode}'),
@@ -232,6 +226,12 @@ class _WalletTab extends ConsumerWidget {
                       onPressed: () => context.push('/wallet/history'),
                       icon: const Icon(Icons.receipt_long_outlined),
                       label: const Text('عرض سجل العمليات'),
+                    ),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      onPressed: () => context.push('/monetization'),
+                      icon: const Icon(Icons.workspace_premium_outlined),
+                      label: const Text('الخطط وشراء العملات'),
                     ),
                   ],
                 ),
@@ -267,9 +267,9 @@ class _ProfileTab extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(
                   profile?.displayName ?? '',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(

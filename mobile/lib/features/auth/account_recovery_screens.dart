@@ -79,9 +79,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -105,8 +105,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _verifying ? null : _verify,
-          child:
-              _verifying ? const _ButtonLoader() : const Text('تأكيد البريد'),
+          child: _verifying
+              ? const _ButtonLoader()
+              : const Text('تأكيد البريد'),
         ),
         const SizedBox(height: 28),
         const Divider(),
@@ -179,9 +180,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   void _showMessage(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -271,10 +272,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     }
     setState(() => _submitting = true);
     try {
-      await ref.read(backendRepositoryProvider).resetPassword(
-            token: token,
-            newPassword: password,
-          );
+      await ref
+          .read(backendRepositoryProvider)
+          .resetPassword(token: token, newPassword: password);
       if (!mounted) {
         return;
       }
@@ -291,9 +291,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   void _showMessage(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -326,9 +326,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             helperText: '10 أحرف على الأقل وحرف كبير وصغير ورقم.',
             prefixIcon: const Icon(Icons.lock_outline_rounded),
             suffixIcon: IconButton(
-              onPressed: () => setState(
-                () => _obscurePassword = !_obscurePassword,
-              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_outlined
@@ -396,17 +395,17 @@ class _AccountActionScaffold extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     subtitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          height: 1.6,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      height: 1.6,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 28),
                   ...children,

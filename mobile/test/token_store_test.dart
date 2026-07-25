@@ -15,10 +15,7 @@ void main() {
 
     expect(await store.read(), isNull);
 
-    await store.save(
-      accessToken: 'access-one',
-      refreshToken: 'refresh-one',
-    );
+    await store.save(accessToken: 'access-one', refreshToken: 'refresh-one');
     final saved = await store.read();
 
     expect(saved, isNotNull);
@@ -27,10 +24,7 @@ void main() {
     expect(await store.readAccessToken(), 'access-one');
     expect(await store.readRefreshToken(), 'refresh-one');
 
-    await store.save(
-      accessToken: 'access-two',
-      refreshToken: 'refresh-two',
-    );
+    await store.save(accessToken: 'access-two', refreshToken: 'refresh-two');
     expect((await store.read())!.refreshToken, 'refresh-two');
 
     await store.clear();

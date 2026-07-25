@@ -7,8 +7,9 @@ import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
 
-final avatarOptionsProvider =
-    FutureProvider.autoDispose<List<AvatarOption>>((ref) {
+final avatarOptionsProvider = FutureProvider.autoDispose<List<AvatarOption>>((
+  ref,
+) {
   return ref.watch(backendRepositoryProvider).getAvatarOptions();
 });
 
@@ -45,22 +46,24 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     }
     setState(() => _saving = true);
     try {
-      await ref.read(sessionControllerProvider.notifier).updateProfile(
+      await ref
+          .read(sessionControllerProvider.notifier)
+          .updateProfile(
             displayName: _nameController.text,
             avatarKey: _avatarKey,
           );
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم تحديث الملف الشخصي.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تحديث الملف الشخصي.')));
       Navigator.of(context).pop();
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) {
@@ -102,9 +105,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               const SizedBox(height: 18),
               Text(
                 'اختر الصورة الرمزية',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
               avatars.when(

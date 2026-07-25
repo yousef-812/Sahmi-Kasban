@@ -1,1 +1,3 @@
 #include "Generated.xcconfig"
+// Override this build setting in the production archive command or Xcode scheme.
+ADMOB_IOS_APP_ID=ca-app-pub-3940256099942544~1458002511
