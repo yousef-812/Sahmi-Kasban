@@ -19,6 +19,7 @@ from app.services.monetization import (
 from app.services.monetization_security import (
     AdMobSsvVerifier,
     GooglePlayVerifier,
+    MonetizationVerificationError,
     PurchaseTokenCipher,
 )
 from app.services.profile import get_active_subscription, get_wallet_balance
@@ -136,6 +137,31 @@ def test_subscription_purchase_activates_server_catalog_entitlement(
     assert subscription.weekly_points == 1_000
     assert subscription.ads_enabled is False
     assert subscription.expires_at is not None
+
+
+def test_expired_paid_subscription_falls_back_to_free_plan(
+    db_session: Session,
+) -> None:
+    settings = _settings()
+    user = _provision_user(db_session, "fallback@example.com")
+    asyncio.run(
+        process_google_play_purchase(
+            db_session,
+            user_id=user.id,
+            product_id="sahmi_basic_monthly",
+            purchase_token="stub-purchased:fallback-order:basic-token",
+            verifier=GooglePlayVerifier(settings),
+            cipher=PurchaseTokenCipher(settings),
+        )
+    )
+    paid = get_active_subscription(db_session, user.id)
+    paid.expires_at = datetime.now(UTC) - timedelta(minutes=1)
+    db_session.flush()
+
+    fallback = get_active_subscription(db_session, user.id)
+    assert fallback.plan_code == "free"
+    assert fallback.weekly_points == 300
+    assert fallback.ads_enabled is True
 
 
 def test_rewarded_ad_claim_is_verified_once_and_credits_fixed_server_reward(
@@ -256,5 +282,8 @@ def test_stub_ssv_verifier_requires_explicit_stub_signature() -> None:
     )
     asyncio.run(verifier.verify(valid))
 
-    with pytest.raises(Exception, match="Invalid stub AdMob signature"):
+    with pytest.raises(
+        MonetizationVerificationError,
+        match="Invalid stub AdMob signature",
+    ):
         asyncio.run(verifier.verify(valid.replace("stub-valid", "invalid")))
