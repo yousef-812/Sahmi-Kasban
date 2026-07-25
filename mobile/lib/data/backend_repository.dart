@@ -121,12 +121,100 @@ class BackendRepository {
     }
   }
 
+  Future<List<AvatarOption>> getAvatarOptions() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/profile/avatars',
+      );
+      final payload = _requiredData(response);
+      final rawItems = payload['avatars'];
+      if (rawItems is! List) {
+        throw const ApiException(message: 'قائمة الصور الرمزية غير صالحة.');
+      }
+      return rawItems
+          .map((item) => AvatarOption.fromJson(_requiredMap(item)))
+          .toList(growable: false);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<UserProfile> updateProfile({
+    required String displayName,
+    required String avatarKey,
+  }) async {
+    try {
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+        '/profile/me',
+        data: <String, dynamic>{
+          'display_name': displayName.trim(),
+          'avatar_key': avatarKey,
+        },
+      );
+      return UserProfile.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<WalletSummary> getWallet() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
         '/wallet',
       );
       return WalletSummary.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<WalletHistoryPage> getWalletHistory({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/wallet/history',
+        queryParameters: <String, dynamic>{'limit': limit, 'offset': offset},
+      );
+      return WalletHistoryPage.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<List<MarketInstrument>> searchInstruments(
+    String query, {
+    int limit = 30,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/instruments',
+        queryParameters: <String, dynamic>{
+          'query': query.trim().toUpperCase(),
+          'limit': limit,
+        },
+      );
+      final payload = _requiredData(response);
+      final rawItems = payload['items'];
+      if (rawItems is! List) {
+        throw const ApiException(message: 'قائمة الأسهم غير صالحة.');
+      }
+      return rawItems
+          .map((item) => MarketInstrument.fromJson(_requiredMap(item)))
+          .toList(growable: false);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<StockAnalysisResult> analyzeStock(String ticker) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/stocks/${ticker.trim().toUpperCase()}/analysis',
+        data: const <String, dynamic>{'language': 'ar'},
+      );
+      return StockAnalysisResult.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
@@ -143,6 +231,28 @@ class BackendRepository {
         return null;
       }
       throw _apiClient.mapError(error);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<MarketReport> getMarketReport(String reportId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/reports/$reportId',
+      );
+      return MarketReport.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<MarketReportUnlockResult> unlockMarketReport(String reportId) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/market/reports/$reportId/unlock',
+      );
+      return MarketReportUnlockResult.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
@@ -171,6 +281,16 @@ class BackendRepository {
       throw const ApiException(message: 'استجابة الخادم فارغة.');
     }
     return data;
+  }
+
+  Map<String, dynamic> _requiredMap(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    throw const ApiException(message: 'بيانات الخادم غير صالحة.');
   }
 }
 
