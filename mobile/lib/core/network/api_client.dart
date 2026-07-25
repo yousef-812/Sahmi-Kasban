@@ -120,20 +120,50 @@ class ApiClient {
     if (error is DioException) {
       final response = error.response;
       final payload = response?.data;
-      String message = 'تعذر الاتصال بالخادم. حاول مرة أخرى.';
-      if (payload is Map<String, dynamic>) {
-        final detail = payload['detail'];
-        if (detail is String && detail.isNotEmpty) {
-          message = detail;
-        }
-      }
       return ApiException(
-        message: message,
+        message: _extractMessage(payload),
         statusCode: response?.statusCode,
         payload: payload,
+        retryAfterSeconds: _parseRetryAfter(response?.headers),
       );
     }
     return ApiException(message: error.toString());
+  }
+
+  String _extractMessage(Object? payload) {
+    const fallback = 'تعذر الاتصال بالخادم. حاول مرة أخرى.';
+    if (payload is! Map) {
+      return fallback;
+    }
+    final detail = payload['detail'];
+    if (detail is String && detail.trim().isNotEmpty) {
+      return detail.trim();
+    }
+    if (detail is List) {
+      final messages = detail
+          .map((item) {
+            if (item is Map) {
+              final message = item['msg'];
+              if (message is String && message.trim().isNotEmpty) {
+                return message.trim();
+              }
+            }
+            return null;
+          })
+          .whereType<String>()
+          .toList(growable: false);
+      if (messages.isNotEmpty) {
+        return messages.join('\n');
+      }
+    }
+    return fallback;
+  }
+
+  int? _parseRetryAfter(Headers? headers) {
+    if (headers == null) {
+      return null;
+    }
+    return int.tryParse(headers.value('retry-after') ?? '');
   }
 }
 
