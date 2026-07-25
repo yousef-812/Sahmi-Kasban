@@ -10,7 +10,8 @@ CommunityDiscussion _discussion() {
     'id': 'discussion-1',
     'ticker': 'COMI',
     'title': 'توقع حركة سهم البنك التجاري الدولي',
-    'content': 'أتوقع استمرار الاتجاه الصاعد خلال الجلسة القادمة مع مراقبة الحجم.',
+    'content':
+        'أتوقع استمرار الاتجاه الصاعد خلال الجلسة القادمة مع مراقبة الحجم.',
     'period_type': 'next_session',
     'status': 'published',
     'moderation_result': <String, dynamic>{},
@@ -48,11 +49,11 @@ void main() {
     expect(find.text('منشورة'), findsOneWidget);
   });
 
-  testWidgets('discussion creation screen explains wallet hold', (tester) async {
+  testWidgets('discussion creation screen explains wallet hold', (
+    tester,
+  ) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: CommunityCreateScreen()),
-      ),
+      const ProviderScope(child: MaterialApp(home: CommunityCreateScreen())),
     );
 
     expect(find.text('إنشاء مناقشة'), findsOneWidget);
