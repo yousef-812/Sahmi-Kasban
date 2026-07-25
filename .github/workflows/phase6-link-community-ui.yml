@@ -1,0 +1,136 @@
+name: Phase 6 Community Navigation Linker
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  link-community:
+    if: github.head_ref == 'agent/phase-6-community-core'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          show-progress: false
+      - name: Link community routes and dashboard tab
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          router = Path('mobile/lib/app/router.dart')
+          text = router.read_text()
+          import_needle = "import '../features/bootstrap/splash_screen.dart';\n"
+          import_replacement = import_needle + """import '../features/community/community_create_screen.dart';
+          import '../features/community/community_detail_screen.dart';
+          import '../features/community/my_discussions_screen.dart';
+          """
+          if import_needle not in text:
+              raise SystemExit('Router import anchor not found')
+          text = text.replace(import_needle, import_replacement, 1)
+
+          route_needle = """      GoRoute(
+                  path: '/monetization',
+                  builder: (context, state) => const MonetizationPage(),
+                ),
+          """
+          route_replacement = route_needle + """      GoRoute(
+                  path: '/community/new',
+                  builder: (context, state) => const CommunityCreateScreen(),
+                ),
+                GoRoute(
+                  path: '/community/mine',
+                  builder: (context, state) => const MyDiscussionsScreen(),
+                ),
+                GoRoute(
+                  path: '/community/:discussionId',
+                  builder: (context, state) => CommunityDetailScreen(
+                    discussionId: state.pathParameters['discussionId']!,
+                  ),
+                ),
+          """
+          if route_needle not in text:
+              raise SystemExit('Router route anchor not found')
+          router.write_text(text.replace(route_needle, route_replacement, 1))
+
+          dashboard = Path('mobile/lib/features/home/dashboard_screen.dart')
+          text = dashboard.read_text()
+          dashboard_import = "import '../auth/session_controller.dart';\n"
+          dashboard_import_replacement = (
+              dashboard_import
+              + "import '../community/community_feed_tab.dart';\n"
+          )
+          if dashboard_import not in text:
+              raise SystemExit('Dashboard import anchor not found')
+          text = text.replace(
+              dashboard_import,
+              dashboard_import_replacement,
+              1,
+          )
+
+          titles = """  static const _titles = <String>['الرئيسية', 'تحليل سهم', 'المحفظة', 'حسابي'];
+          """
+          new_titles = """  static const _titles = <String>[
+              'الرئيسية',
+              'تحليل سهم',
+              'المجتمع',
+              'المحفظة',
+              'حسابي',
+            ];
+          """
+          if titles not in text:
+              raise SystemExit('Dashboard titles anchor not found')
+          text = text.replace(titles, new_titles, 1)
+
+          children = """        children: const [
+                  _HomeTab(),
+                  StockAnalysisTab(),
+                  _WalletTab(),
+                  _ProfileTab(),
+                ],
+          """
+          new_children = """        children: const [
+                  _HomeTab(),
+                  StockAnalysisTab(),
+                  CommunityFeedTab(),
+                  _WalletTab(),
+                  _ProfileTab(),
+                ],
+          """
+          if children not in text:
+              raise SystemExit('Dashboard children anchor not found')
+          text = text.replace(children, new_children, 1)
+
+          destination = """          NavigationDestination(
+                    icon: Icon(Icons.account_balance_wallet_outlined),
+                    selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                    label: 'المحفظة',
+                  ),
+          """
+          new_destination = """          NavigationDestination(
+                    icon: Icon(Icons.forum_outlined),
+                    selectedIcon: Icon(Icons.forum_rounded),
+                    label: 'المجتمع',
+                  ),
+          """ + destination
+          if destination not in text:
+              raise SystemExit('Dashboard destination anchor not found')
+          dashboard.write_text(text.replace(destination, new_destination, 1))
+          PY
+          if [ ! -x "$FLUTTER_HOME/bin/flutter" ]; then
+            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          fi
+          "$FLUTTER_HOME/bin/dart" format mobile/lib mobile/test
+          rm .github/workflows/phase6-link-community-ui.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Link Phase 6 Flutter community screens'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
