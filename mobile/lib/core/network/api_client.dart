@@ -8,10 +8,15 @@ import 'api_exception.dart';
 import 'token_store.dart';
 
 class ApiClient {
-  ApiClient({required String baseUrl, required TokenStore tokenStore, Dio? dio})
-      : _tokenStore = tokenStore,
-        _dio = dio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')) {
-    _refreshDio = Dio(BaseOptions(baseUrl: '$baseUrl/api/v1'));
+  ApiClient({
+    required String baseUrl,
+    required TokenStore tokenStore,
+    Dio? dio,
+    Dio? refreshDio,
+  })  : _tokenStore = tokenStore,
+        _dio = dio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')),
+        _refreshDio =
+            refreshDio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')) {
     _dio.interceptors.add(
       InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
     );
@@ -19,7 +24,7 @@ class ApiClient {
 
   final TokenStore _tokenStore;
   final Dio _dio;
-  late final Dio _refreshDio;
+  final Dio _refreshDio;
   Future<String?>? _refreshFuture;
 
   Dio get dio => _dio;
