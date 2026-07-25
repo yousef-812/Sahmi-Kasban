@@ -155,7 +155,7 @@ def rewarded_ad_eligibility(
         )
     )
     if last_reward_at is not None:
-        next_available_at = last_reward_at + timedelta(
+        next_available_at = _as_utc(last_reward_at) + timedelta(
             seconds=current_settings.ad_reward_cooldown_seconds
         )
         if next_available_at > now:
@@ -373,7 +373,7 @@ async def process_rewarded_ad_callback(
         raise RewardedAdSessionError("Rewarded-ad session does not exist")
     if session.status != "pending":
         raise RewardedAdSessionError("Rewarded-ad session was already completed")
-    if session.expires_at < now:
+    if _as_utc(session.expires_at) < now:
         session.status = "expired"
         raise RewardedAdSessionError("Rewarded-ad session expired")
 
@@ -508,6 +508,13 @@ def _required(payload: dict[str, str], key: str) -> str:
     if value is None or not value:
         raise RewardedAdSessionError(f"Missing AdMob callback parameter: {key}")
     return value
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
 
 
 def _parse_admob_timestamp(value: str) -> datetime:
