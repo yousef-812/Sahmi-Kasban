@@ -47,9 +47,20 @@ class Settings(BaseSettings):
     smtp_from_email: str = "noreply@sahmi-kasban.local"
     smtp_use_tls: bool = True
 
-    market_data_primary: str = "tradingview"
-    market_data_fallback: str = "yfinance"
+    market_data_primary: str = "yfinance"
+    market_data_fallback: str = ""
     market_timezone: str = "Africa/Cairo"
+    market_data_period: str = "1y"
+    market_data_interval: str = "1d"
+    market_data_cache_minutes: int = 30
+    market_data_timeout_seconds: float = 20.0
+    market_data_min_candles: int = 200
+
+    analysis_cost_points: int = 50
+    analysis_default_capital: float = 150_000.0
+    analysis_risk_per_trade: float = 0.01
+    analysis_max_position_value: float = 40_000.0
+    analysis_engine_version: str = "core-v1"
 
     @model_validator(mode="after")
     def validate_sensitive_settings(self) -> Settings:
@@ -64,6 +75,20 @@ class Settings(BaseSettings):
                 )
             if not self.smtp_host:
                 raise ValueError("SMTP_HOST is required outside development and test environments")
+        if self.market_data_cache_minutes <= 0:
+            raise ValueError("MARKET_DATA_CACHE_MINUTES must be positive")
+        if self.market_data_timeout_seconds <= 0:
+            raise ValueError("MARKET_DATA_TIMEOUT_SECONDS must be positive")
+        if self.market_data_min_candles < 60:
+            raise ValueError("MARKET_DATA_MIN_CANDLES must be at least 60")
+        if self.analysis_cost_points <= 0:
+            raise ValueError("ANALYSIS_COST_POINTS must be positive")
+        if self.analysis_default_capital <= 0:
+            raise ValueError("ANALYSIS_DEFAULT_CAPITAL must be positive")
+        if not 0 < self.analysis_risk_per_trade <= 0.10:
+            raise ValueError("ANALYSIS_RISK_PER_TRADE must be between 0 and 0.10")
+        if self.analysis_max_position_value <= 0:
+            raise ValueError("ANALYSIS_MAX_POSITION_VALUE must be positive")
         return self
 
     @property
