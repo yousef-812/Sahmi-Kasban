@@ -13,3 +13,5 @@ htmlcov/
 *.sqlite
 *.sqlite3
 backend/.env
+.github/.cache/
+.github/.ci-results/
