@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.dependencies import CurrentUser, DatabaseSession
+from app.models import DiscussionAppeal
 from app.schemas.community import (
     DiscussionAppealCreateRequest,
     DiscussionAppealListResponse,
@@ -21,7 +22,7 @@ from app.services.community_appeals import (
 router = APIRouter(prefix="/community", tags=["community-appeals"])
 
 
-def appeal_response(appeal) -> DiscussionAppealResponse:
+def appeal_response(appeal: DiscussionAppeal) -> DiscussionAppealResponse:
     return DiscussionAppealResponse(
         id=appeal.id,
         discussion_id=appeal.discussion_id,
