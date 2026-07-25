@@ -9,27 +9,6 @@ permissions:
   contents: read
 
 jobs:
-  diagnose-local-lint:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
-    steps:
-      - name: Run repository lint script without checkout noise
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          mkdir -p /tmp/sahmi-source
-          curl --fail --silent --show-error --location \
-            "https://github.com/${GITHUB_REPOSITORY}/archive/${SOURCE_SHA}.tar.gz" \
-            | tar -xz --strip-components=1 -C /tmp/sahmi-source
-          GITHUB_WORKSPACE=/tmp/sahmi-source \
-          RUN_MODE=lint \
-          CI_RESULTS_DIR=/tmp/sahmi-source/.github/.ci-results \
-          PIP_CACHE_DIR=/tmp/sahmi-source/.github/.cache/pip \
-            bash /tmp/sahmi-source/.github/actions/repository-ci/run.sh
-
   repository-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -43,9 +22,10 @@ jobs:
           show-progress: false
 
       - name: Run repository-local lint
-        uses: ./.github/actions/repository-ci
-        with:
-          mode: lint
+        shell: bash
+        env:
+          RUN_MODE: lint
+        run: bash .github/actions/repository-ci/run.sh
 
   repository-tests:
     needs: repository-lint
@@ -72,6 +52,7 @@ jobs:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/sahmi_test
       PIP_CACHE_DIR: ${{ github.workspace }}/.github/.cache/pip
       CI_RESULTS_DIR: ${{ github.workspace }}/.github/.ci-results
+      RUN_LIVE_SMOKE: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/tradingview-provider' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -79,7 +60,7 @@ jobs:
           show-progress: false
 
       - name: Run repository-local tests
-        uses: ./.github/actions/repository-ci
-        with:
-          mode: tests
-          run-live-smoke: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/tradingview-provider' }}
+        shell: bash
+        env:
+          RUN_MODE: tests
+        run: bash .github/actions/repository-ci/run.sh
