@@ -277,9 +277,9 @@ async def review_pending_discussion(
             moment=moment,
         )
         return CommunityAIReviewResult(discussion=failed, ai_status="provider_failed")
-    except CommunityConflictError:
+    except CommunityConflictError as exc:
         db.rollback()
         final = db.get(Discussion, discussion_id)
         if final is None:
-            raise DiscussionNotFoundError("Discussion does not exist")
+            raise DiscussionNotFoundError("Discussion does not exist") from exc
         return CommunityAIReviewResult(discussion=final, ai_status="race_resolved")
