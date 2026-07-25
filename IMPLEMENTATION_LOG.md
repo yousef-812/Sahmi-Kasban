@@ -13,7 +13,7 @@
 
 ## 2026-07-25 — المرحلة 0: تثبيت المتطلبات والبنية
 
-**الحالة:** مكتملة وجاهزة للدمج عبر Pull Request رقم 3
+**الحالة:** مكتملة ومدمجة في `main` عبر Pull Request رقم 3، Commit `b941ee54fec1a8c779afc26ca8fd4b1b9d1157b8`.
 
 ### النطاق المعتمد
 
@@ -138,25 +138,6 @@
 - Alembic downgrade إلى قاعدة فارغة: ناجح.
 - Alembic upgrade مرة أخرى: ناجح.
 
-### الملفات الرئيسية المضافة أو المعدلة
-
-- `backend/pyproject.toml`
-- `backend/.env.example`
-- `backend/Dockerfile`
-- `backend/README.md`
-- `backend/app/`
-- `backend/alembic.ini`
-- `backend/alembic/`
-- `backend/tests/`
-- `docker-compose.yml`
-- `docs/MARKET_DATA_STRATEGY.md`
-- `.github/workflows/ci.yml`
-- `.gitignore`
-- `.dockerignore`
-- `README.md`
-- `IMPLEMENTATION_LOG.md`
-- `src/sahmi_kasban/ai/client.py`
-
 ### القرارات التقنية
 
 - الإبقاء على محركات التحليل الحالية كحزمة Python مستقلة في جذر الريبو.
@@ -167,6 +148,167 @@
 - تخزين العملات كنقاط صحيحة؛ 100 نقطة تساوي عملة واحدة.
 - عدم إنشاء الجداول تلقائيًا عند تشغيل FastAPI.
 
+---
+
+## 2026-07-25 — المرحلة 1: الحسابات والملف الشخصي وWallet Ledger
+
+**الحالة:** مكتملة برمجيًا، بانتظار الفحص النهائي النظيف والدمج عبر Pull Request رقم 4.
+
+### النطاق المنفذ
+
+- إنشاء الحساب بالبريد الإلكتروني وكلمة المرور.
+- تأكيد البريد الإلكتروني.
+- تسجيل الدخول والخروج وتجديد الجلسات.
+- نسيان وإعادة تعيين كلمة المرور.
+- الملف الشخصي والصور الرمزية الجاهزة.
+- تغيير كلمة المرور وحذف الحساب.
+- Wallet Account وWallet Ledger.
+- الخطة المجانية وإضافة 3 عملات أسبوعيًا.
+- سجل الرصيد والعمليات.
+
+### المصادقة وأمان الحساب
+
+- استخدام Argon2 لتشفير كلمات المرور عبر `pwdlib`.
+- فرض كلمة مرور من 10 إلى 128 حرفًا، وتحتوي على حرف صغير وحرف كبير ورقم.
+- استخدام JWT قصير العمر لـAccess Token.
+- استخدام Refresh Token عشوائي opaque لا يُخزن في قاعدة البيانات بصورته الأصلية؛ يُخزن SHA-256 فقط.
+- تدوير Refresh Token عند كل تجديد وإلغاء التوكن القديم فورًا.
+- إضافة `auth_version` للمستخدم حتى يؤدي تغيير أو استعادة كلمة المرور إلى إبطال كل Access Tokens القديمة.
+- تخزين جلسات Refresh في جدول مستقل مع انتهاء وإلغاء قابلين للتدقيق.
+- إنشاء توكنات تأكيد البريد واستعادة كلمة المرور كتوكنات عشوائية أحادية الاستخدام ومخزنة كـhash.
+- منع تسجيل الدخول قبل تأكيد البريد.
+- استخدام ردود عامة في نسيان كلمة المرور وإعادة إرسال التأكيد لمنع كشف وجود البريد في النظام.
+- دعم SMTP من خلال متغيرات البيئة، مع منع تشغيل Staging وProduction بدون SMTP.
+- عدم إعادة أي توكن تأكيد أو استعادة كلمة مرور داخل استجابة الـAPI.
+
+### الملف الشخصي
+
+- إضافة 12 صورة رمزية ثابتة ومراجعة داخل التطبيق من `avatar_01` إلى `avatar_12`.
+- عدم دعم رفع الصور الشخصية في الإصدار الأول لتجنب التخزين ومراجعة المحتوى.
+- دعم قراءة وتعديل الاسم الظاهر والصورة الرمزية.
+- عرض البريد، حالة التأكيد، الخطة، الرصيد، العملات الأسبوعية، الإعلانات، وإحصاءات المناقشات والتوقعات.
+- تغيير كلمة المرور بعد التحقق من كلمة المرور الحالية، مع إلغاء جميع الجلسات.
+- حذف الحساب حذفًا ناعمًا: إلغاء الجلسات والاشتراكات، وإخفاء البريد والاسم، مع الاحتفاظ بسجلات المعاملات للتدقيق.
+
+### المحفظة وسجل العملات
+
+- إضافة جدول `wallet_accounts` يحتوي الرصيد الحالي كنقاط صحيحة.
+- إضافة قيد قاعدة بيانات يمنع الرصيد السالب.
+- قفل صف المحفظة باستخدام `SELECT ... FOR UPDATE` أثناء الإضافة والخصم.
+- جعل كل إضافة أو خصم مرتبطة بـ`transaction_id` فريد.
+- عند تكرار نفس `transaction_id`، تُعاد نفس العملية فقط إذا تطابق المستخدم والنوع والقيمة.
+- إذا أُعيد استخدام `transaction_id` لعملية مختلفة، يتم رفضه باعتباره تصادم idempotency.
+- لا يوجد API عام يسمح لتطبيق Flutter بإضافة أو خصم العملات مباشرة.
+- إضافة API لعرض الرصيد والخطة وسجل العمليات مع pagination.
+
+### الخطة المجانية والتوزيع الأسبوعي
+
+- عند التسجيل يُنشأ اشتراك مجاني ومحفظة تلقائيًا.
+- يحصل المستخدم مباشرة على تخصيص الأسبوع الحالي: `300` نقطة = `3.00` عملات.
+- إضافة جدول `weekly_grants` بقيد فريد على المستخدم وبداية الأسبوع.
+- احتساب الأسبوع وفق المنطقة الزمنية `Africa/Cairo` وبداية ISO week يوم الاثنين.
+- تشغيل التوزيع مرة أخرى خلال الأسبوع نفسه لا يمنح نقاطًا إضافية.
+- إضافة Job قابل للتشغيل بالأمر `python -m app.jobs.grant_weekly_points`.
+- توقيت تنفيذ الـJob على الاستضافة لم يُثبت بعد؛ أي تشغيل داخل الأسبوع آمن بسبب idempotency، ويُحسم الجدول النهائي عند إعداد منصة التشغيل.
+
+### الجداول والمهاجرات
+
+تمت إضافة Migration رقم `0002_accounts_wallet` وتتضمن:
+
+- حقول أمان وحذف جديدة داخل `users`.
+- `auth_sessions`.
+- `account_tokens`.
+- `wallet_accounts`.
+- `weekly_grants`.
+
+المهاجرة قابلة للتطبيق والرجوع وإعادة التطبيق فوق Migration المرحلة 0.
+
+### مسارات API المضافة
+
+#### الحساب
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/verify-email`
+- `POST /api/v1/auth/resend-verification`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password`
+
+#### الملف الشخصي
+
+- `GET /api/v1/profile/avatars`
+- `GET /api/v1/profile/me`
+- `PATCH /api/v1/profile/me`
+- `POST /api/v1/profile/change-password`
+- `DELETE /api/v1/profile/me`
+
+#### المحفظة
+
+- `GET /api/v1/wallet`
+- `GET /api/v1/wallet/history`
+
+### الاختبارات المضافة
+
+- التسجيل وإنشاء المستخدم والمحفظة والاشتراك المجاني.
+- منح 300 نقطة عند التسجيل.
+- منع الدخول قبل تأكيد البريد.
+- تأكيد البريد ثم الدخول.
+- قراءة وتحديث الملف الشخصي.
+- عرض الرصيد وسجل العملية الأسبوعية.
+- تدوير Refresh Token ومنع استخدام القديم.
+- خروج idempotent ومنع استخدام التوكن الملغي.
+- استعادة كلمة المرور وإبطال Access Token القديمة.
+- تغيير كلمة المرور وإبطال كل الجلسات.
+- الحذف الناعم ومنع الدخول بعد الحذف.
+- منع التسجيل المتكرر بنفس البريد بصيغ حروف مختلفة.
+- عدم كشف وجود البريد عند طلب الاستعادة.
+- ثبات قائمة الصور الرمزية على 12 خيارًا.
+- منع الخصم الذي يجعل الرصيد سالبًا.
+- تكرار الخصم بنفس `transaction_id` دون خصم مزدوج.
+- رفض إعادة استخدام `transaction_id` مع قيمة مختلفة.
+- عدم تكرار التوزيع الأسبوعي لنفس المستخدم والأسبوع.
+- منح الأسبوع التالي مرة واحدة.
+- تشغيل التوزيع الجماعي أكثر من مرة دون مضاعفة النقاط.
+
+### ملاحظات CI وكيف عولجت
+
+- نجحت اختبارات الحساب والمحفظة والمهاجرات من أول تشغيل وظيفي.
+- ظهرت أربع مخالفات Ruff فقط: سطران بطول 101 حرف، ومسافة زائدة بعد import block في ملفي اختبار.
+- تم استخدام تعليق تشخيصي مؤقت داخل Pull Request لاستخراج الـdiff الدقيق من Ruff.
+- تم تطبيق التنسيق المطلوب بالحرف وإضافة اختبار لتصادم `transaction_id`.
+- نجح Run ID `30135114511` في Core lint وBackend lint وCore tests وBackend tests، بما فيها Alembic `upgrade → downgrade base → upgrade` على PostgreSQL 16.
+- تمت إعادة CI إلى وضعه النظيف بصلاحية `contents: read` فقط، وإزالة كتابة التعليقات التشخيصية.
+
+### الملفات الرئيسية المضافة أو المعدلة
+
+- `backend/app/core/security.py`
+- `backend/app/core/avatars.py`
+- `backend/app/core/config.py`
+- `backend/app/models/accounts.py`
+- `backend/app/models/entities.py`
+- `backend/app/services/auth.py`
+- `backend/app/services/email.py`
+- `backend/app/services/profile.py`
+- `backend/app/services/wallet.py`
+- `backend/app/api/dependencies.py`
+- `backend/app/api/routes/auth.py`
+- `backend/app/api/routes/profile.py`
+- `backend/app/api/routes/wallet.py`
+- `backend/app/schemas/accounts.py`
+- `backend/app/jobs/grant_weekly_points.py`
+- `backend/alembic/versions/0002_accounts_wallet.py`
+- `backend/tests/conftest.py`
+- `backend/tests/test_accounts_api.py`
+- `backend/tests/test_wallet_service.py`
+- `backend/tests/test_models.py`
+- `backend/README.md`
+- `backend/.env.example`
+- `backend/pyproject.toml`
+- `.github/workflows/ci.yml`
+- `IMPLEMENTATION_LOG.md`
+
 ### الخطوة التالية بعد الدمج
 
-المرحلة 1: الحسابات والملف الشخصي وWallet Ledger والتوزيع الأسبوعي للخطة المجانية.
+المرحلة 2: بناء واجهة مزود بيانات السوق، جلب قائمة وأسعار EGX، ربط محركات Sahmi Kasban بالـBackend، Cache النتائج، وإطلاق API لتحليل سهم مقابل 0.5 عملة بعد النجاح فقط.
