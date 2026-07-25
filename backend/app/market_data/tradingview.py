@@ -1,71 +1,17 @@
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import logging
-import random
-import string
 from datetime import UTC, datetime
-from typing import Any
 
-import websockets
-from websockets.asyncio.client import ClientConnection
+from reusable_data_fetcher import TradingViewConnector, get_tv_symbol
 
 from app.core.config import get_settings
 from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
 
 logger = logging.getLogger(__name__)
-
-TRADINGVIEW_WEBSOCKET_URL = "wss://data.tradingview.com/socket.io/websocket"
-TRADINGVIEW_ORIGIN = "https://www.tradingview.com"
-TRADINGVIEW_USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36"
-)
-TRADINGVIEW_UNAUTHORIZED_TOKEN = "unauthorized_user_token"
-
-
-def _session_id(prefix: str) -> str:
-    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=12))
-    return f"{prefix}{suffix}"
-
-
-def _frame_message(method: str, params: list[object]) -> str:
-    payload = json.dumps({"m": method, "p": params}, separators=(",", ":"))
-    return f"~m~{len(payload)}~m~{payload}"
-
-
-def _parse_messages(raw: str) -> list[dict[str, Any]]:
-    messages: list[dict[str, Any]] = []
-    cursor = 0
-    marker = "~m~"
-    while True:
-        start = raw.find(marker, cursor)
-        if start < 0:
-            break
-        length_start = start + len(marker)
-        length_end = raw.find(marker, length_start)
-        if length_end < 0:
-            break
-        try:
-            payload_length = int(raw[length_start:length_end])
-        except ValueError:
-            cursor = length_end + len(marker)
-            continue
-        payload_start = length_end + len(marker)
-        payload = raw[payload_start : payload_start + payload_length]
-        cursor = payload_start + payload_length
-        if payload.startswith("~h~"):
-            continue
-        try:
-            decoded = json.loads(payload)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(decoded, dict):
-            messages.append(decoded)
-    return messages
 
 
 def _tradingview_interval(interval: str) -> str:
@@ -125,152 +71,29 @@ def _fingerprint_candles(candles: list[dict[str, object]]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _normalize_points(points: list[dict[str, Any]]) -> list[dict[str, object]]:
-    candles_by_timestamp: dict[int, dict[str, object]] = {}
-    for point in points:
-        values = point.get("v")
-        if not isinstance(values, list) or len(values) < 5:
-            continue
+def _normalize_candles(candles: list[dict[str, object]]) -> list[dict[str, object]]:
+    normalized: list[dict[str, object]] = []
+    for candle in candles:
         try:
-            timestamp = int(float(values[0]))
-            open_price = float(values[1])
-            high_price = float(values[2])
-            low_price = float(values[3])
-            close_price = float(values[4])
-            volume = float(values[5]) if len(values) > 5 and values[5] is not None else 0.0
-        except (TypeError, ValueError):
+            timestamp = int(candle["timestamp"])
+            open_price = float(candle["open"])
+            high_price = float(candle["high"])
+            low_price = float(candle["low"])
+            close_price = float(candle["close"])
+            volume = float(candle.get("volume", 0))
+        except (KeyError, TypeError, ValueError):
             continue
-        if min(open_price, high_price, low_price, close_price) <= 0:
-            continue
-        if high_price < max(open_price, low_price, close_price):
-            continue
-        if low_price > min(open_price, high_price, close_price):
-            continue
-        candles_by_timestamp[timestamp] = {
-            "timestamp": datetime.fromtimestamp(timestamp, tz=UTC).isoformat(),
-            "open": round(open_price, 6),
-            "high": round(high_price, 6),
-            "low": round(low_price, 6),
-            "close": round(close_price, 6),
-            "volume": round(max(volume, 0.0), 2),
-        }
-    return [candles_by_timestamp[key] for key in sorted(candles_by_timestamp)]
-
-
-class TradingViewWebSocketClient:
-    def __init__(self) -> None:
-        settings = get_settings()
-        self.url = settings.tradingview_websocket_url
-        self.origin = settings.tradingview_origin
-        self.user_agent = settings.tradingview_user_agent
-        self.auth_token = settings.tradingview_auth_token
-        self.timeout_seconds = settings.market_data_timeout_seconds
-
-    async def _connect(self) -> ClientConnection:
-        return await websockets.connect(
-            self.url,
-            origin=self.origin,
-            additional_headers={"User-Agent": self.user_agent},
-            open_timeout=self.timeout_seconds,
-            close_timeout=5,
-            ping_interval=20,
-            ping_timeout=20,
+        normalized.append(
+            {
+                "timestamp": datetime.fromtimestamp(timestamp, tz=UTC).isoformat(),
+                "open": round(open_price, 6),
+                "high": round(high_price, 6),
+                "low": round(low_price, 6),
+                "close": round(close_price, 6),
+                "volume": round(max(volume, 0.0), 2),
+            }
         )
-
-    async def get_history(
-        self,
-        symbol: str,
-        *,
-        interval: str,
-        count: int,
-    ) -> list[dict[str, object]]:
-        chart_session = _session_id("cs_")
-        series_name = "s1"
-        resolved_symbol = json.dumps(
-            {"symbol": symbol, "adjustment": "splits"},
-            separators=(",", ":"),
-        )
-        latest_points: list[dict[str, Any]] = []
-
-        try:
-            websocket = await self._connect()
-            async with websocket:
-                await websocket.send(
-                    _frame_message("set_auth_token", [self.auth_token])
-                )
-                await websocket.send(
-                    _frame_message("chart_create_session", [chart_session, ""])
-                )
-                await websocket.send(
-                    _frame_message(
-                        "resolve_symbol",
-                        [chart_session, "symbol_1", f"={resolved_symbol}"],
-                    )
-                )
-                await websocket.send(
-                    _frame_message(
-                        "create_series",
-                        [
-                            chart_session,
-                            series_name,
-                            series_name,
-                            "symbol_1",
-                            interval,
-                            count,
-                        ],
-                    )
-                )
-
-                async with asyncio.timeout(self.timeout_seconds):
-                    async for raw_message in websocket:
-                        raw = raw_message.decode() if isinstance(raw_message, bytes) else raw_message
-                        if "~h~" in raw and not raw.startswith("~m~"):
-                            await websocket.send(raw)
-                            continue
-                        for message in _parse_messages(raw):
-                            method = message.get("m")
-                            params = message.get("p")
-                            if method == "protocol_error":
-                                raise MarketDataUnavailableError(
-                                    f"TradingView protocol error for {symbol}: {params}"
-                                )
-                            if method == "critical_error":
-                                raise MarketDataUnavailableError(
-                                    f"TradingView critical error for {symbol}: {params}"
-                                )
-                            if method == "timescale_update" and isinstance(params, list):
-                                if len(params) < 2 or params[0] != chart_session:
-                                    continue
-                                series_map = params[1]
-                                if not isinstance(series_map, dict):
-                                    continue
-                                series = series_map.get(series_name)
-                                if not isinstance(series, dict):
-                                    continue
-                                points = series.get("s")
-                                if isinstance(points, list):
-                                    latest_points = points
-                            if method == "series_completed" and latest_points:
-                                candles = _normalize_points(latest_points)
-                                if candles:
-                                    return candles
-        except TimeoutError as exc:
-            raise MarketDataUnavailableError(
-                f"TradingView timed out for {symbol}"
-            ) from exc
-        except MarketDataUnavailableError:
-            raise
-        except Exception as exc:
-            raise MarketDataUnavailableError(
-                f"TradingView websocket failed for {symbol}"
-            ) from exc
-
-        candles = _normalize_points(latest_points)
-        if not candles:
-            raise MarketDataUnavailableError(
-                f"TradingView returned no usable candles for {symbol}"
-            )
-        return candles
+    return normalized
 
 
 class TradingViewMarketDataProvider:
@@ -283,16 +106,43 @@ class TradingViewMarketDataProvider:
         period: str,
         interval: str,
     ) -> CandleSeries:
+        settings = get_settings()
         normalized_ticker = normalize_egx_ticker(ticker)
-        provider_symbol = f"EGX:{normalized_ticker}"
+        provider_symbol = get_tv_symbol(normalized_ticker, "EGX")
         tradingview_interval = _tradingview_interval(interval)
         count = _history_count(period, interval)
-        client = TradingViewWebSocketClient()
-        candles = await client.get_history(
-            provider_symbol,
-            interval=tradingview_interval,
-            count=count,
+
+        connector = TradingViewConnector(
+            auth_token=settings.tradingview_auth_token,
+            timeout_seconds=settings.market_data_timeout_seconds,
         )
+        connector.URL = settings.tradingview_websocket_url
+        connector.HEADERS = {
+            "Origin": settings.tradingview_origin,
+            "User-Agent": settings.tradingview_user_agent,
+        }
+        try:
+            raw_candles = await connector.get_historical(
+                provider_symbol,
+                timeframe=tradingview_interval,
+                count=count,
+                timeout=settings.market_data_timeout_seconds,
+            )
+        except Exception as exc:
+            raise MarketDataUnavailableError(
+                f"TradingView websocket failed for {provider_symbol}"
+            ) from exc
+        finally:
+            await connector.close()
+
+        candles = _normalize_candles(raw_candles)
+        if len(candles) < settings.market_data_min_candles:
+            raise MarketDataUnavailableError(
+                "TradingView returned "
+                f"{len(candles)} candles for {provider_symbol}; "
+                f"at least {settings.market_data_min_candles} are required"
+            )
+
         fetched_at = datetime.now(UTC)
         data_as_of = datetime.fromisoformat(str(candles[-1]["timestamp"]))
         logger.info(
