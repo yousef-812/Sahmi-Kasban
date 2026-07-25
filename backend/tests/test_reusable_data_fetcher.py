@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import UTC, datetime, timedelta
+
+import websockets
 
 from reusable_data_fetcher import (
     StockDataFetcher,
     TechnicalAnalysisService,
     TradingViewConnector,
-    _parse_symbol,
-    _provider_symbols,
+    get_tv_symbol,
+    get_yf_symbol,
+    parse_symbol,
 )
 
 
@@ -30,12 +34,17 @@ def _sample_candles(count: int = 240) -> list[dict[str, float | int]]:
     return candles
 
 
-def test_market_symbol_mapping_supports_direct_and_explicit_formats() -> None:
-    assert _parse_symbol("COMI", "EGX") == ("EGX", "COMI")
-    assert _parse_symbol("EGX:COMI", "US") == ("EGX", "COMI")
-    assert _provider_symbols("COMI", "EGX") == ("EGX:COMI", "COMI.CA")
-    assert _provider_symbols("AAPL", "US") == ("NASDAQ:AAPL", "AAPL")
-    assert _provider_symbols("VOD", "LSE") == ("LSE:VOD", "VOD.L")
+def test_market_symbol_mapping_supports_all_requested_formats() -> None:
+    assert parse_symbol("COMI", "EGX") == ("EGX", "COMI")
+    assert parse_symbol("EGX:COMI", "US") == ("EGX", "COMI")
+    assert get_tv_symbol("COMI", "EGX") == "EGX:COMI"
+    assert get_yf_symbol("COMI", "EGX") == "COMI.CA"
+    assert get_tv_symbol("AAPL", "US") == "NASDAQ:AAPL"
+    assert get_yf_symbol("AAPL", "US") == "AAPL"
+    assert get_tv_symbol("VOD", "LSE") == "LON:VOD"
+    assert get_yf_symbol("VOD", "LSE") == "VOD.L"
+    assert get_tv_symbol("2222", "TADAWUL") == "TADAWUL:2222"
+    assert get_yf_symbol("2222", "TADAWUL") == "2222.SR"
 
 
 def test_tradingview_history_normalization_filters_and_deduplicates() -> None:
@@ -53,7 +62,11 @@ def test_tradingview_history_normalization_filters_and_deduplicates() -> None:
 
 
 def test_technical_indicators_are_calculated_from_candles() -> None:
-    indicators = TechnicalAnalysisService.calculate_indicators(_sample_candles())
+    service = TechnicalAnalysisService()
+    frame = service.calculate_all_indicators(
+        __import__("pandas").DataFrame(_sample_candles())
+    )
+    indicators = service.get_current_indicators(frame)
     assert indicators["price"] > 0
     assert indicators["sma_20"] is not None
     assert indicators["sma_50"] is not None
@@ -62,15 +75,19 @@ def test_technical_indicators_are_calculated_from_candles() -> None:
     assert indicators["macd"] is not None
     assert indicators["bb_upper"] is not None
     assert indicators["atr"] is not None
-    assert indicators["trend"] in {"UPTREND", "DOWNTREND", "SIDEWAYS"}
 
 
-def test_full_data_uses_historical_price_when_realtime_fails() -> None:
+def test_full_data_uses_historical_price_when_realtime_is_unavailable() -> None:
     fetcher = StockDataFetcher()
     candles = _sample_candles()
 
-    async def failing_realtime(symbol: str, market: str = "EGX") -> dict:
-        raise TimeoutError(f"no realtime quote for {market}:{symbol}")
+    async def unavailable_realtime(symbol: str, market: str = "EGX") -> dict:
+        return {
+            "symbol": symbol,
+            "market": market,
+            "price": None,
+            "source": "unavailable",
+        }
 
     async def fake_history(
         symbol: str,
@@ -87,7 +104,7 @@ def test_full_data_uses_historical_price_when_realtime_fails() -> None:
     def fake_fundamentals(symbol: str, market: str = "EGX") -> dict:
         return {"company_name": "Commercial International Bank"}
 
-    fetcher.get_realtime_price = failing_realtime
+    fetcher.get_realtime_price = unavailable_realtime
     fetcher.get_historical_data = fake_history
     fetcher.get_fundamentals = fake_fundamentals
 
@@ -98,10 +115,116 @@ def test_full_data_uses_historical_price_when_realtime_fails() -> None:
             await fetcher.close()
 
     result = asyncio.run(run())
-    assert result["symbol"] == "COMI"
+    assert result["ticker"] == "COMI"
     assert result["market"] == "EGX"
     assert result["price"]["source"] == "historical_fallback"
     assert result["price"]["price"] == candles[-1]["close"]
     assert len(result["historical"]) == 240
     assert result["indicators"]["rsi"] is not None
     assert result["fundamentals"]["company_name"].startswith("Commercial")
+    assert result["errors"] == []
+
+
+def test_custom_token_heartbeat_and_full_facade_with_local_websocket(monkeypatch) -> None:
+    received_tokens: list[str] = []
+    heartbeat_echoes: list[str] = []
+
+    def frame(payload: dict) -> str:
+        encoded = json.dumps(payload, separators=(",", ":"))
+        return f"~m~{len(encoded)}~m~{encoded}"
+
+    async def handler(websocket) -> None:
+        heartbeat_sent = False
+        async for raw in websocket:
+            if raw == "~m~6~m~~h~123":
+                heartbeat_echoes.append(raw)
+                continue
+            for message in TradingViewConnector._parse(raw):
+                method = message.get("m")
+                params = message.get("p", [])
+                if method == "set_auth_token":
+                    received_tokens.append(params[0])
+                    if not heartbeat_sent:
+                        await websocket.send("~m~6~m~~h~123")
+                        heartbeat_sent = True
+                elif method == "quote_add_symbols":
+                    symbol = params[1]
+                    await websocket.send(
+                        frame(
+                            {
+                                "m": "qsd",
+                                "p": [
+                                    params[0],
+                                    {
+                                        "n": symbol,
+                                        "s": "ok",
+                                        "v": {
+                                            "lp": 72.5,
+                                            "ch": 1.0,
+                                            "chp": 1.4,
+                                            "v": 1_000_000,
+                                            "open_price": 71.5,
+                                        },
+                                    },
+                                ],
+                            }
+                        )
+                    )
+                elif method == "create_series":
+                    chart_session, series_name = params[0], params[1]
+                    points = []
+                    for index in range(200):
+                        close = 50 + index * 0.1
+                        points.append(
+                            {
+                                "v": [
+                                    1_700_000_000 + index * 86_400,
+                                    close - 0.2,
+                                    close + 0.5,
+                                    close - 0.5,
+                                    close,
+                                    100_000 + index,
+                                ]
+                            }
+                        )
+                    await websocket.send(
+                        frame(
+                            {
+                                "m": "timescale_update",
+                                "p": [
+                                    chart_session,
+                                    {series_name: {"s": points}},
+                                ],
+                            }
+                        )
+                    )
+
+    async def run() -> dict:
+        server = await websockets.serve(handler, "127.0.0.1", 0)
+        port = server.sockets[0].getsockname()[1]
+        monkeypatch.setattr(
+            TradingViewConnector,
+            "URL",
+            f"ws://127.0.0.1:{port}",
+        )
+        fetcher = StockDataFetcher(tv_token="CUSTOM_TOKEN", pool_size=2)
+        fetcher.calculate_indicators = lambda candles: {"rsi": 55.0}
+        fetcher.get_fundamentals = lambda symbol, market="EGX": {"pe_ratio": 7.5}
+        try:
+            result = await fetcher.get_full_data("COMI", market="EGX")
+            await asyncio.sleep(0.05)
+            return result
+        finally:
+            await fetcher.close()
+            server.close()
+            await server.wait_closed()
+
+    result = asyncio.run(run())
+    assert received_tokens == ["CUSTOM_TOKEN", "CUSTOM_TOKEN"]
+    assert len(heartbeat_echoes) == 2
+    assert result["ticker"] == "COMI"
+    assert result["price"]["price"] == 72.5
+    assert len(result["historical"]) == 200
+    assert result["indicators"]["rsi"] == 55.0
+    assert result["fundamentals"]["pe_ratio"] == 7.5
+    assert result["errors"] == []
