@@ -10,26 +10,32 @@ mkdir -p "$PIP_CACHE_DIR" "$CI_RESULTS_DIR"
 export PIP_CACHE_DIR
 cd "$ROOT_DIR"
 
-exec > >(tee "$CI_RESULTS_DIR/full.log") 2>&1
-
 run_check() {
   local label="$1"
   local log_name="$2"
   shift 2
 
+  local log_path="$CI_RESULTS_DIR/$log_name"
   echo "::group::$label"
+
   set +e
-  "$@" 2>&1 | tee "$CI_RESULTS_DIR/$log_name"
-  local status=${PIPESTATUS[0]}
+  "$@" >"$log_path" 2>&1
+  local status=$?
   set -e
-  echo "::endgroup::"
 
   if [[ $status -eq 0 ]]; then
+    echo "$label passed."
     printf -- "- ✅ %s\n" "$label" >> "$SUMMARY_FILE"
   else
+    echo "::error::$label failed with exit code $status"
+    echo "----- failure output: $log_name -----"
+    tail -n 160 "$log_path"
+    echo "----- end failure output -----"
     printf -- "- ❌ %s — exit code %s\n" "$label" "$status" >> "$SUMMARY_FILE"
-    return "$status"
   fi
+
+  echo "::endgroup::"
+  return "$status"
 }
 
 printf "## Sahmi Kasban repository-local CI\n\n" > "$SUMMARY_FILE"
@@ -44,14 +50,14 @@ print(f"Using Python {sys.version.split()[0]}")
 PY
 
 run_check "Install Python dependencies" "install.log" \
-  python -m pip install --upgrade pip
+  python -m pip install --quiet --upgrade pip
 run_check "Install project packages" "install-project.log" \
-  python -m pip install -e ".[dev]" -e "backend[dev]"
+  python -m pip install --quiet -e ".[dev]" -e "backend[dev]"
 
 run_check "Core compile" "core-compile.log" \
   python -m compileall -q src tests
 run_check "Core Ruff" "core-ruff.log" \
-  python -m ruff check src tests
+  python -m ruff check src tests --output-format concise
 run_check "Core tests" "core-tests.log" \
   python -m pytest -q tests
 
@@ -63,7 +69,8 @@ run_check "Backend Ruff" "backend-ruff.log" \
   python -m ruff check \
     backend/app backend/tests backend/alembic/env.py backend/scripts \
     backend/reusable_data_fetcher.py \
-    --config backend/pyproject.toml
+    --config backend/pyproject.toml \
+    --output-format concise
 run_check "Backend tests" "backend-tests.log" \
   python -m pytest -q backend/tests
 
