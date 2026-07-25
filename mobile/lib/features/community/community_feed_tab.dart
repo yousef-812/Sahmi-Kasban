@@ -174,7 +174,9 @@ class CommunityDiscussionCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         Text(
-                          _formatDate(discussion.publishedAt ?? discussion.createdAt),
+                          _formatDate(
+                            discussion.publishedAt ?? discussion.createdAt,
+                          ),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],

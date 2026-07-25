@@ -18,8 +18,7 @@ class CommunityCreateScreen extends ConsumerStatefulWidget {
       _CommunityCreateScreenState();
 }
 
-class _CommunityCreateScreenState
-    extends ConsumerState<CommunityCreateScreen> {
+class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
@@ -207,9 +206,8 @@ class _CommunityCreateScreenState
               ],
               onChanged: _submitting
                   ? null
-                  : (value) => setState(
-                      () => _periodType = value ?? 'next_session',
-                    ),
+                  : (value) =>
+                        setState(() => _periodType = value ?? 'next_session'),
             ),
             const SizedBox(height: 22),
             FilledButton.icon(
@@ -220,7 +218,9 @@ class _CommunityCreateScreenState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.send_rounded),
-              label: Text(_submitting ? 'جارٍ الإرسال والمراجعة...' : 'إرسال للمراجعة'),
+              label: Text(
+                _submitting ? 'جارٍ الإرسال والمراجعة...' : 'إرسال للمراجعة',
+              ),
             ),
           ],
         ),

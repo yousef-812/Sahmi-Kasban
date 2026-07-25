@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/avatar_assets.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../community/community_feed_tab.dart';
 import '../market/stock_analysis_tab.dart';
 import '../reports/report_providers.dart';
 import '../wallet/wallet_providers.dart';
@@ -19,7 +20,13 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _index = 0;
 
-  static const _titles = <String>['الرئيسية', 'تحليل سهم', 'المحفظة', 'حسابي'];
+  static const _titles = <String>[
+    'الرئيسية',
+    'تحليل سهم',
+    'المجتمع',
+    'المحفظة',
+    'حسابي',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: const [
           _HomeTab(),
           StockAnalysisTab(),
+          CommunityFeedTab(),
           _WalletTab(),
           _ProfileTab(),
         ],
@@ -47,6 +55,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(Icons.query_stats_outlined),
             selectedIcon: Icon(Icons.query_stats_rounded),
             label: 'تحليل',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.forum_outlined),
+            selectedIcon: Icon(Icons.forum_rounded),
+            label: 'المجتمع',
           ),
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),

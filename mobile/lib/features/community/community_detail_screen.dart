@@ -19,8 +19,7 @@ class CommunityDetailScreen extends ConsumerStatefulWidget {
       _CommunityDetailScreenState();
 }
 
-class _CommunityDetailScreenState
-    extends ConsumerState<CommunityDetailScreen> {
+class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
   bool _mutedLocally = false;
   bool _actionBusy = false;
 
@@ -221,9 +220,8 @@ class _CommunityDetailScreenState
                         const SizedBox(height: 18),
                         Text(
                           item.title,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 12),
                         Text(item.content),
@@ -338,7 +336,10 @@ class _ReportDialogState extends State<_ReportDialog> {
             initialValue: _reasonCode,
             decoration: const InputDecoration(labelText: 'سبب البلاغ'),
             items: const [
-              DropdownMenuItem(value: 'spam', child: Text('محتوى مكرر أو مزعج')),
+              DropdownMenuItem(
+                value: 'spam',
+                child: Text('محتوى مكرر أو مزعج'),
+              ),
               DropdownMenuItem(value: 'abuse', child: Text('إساءة')),
               DropdownMenuItem(value: 'misleading', child: Text('محتوى مضلل')),
               DropdownMenuItem(

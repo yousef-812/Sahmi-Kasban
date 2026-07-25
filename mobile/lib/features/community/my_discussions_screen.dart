@@ -124,9 +124,8 @@ class _MyAppealList extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             itemCount: page.items.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) => _AppealCard(
-              appeal: page.items[index],
-            ),
+            itemBuilder: (context, index) =>
+                _AppealCard(appeal: page.items[index]),
           );
         },
       ),
@@ -161,9 +160,7 @@ class _AppealCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              'الحالة الأصلية: ${_sourceStatusLabel(appeal.sourceStatus)}',
-            ),
+            Text('الحالة الأصلية: ${_sourceStatusLabel(appeal.sourceStatus)}'),
             const SizedBox(height: 10),
             Text(appeal.message),
             if (appeal.resolutionReasonCode != null) ...[
