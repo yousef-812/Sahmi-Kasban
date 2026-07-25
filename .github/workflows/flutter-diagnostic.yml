@@ -4,7 +4,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   diagnose:
@@ -17,16 +17,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref }}
           show-progress: false
-      - name: Print analyze findings only
+      - name: Save analyze findings on the source branch
         shell: bash
         run: |
-          set -uo pipefail
+          set -Eeuo pipefail
           git clone -q --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
           cd mobile
           "$FLUTTER_HOME/bin/flutter" pub get >/dev/null
-          set +e
-          "$FLUTTER_HOME/bin/flutter" analyze > /tmp/flutter-analyze.log 2>&1
-          status=$?
-          grep -E "(error|warning|info) •|issues found|No issues found" /tmp/flutter-analyze.log || cat /tmp/flutter-analyze.log
-          exit "$status"
+          "$FLUTTER_HOME/bin/flutter" analyze > ../FLUTTER_ANALYZE_TEMP.txt 2>&1 || true
+          cd ..
+          if git diff --quiet -- FLUTTER_ANALYZE_TEMP.txt; then
+            echo "Diagnostic file is unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add FLUTTER_ANALYZE_TEMP.txt
+          git commit -m "Record temporary Flutter analyze output"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
