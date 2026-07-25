@@ -1,32 +1,31 @@
 # Sahmi Kasban — TradingView Migration Log
 
-## 2026-07-25 — نقل موديول جلب البيانات القديم
+## 2026-07-25 — نقل وفحص موديول جلب البيانات
 
-**الحالة:** تم تنفيذ النقل على الفرع `agent/tradingview-provider` داخل Pull Request رقم 8. لم يتم الدمج في `main` حتى ينجح اختبار اتصال حي.
+**الحالة:** العمل مستمر على الفرع `agent/tradingview-provider` داخل Pull Request رقم 8. لن يتم الدمج في `main` قبل نجاح الاختبارات العادية واختبار اتصال حي يعيد بيانات `COMI` الفعلية.
 
 ## طلب التنفيذ
 
-نقل بيانات وطريقة اتصال TradingView المستخدمة في البوت القديم، ثم تجربة جلب بيانات أسهم حقيقية داخل مشروع `Sahmi-Kasban`.
-
-بعد توضيح واجهة الموديول المطلوبة، تم اعتماد الملف:
+نقل بيانات وطريقة اتصال TradingView المستخدمة في البوت القديم، واستخدام موديول مستقل باسم:
 
 ```text
 backend/reusable_data_fetcher.py
 ```
 
-## ما وُجد في EGX-Pilot
+الواجهة المطلوبة مبنية على الملف الكامل الذي أرسله المستخدم، وتشمل:
 
-الملف `reusable_data_fetcher.py` لم يكن موجودًا داخل الريبو القديم كملف منفرد، لكن مكوناته كانت موجودة في:
+- `TradingViewConnector`
+- `_ConnectionPool`
+- `FundamentalsFetcher`
+- `TechnicalAnalysisService`
+- `StockDataFetcher`
+- `get_full_data`
+- `get_realtime_price`
+- `get_historical_data`
+- `get_fundamentals`
+- `calculate_indicators`
 
-- `backend/app/services/tv_connector.py`
-- `backend/app/services/data_provider.py`
-- `backend/app/services/exchange_map.py`
-- `backend/app/services/fundamentals_fetcher.py`
-- `backend/app/services/technical_analysis.py`
-
-تم تجميع هذه المكونات في واجهة واحدة مطابقة للاستخدام المطلوب.
-
-## بيانات اتصال TradingView المنقولة
+## بيانات الاتصال المعتمدة
 
 ```text
 WebSocket URL = wss://data.tradingview.com/socket.io/websocket
@@ -36,147 +35,158 @@ Auth Token = unauthorized_user_token
 EGX Symbol Format = EGX:COMI
 ```
 
-المشروع القديم لم يكن يحتوي على اسم مستخدم أو كلمة مرور أو Session Cookie لحساب TradingView. الاتصال كان يستخدم التوكن العام `unauthorized_user_token`.
+لا توجد بيانات حساب خاصة أو Cookie أو كلمة مرور داخل الموديول. `unauthorized_user_token` هو التوكن العام الذي كان يستخدمه المشروع القديم.
 
-## الموديول القابل لإعادة الاستخدام
+## تدقيق الملف المرسل
 
-تم تنفيذ:
+تم اختبار الملف المرسل نفسه قبل تعديله، وظهرت المشكلات التالية:
 
-- `TradingViewConnector`
-- `_ConnectionPool`
-- `FundamentalsFetcher`
-- `TechnicalAnalysisService`
-- `StockDataFetcher`
+1. بداية الوصف لم تكن مسبوقة بعلامة فتح `"""` مع وجود علامة الإغلاق، ولذلك فشل `py_compile` بخطأ `unterminated triple-quoted string`.
+2. `StockDataFetcher(tv_token="CUSTOM_TOKEN")` لم يكن يمرر التوكن إلى الـConnection Pool؛ الاختبار أثبت أن الاتصالات أرسلت `unauthorized_user_token` بدل التوكن الممرر.
+3. حلقة heartbeat كانت ترسل القيمة الثابتة `~h~5` كل 15 ثانية، ولا تعيد نبضة TradingView الفعلية المرسلة داخل إطار `~m~...~m~~h~...`.
+4. الـPool كان يحتفظ بالقفل أثناء فتح اتصال شبكي، ويُنشئ اتصالًا إضافيًا خارج الحد المحدد عند انشغال جميع الاتصالات.
+5. استدعاء Yahoo Finance كان متزامنًا داخل الدالة async، ما قد يحجب event loop.
+6. إغلاق الاتصالات لم يكن ينتظر انتهاء مهام listener ولم يكن ينظف حالة الـPool بالكامل.
+7. فشل الشموع كان يتحول إلى قائمة فارغة بدون إشارة واضحة تسمح للمستدعي بتمييز النتيجة الناقصة.
 
-### الواجهة الرئيسية
+## الإصلاحات المطبقة
 
-```python
-fetcher = StockDataFetcher(tv_token="unauthorized_user_token")
-
-data = await fetcher.get_full_data("COMI", market="EGX")
-
-price = await fetcher.get_realtime_price("COMI", market="EGX")
-candles = await fetcher.get_historical_data(
-    "COMI",
-    market="EGX",
-    timeframe="1D",
-    count=200,
-)
-fundamentals = fetcher.get_fundamentals("COMI", market="EGX")
-indicators = fetcher.calculate_indicators(candles)
-
-await fetcher.close()
-```
-
-## دعم الأسواق
-
-تمت إضافة تحويلات أولية للأسواق:
-
-- `EGX` و`CASE` إلى `EGX:TICKER` و`TICKER.CA`.
-- `US` و`NASDAQ` إلى `NASDAQ:TICKER`.
-- `NYSE` إلى `NYSE:TICKER`.
-- `LSE` إلى `LSE:TICKER` و`TICKER.L`.
-- دعم الصيغة المباشرة مثل `EGX:COMI`.
-
-## البيانات التي يعيدها get_full_data
+- إضافة docstring صحيحة ليصبح الملف Python صالحًا.
+- إنشاء Pool مستقل لكل `StockDataFetcher` ويستخدم `tv_token` الذي مرره المستدعي.
+- إعادة heartbeat الفعلي إلى TradingView بدل إرسال قيمة ثابتة.
+- جعل الاتصال idempotent ومنع فتح الاتصال نفسه مرتين.
+- استخدام `asyncio.Condition` لانتظار اتصال متاح مع احترام حد الـPool.
+- تنظيف الشموع والتحقق من OHLCV وإزالة التكرار وترتيب timestamps.
+- التعامل مع `series_error` و`protocol_error` و`critical_error`.
+- تشغيل Yahoo Finance في thread منفصل داخل `get_full_data`.
+- إغلاق listener والـWebSocket والـPool بصورة منتظمة.
+- الحفاظ على الواجهة المطلوبة والمفاتيح:
 
 ```text
-symbol
+ticker
 market
 price
 historical
 indicators
 fundamentals
+errors
 ```
 
-- السعر اللحظي والشموع من TradingView.
-- البيانات الأساسية من Yahoo Finance.
-- المؤشرات محسوبة محليًا باستخدام `ta` و`pandas`.
-- إذا فشل السعر اللحظي تستخدم آخر شمعة تاريخية كـfallback.
-- إذا فشلت الشموع التاريخية تفشل العملية لأن التحليل لا يمكن حسابه.
+- إضافة دعم:
+  - EGX / CASE
+  - US / NASDAQ / NYSE
+  - LSE بصيغة TradingView `LON:TICKER`
+  - TADAWUL
+  - DFM
+  - ADX
+  - QSE
+  - BIST
+  - الصيغة المباشرة `EXCHANGE:TICKER`
 
-## المؤشرات المنفذة
+## توحيد مسار Backend
 
-- SMA 20 / 50 / 200
-- EMA 9 / 12 / 21 / 26
-- RSI
-- MACD / Signal / Histogram
-- Stochastic K / D
-- Williams %R
-- ROC
-- CCI
-- Bollinger Bands
-- ATR
-- ADX / DI+ / DI-
-- VWAP
-- MFI
-- اتجاه عام
+كان يوجد تنفيذ منفصل لبروتوكول TradingView في:
 
-## دمج TradingView في Backend
+```text
+backend/app/market_data/tradingview.py
+```
 
-تم ضبط:
+تمت إزالة تكرار البروتوكول، وأصبح مزود الـBackend يستخدم نفس `TradingViewConnector` الموجود في `reusable_data_fetcher.py`. هذا يمنع إصلاح الموديول وترك خطأ مختلف في مسار تحليل الأسهم الحقيقي.
+
+الإعداد الحالي:
 
 ```text
 MARKET_DATA_PRIMARY=tradingview
 MARKET_DATA_FALLBACK=yfinance
 ```
 
-تمت إضافة `TradingViewMarketDataProvider` إلى طبقة مزودي السوق الحالية، مع استمرار yfinance كبديل في حالة فشل TradingView.
+## التحقق المحلي المنفذ
 
-## الاختبارات المضافة
+### 1. فحص Syntax
 
-تمت كتابة اختبارات لـ:
+النسخة المصححة نجحت في:
 
-- ثبات بيانات الاتصال المنقولة من المشروع القديم.
-- ترميز وفك رسائل بروتوكول TradingView.
-- تحويل الفواصل الزمنية وعدد الشموع.
-- تنظيف OHLCV وترتيبه وإزالة التكرار.
-- تحويل الرموز بين TradingView وYahoo.
-- حساب المؤشرات من 240 شمعة تجريبية.
-- استخدام آخر إغلاق عند فشل السعر اللحظي.
-- واجهة `get_full_data` المجمعة.
+```text
+python -m py_compile reusable_data_fetcher.py
+```
 
-## Smoke Test الحي
+### 2. محاكاة TradingView WebSocket
 
-تم إنشاء:
+تم تشغيل WebSocket محلي يحاكي رسائل TradingView التالية:
+
+- `set_auth_token`
+- heartbeat
+- `quote_add_symbols`
+- `qsd`
+- `create_series`
+- `timescale_update`
+
+ثم تم تشغيل:
+
+```python
+fetcher = StockDataFetcher(tv_token="CUSTOM_TOKEN", pool_size=2)
+data = await fetcher.get_full_data("COMI", market="EGX")
+```
+
+نتيجة الاختبار:
+
+```json
+{
+  "status": "ok",
+  "tokens": ["CUSTOM_TOKEN", "CUSTOM_TOKEN"],
+  "heartbeat_echoes": 2,
+  "candles": 200,
+  "price": 72.5
+}
+```
+
+هذا يثبت محليًا أن:
+
+- التوكن الممرر يصل إلى الاتصالين.
+- heartbeat يتم إرجاعه بصورة صحيحة.
+- السعر اللحظي يصل إلى الـFacade.
+- 200 شمعة تصل وتُعاد بالترتيب.
+- `get_full_data` يجمع السعر والشموع والمؤشرات والأساسيات.
+- إغلاق الـPool لا يترك الاتصال مفتوحًا.
+
+هذا اختبار بروتوكول محلي، وليس دليلًا بعد على أن TradingView الخارجي متاح من بيئة الإنتاج.
+
+## الاختبارات المضافة للريبو
+
+- تحويل الرموز لكل الأسواق المطلوبة.
+- تنظيف الشموع وإزالة التكرارات والصفوف غير المنطقية.
+- حساب المؤشرات من 240 شمعة.
+- fallback إلى آخر إغلاق عند تعذر السعر اللحظي.
+- اختبار WebSocket محلي كامل للتوكن والـheartbeat والسعر و200 شمعة.
+- اختبار تحويل مزود الـBackend للـtimestamps والبيانات.
+- اختبار الفواصل الزمنية وعدد الشموع المطلوبة.
+
+## Smoke Test الحي الإلزامي
+
+الملف:
 
 ```text
 backend/scripts/tradingview_smoke.py
 ```
 
-ويشغل فعليًا:
+يشغل:
 
 ```python
 data = await StockDataFetcher().get_full_data("COMI", market="EGX")
 ```
 
-ويشترط:
+ولا يعتبر ناجحًا إلا إذا تحقق الآتي:
 
+- `errors` فارغة.
 - 200 شمعة يومية على الأقل.
 - آخر إغلاق أكبر من صفر.
-- وجود RSI وMACD.
-- وجود سعر لحظي أو fallback من آخر إغلاق.
-- محاولة إرجاع اسم الشركة والقيمة السوقية.
+- سعر حالي أو historical fallback صالح.
+- RSI وMACD محسوبان.
+- إغلاق الاتصالات بدون خطأ.
 
-## عائق التحقق الحالي
+## عائق التحقق الحي الحالي
 
-تم تشغيل GitHub Actions عدة مرات على PR رقم 8، ومنها Run IDs:
-
-- `30154439734`
-- `30154736380`
-- `30154822281`
-
-في كل تشغيل انتهت جميع الوظائف بالحالة `failure` قبل إنشاء أي Step، بما فيها:
-
-- Core lint
-- Core tests
-- Backend lint
-- Backend tests
-- TradingView live smoke
-
-الـAPI الخاص بـGitHub يعيد `steps: None` ولا يوفر Logs للوظائف. هذا يعني أن الـRunner لم يبدأ تنفيذ الأوامر أصلًا، ويرجح وجود مشكلة في توفر GitHub Actions أو دقائق الحساب، وليس فشلًا صادرًا من كود TradingView.
-
-كما أن بيئة التنفيذ المحلية الحالية لا تستطيع حل DNS للنطاقات الخارجية، ومنها:
+بيئة التنفيذ المحلية لا تستطيع حل DNS للنطاقات الخارجية:
 
 ```text
 data.tradingview.com
@@ -184,16 +194,21 @@ query1.finance.yahoo.com
 github.com
 ```
 
-لذلك لا يمكن الادعاء أن تجربة الجلب الحي نجحت حتى الآن.
+كما أن GitHub Actions Runs السابقة:
 
-## قرار الدمج
+- `30154439734`
+- `30154736380`
+- `30154822281`
 
-تم إبقاء Pull Request رقم 8 كـDraft وعدم دمجه في `main` للأسباب التالية:
+أنهت جميع الوظائف قبل إنشاء أي Step، حتى وظائف lint والاختبارات غير المتصلة بالإنترنت. أعاد GitHub `steps: None` ولم يوفر Logs، ولذلك لا يمكن نسبة الفشل إلى كود TradingView.
 
-1. مزود البيانات جزء حساس وأساسي في التطبيق.
-2. الاختبار الحي لم يبدأ فعليًا بسبب عائق البنية التحتية.
-3. لا يجب اعتبار فشل Runner نجاحًا أو فشلًا للاتصال.
-4. سيتم الدمج فقط بعد نجاح `tradingview-live-smoke` وإظهار بيانات `COMI` الفعلية.
+## قرار المرحلة
+
+- Pull Request رقم 8 يظل Draft.
+- لا دمج في `main` حاليًا.
+- لا انتقال إلى المرحلة التالية.
+- النجاح المحلي للمحاكاة شرط ضروري لكنه غير كافٍ وحده.
+- الدمج يتطلب Runner متصلًا بالإنترنت ينفذ `tradingview_smoke.py` ويعرض بيانات `COMI` الفعلية.
 
 ## الملفات الرئيسية
 
@@ -205,11 +220,3 @@ github.com
 - `backend/tests/test_tradingview_provider.py`
 - `docs/REUSABLE_DATA_FETCHER.md`
 - `.github/workflows/ci.yml`
-
-## المطلوب قبل الدمج
-
-- عودة GitHub Actions للعمل أو توفير Runner بديل متصل بالإنترنت.
-- نجاح lint والاختبارات العادية.
-- نجاح `get_full_data("COMI")` حيًا.
-- تسجيل عدد الشموع وآخر سعر ومصدر السعر وقيم RSI وMACD.
-- إزالة الـlive smoke المؤقت من CI بعد إثبات الاتصال، مع إبقاء السكربت اليدوي.
