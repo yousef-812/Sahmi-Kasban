@@ -79,7 +79,10 @@ class YFinanceMarketDataProvider:
             return []
 
         normalized = frame.copy()
-        normalized.columns = [str(column).strip().lower().replace(" ", "_") for column in normalized.columns]
+        normalized.columns = [
+            str(column).strip().lower().replace(" ", "_")
+            for column in normalized.columns
+        ]
         required = ["open", "high", "low", "close", "volume"]
         if any(column not in normalized.columns for column in required):
             return []
