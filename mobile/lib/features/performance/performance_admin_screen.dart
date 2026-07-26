@@ -76,9 +76,9 @@ class _PerformanceAdminScreenState
               const SizedBox(height: 16),
               Text(
                 'التقارير المتأخرة أو الناقصة',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 10),
               delayed.when(
@@ -168,9 +168,9 @@ class _PerformanceAdminScreenState
       ref.invalidate(performanceReportsProvider);
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -191,10 +191,7 @@ class _DelayedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateFormat(
-      'd MMMM yyyy',
-      'ar',
-    ).format(item.targetSessionDate);
+    final date = DateFormat('d MMMM yyyy', 'ar').format(item.targetSessionDate);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -204,9 +201,9 @@ class _DelayedCard extends StatelessWidget {
           children: [
             Text(
               date,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
             ),
             Text(
               '${item.evaluatedItems}/${item.totalItems} مكتملة • '
@@ -227,9 +224,8 @@ class _DelayedCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => context.push(
-                      '/performance/reports/${item.reportId}',
-                    ),
+                    onPressed: () =>
+                        context.push('/performance/reports/${item.reportId}'),
                     icon: const Icon(Icons.visibility_outlined),
                     label: const Text('عرض وتصحيح'),
                   ),

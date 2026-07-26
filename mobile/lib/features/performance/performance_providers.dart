@@ -5,12 +5,11 @@ import 'performance_repository.dart';
 
 final performanceWindowProvider = StateProvider<int>((ref) => 7);
 
-final performanceSummaryProvider = FutureProvider.autoDispose<PerformanceSummary>((
-  ref,
-) {
-  final window = ref.watch(performanceWindowProvider);
-  return ref.watch(performanceRepositoryProvider).summary(window);
-});
+final performanceSummaryProvider =
+    FutureProvider.autoDispose<PerformanceSummary>((ref) {
+      final window = ref.watch(performanceWindowProvider);
+      return ref.watch(performanceRepositoryProvider).summary(window);
+    });
 
 final performanceReportsProvider =
     FutureProvider.autoDispose<PerformanceReportPage>((ref) {

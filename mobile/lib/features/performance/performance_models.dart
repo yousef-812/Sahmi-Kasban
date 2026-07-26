@@ -66,8 +66,8 @@ class PerformanceSession {
       evaluatedItems: json['evaluated_items'] as int? ?? 0,
       pendingItems: json['pending_items'] as int? ?? 0,
       failedItems: json['failed_items'] as int? ?? 0,
-      dataCompletenessPct:
-          (json['data_completeness_pct'] as num? ?? 0).toDouble(),
+      dataCompletenessPct: (json['data_completeness_pct'] as num? ?? 0)
+          .toDouble(),
       averageReturnBp: json['average_return_bp'] as int?,
       positiveCount: json['positive_count'] as int? ?? 0,
       negativeCount: json['negative_count'] as int? ?? 0,
@@ -175,8 +175,8 @@ class PerformanceSummary {
       evaluatedItems: json['evaluated_items'] as int? ?? 0,
       pendingItems: json['pending_items'] as int? ?? 0,
       failedItems: json['failed_items'] as int? ?? 0,
-      dataCompletenessPct:
-          (json['data_completeness_pct'] as num? ?? 0).toDouble(),
+      dataCompletenessPct: (json['data_completeness_pct'] as num? ?? 0)
+          .toDouble(),
       positiveCount: json['positive_count'] as int? ?? 0,
       negativeCount: json['negative_count'] as int? ?? 0,
       flatCount: json['flat_count'] as int? ?? 0,
@@ -245,8 +245,8 @@ class PerformanceReportListItem {
       evaluatedItems: json['evaluated_items'] as int? ?? 0,
       pendingItems: json['pending_items'] as int? ?? 0,
       failedItems: json['failed_items'] as int? ?? 0,
-      dataCompletenessPct:
-          (json['data_completeness_pct'] as num? ?? 0).toDouble(),
+      dataCompletenessPct: (json['data_completeness_pct'] as num? ?? 0)
+          .toDouble(),
       averageReturnBp: json['average_return_bp'] as int?,
       positiveCount: json['positive_count'] as int? ?? 0,
       negativeCount: json['negative_count'] as int? ?? 0,

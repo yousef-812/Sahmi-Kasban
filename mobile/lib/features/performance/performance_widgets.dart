@@ -62,9 +62,9 @@ class PerformanceMetric extends StatelessWidget {
               Text(
                 value,
                 textDirection: TextDirection.ltr,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
             ],
           ),
@@ -97,9 +97,9 @@ class PerformanceExtreme extends StatelessWidget {
             Text(
               item?.ticker ?? '-',
               textDirection: TextDirection.ltr,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
             ),
             Text(item == null ? '-' : formatBasisPoints(item!.returnBp)),
           ],

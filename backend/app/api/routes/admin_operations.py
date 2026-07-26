@@ -48,6 +48,7 @@ from app.services.operations_settings import (
     update_operational_setting,
 )
 from app.services.performance_experience import (
+    PerformanceExperienceError,
     PerformanceCorrectionError,
     PerformanceReportNotFoundError,
     correct_performance_outcome,
@@ -369,7 +370,7 @@ def export_report_performance(
 ) -> PlainTextResponse:
     try:
         content = export_performance_csv(db, window_sessions=window)
-    except ValueError as exc:
+    except PerformanceExperienceError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),

@@ -53,9 +53,9 @@ class PerformanceScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               Text(
                 'سجل الجلسات',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 10),
               reports.when(
@@ -190,9 +190,9 @@ class _SummarySection extends StatelessWidget {
         const SizedBox(height: 18),
         Text(
           'أداء المراكز من 1 إلى 10',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 8),
         Card(

@@ -27,9 +27,8 @@ class PerformanceReportScreen extends ConsumerWidget {
             children: [
               PerformanceFailure(
                 message: 'تعذر تحميل نتائج التقرير.',
-                retry: () => ref.invalidate(
-                  performanceReportDetailProvider(reportId),
-                ),
+                retry: () =>
+                    ref.invalidate(performanceReportDetailProvider(reportId)),
               ),
             ],
           ),
@@ -51,7 +50,8 @@ class _DetailBody extends ConsumerWidget {
       'EEEE d MMMM yyyy',
       'ar',
     ).format(detail.targetSessionDate);
-    final isAdmin = ref.watch(sessionControllerProvider).profile?.isAdmin == true;
+    final isAdmin =
+        ref.watch(sessionControllerProvider).profile?.isAdmin == true;
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(performanceReportDetailProvider(detail.reportId));
@@ -100,15 +100,17 @@ class _DetailBody extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               'سجل التصحيحات',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             for (final revision in detail.revisions)
               Card(
                 child: ListTile(
-                  leading: CircleAvatar(child: Text('${revision.revisionNumber}')),
+                  leading: CircleAvatar(
+                    child: Text('${revision.revisionNumber}'),
+                  ),
                   title: Text(revision.reason),
                   subtitle: Text(
                     DateFormat(
@@ -135,7 +137,9 @@ class _DetailBody extends ConsumerWidget {
     );
     if (result == null || !context.mounted) return;
     try {
-      await ref.read(performanceRepositoryProvider).correctOutcome(
+      await ref
+          .read(performanceRepositoryProvider)
+          .correctOutcome(
             outcomeId: outcome.id,
             reason: result.reason,
             sessionOpen: result.open,
@@ -157,9 +161,9 @@ class _DetailBody extends ConsumerWidget {
       }
     } on ApiException catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     }
   }
@@ -204,8 +208,12 @@ class _OutcomeCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             if (outcome.isComplete) ...[
-              Text('سعر التحليل: ${outcome.priceAtAnalysis.toStringAsFixed(2)}'),
-              Text('الإغلاق: ${outcome.sessionClose?.toStringAsFixed(2) ?? '-'}'),
+              Text(
+                'سعر التحليل: ${outcome.priceAtAnalysis.toStringAsFixed(2)}',
+              ),
+              Text(
+                'الإغلاق: ${outcome.sessionClose?.toStringAsFixed(2) ?? '-'}',
+              ),
               Text('أقصى صعود: ${formatBasisPoints(outcome.maxUpsideBp)}'),
               Text('أقصى هبوط: ${formatBasisPoints(outcome.maxDrawdownBp)}'),
               Text(
@@ -260,8 +268,12 @@ class _CorrectionDialogState extends State<_CorrectionDialog> {
     _open = TextEditingController(text: '${widget.outcome.sessionOpen ?? ''}');
     _high = TextEditingController(text: '${widget.outcome.sessionHigh ?? ''}');
     _low = TextEditingController(text: '${widget.outcome.sessionLow ?? ''}');
-    _close = TextEditingController(text: '${widget.outcome.sessionClose ?? ''}');
-    _provider = TextEditingController(text: widget.outcome.provider ?? 'manual');
+    _close = TextEditingController(
+      text: '${widget.outcome.sessionClose ?? ''}',
+    );
+    _provider = TextEditingController(
+      text: widget.outcome.provider ?? 'manual',
+    );
     _fingerprint = TextEditingController();
   }
 
@@ -304,10 +316,7 @@ class _CorrectionDialogState extends State<_CorrectionDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('إلغاء'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('حفظ التصحيح'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('حفظ التصحيح')),
       ],
     );
   }
