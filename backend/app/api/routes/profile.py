@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from app.api.dependencies import CurrentUser, DatabaseSession
+from app.core.admin import is_admin_email
 from app.core.avatars import AVATAR_KEYS
 from app.schemas.accounts import (
     AvatarOption,
@@ -38,6 +39,7 @@ def build_profile_response(db: DatabaseSession, user: CurrentUser) -> ProfileRes
         avatar_key=user.avatar_key,
         email_verified=user.email_verified,
         status=user.status,
+        is_admin=is_admin_email(user.email),
         plan_code=subscription.plan_code,
         subscription_status=subscription.status,
         weekly_points=subscription.weekly_points,

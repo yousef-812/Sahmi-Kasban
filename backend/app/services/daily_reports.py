@@ -25,6 +25,7 @@ from app.models import (
     MarketScanRun,
     User,
 )
+from app.services.operations_settings import get_int_setting
 from app.services.stock_analysis import DISCLAIMER_AR
 from app.services.wallet import debit_points, get_wallet_account
 from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
@@ -227,6 +228,7 @@ def unlock_market_report(
     report_id: UUID,
 ) -> MarketReportUnlockExecution:
     settings = get_settings()
+    report_cost_points = get_int_setting(db, "daily_report_cost_points")
     report = get_complete_report(db, report_id)
     existing = db.scalar(
         select(MarketReportUnlock).where(
@@ -255,7 +257,7 @@ def unlock_market_report(
         debit_points(
             db,
             user_id=user.id,
-            amount_points=settings.daily_report_cost_points,
+            amount_points=report_cost_points,
             transaction_id=transaction_id,
             entry_type="market_report_debit",
             reference_type="market_report",
@@ -296,7 +298,7 @@ def unlock_market_report(
     account = get_wallet_account(db, user.id)
     return MarketReportUnlockExecution(
         access=MarketReportAccess(report=report, items=items, unlocked=True),
-        charged_points=settings.daily_report_cost_points,
+        charged_points=report_cost_points,
         balance_points=account.balance_points,
     )
 

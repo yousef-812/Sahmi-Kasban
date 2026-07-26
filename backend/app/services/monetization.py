@@ -32,6 +32,7 @@ from app.services.monetization_security import (
     VerifiedPurchase,
     hash_secret,
 )
+from app.services.operations_settings import runtime_monetization_settings
 from app.services.profile import get_active_subscription, get_wallet_balance
 from app.services.wallet import credit_points, get_wallet_account, points_to_coins
 
@@ -113,7 +114,7 @@ def rewarded_ad_eligibility(
     settings: Settings | None = None,
     lock_wallet: bool = False,
 ) -> RewardedAdEligibility:
-    current_settings = settings or get_settings()
+    current_settings = settings or runtime_monetization_settings(db)
     now = moment or datetime.now(UTC)
     subscription = get_active_subscription(db, user_id)
     if not subscription.ads_enabled:
@@ -184,7 +185,7 @@ def create_rewarded_ad_session(
     moment: datetime | None = None,
     settings: Settings | None = None,
 ) -> RewardedAdSessionResult:
-    current_settings = settings or get_settings()
+    current_settings = settings or runtime_monetization_settings(db)
     if current_settings.admob_ssv_verification_mode == "disabled":
         raise RewardedAdsUnavailableError("verification_disabled")
     now = moment or datetime.now(UTC)
@@ -350,7 +351,7 @@ async def process_rewarded_ad_callback(
     moment: datetime | None = None,
     settings: Settings | None = None,
 ) -> RewardClaimResult:
-    current_settings = settings or get_settings()
+    current_settings = settings or runtime_monetization_settings(db)
     now = moment or datetime.now(UTC)
     transaction_id = _required(raw_payload, "transaction_id")
     existing = db.scalar(

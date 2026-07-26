@@ -7,17 +7,18 @@ import '../../domain/models.dart';
 import '../auth/session_controller.dart';
 import '../community/community_feed_tab.dart';
 import '../market/stock_analysis_tab.dart';
+import '../notifications/notification_providers.dart';
 import '../reports/report_providers.dart';
 import '../wallet/wallet_providers.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _index = 0;
 
   static const _titles = <String>[
@@ -30,8 +31,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(pushRegistrationProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_index])),
+      appBar: AppBar(
+        title: Text(_titles[_index]),
+        actions: [
+          if (ref.watch(sessionControllerProvider).profile?.isAdmin == true)
+            IconButton(
+              onPressed: () => context.push('/admin'),
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              tooltip: 'الإدارة',
+            ),
+          IconButton(
+            onPressed: () => context.push('/notifications'),
+            icon: Badge(
+              isLabelVisible:
+                  ref
+                      .watch(notificationInboxProvider)
+                      .valueOrNull
+                      ?.unreadCount !=
+                  0,
+              label: Text(
+                '${ref.watch(notificationInboxProvider).valueOrNull?.unreadCount ?? 0}',
+              ),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            tooltip: 'الإشعارات',
+          ),
+        ],
+      ),
       body: IndexedStack(
         index: _index,
         children: const [

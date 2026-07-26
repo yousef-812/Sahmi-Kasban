@@ -8,6 +8,7 @@ Create Date: 2026-07-25
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0003_market_data_snapshots"

@@ -41,6 +41,7 @@ from app.services.monetization_security import (
     MonetizationConfigurationError,
     MonetizationVerificationError,
 )
+from app.services.operations_settings import runtime_monetization_settings
 from app.services.profile import get_active_subscription
 from app.services.wallet import points_to_coins
 
@@ -48,9 +49,13 @@ router = APIRouter(prefix="/monetization", tags=["monetization"])
 
 
 @router.get("/catalog", response_model=MonetizationCatalogResponse)
-def monetization_catalog(current_user: CurrentUser) -> MonetizationCatalogResponse:
+def monetization_catalog(
+    db: DatabaseSession, current_user: CurrentUser
+) -> MonetizationCatalogResponse:
     del current_user
-    return MonetizationCatalogResponse.model_validate(catalog_payload())
+    return MonetizationCatalogResponse.model_validate(
+        catalog_payload(runtime_monetization_settings(db))
+    )
 
 
 @router.get("/status", response_model=MonetizationStatusResponse)

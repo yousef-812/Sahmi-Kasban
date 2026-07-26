@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../domain/models.dart';
+import '../features/admin/admin_dashboard_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
@@ -11,6 +12,7 @@ import '../features/community/community_detail_screen.dart';
 import '../features/community/my_discussions_screen.dart';
 import '../features/home/dashboard_screen.dart';
 import '../features/monetization/monetization_page.dart';
+import '../features/notifications/notification_screen.dart';
 import '../features/onboarding/onboarding_controller.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
@@ -70,6 +72,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MonetizationPage(),
       ),
       GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
         path: '/community/new',
         builder: (context, state) => const CommunityCreateScreen(),
       ),
@@ -117,6 +127,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final publicAccountRoute = publicAccountRoutes.contains(location);
       if (!authenticated) {
         return publicAccountRoute ? null : '/login';
+      }
+      if (location == '/admin' && session.profile?.isAdmin != true) {
+        return '/home';
       }
       if (publicAccountRoute ||
           location == '/splash' ||
