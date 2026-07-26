@@ -2,7 +2,7 @@
 
 > Branch: `agent/phase-9-quality-gates`  
 > GitHub pull request: #22  
-> Status: implementation complete; final documentation gate pending  
+> Status: implementation and roadmap complete; final merge gate running  
 > Updated: 2026-07-26
 
 This package completes the programmatic Phase 9 scope by adding production-facing observability, repeatable security/load validation, and mobile quality safeguards without committing provider secrets.
@@ -52,6 +52,8 @@ Workflow `30212950625` succeeded on clean implementation head `32b1315cfab4e988a
 - Flutter formatting and static analysis passed;
 - all Flutter tests passed;
 - Android debug APK built successfully.
+
+The main roadmap is now version 1.10 and records Phase 9 as programmatically complete. The next product package is Phase 10 release preparation.
 
 ## Release boundaries
 
