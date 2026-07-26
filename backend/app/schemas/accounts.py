@@ -121,6 +121,7 @@ class ProfileResponse(BaseModel):
     avatar_key: str
     email_verified: bool
     status: str
+    is_admin: bool
     plan_code: str
     subscription_status: str
     weekly_points: int
