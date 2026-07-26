@@ -17,6 +17,13 @@ from app.core.config import Settings
 _request_id: ContextVar[str] = ContextVar("request_id", default="-")
 
 
+class RequestContextFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "request_id"):
+            record.request_id = current_request_id()
+        return True
+
+
 class JsonLogFormatter(logging.Formatter):
     """Small JSON formatter that avoids logging request bodies or credentials."""
 
@@ -163,6 +170,7 @@ def configure_observability(settings: Settings) -> None:
         root_logger = logging.getLogger()
         root_logger.handlers.clear()
         handler = logging.StreamHandler(sys.stdout)
+        handler.addFilter(RequestContextFilter())
         if settings.log_json:
             handler.setFormatter(JsonLogFormatter())
         else:
