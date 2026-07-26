@@ -43,6 +43,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               tooltip: 'الإدارة',
             ),
           IconButton(
+            onPressed: () => context.push('/performance'),
+            icon: const Icon(Icons.assessment_outlined),
+            tooltip: 'سجل الأداء',
+          ),
+          IconButton(
             onPressed: () => context.push('/notifications'),
             icon: Badge(
               isLabelVisible:

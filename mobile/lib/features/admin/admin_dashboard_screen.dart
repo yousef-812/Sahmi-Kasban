@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
 import 'admin_models.dart';
@@ -16,6 +17,13 @@ class AdminDashboardScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الإدارة'),
+          actions: [
+            IconButton(
+              onPressed: () => context.push('/admin/performance'),
+              icon: const Icon(Icons.assessment_outlined),
+              tooltip: 'تشغيل سجل الأداء',
+            ),
+          ],
           bottom: const TabBar(
             isScrollable: true,
             tabs: [

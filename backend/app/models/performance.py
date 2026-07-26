@@ -149,3 +149,41 @@ class MarketReportItemOutcome(TimestampMixin, Base):
         nullable=False,
     )
     evidence: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class MarketReportOutcomeRevision(TimestampMixin, Base):
+    __tablename__ = "market_report_outcome_revisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "outcome_id",
+            "revision_number",
+            name="uq_market_report_outcome_revision_number",
+        ),
+        CheckConstraint(
+            "revision_number > 0",
+            name="market_report_outcome_revision_positive",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    outcome_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("market_report_item_outcomes.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    report_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("market_reports.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    actor_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+    )
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    before_payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    after_payload: Mapped[dict] = mapped_column(JSON, nullable=False)
