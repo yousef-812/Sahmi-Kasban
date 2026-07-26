@@ -35,13 +35,13 @@ from app.services.monetization import (
     process_rewarded_ad_callback,
     rewarded_ad_eligibility,
 )
-from app.services.operations_settings import runtime_monetization_settings
 from app.services.monetization_security import (
     AdMobSsvVerifier,
     GooglePlayVerifier,
     MonetizationConfigurationError,
     MonetizationVerificationError,
 )
+from app.services.operations_settings import runtime_monetization_settings
 from app.services.profile import get_active_subscription
 from app.services.wallet import points_to_coins
 

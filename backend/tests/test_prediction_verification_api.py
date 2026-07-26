@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
+from sahmi_kasban.ai import AIProviderError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,6 @@ from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries
 from app.models import Discussion, WalletEntry
 from app.services.community_ai import get_community_ai_service
-from sahmi_kasban.ai import AIProviderError
 
 PASSWORD = "StrongPass123"
 

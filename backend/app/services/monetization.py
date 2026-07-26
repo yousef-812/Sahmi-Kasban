@@ -26,13 +26,13 @@ from app.services.monetization_catalog import (
     get_plan_by_product_id,
     product_type_for,
 )
-from app.services.operations_settings import runtime_monetization_settings
 from app.services.monetization_security import (
     GooglePlayVerifier,
     PurchaseTokenCipher,
     VerifiedPurchase,
     hash_secret,
 )
+from app.services.operations_settings import runtime_monetization_settings
 from app.services.profile import get_active_subscription, get_wallet_balance
 from app.services.wallet import credit_points, get_wallet_account, points_to_coins
 

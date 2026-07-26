@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentAdmin, DatabaseSession
 from app.market_data.provider import get_market_data_provider
@@ -36,7 +37,6 @@ from app.services.operations_settings import (
     setting_definitions,
     update_operational_setting,
 )
-from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(prefix="/admin/operations", tags=["admin-operations"])
 AdminMarketProvider = Annotated[
