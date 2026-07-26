@@ -58,14 +58,13 @@ void main() {
   });
 
   test('parses verification submission wallet result', () {
-    final submission = PredictionVerificationSubmission.fromJson(
-      <String, dynamic>{
-        'verification': _verificationJson(),
-        'balance_points': 500,
-        'balance_coins': '5.00',
-        'idempotent': false,
-      },
-    );
+    final submission =
+        PredictionVerificationSubmission.fromJson(<String, dynamic>{
+          'verification': _verificationJson(),
+          'balance_points': 500,
+          'balance_coins': '5.00',
+          'idempotent': false,
+        });
 
     expect(submission.verification.scorePercent, 87.5);
     expect(submission.balancePoints, 500);

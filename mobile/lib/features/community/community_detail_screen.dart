@@ -8,6 +8,7 @@ import '../auth/session_controller.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
+import 'prediction_verification_card.dart';
 
 class CommunityDetailScreen extends ConsumerStatefulWidget {
   const CommunityDetailScreen({required this.discussionId, super.key});
@@ -254,6 +255,10 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                     title: 'التوقع المجمد وقت النشر',
                     data: item.frozenPrediction,
                   ),
+                ],
+                if (isOwner && item.status == 'published') ...[
+                  const SizedBox(height: 14),
+                  PredictionVerificationCard(discussionId: item.id),
                 ],
                 if (item.moderationResult.isNotEmpty && isOwner) ...[
                   const SizedBox(height: 14),

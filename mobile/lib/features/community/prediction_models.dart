@@ -98,9 +98,7 @@ class PredictionVerificationSubmission {
   final String balanceCoins;
   final bool idempotent;
 
-  factory PredictionVerificationSubmission.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory PredictionVerificationSubmission.fromJson(Map<String, dynamic> json) {
     return PredictionVerificationSubmission(
       verification: PredictionVerification.fromJson(
         _requiredMap(json['verification']),

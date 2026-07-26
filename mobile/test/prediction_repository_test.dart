@@ -49,9 +49,7 @@ Map<String, dynamic> _verificationJson() {
     'reward_points': 200,
     'reward_coins': '2.00',
     'evidence': <String, dynamic>{
-      'explanation': <String, dynamic>{
-        'reason': 'تحقق الاتجاه والهدف.',
-      },
+      'explanation': <String, dynamic>{'reason': 'تحقق الاتجاه والهدف.'},
     },
     'verified_at': '2026-07-27T17:05:00+03:00',
   };
@@ -77,10 +75,7 @@ void main() {
   test('loads verification eligibility status', () async {
     final tokenStore = _MockTokenStore();
     final repository = _repository(tokenStore, (options) async {
-      expect(
-        options.path,
-        '/community/discussions/discussion-1/verification',
-      );
+      expect(options.path, '/community/discussions/discussion-1/verification');
       expect(options.method, 'GET');
       return _jsonBody(<String, dynamic>{
         'discussion_id': 'discussion-1',
@@ -96,28 +91,31 @@ void main() {
     expect(status.verification, isNull);
   });
 
-  test('submits verification and parses exactly-once reward response', () async {
-    final tokenStore = _MockTokenStore();
-    final repository = _repository(tokenStore, (options) async {
-      expect(
-        options.path,
-        '/community/discussions/discussion-1/verification',
-      );
-      expect(options.method, 'POST');
-      return _jsonBody(<String, dynamic>{
-        'verification': _verificationJson(),
-        'balance_points': 500,
-        'balance_coins': '5.00',
-        'idempotent': false,
-      }, 200);
-    });
+  test(
+    'submits verification and parses exactly-once reward response',
+    () async {
+      final tokenStore = _MockTokenStore();
+      final repository = _repository(tokenStore, (options) async {
+        expect(
+          options.path,
+          '/community/discussions/discussion-1/verification',
+        );
+        expect(options.method, 'POST');
+        return _jsonBody(<String, dynamic>{
+          'verification': _verificationJson(),
+          'balance_points': 500,
+          'balance_coins': '5.00',
+          'idempotent': false,
+        }, 200);
+      });
 
-    final result = await repository.verifyPrediction('discussion-1');
+      final result = await repository.verifyPrediction('discussion-1');
 
-    expect(result.verification.rewardPoints, 200);
-    expect(result.balanceCoins, '5.00');
-    expect(result.idempotent, isFalse);
-  });
+      expect(result.verification.rewardPoints, 200);
+      expect(result.balanceCoins, '5.00');
+      expect(result.idempotent, isFalse);
+    },
+  );
 
   test('loads personal prediction statistics', () async {
     final tokenStore = _MockTokenStore();

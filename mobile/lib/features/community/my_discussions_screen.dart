@@ -102,9 +102,7 @@ class _MyDiscussionList extends ConsumerWidget {
                       ),
                     if (discussion.status == 'published') ...[
                       const SizedBox(height: 8),
-                      PredictionVerificationCard(
-                        discussionId: discussion.id,
-                      ),
+                      PredictionVerificationCard(discussionId: discussion.id),
                     ],
                   ],
                 ),
@@ -187,7 +185,9 @@ class _PredictionStatsCard extends StatelessWidget {
                   ),
                 ),
                 Chip(
-                  label: Text('إجمالي المكافآت: ${stats.totalRewardCoins} عملة'),
+                  label: Text(
+                    'إجمالي المكافآت: ${stats.totalRewardCoins} عملة',
+                  ),
                 ),
               ],
             ),

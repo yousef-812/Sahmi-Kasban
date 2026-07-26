@@ -32,9 +32,7 @@ class _PredictionVerificationCardState
       final result = await ref
           .read(predictionRepositoryProvider)
           .verifyPrediction(widget.discussionId);
-      ref.invalidate(
-        predictionVerificationStatusProvider(widget.discussionId),
-      );
+      ref.invalidate(predictionVerificationStatusProvider(widget.discussionId));
       ref.invalidate(myPredictionStatsProvider);
       ref.invalidate(myDiscussionsProvider);
       ref.invalidate(walletSummaryProvider);
@@ -110,12 +108,10 @@ class _PredictionVerificationCardState
       ),
       data: (value) => switch (value.state) {
         'waiting' => _WaitingCard(status: value),
-        'eligible' => _EligibleCard(
-          verifying: _verifying,
-          onVerify: _verify,
+        'eligible' => _EligibleCard(verifying: _verifying, onVerify: _verify),
+        'verified' when value.verification != null => _VerificationResultCard(
+          verification: value.verification!,
         ),
-        'verified' when value.verification != null =>
-          _VerificationResultCard(verification: value.verification!),
         _ => const SizedBox.shrink(),
       },
     );
