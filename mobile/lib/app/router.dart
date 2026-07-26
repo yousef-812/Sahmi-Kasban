@@ -15,6 +15,7 @@ import '../features/monetization/monetization_page.dart';
 import '../features/notifications/notification_screen.dart';
 import '../features/onboarding/onboarding_controller.dart';
 import '../features/onboarding/onboarding_screen.dart';
+import '../features/performance/performance_admin_screen.dart';
 import '../features/performance/performance_report_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
@@ -92,6 +93,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AdminDashboardScreen(),
       ),
       GoRoute(
+        path: '/admin/performance',
+        builder: (context, state) => const PerformanceAdminScreen(),
+      ),
+      GoRoute(
         path: '/community/new',
         builder: (context, state) => const CommunityCreateScreen(),
       ),
@@ -140,7 +145,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (!authenticated) {
         return publicAccountRoute ? null : '/login';
       }
-      if (location == '/admin' && session.profile?.isAdmin != true) {
+      if (location.startsWith('/admin') && session.profile?.isAdmin != true) {
         return '/home';
       }
       if (publicAccountRoute ||
