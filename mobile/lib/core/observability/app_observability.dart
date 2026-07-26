@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -67,15 +66,15 @@ class AppObservability {
 
   @visibleForTesting
   static Widget buildErrorWidget(FlutterErrorDetails details) {
-    return const Directionality(
+    return Directionality(
       textDirection: TextDirection.rtl,
       child: ColoredBox(
-        color: Color(0xFFF7F2EA),
+        color: const Color(0xFFF7F2EA),
         child: Center(
           child: Semantics(
             liveRegion: true,
             label: 'حدث خطأ غير متوقع. حاول فتح الشاشة مرة أخرى.',
-            child: Padding(
+            child: const Padding(
               padding: EdgeInsets.all(24),
               child: Text(
                 'حدث خطأ غير متوقع\nحاول فتح الشاشة مرة أخرى.',
