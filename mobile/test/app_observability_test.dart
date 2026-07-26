@@ -20,8 +20,12 @@ void main() {
     );
 
     expect(find.textContaining('حدث خطأ غير متوقع'), findsOneWidget);
-    final semantics = tester.widget<Semantics>(find.byType(Semantics));
-    expect(semantics.properties.liveRegion, isTrue);
-    expect(semantics.properties.label, contains('حدث خطأ غير متوقع'));
+    final semanticsFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          widget.properties.liveRegion == true &&
+          widget.properties.label?.contains('حدث خطأ غير متوقع') == true,
+    );
+    expect(semanticsFinder, findsOneWidget);
   });
 }
