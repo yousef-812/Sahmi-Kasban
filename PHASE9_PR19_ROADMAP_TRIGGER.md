@@ -1,1 +1,1 @@
-Trigger the PR #19 roadmap finalizer after the workflow file is active.
+Trigger the active main-branch finalizer for PR #19.
