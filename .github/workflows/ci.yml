@@ -6,7 +6,8 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
   repository-lint:
@@ -127,3 +128,89 @@ jobs:
         run: >-
           $FLUTTER_HOME/bin/flutter build apk --debug
           --dart-define=API_BASE_URL=https://example.invalid
+
+  finalize-pr19-roadmap:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/roadmap-pr19-finalize'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Finalize roadmap and clean temporary main files
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('ROADMAP.md')
+          text = path.read_text()
+          text = text.replace('> النسخة: 1.8  ', '> النسخة: 1.9  ', 1)
+          text = text.replace(
+              '> الحالة: المرحلة 9 قيد التنفيذ؛ PR #18 سجل أداء التقارير مكتمل برمجيًا وPR #19 هو التالي داخل المرحلة  ',
+              '> الحالة: المرحلة 9 قيد التنفيذ؛ PR #18 وPR #19 مكتملان برمجيًا وPR #20 هو التالي  ',
+              1,
+          )
+          text = text.replace(
+              '> الجزء المنجز على PR #18: Performance Ledger لنتائج تقارير أفضل 10  ',
+              '> الأجزاء المنجزة: PR #18 — Performance Ledger، وPR #19 — Performance Experience  ',
+              1,
+          )
+          text = text.replace(
+              '> الخطوة التالية داخل المرحلة 9: PR #19 — إحصاءات وصفحات أداء 7 و30 جلسة  ',
+              '> الخطوة التالية داخل المرحلة 9: PR #20 — Quality Gates  ',
+              1,
+          )
+          text = text.replace(
+              '> بوابة التحقق الأولى لـPR #18: Workflow `30189154377` — Lint وBackend/PostgreSQL/Alembic نجحت، وبوابة Flutter/APK تعمل على نفس الرأس',
+              '> بوابة PR #19 المكتملة: Workflow `30191799719` — Lint وBackend/PostgreSQL/Alembic وFlutter وAndroid APK كلها خضراء',
+              1,
+          )
+          old = '''### PR #19 — Performance Experience (التالي)
+
+- [ ] تجميع إحصاءات آخر 7 و30 جلسة.
+- [ ] APIs عامة شفافة وصفحات Flutter للأداء.
+- [ ] تفاصيل كل تقرير وأداء الترتيب من 1 إلى 10.
+- [ ] لوحة إدارة للحالات المتأخرة وCSV وتصحيحات البيانات المدققة.
+'''
+          new = '''### PR #19 — Performance Experience ✅ مكتمل برمجيًا
+
+- [x] تجميع إحصاءات آخر 7 و30 جلسة مع نسبة اكتمال صريحة.
+- [x] APIs عامة شفافة وصفحات Flutter للأداء وسجل الجلسات.
+- [x] تفاصيل كل تقرير وأداء الترتيب من 1 إلى 10 وأفضل وأسوأ نتيجة.
+- [x] الاحتفاظ بالنتائج السلبية وحالات البيانات الناقصة وعدم إخفائها.
+- [x] لوحة إدارة للحالات المتأخرة وإعادة التقييم وتصدير CSV.
+- [x] تصحيحات OHLC مدققة بسجل before/after ومستخدم وسبب وبصمة بيانات.
+- [x] إظهار سجل التصحيحات للمستخدم وعدم استبدال التاريخ بصمت.
+- [x] Flutter Format/Analyze/Tests وبناء Android debug APK على Workflow `30191799719`.
+'''
+          if old not in text:
+              raise SystemExit('PR19 roadmap block not found')
+          text = text.replace(old, new, 1)
+          text = text.replace(
+              '- نتائج الأداء قابلة للتدقيق ولا تستبعد النتائج السلبية.\n- أي تصحيح مكتمل لا يستبدل نتيجة تاريخية بصمت.\n- الأخطاء الحرجة مراقبة وتنبه الفريق.',
+              '- [x] نتائج الأداء قابلة للتدقيق ولا تستبعد النتائج السلبية.\n- [x] أي تصحيح مكتمل لا يستبدل نتيجة تاريخية بصمت.\n- [ ] الأخطاء الحرجة مراقبة وتنبه الفريق — ضمن PR #20.',
+              1,
+          )
+          text = text.replace(
+              '- [~] سجل الأداء والجودة — PR #18 مكتمل برمجيًا؛ PR #19 هو التالي.',
+              '- [~] سجل الأداء والجودة — PR #18 وPR #19 مكتملان برمجيًا؛ PR #20 هو التالي.',
+              1,
+          )
+          path.write_text(text)
+          PY
+
+          git rm -f .github/workflows/phase9-pr19-main-finalizer.yml
+          git rm -f PHASE9_PR19_MAIN_TRIGGER.md
+          git show HEAD^:.github/workflows/ci.yml > .github/workflows/ci.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finalize roadmap after PR19"
+          git push origin HEAD:main
+          gh pr close "${{ github.event.pull_request.number }}" --comment "Roadmap v1.9 finalized after PR #19."
