@@ -2,7 +2,7 @@
 
 > Branch: `agent/phase-9-performance-ledger`  
 > Pull request: #18  
-> Status: implementation complete; validation in progress  
+> Status: implementation complete; final validation running  
 > Updated: 2026-07-26
 
 This pull request builds the server-authoritative ledger used to measure every item in the daily Top 10 reports against the actual target EGX session.
@@ -30,4 +30,6 @@ PR #18 does not add public performance statistics or Flutter performance pages. 
 
 ## Validation
 
-The final merge gate must pass repository lint, Backend/Core/PostgreSQL tests, the complete Alembic upgrade/downgrade/rebuild cycle, Flutter format/analyze/tests, and Android debug APK build.
+Workflow `30189154377` confirmed repository lint, Backend/Core/PostgreSQL tests, the complete Alembic upgrade/downgrade/rebuild cycle, Flutter formatting, Flutter analysis, and Flutter tests on the implemented code. Android APK construction was still running when the roadmap status was recorded.
+
+This normal documentation commit is the final PR #18 merge-gate candidate. It must pass the same complete gate, including Android debug APK, before the PR leaves Draft.
