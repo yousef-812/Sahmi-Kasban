@@ -21,9 +21,7 @@ void main() {
 
     expect(find.textContaining('حدث خطأ غير متوقع'), findsOneWidget);
     expect(
-      find.bySemanticsLabel(
-        'حدث خطأ غير متوقع. حاول فتح الشاشة مرة أخرى.',
-      ),
+      find.bySemanticsLabel('حدث خطأ غير متوقع. حاول فتح الشاشة مرة أخرى.'),
       findsOneWidget,
     );
   });
