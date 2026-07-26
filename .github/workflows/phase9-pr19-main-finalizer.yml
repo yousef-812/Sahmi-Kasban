@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   finalize:
-    if: github.event.head_commit.message == 'Complete Phase 9 performance experience (#19)'
+    if: startsWith(github.event.head_commit.message, 'Trigger PR19 roadmap finalizer')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
@@ -18,7 +18,7 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Update roadmap and remove this workflow
+      - name: Update roadmap and remove temporary files
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -45,7 +45,7 @@ jobs:
           )
           text = text.replace(
               '> بوابة التحقق الأولى لـPR #18: Workflow `30189154377` — Lint وBackend/PostgreSQL/Alembic نجحت، وبوابة Flutter/APK تعمل على نفس الرأس',
-              '> بوابة PR #19 المكتملة: Workflow `30191020408` — Lint وBackend/PostgreSQL/Alembic وFlutter وAndroid APK كلها خضراء',
+              '> بوابة PR #19 المكتملة: Workflow `30191799719` — Lint وBackend/PostgreSQL/Alembic وFlutter وAndroid APK كلها خضراء',
               1,
           )
           old = '''### PR #19 — Performance Experience (التالي)
@@ -64,7 +64,7 @@ jobs:
 - [x] لوحة إدارة للحالات المتأخرة وإعادة التقييم وتصدير CSV.
 - [x] تصحيحات OHLC مدققة بسجل before/after ومستخدم وسبب وبصمة بيانات.
 - [x] إظهار سجل التصحيحات للمستخدم وعدم استبدال التاريخ بصمت.
-- [x] Flutter Format/Analyze/Tests وبناء Android debug APK على Workflow `30191020408`.
+- [x] Flutter Format/Analyze/Tests وبناء Android debug APK على Workflow `30191799719`.
 '''
           if old not in text:
               raise SystemExit('PR19 roadmap block not found')
@@ -82,6 +82,7 @@ jobs:
           path.write_text(text)
           PY
           git rm .github/workflows/phase9-pr19-main-finalizer.yml
+          git rm PHASE9_PR19_MAIN_TRIGGER.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ROADMAP.md
