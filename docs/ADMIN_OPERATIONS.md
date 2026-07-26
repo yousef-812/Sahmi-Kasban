@@ -51,6 +51,12 @@ Live mode additionally requires `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON`.
 
 Flutter initializes Firebase defensively. Until valid Android/iOS Firebase project files are provided, the in-app notification inbox continues to work and Push registration is skipped without breaking authentication or navigation.
 
+## Current live Push status
+
+As of 2026-07-26, no live FCM Push notification has been configured or sent for this project. The in-app inbox and `disabled`/`stub` delivery paths are implemented, but `live` mode is deliberately deferred and is not production-verified yet.
+
+Live Push will be completed later as a separate pre-release task after the Firebase project, platform configuration files, deployment secrets, and a physical test device are available.
+
 ## Validation and release gates
 
 Backend imports are normalized according to the repository CI generation: external dependencies remain separate, while `app` and `sahmi_kasban` imports share the internal package group.
