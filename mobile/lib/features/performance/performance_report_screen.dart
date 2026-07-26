@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -197,7 +199,7 @@ class _OutcomeCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     outcome.ticker,
-                    textDirection: TextDirection.ltr,
+                    textDirection: ui.TextDirection.ltr,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
