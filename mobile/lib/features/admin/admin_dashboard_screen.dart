@@ -208,7 +208,7 @@ class _ModerationTab extends ConsumerWidget {
         ],
       ),
     );
-    if (direction == null) return;
+    if (direction == null || !context.mounted) return;
     await _run(
       context,
       () => ref
@@ -317,7 +317,7 @@ class _SettingsTab extends ConsumerWidget {
               trailing: const Icon(Icons.edit_outlined),
               onTap: () async {
                 final value = await _editSetting(context, item);
-                if (value == null) return;
+                if (value == null || !context.mounted) return;
                 await _run(
                   context,
                   () => ref

@@ -31,8 +31,4 @@ Got dependencies!
 27 packages have newer versions incompatible with dependency constraints.
 Try `flutter pub outdated` for more information.
 Analyzing mobile...                                             
-
-   info • Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check • lib/features/admin/admin_dashboard_screen.dart:213:7 • use_build_context_synchronously
-   info • Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check • lib/features/admin/admin_dashboard_screen.dart:322:19 • use_build_context_synchronously
-
-2 issues found. (ran in 8.3s)
+No issues found! (ran in 7.1s)
