@@ -15,6 +15,8 @@ import '../features/monetization/monetization_page.dart';
 import '../features/notifications/notification_screen.dart';
 import '../features/onboarding/onboarding_controller.dart';
 import '../features/onboarding/onboarding_screen.dart';
+import '../features/performance/performance_report_screen.dart';
+import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
@@ -74,6 +76,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: '/performance',
+        builder: (context, state) => const PerformanceScreen(),
+      ),
+      GoRoute(
+        path: '/performance/reports/:reportId',
+        builder: (context, state) => PerformanceReportScreen(
+          reportId: state.pathParameters['reportId']!,
+        ),
       ),
       GoRoute(
         path: '/admin',
