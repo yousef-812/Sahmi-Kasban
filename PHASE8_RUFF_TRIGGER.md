@@ -1,1 +1,1 @@
-Apply Ruff import-order fixes to the Phase 8 backend.
+Run Ruff import-order fixes after all Phase 8 Backend changes.
