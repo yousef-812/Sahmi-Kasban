@@ -46,22 +46,19 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["actor_user_id"],
             ["users.id"],
-            name="fk_market_report_outcome_revisions_actor_user_id_users",
+            name="fk_perf_revision_actor_user",
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["outcome_id"],
             ["market_report_item_outcomes.id"],
-            name=(
-                "fk_market_report_outcome_revisions_outcome_id_"
-                "market_report_item_outcomes"
-            ),
+            name="fk_perf_revision_outcome",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["report_id"],
             ["market_reports.id"],
-            name="fk_market_report_outcome_revisions_report_id_market_reports",
+            name="fk_perf_revision_report",
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_market_report_outcome_revisions"),
