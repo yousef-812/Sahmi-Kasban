@@ -2,6 +2,7 @@
 
 > Branch: `agent/phase-8-admin-notifications`  
 > Pull request: #17  
+> Merge commit: `1cd87a940e6cf317ee71572b9487827ff4aef8fe`  
 > Updated: 2026-07-26
 
 ## Administration foundation
@@ -35,6 +36,14 @@ Every update creates an immutable `CommunityAdminEvent` containing the old and n
 - Every device delivery records sent, failed, or skipped status and the provider message/error identifier.
 - Flutter initializes Firebase defensively, requests permission, registers a device token when available, and continues normally when Firebase project files are not configured.
 
+## Deferred live Push activation
+
+- No live Firebase Cloud Messaging Push notification has been configured or sent yet.
+- The currently completed scope is the in-app notification inbox, encrypted device-token storage, delivery audit, and the `disabled`/`stub` delivery paths.
+- `live` mode remains inactive and must not be treated as production-verified.
+- Live Push activation is intentionally deferred to a later pre-release task.
+- That later task must add the Firebase project files, configure `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` as deployment secrets, register a physical device, send a real test notification, and verify the delivery audit end to end.
+
 ## Provider monitoring
 
 The administrator can run an explicit health probe for:
@@ -60,5 +69,6 @@ The dashboard provides:
 
 - Flutter analysis completed with no findings after adding mounted guards around dialog-driven administrator actions.
 - Backend imports use the CI-compatible internal package grouping for both `app` and `sahmi_kasban`.
-- The first complete validation gate passed on Workflow `30185904045`: repository lint, Backend/Core/PostgreSQL tests, Alembic upgrade/downgrade/rebuild, Flutter format/analyze/tests, and Android debug APK all succeeded.
-- This normal documentation commit is the final Phase 8 merge-gate candidate. Its full workflow must pass before PR #17 leaves Draft and merges.
+- The first complete validation gate passed on Workflow `30185904045`.
+- The final merge gate passed on Workflow `30186148102`: repository lint, Backend/Core/PostgreSQL tests, Alembic upgrade/downgrade/rebuild, Flutter format/analyze/tests, and Android debug APK all succeeded.
+- PR #17 was merged into `main` with squash commit `1cd87a940e6cf317ee71572b9487827ff4aef8fe`.
