@@ -18,6 +18,10 @@ from app.schemas.operations import (
     OperationalSettingResponse,
     OperationalSettingsResponse,
     OperationalSettingUpdateRequest,
+    ReportEvaluationBackfillRequest,
+    ReportEvaluationBackfillResponse,
+    ReportEvaluationListResponse,
+    ReportEvaluationResponse,
     ServiceHealthListResponse,
     ServiceHealthResponse,
 )
@@ -35,6 +39,10 @@ from app.services.operations_settings import (
     list_operational_settings,
     setting_definitions,
     update_operational_setting,
+)
+from app.services.report_performance import (
+    evaluate_due_market_reports,
+    list_report_evaluations,
 )
 from sahmi_kasban.ai import SahmiAIService
 
@@ -73,6 +81,23 @@ def _health_response(item) -> ServiceHealthResponse:
         latency_ms=item.latency_ms,
         details=item.details,
         observed_at=item.observed_at,
+    )
+
+
+def _evaluation_response(item) -> ReportEvaluationResponse:
+    return ReportEvaluationResponse(
+        id=item.id,
+        report_id=item.report_id,
+        target_session_date=item.target_session_date,
+        status=item.status,
+        attempt_count=item.attempt_count,
+        evaluated_count=item.evaluated_count,
+        pending_count=item.pending_count,
+        failed_count=item.failed_count,
+        started_at=item.started_at,
+        completed_at=item.completed_at,
+        last_attempt_at=item.last_attempt_at,
+        details=item.details,
     )
 
 
@@ -207,6 +232,56 @@ async def probe_providers(
     )
     db.commit()
     return ServiceHealthListResponse(items=[_health_response(item) for item in items])
+
+
+@router.get(
+    "/performance/evaluations",
+    response_model=ReportEvaluationListResponse,
+)
+def report_performance_evaluations(
+    db: DatabaseSession,
+    _admin: CurrentAdmin,
+    evaluation_status: str | None = Query(default=None, max_length=24),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> ReportEvaluationListResponse:
+    items, total = list_report_evaluations(
+        db,
+        evaluation_status=evaluation_status,
+        limit=limit,
+        offset=offset,
+    )
+    return ReportEvaluationListResponse(
+        items=[_evaluation_response(item) for item in items],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.post(
+    "/performance/evaluate-due",
+    response_model=ReportEvaluationBackfillResponse,
+)
+async def evaluate_due_reports(
+    payload: ReportEvaluationBackfillRequest,
+    db: DatabaseSession,
+    _admin: CurrentAdmin,
+    market_provider: AdminMarketProvider,
+) -> ReportEvaluationBackfillResponse:
+    result = await evaluate_due_market_reports(
+        db,
+        provider=market_provider,
+        limit=payload.limit,
+    )
+    return ReportEvaluationBackfillResponse(
+        scanned_reports=result.scanned_reports,
+        completed_reports=result.completed_reports,
+        partial_reports=result.partial_reports,
+        failed_reports=result.failed_reports,
+        skipped_reports=result.skipped_reports,
+        evaluation_ids=list(result.evaluation_ids),
+    )
 
 
 @router.post(

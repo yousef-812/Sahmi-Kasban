@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 from uuid import UUID
 
@@ -181,3 +181,38 @@ class AdminBroadcastResponse(BaseModel):
     push_sent: int = Field(ge=0)
     push_failed: int = Field(ge=0)
     push_skipped: int = Field(ge=0)
+
+
+class ReportEvaluationResponse(BaseModel):
+    id: UUID
+    report_id: UUID
+    target_session_date: date
+    status: str
+    attempt_count: int = Field(ge=0)
+    evaluated_count: int = Field(ge=0)
+    pending_count: int = Field(ge=0)
+    failed_count: int = Field(ge=0)
+    started_at: datetime | None
+    completed_at: datetime | None
+    last_attempt_at: datetime | None
+    details: dict
+
+
+class ReportEvaluationListResponse(BaseModel):
+    items: list[ReportEvaluationResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(gt=0)
+    offset: int = Field(ge=0)
+
+
+class ReportEvaluationBackfillRequest(BaseModel):
+    limit: int = Field(default=20, ge=1, le=100)
+
+
+class ReportEvaluationBackfillResponse(BaseModel):
+    scanned_reports: int = Field(ge=0)
+    completed_reports: int = Field(ge=0)
+    partial_reports: int = Field(ge=0)
+    failed_reports: int = Field(ge=0)
+    skipped_reports: int = Field(ge=0)
+    evaluation_ids: list[UUID]
