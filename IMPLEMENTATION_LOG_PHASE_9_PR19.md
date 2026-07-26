@@ -2,7 +2,7 @@
 
 > Branch: `agent/phase-9-performance-experience`  
 > Pull request: #19  
-> Status: implementation complete; final validation in progress  
+> Status: implementation complete; merge gate running  
 > Updated: 2026-07-26
 
 This pull request builds transparent public performance statistics and the Flutter/admin experience on top of the server-authoritative ledger merged in PR #18.
@@ -41,11 +41,15 @@ This pull request builds transparent public performance statistics and the Flutt
 - past performance is labelled as non-guaranteeing;
 - live Firebase Push remains deferred and is not part of PR #19.
 
-## Validation completed so far
+## Validation
 
-- Repository lint passed on workflow `30190875560`.
-- Backend/Core/PostgreSQL tests passed on workflow `30190875560`.
-- Full Alembic upgrade/downgrade/rebuild passed after shortening PostgreSQL constraint names.
-- Flutter formatting passed; the one analyzer namespace conflict was corrected on head `332964bcb65f6a288534d5c11d7b0ec5d82b6da9`.
+Workflow `30191020408` passed the complete repository gate on a normal implementation head:
 
-The final merge gate must still pass Flutter analyze/tests and Android debug APK on the final normal commit.
+- Repository lint;
+- Backend/Core/PostgreSQL tests;
+- full Alembic upgrade/downgrade/rebuild;
+- Flutter format and analyze;
+- Flutter tests;
+- Android debug APK.
+
+Temporary formatting, diagnostic, and roadmap helpers have been removed from the PR branch. A final clean-head gate runs after this record update. The roadmap is finalized to v1.9 on `main` immediately after the squash merge, and PR #20 remains the next Phase 9 package.
