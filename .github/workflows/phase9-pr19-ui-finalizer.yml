@@ -1,0 +1,75 @@
+name: Phase 9 PR19 UI Finalizer
+
+on:
+  push:
+    paths:
+      - PHASE9_PR19_UI_TRIGGER.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.ref == 'refs/heads/agent/phase-9-performance-experience'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase-9-performance-experience
+          fetch-depth: 0
+      - name: Link performance screens and normalize files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          dashboard = Path('mobile/lib/features/home/dashboard_screen.dart')
+          text = dashboard.read_text()
+          needle = """          IconButton(\n            onPressed: () => context.push('/notifications'),\n"""
+          replacement = """          IconButton(\n            onPressed: () => context.push('/performance'),\n            icon: const Icon(Icons.assessment_outlined),\n            tooltip: 'سجل الأداء',\n          ),\n          IconButton(\n            onPressed: () => context.push('/notifications'),\n"""
+          if needle not in text:
+              raise SystemExit('dashboard insertion point not found')
+          dashboard.write_text(text.replace(needle, replacement, 1))
+
+          admin = Path('mobile/lib/features/admin/admin_dashboard_screen.dart')
+          text = admin.read_text()
+          import_needle = "import 'package:flutter_riverpod/flutter_riverpod.dart';\n"
+          if "package:go_router/go_router.dart" not in text:
+              text = text.replace(
+                  import_needle,
+                  import_needle + "import 'package:go_router/go_router.dart';\n",
+                  1,
+              )
+          appbar_needle = """        appBar: AppBar(\n          title: const Text('مركز الإدارة'),\n          bottom: const TabBar(\n"""
+          appbar_replacement = """        appBar: AppBar(\n          title: const Text('مركز الإدارة'),\n          actions: [\n            IconButton(\n              onPressed: () => context.push('/admin/performance'),\n              icon: const Icon(Icons.assessment_outlined),\n              tooltip: 'تشغيل سجل الأداء',\n            ),\n          ],\n          bottom: const TabBar(\n"""
+          if appbar_needle not in text:
+              raise SystemExit('admin insertion point not found')
+          admin.write_text(text.replace(appbar_needle, appbar_replacement, 1))
+
+          admin_api = Path('backend/app/api/routes/admin_operations.py')
+          text = admin_api.read_text()
+          if 'PerformanceExperienceError,' not in text:
+              text = text.replace(
+                  'from app.services.performance_experience import (\n',
+                  'from app.services.performance_experience import (\n    PerformanceExperienceError,\n',
+                  1,
+              )
+          text = text.replace('    except ValueError as exc:\n', '    except PerformanceExperienceError as exc:\n', 1)
+          admin_api.write_text(text)
+          PY
+
+          FLUTTER_HOME="$GITHUB_WORKSPACE/.github/.cache/flutter"
+          if [ ! -x "$FLUTTER_HOME/bin/dart" ]; then
+            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          fi
+          "$FLUTTER_HOME/bin/dart" format mobile/lib mobile/test
+
+          rm -f PHASE9_PR19_UI_TRIGGER.md
+          rm -f .github/workflows/phase9-pr19-ui-finalizer.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finalize Phase 9 performance experience UI"
+          git push origin HEAD:agent/phase-9-performance-experience
