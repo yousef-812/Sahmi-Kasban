@@ -15,6 +15,7 @@ from app.services.community import (
     DiscussionSubmissionResult,
     create_discussion,
 )
+from app.services.operations_settings import get_int_setting
 from app.services.wallet import get_wallet_account
 
 SHORT_WINDOW = timedelta(minutes=15)
@@ -95,6 +96,11 @@ def _enforce_submission_rate_limit(
     user_id: UUID,
     moment: datetime,
 ) -> None:
+    short_window = timedelta(
+        minutes=get_int_setting(db, "community_short_window_minutes")
+    )
+    short_limit = get_int_setting(db, "community_short_window_limit")
+    daily_limit = get_int_setting(db, "community_daily_limit")
     daily_start = moment - DAILY_WINDOW
     timestamps = list(
         db.scalars(
@@ -110,18 +116,18 @@ def _enforce_submission_rate_limit(
         timestamp
         for timestamp in timestamps
         if (timestamp.replace(tzinfo=UTC) if timestamp.tzinfo is None else timestamp)
-        >= moment - SHORT_WINDOW
+        >= moment - short_window
     ]
-    if len(short_timestamps) >= SHORT_WINDOW_MAX_SUBMISSIONS:
+    if len(short_timestamps) >= short_limit:
         raise CommunityRateLimitError(
             "Too many discussion submissions in a short period",
             retry_after_seconds=_retry_after(
                 short_timestamps,
-                window=SHORT_WINDOW,
+                window=short_window,
                 current=moment,
             ),
         )
-    if len(timestamps) >= DAILY_WINDOW_MAX_SUBMISSIONS:
+    if len(timestamps) >= daily_limit:
         raise CommunityRateLimitError(
             "Daily discussion submission limit reached",
             retry_after_seconds=_retry_after(
