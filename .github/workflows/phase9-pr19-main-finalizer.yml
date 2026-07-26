@@ -2,7 +2,7 @@ name: Phase 9 PR19 Main Finalizer
 
 on:
   pull_request:
-    types: [synchronize]
+    types: [synchronize, edited]
 
 permissions:
   contents: write
