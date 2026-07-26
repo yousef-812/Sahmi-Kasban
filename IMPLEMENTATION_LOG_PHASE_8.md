@@ -59,6 +59,6 @@ The dashboard provides:
 ## Validation status
 
 - Flutter analysis completed with no findings after adding mounted guards around dialog-driven administrator actions.
-- Backend Ruff was applied from inside `backend/`, using the same `backend/pyproject.toml` configuration as repository CI.
+- Backend imports use the CI-compatible internal package grouping for both `app` and `sahmi_kasban`.
 - The first complete validation gate passed on Workflow `30185904045`: repository lint, Backend/Core/PostgreSQL tests, Alembic upgrade/downgrade/rebuild, Flutter format/analyze/tests, and Android debug APK all succeeded.
-- A final normal commit must pass the same gate before PR #17 leaves Draft and merges.
+- This normal documentation commit is the final Phase 8 merge-gate candidate. Its full workflow must pass before PR #17 leaves Draft and merges.
