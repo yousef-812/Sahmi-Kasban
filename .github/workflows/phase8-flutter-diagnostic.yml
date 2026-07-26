@@ -1,0 +1,43 @@
+name: Phase 8 Flutter Diagnostic
+
+on:
+  push:
+    branches:
+      - agent/phase-8-admin-notifications
+    paths:
+      - PHASE8_FLUTTER_TRIGGER.md
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase-8-admin-notifications
+          fetch-depth: 0
+      - run: |
+          if [ ! -x "$FLUTTER_HOME/bin/flutter" ]; then
+            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          fi
+          "$FLUTTER_HOME/bin/flutter" config --no-analytics
+      - working-directory: mobile
+        run: |
+          $FLUTTER_HOME/bin/flutter pub get
+          $FLUTTER_HOME/bin/dart fix --apply || true
+          $FLUTTER_HOME/bin/dart format lib test
+          $FLUTTER_HOME/bin/flutter analyze > ../PHASE8_FLUTTER_ANALYZE.txt 2>&1 || true
+          tail -n 120 ../PHASE8_FLUTTER_ANALYZE.txt > ../PHASE8_FLUTTER_ANALYZE.tail
+          mv ../PHASE8_FLUTTER_ANALYZE.tail ../PHASE8_FLUTTER_ANALYZE.txt
+      - run: |
+          git config user.name "OpenAI Agent"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mobile PHASE8_FLUTTER_ANALYZE.txt
+          git commit -m "Apply Flutter fixes and record Phase 8 analysis"
+          git push origin HEAD:agent/phase-8-admin-notifications
