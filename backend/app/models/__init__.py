@@ -26,7 +26,11 @@ from app.models.operations import (
     PushDevice,
     ServiceHealthEvent,
 )
-from app.models.performance import MarketReportEvaluation, MarketReportItemOutcome
+from app.models.performance import (
+    MarketReportEvaluation,
+    MarketReportItemOutcome,
+    MarketReportOutcomeRevision,
+)
 
 __all__ = [
     "AccountToken",
@@ -43,6 +47,7 @@ __all__ = [
     "MarketReportEvaluation",
     "MarketReportItem",
     "MarketReportItemOutcome",
+    "MarketReportOutcomeRevision",
     "MarketReportUnlock",
     "MarketScanRun",
     "Notification",
