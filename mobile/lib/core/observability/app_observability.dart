@@ -52,20 +52,17 @@ class AppObservability {
       return;
     }
 
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = dsn;
-        options.environment = environment;
-        if (release.trim().isNotEmpty) {
-          options.release = release;
-        }
-        options.tracesSampleRate = tracesSampleRate;
-        options.sendDefaultPii = false;
-        options.attachScreenshot = false;
-        options.enableAutoSessionTracking = true;
-      },
-      appRunner: appRunner,
-    );
+    await SentryFlutter.init((options) {
+      options.dsn = dsn;
+      options.environment = environment;
+      if (release.trim().isNotEmpty) {
+        options.release = release;
+      }
+      options.tracesSampleRate = tracesSampleRate;
+      options.sendDefaultPii = false;
+      options.attachScreenshot = false;
+      options.enableAutoSessionTracking = true;
+    }, appRunner: appRunner);
   }
 
   @visibleForTesting
