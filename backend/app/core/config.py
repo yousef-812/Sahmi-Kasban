@@ -30,6 +30,17 @@ class Settings(BaseSettings):
     cors_origins: str = ""
     app_public_url: str = "http://localhost:8000"
 
+    log_level: str = "INFO"
+    log_json: bool = True
+    sentry_dsn: str = ""
+    sentry_release: str = ""
+    sentry_traces_sample_rate: float = 0.0
+    request_slow_threshold_ms: int = 1_500
+    quality_error_rate_alert_percent: float = 5.0
+    quality_p95_latency_alert_ms: int = 1_000
+    quality_min_request_count: int = 20
+    quality_provider_stale_minutes: int = 60
+
     database_url: str = "sqlite+pysqlite:///./sahmi_kasban_dev.db"
     database_pool_size: int = 10
     database_max_overflow: int = 20
@@ -116,6 +127,8 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "SMTP_HOST is required outside development and test environments"
                 )
+            if not self.sentry_dsn.strip():
+                raise ValueError("SENTRY_DSN is required outside development and test")
             if self.google_play_verification_mode != "live":
                 raise ValueError("Google Play verification must use live mode outside development")
             if not self.google_play_service_account_json.strip():
@@ -132,6 +145,21 @@ class Settings(BaseSettings):
                 raise ValueError("Replace the Android AdMob test ad unit outside development")
             if "3940256099942544" in self.admob_ios_rewarded_ad_unit_id:
                 raise ValueError("Replace the iOS AdMob test ad unit outside development")
+        self.log_level = self.log_level.strip().upper()
+        if self.log_level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+            raise ValueError("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL")
+        if not 0 <= self.sentry_traces_sample_rate <= 1:
+            raise ValueError("SENTRY_TRACES_SAMPLE_RATE must be between 0 and 1")
+        if not 100 <= self.request_slow_threshold_ms <= 120_000:
+            raise ValueError("REQUEST_SLOW_THRESHOLD_MS must be between 100 and 120000")
+        if not 0 < self.quality_error_rate_alert_percent <= 100:
+            raise ValueError("QUALITY_ERROR_RATE_ALERT_PERCENT must be between 0 and 100")
+        if not 100 <= self.quality_p95_latency_alert_ms <= 120_000:
+            raise ValueError("QUALITY_P95_LATENCY_ALERT_MS must be between 100 and 120000")
+        if not 1 <= self.quality_min_request_count <= 100_000:
+            raise ValueError("QUALITY_MIN_REQUEST_COUNT must be between 1 and 100000")
+        if not 1 <= self.quality_provider_stale_minutes <= 10_080:
+            raise ValueError("QUALITY_PROVIDER_STALE_MINUTES must be between 1 and 10080")
         if self.market_data_cache_minutes <= 0:
             raise ValueError("MARKET_DATA_CACHE_MINUTES must be positive")
         if self.market_data_timeout_seconds <= 0:
@@ -207,6 +235,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env is Environment.PRODUCTION
+
+    @property
+    def sentry_enabled(self) -> bool:
+        return bool(self.sentry_dsn.strip())
 
 
 @lru_cache

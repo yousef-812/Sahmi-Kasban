@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/observability/app_observability.dart';
 import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
@@ -28,6 +29,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/splash',
+    observers: AppObservability.navigatorObservers,
     routes: [
       GoRoute(
         path: '/splash',

@@ -3,8 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.core.observability import configure_observability
+from app.middleware.request_context import RequestContextMiddleware
 
 settings = get_settings()
+configure_observability(settings)
 cors_origins = settings.cors_origin_list
 
 app = FastAPI(
@@ -25,6 +28,7 @@ if cors_origins:
         allow_headers=["*"],
     )
 
+app.add_middleware(RequestContextMiddleware)
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 

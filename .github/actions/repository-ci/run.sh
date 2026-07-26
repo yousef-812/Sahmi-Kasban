@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="${GITHUB_WORKSPACE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 PIP_CACHE_DIR="${PIP_CACHE_DIR:-$ROOT_DIR/.github/.cache/pip}"
+AUDIT_SITE_DIR="$ROOT_DIR/.github/.cache/audit-site"
 CI_RESULTS_DIR="${CI_RESULTS_DIR:-$ROOT_DIR/.github/.ci-results}"
 SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-$CI_RESULTS_DIR/summary.md}"
 RUN_MODE="${RUN_MODE:-tests}"
@@ -65,6 +66,10 @@ run_check "Install project packages" "install-project.log" \
   python -m pip install --quiet -e ".[dev]" -e "backend[dev]"
 
 if [[ "$RUN_MODE" == "lint" ]]; then
+  run_check "Repository secret gate" "security-gate.log" \
+    python backend/scripts/security_gate.py
+  run_check "Backend high-severity Bandit" "backend-bandit.log" \
+    python -m bandit -q -r backend/app -lll
   run_check "Core compile" "core-compile.log" \
     python -m compileall -q src tests
   run_check "Core Ruff" "core-ruff.log" \
@@ -86,10 +91,17 @@ if [[ "$RUN_MODE" == "lint" ]]; then
   exit 0
 fi
 
+rm -rf "$AUDIT_SITE_DIR"
+run_check "Prepare isolated dependency audit" "dependency-audit-install.log" \
+  python -m pip install --quiet --upgrade --target "$AUDIT_SITE_DIR" . ./backend
+run_check "Python dependency audit" "dependency-audit.log" \
+  python -m pip_audit --path "$AUDIT_SITE_DIR"
 run_check "Core tests" "core-tests.log" \
   python -m pytest -q --tb=short tests
 run_check "Backend tests" "backend-tests.log" \
   python -m pytest -q --tb=short backend/tests
+run_check "Backend concurrent load smoke" "backend-load-smoke.log" \
+  bash -lc "PYTHONPATH=backend python backend/scripts/load_quality_smoke.py"
 
 run_check "Alembic upgrade" "alembic-upgrade.log" \
   bash -lc "cd backend && python -m alembic upgrade head"
