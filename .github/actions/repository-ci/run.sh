@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="${GITHUB_WORKSPACE:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 PIP_CACHE_DIR="${PIP_CACHE_DIR:-$ROOT_DIR/.github/.cache/pip}"
+AUDIT_SITE_DIR="$ROOT_DIR/.github/.cache/audit-site"
 CI_RESULTS_DIR="${CI_RESULTS_DIR:-$ROOT_DIR/.github/.ci-results}"
 SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-$CI_RESULTS_DIR/summary.md}"
 RUN_MODE="${RUN_MODE:-tests}"
@@ -90,8 +91,11 @@ if [[ "$RUN_MODE" == "lint" ]]; then
   exit 0
 fi
 
+rm -rf "$AUDIT_SITE_DIR"
+run_check "Prepare isolated dependency audit" "dependency-audit-install.log" \
+  python -m pip install --quiet --upgrade --target "$AUDIT_SITE_DIR" . ./backend
 run_check "Python dependency audit" "dependency-audit.log" \
-  python -m pip_audit --local --skip-editable
+  python -m pip_audit --path "$AUDIT_SITE_DIR"
 run_check "Core tests" "core-tests.log" \
   python -m pytest -q --tb=short tests
 run_check "Backend tests" "backend-tests.log" \
