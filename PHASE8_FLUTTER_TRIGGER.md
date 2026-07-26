@@ -1,1 +1,1 @@
-Run Flutter fixes and record the remaining analysis output.
+Apply BuildContext guards and rerun Flutter analysis.
