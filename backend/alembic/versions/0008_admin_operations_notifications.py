@@ -1,6 +1,6 @@
 """Add administration operations, runtime settings, and notifications.
 
-Revision ID: 0008_admin_operations_notifications
+Revision ID: 0008_admin_ops_notifications
 Revises: 0007_community_appeals
 Create Date: 2026-07-26
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0008_admin_operations_notifications"
+revision: str = "0008_admin_ops_notifications"
 down_revision: str | None = "0007_community_appeals"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
