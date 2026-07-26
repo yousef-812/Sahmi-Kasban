@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.models import AppSetting, CommunityAdminEvent
 
 SettingKind = Literal["int", "float", "bool", "str"]
@@ -51,16 +51,6 @@ def _definitions() -> tuple[SettingDefinition, ...]:
             settings.daily_report_cost_points,
             1,
             10_000,
-        ),
-        SettingDefinition(
-            "discussion_cost_points",
-            "pricing",
-            "تكلفة نشر المناقشة",
-            "الحجز المؤقت الذي يتحول إلى خصم عند قبول المناقشة.",
-            "int",
-            50,
-            1,
-            5_000,
         ),
         SettingDefinition(
             "ad_reward_points",
@@ -184,6 +174,16 @@ def get_bool_setting(db: Session, key: str) -> bool:
     if not isinstance(value, bool):
         raise OperationalSettingError(f"{key} is not a boolean setting")
     return value
+
+
+def runtime_monetization_settings(db: Session) -> Settings:
+    runtime = get_settings().model_copy(deep=False)
+    runtime.ad_reward_points = get_int_setting(db, "ad_reward_points")
+    runtime.ad_reward_daily_limit = get_int_setting(db, "ad_reward_daily_limit")
+    runtime.ad_reward_cooldown_seconds = get_int_setting(
+        db, "ad_reward_cooldown_seconds"
+    )
+    return runtime
 
 
 def list_operational_settings(
