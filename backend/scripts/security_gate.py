@@ -3,7 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+SCRIPT_PATH = Path(__file__).resolve()
+ROOT = SCRIPT_PATH.parents[2]
 FORBIDDEN_FILENAMES = {
     ".env",
     "google-services.json",
@@ -36,7 +37,9 @@ SECRET_PATTERNS = {
 def should_skip(path: Path) -> bool:
     relative = path.relative_to(ROOT)
     joined = "/".join(relative.parts)
-    return any(marker in relative.parts or marker in joined for marker in SKIP_PARTS)
+    return path.resolve() == SCRIPT_PATH or any(
+        marker in relative.parts or marker in joined for marker in SKIP_PARTS
+    )
 
 
 def main() -> None:
