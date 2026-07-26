@@ -17,6 +17,7 @@ from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
 from app.models import StockAnalysis, User
+from app.services.operations_settings import get_int_setting
 from app.services.wallet import (
     InsufficientBalanceError,
     debit_points,
@@ -107,6 +108,7 @@ async def execute_stock_analysis(
     language: str = "ar",
 ) -> StockAnalysisExecution:
     settings = get_settings()
+    analysis_cost_points = get_int_setting(db, "analysis_cost_points")
     series, market_snapshot_cached = await get_cached_or_fresh_history(
         db,
         provider,
@@ -131,7 +133,7 @@ async def execute_stock_analysis(
         )
 
     account = get_wallet_account(db, user.id)
-    if account.balance_points < settings.analysis_cost_points:
+    if account.balance_points < analysis_cost_points:
         db.rollback()
         raise InsufficientBalanceError("Insufficient balance for stock analysis")
 
@@ -215,7 +217,7 @@ async def execute_stock_analysis(
         debit_points(
             db,
             user_id=user.id,
-            amount_points=settings.analysis_cost_points,
+            amount_points=analysis_cost_points,
             transaction_id=f"stock-analysis:{user.id}:{analysis.id}",
             entry_type="stock_analysis_debit",
             reference_type="stock_analysis",
@@ -224,6 +226,7 @@ async def execute_stock_analysis(
                 "ticker": series.ticker,
                 "data_fingerprint": series.fingerprint,
                 "engine_version": settings.analysis_engine_version,
+                "configured_cost_points": analysis_cost_points,
             },
         )
         db.commit()
@@ -235,7 +238,7 @@ async def execute_stock_analysis(
     return StockAnalysisExecution(
         analysis=analysis,
         cached=False,
-        charged_points=settings.analysis_cost_points,
+        charged_points=analysis_cost_points,
         balance_points=account.balance_points,
         market_snapshot_cached=market_snapshot_cached,
     )
