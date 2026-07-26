@@ -128,8 +128,10 @@ void main() {
     });
 
     expect(detail.outcomes.single.isComplete, isFalse);
-    expect(detail.outcomes.single.evidence['reason'],
-        'target_session_candle_missing');
+    expect(
+      detail.outcomes.single.evidence['reason'],
+      'target_session_candle_missing',
+    );
     expect(detail.revisions.single.revisionNumber, 1);
   });
 }
