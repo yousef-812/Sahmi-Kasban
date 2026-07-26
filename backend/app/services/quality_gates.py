@@ -10,13 +10,19 @@ from app.core.observability import request_metrics, sentry_is_enabled
 from app.services.admin_operations import list_latest_service_health
 
 
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def build_quality_status(
     db: Session,
     *,
     moment: datetime | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
-    current = moment or datetime.now(UTC)
+    current = _as_utc(moment) if moment is not None else datetime.now(UTC)
     metrics = request_metrics.snapshot()
     provider_events = list_latest_service_health(db)
     stale_before = current - timedelta(minutes=settings.quality_provider_stale_minutes)
@@ -46,14 +52,15 @@ def build_quality_status(
 
     providers: list[dict[str, Any]] = []
     for event in provider_events:
-        stale = event.observed_at < stale_before
+        observed_at = _as_utc(event.observed_at)
+        stale = observed_at < stale_before
         providers.append(
             {
                 "component": event.component,
                 "provider": event.provider,
                 "status": event.status,
                 "latency_ms": event.latency_ms,
-                "observed_at": event.observed_at,
+                "observed_at": observed_at,
                 "stale": stale,
             }
         )
@@ -83,7 +90,7 @@ def build_quality_status(
                     "code": f"provider_probe_stale:{event.component}",
                     "severity": "warning",
                     "message": f"فحص مزود الخدمة قديم: {event.component}.",
-                    "observed_value": event.observed_at.isoformat(),
+                    "observed_value": observed_at.isoformat(),
                     "threshold": settings.quality_provider_stale_minutes,
                 }
             )
