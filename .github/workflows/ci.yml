@@ -30,6 +30,15 @@ jobs:
           RUN_MODE: lint
         run: bash .github/actions/repository-ci/run.sh
 
+      - name: Upload repository lint diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-lint-${{ github.run_id }}
+          path: .github/.ci-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   repository-tests:
     needs: repository-lint
     runs-on: ubuntu-latest
@@ -83,6 +92,15 @@ jobs:
         shell: bash
         run: docker rm --force sahmi-ci-postgres >/dev/null 2>&1 || true
 
+      - name: Upload repository test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-tests-${{ github.run_id }}
+          path: .github/.ci-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   flutter-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -114,6 +132,15 @@ jobs:
         working-directory: mobile
         run: $FLUTTER_HOME/bin/dart format --output=none --set-exit-if-changed lib test
 
+      - name: Capture Flutter formatting diff
+        if: failure()
+        working-directory: mobile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          $FLUTTER_HOME/bin/dart format lib test
+          git diff -- lib test > "$RUNNER_TEMP/flutter-format.patch"
+
       - name: Analyze Flutter application
         working-directory: mobile
         run: $FLUTTER_HOME/bin/flutter analyze
@@ -127,3 +154,12 @@ jobs:
         run: >-
           $FLUTTER_HOME/bin/flutter build apk --debug
           --dart-define=API_BASE_URL=https://example.invalid
+
+      - name: Upload Flutter diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/flutter-format.patch
+          if-no-files-found: ignore
+          retention-days: 7
