@@ -293,7 +293,6 @@ def _base_outcome(
     price_at_analysis: Decimal,
     expected_direction: str,
 ) -> MarketReportItemOutcome:
-    existing = None
     return MarketReportItemOutcome(
         evaluation_id=evaluation.id,
         report_id=item.report_id,
@@ -468,7 +467,12 @@ async def evaluate_market_report(
             )
         ).all()
     }
-    pending_items = [item for item in items if existing.get(item.id) is None or existing[item.id].status != "complete"]
+    pending_items = [
+        item
+        for item in items
+        if existing.get(item.id) is None
+        or existing[item.id].status != "complete"
+    ]
     semaphore = asyncio.Semaphore(4)
     fetched = await asyncio.gather(
         *(
