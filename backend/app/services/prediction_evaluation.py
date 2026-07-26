@@ -287,8 +287,11 @@ def _specificity(prediction: dict[str, Any]) -> tuple[float, bool]:
     if clean_claims:
         structured_specificity += 0.2
 
+    resolved_specificity = (
+    model_specificity if model_specificity > 0 else structured_specificity
+)
     is_specific = target_price is not None or bool(deadline) or bool(clean_claims)
-    return max(model_specificity, structured_specificity), is_specific
+    return resolved_specificity, is_specific
 
 
 def calculate_prediction_score(

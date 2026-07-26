@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -43,7 +43,7 @@ def register_and_login(
         json={"email": email, "password": PASSWORD},
     )
     assert login.status_code == 200
-    return login.json(), registered.json()["user_id"]
+    return login.json(), UUID(registered.json()["user_id"])
 
 
 def headers(tokens: dict) -> dict[str, str]:
