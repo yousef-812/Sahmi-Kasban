@@ -1,0 +1,28 @@
+name: Phase 8 Ruff Formatter
+
+on:
+  push:
+    branches:
+      - agent/phase-8-admin-notifications
+    paths:
+      - PHASE8_RUFF_TRIGGER.md
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase-8-admin-notifications
+          fetch-depth: 0
+      - run: python -m pip install ruff
+      - run: ruff check --fix backend
+      - run: |
+          git config user.name "OpenAI Agent"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend
+          git commit -m "Fix Phase 8 backend import ordering"
+          git push origin HEAD:agent/phase-8-admin-notifications
