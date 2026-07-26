@@ -11,6 +11,9 @@ void main() {
   });
 
   testWidgets('fallback error widget is Arabic and accessible', (tester) async {
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
+
     await tester.pumpWidget(
       MaterialApp(
         home: AppObservability.buildErrorWidget(
