@@ -21,9 +21,6 @@ void main() {
 
     expect(find.textContaining('حدث خطأ غير متوقع'), findsOneWidget);
     final semantics = tester.getSemantics(find.byType(Semantics).last);
-    expect(
-      semantics.label,
-      contains('حدث خطأ غير متوقع'),
-    );
+    expect(semantics.label, contains('حدث خطأ غير متوقع'));
   });
 }
