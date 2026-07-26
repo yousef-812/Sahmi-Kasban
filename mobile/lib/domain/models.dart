@@ -49,6 +49,7 @@ class UserProfile {
     required this.displayName,
     required this.avatarKey,
     required this.emailVerified,
+    this.isAdmin = false,
     required this.planCode,
     required this.balancePoints,
     required this.balanceCoins,
@@ -61,6 +62,7 @@ class UserProfile {
   final String displayName;
   final String avatarKey;
   final bool emailVerified;
+  final bool isAdmin;
   final String planCode;
   final int balancePoints;
   final String balanceCoins;
@@ -74,6 +76,7 @@ class UserProfile {
       displayName: json['display_name'] as String,
       avatarKey: json['avatar_key'] as String,
       emailVerified: json['email_verified'] as bool,
+      isAdmin: json['is_admin'] as bool? ?? false,
       planCode: json['plan_code'] as String,
       balancePoints: json['balance_points'] as int,
       balanceCoins: json['balance_coins'] as String,
