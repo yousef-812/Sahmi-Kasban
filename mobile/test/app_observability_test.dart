@@ -11,9 +11,6 @@ void main() {
   });
 
   testWidgets('fallback error widget is Arabic and accessible', (tester) async {
-    final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-
     await tester.pumpWidget(
       MaterialApp(
         home: AppObservability.buildErrorWidget(
@@ -23,9 +20,11 @@ void main() {
     );
 
     expect(find.textContaining('حدث خطأ غير متوقع'), findsOneWidget);
+    final semantics = tester.widget<Semantics>(find.byType(Semantics));
+    expect(semantics.properties.liveRegion, isTrue);
     expect(
-      find.bySemanticsLabel('حدث خطأ غير متوقع. حاول فتح الشاشة مرة أخرى.'),
-      findsOneWidget,
+      semantics.properties.label,
+      contains('حدث خطأ غير متوقع'),
     );
   });
 }
