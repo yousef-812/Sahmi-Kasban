@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sahmi-kasban-api"
-version = "0.5.0"
+version = "0.6.0"
 description = "FastAPI backend for Sahmi Kasban"
 requires-python = ">=3.11"
 dependencies = [
@@ -20,6 +20,7 @@ dependencies = [
   "pwdlib[argon2]>=0.2",
   "pydantic-settings>=2.6",
   "pyjwt>=2.9",
+  "sentry-sdk[fastapi]>=2.66,<3",
   "sqlalchemy>=2.0",
   "ta>=0.11",
   "uvicorn[standard]>=0.30",
@@ -29,6 +30,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "bandit>=1.8,<2",
+  "pip-audit>=2.9,<3",
   "pytest>=8.0",
   "pytest-cov>=5.0",
   "ruff>=0.7",
