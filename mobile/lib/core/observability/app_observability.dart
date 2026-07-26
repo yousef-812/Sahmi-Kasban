@@ -28,9 +28,10 @@ class AppObservability {
     return value.clamp(0.0, 1.0).toDouble();
   }
 
-  static List<NavigatorObserver> get navigatorObservers => enabled
-      ? <NavigatorObserver>[SentryNavigatorObserver()]
-      : const <NavigatorObserver>[];
+  static List<NavigatorObserver> get navigatorObservers =>
+      enabled
+          ? <NavigatorObserver>[SentryNavigatorObserver()]
+          : const <NavigatorObserver>[];
 
   static Future<void> bootstrap({
     required Future<void> Function() initializeServices,
