@@ -36,6 +36,7 @@ jobs:
         with:
           name: repository-lint-${{ github.run_id }}
           path: .github/.ci-results
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
 
@@ -98,6 +99,7 @@ jobs:
         with:
           name: repository-tests-${{ github.run_id }}
           path: .github/.ci-results
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
 
