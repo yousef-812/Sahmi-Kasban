@@ -1,24 +1,24 @@
 name: Phase 9 PR19 Main Finalizer
 
 on:
-  pull_request:
-    types: [synchronize, edited]
+  push:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
-  finalize-pr:
-    if: github.head_ref == 'agent/phase-9-performance-experience'
+  finalize:
+    if: github.event.head_commit.message == 'Complete Phase 9 performance experience (#19)'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR branch
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: agent/phase-9-performance-experience
+          ref: main
           fetch-depth: 0
 
-      - name: Update roadmap and clean branch helpers
+      - name: Update roadmap and remove this workflow
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -81,34 +81,9 @@ jobs:
           )
           path.write_text(text)
           PY
-
-          rm -f PHASE9_PR19_ROADMAP_TRIGGER.md
-          rm -f .github/workflows/phase9-pr19-roadmap-finalizer.yml
-          git fetch origin main
-          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Finalize roadmap for PR19"
-          git push origin HEAD:agent/phase-9-performance-experience
-
-  cleanup-main:
-    needs: finalize-pr
-    if: always() && github.head_ref == 'agent/phase-9-performance-experience'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Remove temporary main workflow
-        shell: bash
-        run: |
-          set -Eeuo pipefail
           git rm .github/workflows/phase9-pr19-main-finalizer.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Remove temporary PR19 finalizer"
+          git add ROADMAP.md
+          git commit -m "Finalize roadmap after PR19"
           git push origin HEAD:main
