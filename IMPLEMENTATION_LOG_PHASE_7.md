@@ -73,4 +73,16 @@ Coverage includes:
 - API status, execution, repeat request, and statistics;
 - Flutter model, repository, waiting, eligible, and verified UI states.
 
-The first complete Phase 7 workflow is used as the validation checkpoint. A final normal commit must pass repository lint, Backend/PostgreSQL/Alembic tests, Flutter format/analyze/tests, and Android debug APK before PR #16 can leave Draft and merge.
+## Validation checkpoints
+
+Workflow `30183634855` passed the complete Phase 7 gate:
+
+- repository lint;
+- Backend/Core/PostgreSQL tests and Alembic upgrade/downgrade/rebuild;
+- Flutter formatting and static analysis;
+- all Flutter tests;
+- Android debug APK build.
+
+`ROADMAP.md` is now version 1.6, marks Phase 7 complete on PR #16, and identifies Phase 8 — administration dashboard and notifications — as the next phase.
+
+This normal user-authored documentation commit intentionally starts the final complete workflow on the exact PR head. PR #16 must remain Draft until that final run is fully green.
