@@ -58,4 +58,6 @@ The dashboard provides:
 
 ## Validation status
 
-Implementation is complete but remains on a Draft pull request until repository lint, Backend/PostgreSQL/Alembic tests, Flutter format/analyze/tests, and Android debug APK build pass on a final normal commit.
+- Flutter analysis completed with no findings after adding mounted guards around dialog-driven administrator actions.
+- Backend Ruff was applied from inside `backend/`, using the same `backend/pyproject.toml` configuration as repository CI.
+- The implementation remains on a Draft pull request until repository lint, Backend/PostgreSQL/Alembic tests, Flutter format/analyze/tests, and Android debug APK build pass on a final normal commit.
