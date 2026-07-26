@@ -1,15 +1,16 @@
 name: Phase 9 PR19 Main Finalizer
 
 on:
-  push:
-    branches: [main]
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   finalize:
-    if: startsWith(github.event.head_commit.message, 'Trigger PR19 roadmap finalizer')
+    if: github.event.issue.title == 'Trigger PR19 roadmap finalizer'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
@@ -88,3 +89,8 @@ jobs:
           git add ROADMAP.md
           git commit -m "Finalize roadmap after PR19"
           git push origin HEAD:main
+
+      - name: Close trigger issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue close "${{ github.event.issue.number }}" --comment "Roadmap v1.9 finalized after PR #19."
