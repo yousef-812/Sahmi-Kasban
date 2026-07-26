@@ -36,7 +36,7 @@ SECRET_PATTERNS = {
 def should_skip(path: Path) -> bool:
     relative = path.relative_to(ROOT)
     joined = "/".join(relative.parts)
-    return any(part in relative.parts or marker in joined for marker in SKIP_PARTS)
+    return any(marker in relative.parts or marker in joined for marker in SKIP_PARTS)
 
 
 def main() -> None:
