@@ -13,11 +13,7 @@ class SplashScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
-              colors: [
-                Color(0xFF041F18),
-                Color(0xFF07543A),
-                Color(0xFF0B382A),
-              ],
+              colors: [Color(0xFF041F18), Color(0xFF07543A), Color(0xFF0B382A)],
             ),
           ),
           child: Stack(
@@ -113,10 +109,7 @@ class _BrandMark extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
-        child: Image.asset(
-          'assets/branding/app_icon.png',
-          fit: BoxFit.cover,
-        ),
+        child: Image.asset('assets/branding/app_icon.png', fit: BoxFit.cover),
       ),
     );
   }
