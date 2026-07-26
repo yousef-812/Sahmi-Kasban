@@ -1,0 +1,36 @@
+name: Phase 8 CI Ruff Compatibility
+
+on:
+  push:
+    branches:
+      - agent/phase-8-admin-notifications
+    paths:
+      - PHASE8_CI_RUFF_TRIGGER.md
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase-8-admin-notifications
+          fetch-depth: 0
+      - run: python -m pip install 'ruff==0.7.4'
+      - name: Apply CI generation import ordering
+        working-directory: backend
+        run: |
+          ruff --version
+          ruff check --fix .
+          ruff check .
+      - name: Commit compatibility formatting
+        run: |
+          rm PHASE8_CI_RUFF_TRIGGER.md
+          rm .github/workflows/phase8-ci-ruff-compat.yml
+          git config user.name "OpenAI Agent"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend .github/workflows/phase8-ci-ruff-compat.yml PHASE8_CI_RUFF_TRIGGER.md
+          git commit -m "Apply CI-compatible Ruff import ordering"
+          git push origin HEAD:agent/phase-8-admin-notifications
