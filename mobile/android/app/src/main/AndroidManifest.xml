@@ -13,6 +13,9 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}"/>
 
+        <!-- WorkManager is not used by the app. Keep it off Android's eager
+             startup path so a stale WorkDatabase cannot terminate startup
+             before Flutter reaches main(). -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
