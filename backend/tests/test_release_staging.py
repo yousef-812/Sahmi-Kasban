@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from app.core.config import Environment, Settings
 from app.services import notifications
 
