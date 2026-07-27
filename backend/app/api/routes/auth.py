@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -28,7 +28,7 @@ from app.services.auth import (
     EmailVerificationRequiredError,
     InvalidAccountTokenError,
     authenticate_user,
-    create_email_verification_token,
+    create_email_verification_code,
     create_password_reset_token,
     create_token_pair,
     normalize_email,
@@ -37,6 +37,7 @@ from app.services.auth import (
     revoke_refresh_token,
     rotate_refresh_token,
     verify_user_email,
+    verify_user_email_code,
 )
 from app.services.email import AccountEmailService, get_account_email_service
 
@@ -62,14 +63,39 @@ def _validation_error(exc: ValueError) -> HTTPException:
     )
 
 
+def _deliver_verification_email(
+    email_service: AccountEmailService,
+    email: str,
+    code: str,
+    user_id: str,
+) -> None:
+    try:
+        email_service.send_email_verification(email, code)
+    except Exception:
+        logger.exception("Verification email delivery failed for user %s", user_id)
+
+
+def _deliver_password_reset_email(
+    email_service: AccountEmailService,
+    email: str,
+    token: str,
+    user_id: str,
+) -> None:
+    try:
+        email_service.send_password_reset(email, token)
+    except Exception:
+        logger.exception("Password reset email failed for user %s", user_id)
+
+
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 def register(
     payload: RegisterRequest,
+    background_tasks: BackgroundTasks,
     db: DatabaseSession,
     email_service: EmailService,
 ) -> RegisterResponse:
     try:
-        user, verification_token = register_user(
+        user, verification_code = register_user(
             db,
             email=str(payload.email),
             password=payload.password,
@@ -87,24 +113,33 @@ def register(
         db.rollback()
         raise _validation_error(exc) from exc
 
-    try:
-        email_service.send_email_verification(user.email, verification_token)
-    except Exception:
-        logger.exception("Verification email delivery failed for user %s", user.id)
-
+    background_tasks.add_task(
+        _deliver_verification_email,
+        email_service,
+        user.email,
+        verification_code,
+        str(user.id),
+    )
     return RegisterResponse(user_id=user.id, email=user.email)
 
 
 @router.post("/verify-email", response_model=MessageResponse)
 def verify_email(payload: VerifyEmailRequest, db: DatabaseSession) -> MessageResponse:
     try:
-        verify_user_email(db, payload.token)
+        if payload.email is not None and payload.code is not None:
+            verify_user_email_code(
+                db,
+                email=str(payload.email),
+                code=payload.code,
+            )
+        else:
+            verify_user_email(db, payload.token or "")
         db.commit()
     except InvalidAccountTokenError as exc:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification token",
+            detail="Invalid or expired verification code",
         ) from exc
     return MessageResponse(message="Email verified successfully")
 
@@ -112,20 +147,24 @@ def verify_email(payload: VerifyEmailRequest, db: DatabaseSession) -> MessageRes
 @router.post("/resend-verification", response_model=MessageResponse)
 def resend_verification(
     payload: ResendVerificationRequest,
+    background_tasks: BackgroundTasks,
     db: DatabaseSession,
     email_service: EmailService,
 ) -> MessageResponse:
     user = db.scalar(select(User).where(User.email == normalize_email(str(payload.email))))
     if user is not None:
-        token = create_email_verification_token(db, user)
+        code = create_email_verification_code(db, user)
         db.commit()
-        if token is not None:
-            try:
-                email_service.send_email_verification(user.email, token)
-            except Exception:
-                logger.exception("Verification email resend failed for user %s", user.id)
+        if code is not None:
+            background_tasks.add_task(
+                _deliver_verification_email,
+                email_service,
+                user.email,
+                code,
+                str(user.id),
+            )
     return MessageResponse(
-        message="If the account requires verification, a new email has been sent"
+        message="If the account requires verification, a new code has been sent"
     )
 
 
@@ -186,6 +225,7 @@ def logout(payload: LogoutRequest, db: DatabaseSession) -> MessageResponse:
 @router.post("/forgot-password", response_model=MessageResponse)
 def forgot_password(
     payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
     db: DatabaseSession,
     email_service: EmailService,
 ) -> MessageResponse:
@@ -193,10 +233,13 @@ def forgot_password(
     if user is not None and user.status == "active":
         token = create_password_reset_token(db, user)
         db.commit()
-        try:
-            email_service.send_password_reset(user.email, token)
-        except Exception:
-            logger.exception("Password reset email failed for user %s", user.id)
+        background_tasks.add_task(
+            _deliver_password_reset_email,
+            email_service,
+            user.email,
+            token,
+            str(user.id),
+        )
     return MessageResponse(
         message="If an active account exists, password reset instructions have been sent"
     )
