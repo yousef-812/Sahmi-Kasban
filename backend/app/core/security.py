@@ -20,6 +20,10 @@ class InvalidAccessTokenError(ValueError):
     """Raised when an access token is missing, invalid, or expired."""
 
 
+class InvalidVerificationReferenceError(ValueError):
+    """Raised when a signed email-verification reference is invalid."""
+
+
 def validate_password_strength(password: str) -> None:
     if len(password) < 10:
         raise ValueError("Password must contain at least 10 characters")
@@ -82,6 +86,48 @@ def verify_account_code_hash(
         code=code,
     )
     return hmac.compare_digest(expected_hash, supplied_hash)
+
+
+def create_email_verification_reference(
+    *,
+    email: str,
+    code: str,
+    expires_minutes: int = 10,
+) -> str:
+    settings = get_settings()
+    issued_at = datetime.now(UTC)
+    payload: dict[str, Any] = {
+        "type": "email_verification_reference",
+        "email": email,
+        "code": code,
+        "iat": issued_at,
+        "exp": issued_at + timedelta(minutes=expires_minutes),
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+
+
+def decode_email_verification_reference(token: str) -> tuple[str, str]:
+    settings = get_settings()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.jwt_algorithm],
+            options={"require": ["type", "email", "code", "iat", "exp"]},
+        )
+    except InvalidTokenError as exc:
+        raise InvalidVerificationReferenceError(
+            "Invalid or expired verification reference"
+        ) from exc
+    if payload.get("type") != "email_verification_reference":
+        raise InvalidVerificationReferenceError("Invalid verification reference type")
+    email = payload.get("email")
+    code = payload.get("code")
+    if not isinstance(email, str) or not email.strip():
+        raise InvalidVerificationReferenceError("Invalid verification reference email")
+    if not isinstance(code, str) or not code.isdigit() or len(code) != 6:
+        raise InvalidVerificationReferenceError("Invalid verification reference code")
+    return email, code
 
 
 def create_access_token(user_id: UUID, auth_version: int) -> tuple[str, int]:
