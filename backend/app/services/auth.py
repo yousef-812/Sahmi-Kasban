@@ -247,7 +247,7 @@ def verify_user_email(db: Session, raw_token: str) -> User:
         try:
             email, code = decode_email_verification_reference(raw_token)
         except InvalidVerificationReferenceError:
-            raise legacy_error
+            raise legacy_error from None
         return verify_user_email_code(db, email=email, code=code)
 
     if not user.email_verified:
