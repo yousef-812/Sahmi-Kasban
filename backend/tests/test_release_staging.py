@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-from google.auth.credentials import AnonymousCredentials
-from pydantic import ValidationError
-from pytest import MonkeyPatch, raises
-
 from app.core.config import Environment, Settings
 from app.services import notifications
 
@@ -27,13 +23,17 @@ def test_staging_allows_release_integrations_to_remain_disabled() -> None:
 
 
 def test_production_keeps_release_integrations_strict() -> None:
-    with raises(ValidationError, match="SMTP_HOST"):
+    try:
         Settings(
             app_env=Environment.PRODUCTION,
             debug=False,
             secret_key="production-secret-key-that-is-long-enough",
             database_url=POSTGRES_URL,
         )
+    except ValueError as exc:
+        assert "SMTP_HOST" in str(exc)
+    else:
+        raise AssertionError("Production configuration unexpectedly passed")
 
 
 def test_migrations_prefer_direct_database_url() -> None:
@@ -51,10 +51,8 @@ def test_migrations_fall_back_to_runtime_database_url() -> None:
     assert settings.effective_migration_database_url == POSTGRES_URL
 
 
-def test_fcm_uses_application_default_credentials(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    credentials = AnonymousCredentials()
+def test_fcm_uses_application_default_credentials(monkeypatch) -> None:
+    credentials = object()
     requested_scopes: list[str] = []
 
     def fake_default(*, scopes: list[str]):
