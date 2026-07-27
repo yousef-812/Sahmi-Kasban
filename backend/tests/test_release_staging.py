@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import pytest
 from google.auth.credentials import AnonymousCredentials
 from pydantic import ValidationError
+from pytest import MonkeyPatch, raises
 
 from app.core.config import Environment, Settings
 from app.services import notifications
@@ -27,7 +27,7 @@ def test_staging_allows_release_integrations_to_remain_disabled() -> None:
 
 
 def test_production_keeps_release_integrations_strict() -> None:
-    with pytest.raises(ValidationError, match="SMTP_HOST"):
+    with raises(ValidationError, match="SMTP_HOST"):
         Settings(
             app_env=Environment.PRODUCTION,
             debug=False,
@@ -52,7 +52,7 @@ def test_migrations_fall_back_to_runtime_database_url() -> None:
 
 
 def test_fcm_uses_application_default_credentials(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     credentials = AnonymousCredentials()
     requested_scopes: list[str] = []
