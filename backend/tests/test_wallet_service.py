@@ -88,7 +88,7 @@ def test_weekly_grant_is_unique_for_user_and_week(db_session: Session) -> None:
     account = db_session.query(WalletAccount).filter_by(user_id=user.id).one()
     assert account.balance_points == 300
 
-    current = datetime(2026, 7, 25, 12, tzinfo=UTC)
+    current = datetime.now(UTC)
     grant_weekly_points_for_subscription(db_session, subscription, moment=current)
     grant_weekly_points_for_subscription(db_session, subscription, moment=current)
     db_session.commit()
