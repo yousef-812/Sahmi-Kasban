@@ -1,52 +1,58 @@
-app = "sahmi-kasban"
-primary_region = "fra"
-kill_signal = "SIGTERM"
-kill_timeout = "30s"
+# fly.toml app configuration file generated for sahmi-kasban on 2026-07-27T11:52:33Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'sahmi-kasban'
+primary_region = 'fra'
+kill_signal = 'SIGTERM'
+kill_timeout = '30s'
 
 [build]
-  dockerfile = "backend/Dockerfile"
+  dockerfile = 'backend/Dockerfile'
 
 [deploy]
-  release_command = "python -m alembic upgrade head"
-  release_command_timeout = "10m"
-  strategy = "rolling"
-  wait_timeout = "10m"
+  strategy = 'rolling'
+  wait_timeout = '10m0s'
+  release_command = 'python -m alembic upgrade head'
+  release_command_timeout = '10m0s'
 
 [env]
-  APP_ENV = "staging"
-  DEBUG = "false"
-  PORT = "8080"
-  APP_PUBLIC_URL = "https://sahmi-kasban.fly.dev"
-  LOG_LEVEL = "INFO"
-  LOG_JSON = "true"
-  MARKET_TIMEZONE = "Africa/Cairo"
-  FCM_DELIVERY_MODE = "disabled"
-  FCM_PROJECT_ID = "project-f14e453c-deb8-4a94-b39"
-  GOOGLE_PLAY_VERIFICATION_MODE = "disabled"
-  ADMOB_SSV_VERIFICATION_MODE = "disabled"
+  ADMOB_SSV_VERIFICATION_MODE = 'disabled'
+  APP_ENV = 'staging'
+  APP_PUBLIC_URL = 'https://sahmi-kasban.fly.dev'
+  DEBUG = 'false'
+  FCM_DELIVERY_MODE = 'disabled'
+  FCM_PROJECT_ID = 'project-f14e453c-deb8-4a94-b39'
+  GOOGLE_PLAY_VERIFICATION_MODE = 'disabled'
+  LOG_JSON = 'true'
+  LOG_LEVEL = 'INFO'
+  MARKET_TIMEZONE = 'Africa/Cairo'
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [http_service.concurrency]
-    type = "requests"
-    soft_limit = 40
+    type = 'requests'
     hard_limit = 60
+    soft_limit = 40
 
-[[http_service.checks]]
-  grace_period = "45s"
-  interval = "30s"
-  method = "GET"
-  timeout = "10s"
-  path = "/api/v1/health/database"
-  protocol = "http"
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '10s'
+    grace_period = '45s'
+    method = 'GET'
+    path = '/api/v1/health/database'
+    protocol = 'http'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = 'shared-cpu-1x'
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
-  cpu_kind = "shared"
+  memory_mb = 512
