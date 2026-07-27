@@ -67,13 +67,16 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     final inbox = ref.watch(notificationInboxProvider);
+    final unreadCount = inbox.asData?.value.unreadCount;
     return Scaffold(
       appBar: AppBar(
         title: const Text('الإشعارات'),
         actions: [
           IconButton(
             tooltip: 'تعليم الكل كمقروء',
-            onPressed: inbox.valueOrNull?.unreadCount == 0 ? null : _markAllRead,
+            onPressed: unreadCount == null || unreadCount == 0
+                ? null
+                : _markAllRead,
             icon: const Icon(Icons.done_all_rounded),
           ),
         ],
