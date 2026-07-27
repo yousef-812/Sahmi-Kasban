@@ -48,7 +48,10 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       return;
     }
     if (!RegExp(r'^\d{6}$').hasMatch(code) || _verifying) {
-      _showNotice('أدخل رمز التأكيد المكوّن من 6 أرقام.', AppNoticeTone.warning);
+      _showNotice(
+        'أدخل رمز التأكيد المكوّن من 6 أرقام.',
+        AppNoticeTone.warning,
+      );
       return;
     }
     setState(() => _verifying = true);
@@ -119,11 +122,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     });
   }
 
-  void _showNotice(
-    String message,
-    AppNoticeTone tone, {
-    String? title,
-  }) {
+  void _showNotice(String message, AppNoticeTone tone, {String? title}) {
     if (!mounted) {
       return;
     }
@@ -147,10 +146,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.schedule_rounded,
-                color: theme.colorScheme.primary,
-              ),
+              Icon(Icons.schedule_rounded, color: theme.colorScheme.primary),
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
