@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 from app.core.avatars import DEFAULT_AVATAR_KEY, validate_avatar_key
 from app.core.config import get_settings
 from app.core.security import (
+    InvalidVerificationReferenceError,
     create_access_token,
+    decode_email_verification_reference,
     generate_numeric_code,
     generate_opaque_token,
     hash_account_code,
@@ -234,12 +236,20 @@ def register_user(
 
 
 def verify_user_email(db: Session, raw_token: str) -> User:
-    """Consume verification links issued by versions before numeric codes."""
-    user = consume_account_token(
-        db,
-        raw_token=raw_token,
-        token_type=EMAIL_VERIFICATION,
-    )
+    """Consume old opaque links or signed compatibility references."""
+    try:
+        user = consume_account_token(
+            db,
+            raw_token=raw_token,
+            token_type=EMAIL_VERIFICATION,
+        )
+    except InvalidAccountTokenError as legacy_error:
+        try:
+            email, code = decode_email_verification_reference(raw_token)
+        except InvalidVerificationReferenceError:
+            raise legacy_error
+        return verify_user_email_code(db, email=email, code=code)
+
     if not user.email_verified:
         user.email_verified = True
         user.email_verified_at = datetime.now(UTC)
