@@ -21,7 +21,7 @@ The repository root contains `fly.toml` with:
 - Frankfurt as the primary region;
 - one shared CPU and 512 MB memory;
 - automatic stop/start with zero always-running Machines;
-- readiness checks against `/api/v1/health/ready`;
+- readiness checks against `/api/v1/health/database`;
 - `python -m alembic upgrade head` as the release command.
 
 The release command inherits Fly secrets and stops the deployment if a migration fails.
@@ -115,9 +115,9 @@ fly logs -a sahmi-kasban
 Then verify:
 
 - `https://sahmi-kasban.fly.dev/api/v1/health`
-- `https://sahmi-kasban.fly.dev/api/v1/health/ready`
+- `https://sahmi-kasban.fly.dev/api/v1/health/database`
 
-The second endpoint must report the database check as ready.
+The second endpoint must report the database as reachable.
 
 ## Firebase status
 
