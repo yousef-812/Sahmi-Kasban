@@ -9,12 +9,9 @@ enum SessionStatus { loading, unauthenticated, authenticated }
 
 class SessionState {
   const SessionState({required this.status, this.profile, this.errorMessage});
-
   const SessionState.loading() : this(status: SessionStatus.loading);
-
   const SessionState.unauthenticated({String? errorMessage})
     : this(status: SessionStatus.unauthenticated, errorMessage: errorMessage);
-
   const SessionState.authenticated(UserProfile profile)
     : this(status: SessionStatus.authenticated, profile: profile);
 
@@ -64,6 +61,23 @@ class SessionController extends StateNotifier<SessionState> {
       state = SessionState.unauthenticated(errorMessage: error.message);
       rethrow;
     }
+  }
+
+  void loginAsDemo() {
+    state = const SessionState.authenticated(
+      UserProfile(
+        id: 'demo-user',
+        email: 'demo@sahmi-kasban.local',
+        displayName: 'مستخدم تجريبي',
+        avatarKey: 'avatar_1',
+        emailVerified: true,
+        planCode: 'free',
+        balancePoints: 300,
+        balanceCoins: '3.00',
+        weeklyCoins: '3.00',
+        adsEnabled: true,
+      ),
+    );
   }
 
   Future<RegistrationResult> register({
