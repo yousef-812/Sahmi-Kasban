@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -48,8 +49,39 @@ def generate_opaque_token() -> str:
     return secrets.token_urlsafe(48)
 
 
+def generate_numeric_code(digits: int = 6) -> str:
+    if not 4 <= digits <= 10:
+        raise ValueError("Numeric codes must contain between 4 and 10 digits")
+    return f"{secrets.randbelow(10**digits):0{digits}d}"
+
+
 def hash_opaque_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def hash_account_code(*, user_id: UUID, token_type: str, code: str) -> str:
+    settings = get_settings()
+    payload = f"{user_id}:{token_type}:{code}".encode("utf-8")
+    return hmac.new(
+        settings.secret_key.encode("utf-8"),
+        payload,
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def verify_account_code_hash(
+    *,
+    expected_hash: str,
+    user_id: UUID,
+    token_type: str,
+    code: str,
+) -> bool:
+    supplied_hash = hash_account_code(
+        user_id=user_id,
+        token_type=token_type,
+        code=code,
+    )
+    return hmac.compare_digest(expected_hash, supplied_hash)
 
 
 def create_access_token(user_id: UUID, auth_version: int) -> tuple[str, int]:
