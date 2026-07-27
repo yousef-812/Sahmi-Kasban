@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app import models as _models  # noqa: F401
+from app.core.security import create_email_verification_reference
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
@@ -32,10 +33,15 @@ def enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
 class FakeAccountEmailService:
     def __init__(self) -> None:
         self.verification_tokens: dict[str, str] = {}
+        self.verification_codes: dict[str, str] = {}
         self.password_reset_tokens: dict[str, str] = {}
 
-    def send_email_verification(self, email: str, token: str) -> None:
-        self.verification_tokens[email] = token
+    def send_email_verification(self, email: str, code: str) -> None:
+        self.verification_codes[email] = code
+        self.verification_tokens[email] = create_email_verification_reference(
+            email=email,
+            code=code,
+        )
 
     def send_password_reset(self, email: str, token: str) -> None:
         self.password_reset_tokens[email] = token
