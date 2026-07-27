@@ -56,14 +56,14 @@ def generate_numeric_code(digits: int = 6) -> str:
 
 
 def hash_opaque_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def hash_account_code(*, user_id: UUID, token_type: str, code: str) -> str:
     settings = get_settings()
-    payload = f"{user_id}:{token_type}:{code}".encode("utf-8")
+    payload = f"{user_id}:{token_type}:{code}".encode()
     return hmac.new(
-        settings.secret_key.encode("utf-8"),
+        settings.secret_key.encode(),
         payload,
         hashlib.sha256,
     ).hexdigest()
