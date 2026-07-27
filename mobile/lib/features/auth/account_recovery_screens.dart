@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
+import '../../core/ui/app_notice.dart';
 import '../../data/backend_repository.dart';
 
 class VerifyEmailScreen extends ConsumerStatefulWidget {
@@ -15,10 +19,12 @@ class VerifyEmailScreen extends ConsumerStatefulWidget {
 }
 
 class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
-  final _tokenController = TextEditingController();
+  final _codeController = TextEditingController();
   late final TextEditingController _emailController;
+  Timer? _cooldownTimer;
   bool _verifying = false;
   bool _resending = false;
+  int _resendCooldown = 0;
 
   @override
   void initState() {
@@ -28,27 +34,39 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   @override
   void dispose() {
-    _tokenController.dispose();
+    _cooldownTimer?.cancel();
+    _codeController.dispose();
     _emailController.dispose();
     super.dispose();
   }
 
   Future<void> _verify() async {
-    final token = _tokenController.text.trim();
-    if (token.length < 20 || _verifying) {
-      _showMessage('أدخل رمز التأكيد الكامل الموجود في البريد.');
+    final email = _emailController.text.trim();
+    final code = _codeController.text.trim();
+    if (!_isValidEmail(email)) {
+      _showNotice('أدخل بريدًا إلكترونيًا صحيحًا.', AppNoticeTone.warning);
+      return;
+    }
+    if (!RegExp(r'^\d{6}$').hasMatch(code) || _verifying) {
+      _showNotice('أدخل رمز التأكيد المكوّن من 6 أرقام.', AppNoticeTone.warning);
       return;
     }
     setState(() => _verifying = true);
     try {
-      await ref.read(backendRepositoryProvider).verifyEmail(token);
+      await ref
+          .read(backendRepositoryProvider)
+          .verifyEmail(email: email, code: code);
       if (!mounted) {
         return;
       }
-      _showMessage('تم تأكيد البريد بنجاح. يمكنك تسجيل الدخول الآن.');
+      _showNotice(
+        'تم تأكيد بريدك بنجاح. يمكنك تسجيل الدخول الآن.',
+        AppNoticeTone.success,
+        title: 'تم التأكيد',
+      );
       context.go('/login');
     } on ApiException catch (error) {
-      _showMessage(error.message);
+      _showNotice(error.message, AppNoticeTone.error, title: 'تعذر التأكيد');
     } finally {
       if (mounted) {
         setState(() => _verifying = false);
@@ -58,16 +76,27 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   Future<void> _resend() async {
     final email = _emailController.text.trim();
-    if (!_isValidEmail(email) || _resending) {
-      _showMessage('أدخل بريدًا إلكترونيًا صحيحًا.');
+    if (!_isValidEmail(email)) {
+      _showNotice('أدخل بريدًا إلكترونيًا صحيحًا.', AppNoticeTone.warning);
+      return;
+    }
+    if (_resending || _resendCooldown > 0) {
       return;
     }
     setState(() => _resending = true);
     try {
       await ref.read(backendRepositoryProvider).resendVerification(email);
-      _showMessage('إذا كان الحساب يحتاج تأكيدًا فسيتم إرسال رسالة جديدة.');
+      if (!mounted) {
+        return;
+      }
+      _startResendCooldown();
+      _showNotice(
+        'أرسلنا رمزًا جديدًا إلى بريدك. راجع البريد غير الهام أيضًا.',
+        AppNoticeTone.success,
+        title: 'تم إرسال الرمز',
+      );
     } on ApiException catch (error) {
-      _showMessage(error.message);
+      _showNotice(error.message, AppNoticeTone.error, title: 'تعذر الإرسال');
     } finally {
       if (mounted) {
         setState(() => _resending = false);
@@ -75,58 +104,131 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     }
   }
 
-  void _showMessage(String message) {
+  void _startResendCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _resendCooldown = 30);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _resendCooldown <= 1) {
+        timer.cancel();
+        if (mounted) {
+          setState(() => _resendCooldown = 0);
+        }
+        return;
+      }
+      setState(() => _resendCooldown -= 1);
+    });
+  }
+
+  void _showNotice(
+    String message,
+    AppNoticeTone tone, {
+    String? title,
+  }) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppNotice.show(context, message: message, title: title, tone: tone);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return _AccountActionScaffold(
       icon: Icons.mark_email_read_outlined,
       title: 'تأكيد البريد الإلكتروني',
-      subtitle:
-          'ألصق رمز التأكيد الذي وصلك. لا يمكن تسجيل الدخول قبل تأكيد البريد.',
+      subtitle: 'أدخل الكود المكوّن من 6 أرقام الذي أرسلناه إلى بريدك.',
       children: [
-        TextField(
-          controller: _tokenController,
-          minLines: 2,
-          maxLines: 4,
-          textDirection: TextDirection.ltr,
-          decoration: const InputDecoration(
-            labelText: 'رمز التأكيد',
-            prefixIcon: Icon(Icons.key_rounded),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'الكود صالح لمدة 10 دقائق. لا تشاركه مع أي شخص.',
+                  style: TextStyle(height: 1.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _verifying ? null : _verify,
-          child: _verifying
-              ? const _ButtonLoader()
-              : const Text('تأكيد البريد'),
-        ),
-        const SizedBox(height: 28),
-        const Divider(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           textDirection: TextDirection.ltr,
+          autofillHints: const [AutofillHints.email],
           decoration: const InputDecoration(
             labelText: 'البريد الإلكتروني',
             prefixIcon: Icon(Icons.alternate_email_rounded),
           ),
         ),
-        const SizedBox(height: 14),
-        OutlinedButton(
-          onPressed: _resending ? null : _resend,
-          child: _resending
+        const SizedBox(height: 18),
+        TextField(
+          controller: _codeController,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.oneTimeCode],
+          inputFormatters: const [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
+          maxLength: 6,
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.ltr,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 12,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: '000000',
+            hintStyle: TextStyle(
+              color: theme.colorScheme.outlineVariant,
+              letterSpacing: 12,
+            ),
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerLowest,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 22,
+            ),
+          ),
+          onSubmitted: (_) => _verify(),
+        ),
+        const SizedBox(height: 18),
+        FilledButton.icon(
+          onPressed: _verifying ? null : _verify,
+          icon: _verifying
               ? const _ButtonLoader()
-              : const Text('إعادة إرسال رسالة التأكيد'),
+              : const Icon(Icons.verified_rounded),
+          label: Text(_verifying ? 'جاري التأكيد...' : 'تأكيد البريد'),
+        ),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 14),
+        OutlinedButton.icon(
+          onPressed: _resending || _resendCooldown > 0 ? null : _resend,
+          icon: _resending
+              ? const _ButtonLoader()
+              : const Icon(Icons.refresh_rounded),
+          label: Text(
+            _resending
+                ? 'جاري الإرسال...'
+                : _resendCooldown > 0
+                ? 'إعادة الإرسال بعد $_resendCooldown ثانية'
+                : 'إعادة إرسال الكود',
+          ),
         ),
         TextButton(
           onPressed: () => context.go('/login'),
@@ -158,7 +260,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     if (!_isValidEmail(email) || _submitting) {
-      _showMessage('أدخل بريدًا إلكترونيًا صحيحًا.');
+      _showMessage('أدخل بريدًا إلكترونيًا صحيحًا.', AppNoticeTone.warning);
       return;
     }
     setState(() => _submitting = true);
@@ -167,10 +269,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       if (!mounted) {
         return;
       }
-      _showMessage('إذا كان الحساب موجودًا فستصلك تعليمات الاستعادة.');
+      _showMessage(
+        'إذا كان الحساب موجودًا فستصلك تعليمات الاستعادة.',
+        AppNoticeTone.success,
+      );
       context.go('/reset-password?email=${Uri.encodeQueryComponent(email)}');
     } on ApiException catch (error) {
-      _showMessage(error.message);
+      _showMessage(error.message, AppNoticeTone.error);
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -178,11 +283,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     }
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, AppNoticeTone tone) {
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppNotice.show(context, message: message, tone: tone);
     }
   }
 
@@ -255,16 +358,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final token = _tokenController.text.trim();
     final password = _passwordController.text;
     if (token.length < 20) {
-      _showMessage('أدخل رمز الاستعادة الكامل.');
+      _showMessage('أدخل رمز الاستعادة الكامل.', AppNoticeTone.warning);
       return;
     }
     final passwordError = _passwordError(password);
     if (passwordError != null) {
-      _showMessage(passwordError);
+      _showMessage(passwordError, AppNoticeTone.warning);
       return;
     }
     if (password != _confirmationController.text) {
-      _showMessage('تأكيد كلمة المرور غير مطابق.');
+      _showMessage('تأكيد كلمة المرور غير مطابق.', AppNoticeTone.warning);
       return;
     }
     if (_submitting) {
@@ -278,10 +381,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       if (!mounted) {
         return;
       }
-      _showMessage('تم تغيير كلمة المرور. سجّل الدخول بالكلمة الجديدة.');
+      _showMessage(
+        'تم تغيير كلمة المرور. سجّل الدخول بالكلمة الجديدة.',
+        AppNoticeTone.success,
+      );
       context.go('/login');
     } on ApiException catch (error) {
-      _showMessage(error.message);
+      _showMessage(error.message, AppNoticeTone.error);
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -289,11 +395,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     }
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, AppNoticeTone tone) {
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AppNotice.show(context, message: message, tone: tone);
     }
   }
 
