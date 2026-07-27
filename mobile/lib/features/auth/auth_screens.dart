@@ -45,7 +45,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
       AppNotice.show(
         context,
-        title: error.statusCode == 403 ? 'البريد غير مؤكد' : 'تعذر تسجيل الدخول',
+        title: error.statusCode == 403
+            ? 'البريد غير مؤكد'
+            : 'تعذر تسجيل الدخول',
         message: error.statusCode == 403
             ? 'أكد بريدك بالكود المرسل أولًا.'
             : error.message,
