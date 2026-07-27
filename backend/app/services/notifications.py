@@ -10,6 +10,7 @@ from pathlib import Path
 from uuid import UUID
 
 from cryptography.fernet import Fernet
+from google.auth import default as google_auth_default
 from google.auth.transport.requests import AuthorizedSession
 from google.oauth2 import service_account
 from sqlalchemy import func, select
@@ -233,18 +234,23 @@ class FCMPushSender:
         ).strip()
 
     def _credentials(self):
+        scopes = ["https://www.googleapis.com/auth/firebase.messaging"]
         raw = self.service_account_json
-        if not raw:
-            raise NotificationError("FCM service account is not configured")
-        path = Path(raw)
-        if path.exists():
-            info = json.loads(path.read_text(encoding="utf-8"))
-        else:
-            info = json.loads(raw)
-        return service_account.Credentials.from_service_account_info(
-            info,
-            scopes=["https://www.googleapis.com/auth/firebase.messaging"],
-        )
+        if raw:
+            path = Path(raw)
+            if path.exists():
+                info = json.loads(path.read_text(encoding="utf-8"))
+            else:
+                info = json.loads(raw)
+            return service_account.Credentials.from_service_account_info(
+                info,
+                scopes=scopes,
+            )
+
+        credentials, detected_project_id = google_auth_default(scopes=scopes)
+        if not self.project_id and detected_project_id:
+            self.project_id = detected_project_id
+        return credentials
 
     def send(
         self,
@@ -261,10 +267,11 @@ class FCMPushSender:
             return "sent", message_id, None
         if self.mode != "live":
             return "failed", None, "invalid_fcm_mode"
-        if not self.project_id:
-            return "failed", None, "missing_fcm_project_id"
         try:
-            session = AuthorizedSession(self._credentials())
+            credentials = self._credentials()
+            if not self.project_id:
+                return "failed", None, "missing_fcm_project_id"
+            session = AuthorizedSession(credentials)
             response = session.post(
                 "https://fcm.googleapis.com/v1/projects/"
                 f"{self.project_id}/messages:send",
