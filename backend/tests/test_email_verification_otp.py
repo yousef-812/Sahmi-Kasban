@@ -27,7 +27,7 @@ def test_registration_sends_six_digit_code_and_verifies(
 
     assert response.status_code == 201
     assert response.json()["verification_code_expires_in_seconds"] == 600
-    code = fake_email_service.verification_tokens[email]
+    code = fake_email_service.verification_codes[email]
     assert len(code) == 6
     assert code.isdigit()
 
@@ -57,14 +57,14 @@ def test_resend_replaces_previous_verification_code(
 ) -> None:
     email = "otp-resend@example.com"
     client.post("/api/v1/auth/register", json=_registration_payload(email))
-    first_code = fake_email_service.verification_tokens[email]
+    first_code = fake_email_service.verification_codes[email]
 
     response = client.post(
         "/api/v1/auth/resend-verification",
         json={"email": email},
     )
     assert response.status_code == 200
-    second_code = fake_email_service.verification_tokens[email]
+    second_code = fake_email_service.verification_codes[email]
     assert len(second_code) == 6
     assert second_code.isdigit()
 
