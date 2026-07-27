@@ -173,7 +173,8 @@ jobs:
         run: |
           set -o pipefail
           $FLUTTER_HOME/bin/flutter build apk --debug \
-            --dart-define=API_BASE_URL=https://example.invalid 2>&1 \
+            --dart-define=API_BASE_URL=https://example.invalid \
+            --dart-define=DEMO_MODE=true 2>&1 \
             | tee "$RUNNER_TEMP/flutter-apk.log"
 
       - name: Upload preview Android APK
