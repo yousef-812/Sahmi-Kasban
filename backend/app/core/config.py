@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     quality_provider_stale_minutes: int = 60
 
     database_url: str = "sqlite+pysqlite:///./sahmi_kasban_dev.db"
+    migration_database_url: str = ""
     database_pool_size: int = 10
     database_max_overflow: int = 20
 
@@ -123,6 +124,8 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "PostgreSQL is required outside development and test environments"
                 )
+
+        if self.app_env is Environment.PRODUCTION:
             if not self.smtp_host:
                 raise ValueError(
                     "SMTP_HOST is required outside development and test environments"
@@ -130,21 +133,22 @@ class Settings(BaseSettings):
             if not self.sentry_dsn.strip():
                 raise ValueError("SENTRY_DSN is required outside development and test")
             if self.google_play_verification_mode != "live":
-                raise ValueError("Google Play verification must use live mode outside development")
+                raise ValueError("Google Play verification must use live mode in production")
             if not self.google_play_service_account_json.strip():
                 raise ValueError(
-                    "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is required outside development"
+                    "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is required in production"
                 )
             if not self.billing_token_encryption_key.strip():
                 raise ValueError(
-                    "BILLING_TOKEN_ENCRYPTION_KEY is required outside development"
+                    "BILLING_TOKEN_ENCRYPTION_KEY is required in production"
                 )
             if self.admob_ssv_verification_mode != "live":
-                raise ValueError("AdMob SSV verification must use live mode outside development")
+                raise ValueError("AdMob SSV verification must use live mode in production")
             if "3940256099942544" in self.admob_android_rewarded_ad_unit_id:
-                raise ValueError("Replace the Android AdMob test ad unit outside development")
+                raise ValueError("Replace the Android AdMob test ad unit in production")
             if "3940256099942544" in self.admob_ios_rewarded_ad_unit_id:
-                raise ValueError("Replace the iOS AdMob test ad unit outside development")
+                raise ValueError("Replace the iOS AdMob test ad unit in production")
+
         self.log_level = self.log_level.strip().upper()
         if self.log_level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
             raise ValueError("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL")
@@ -231,6 +235,10 @@ class Settings(BaseSettings):
             for item in self.cors_origins.split(",")
             if item.strip()
         )
+
+    @property
+    def effective_migration_database_url(self) -> str:
+        return self.migration_database_url.strip() or self.database_url
 
     @property
     def is_production(self) -> bool:

@@ -109,11 +109,21 @@ jobs:
     env:
       FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
       PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
+      FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           show-progress: false
+
+      - name: Configure Firebase Android app
+        if: ${{ env.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON != '' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON" \
+            > mobile/android/app/google-services.json
+          python -m json.tool mobile/android/app/google-services.json >/dev/null
 
       - name: Install Flutter inside repository workspace
         shell: bash
@@ -184,6 +194,11 @@ jobs:
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Remove temporary Firebase config
+        if: ${{ always() && env.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON != '' }}
+        shell: bash
+        run: rm -f mobile/android/app/google-services.json
 
       - name: Upload Flutter diagnostics
         if: always()
