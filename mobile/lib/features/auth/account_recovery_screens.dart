@@ -179,7 +179,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.done,
           autofillHints: const [AutofillHints.oneTimeCode],
-          inputFormatters: const [
+          inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(6),
           ],
