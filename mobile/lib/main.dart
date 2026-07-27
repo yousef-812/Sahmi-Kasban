@@ -7,11 +7,16 @@ import 'app/app.dart';
 import 'core/observability/app_observability.dart';
 
 Future<void> _initializeServices() async {
-  await MobileAds.instance.initialize();
   try {
-    await Firebase.initializeApp();
-  } on Object {
-    // Firebase remains optional until platform project files are configured.
+    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+  } on Object catch (error, stackTrace) {
+    debugPrint('Firebase initialization skipped: $error\n$stackTrace');
+  }
+
+  try {
+    await MobileAds.instance.initialize().timeout(const Duration(seconds: 10));
+  } on Object catch (error, stackTrace) {
+    debugPrint('Mobile Ads initialization skipped: $error\n$stackTrace');
   }
 }
 
