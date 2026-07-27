@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/demo_mode.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/network/token_store.dart';
 import '../../data/backend_repository.dart';
@@ -34,6 +35,11 @@ class SessionController extends StateNotifier<SessionState> {
   final TokenStore _tokenStore;
 
   Future<void> restore() async {
+    if (DemoMode.enabled) {
+      loginAsDemo();
+      return;
+    }
+
     state = const SessionState.loading();
     final tokens = await _tokenStore.read();
     if (tokens == null) {
