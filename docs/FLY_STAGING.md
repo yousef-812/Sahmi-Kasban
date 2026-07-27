@@ -21,7 +21,8 @@ The repository root contains `fly.toml` with:
 - Frankfurt as the primary region;
 - one shared CPU and 512 MB memory;
 - automatic stop/start with zero always-running Machines;
-- readiness checks against `/api/v1/health/database`;
+- Fly routing checks against the lightweight `/api/v1/health` liveness endpoint;
+- a separate `/api/v1/health/database` endpoint for Neon diagnostics;
 - `python -m alembic upgrade head` as the release command.
 
 The release command inherits Fly secrets and stops the deployment if a migration fails.
@@ -85,7 +86,7 @@ The expected sequence is:
 3. connect to Neon through `MIGRATION_DATABASE_URL`;
 4. run Alembic to `head`;
 5. create or update the application Machine;
-6. pass the readiness check;
+6. pass the API liveness check;
 7. expose the API through HTTPS.
 
 ## Dashboard values
@@ -117,7 +118,7 @@ Then verify:
 - `https://sahmi-kasban.fly.dev/api/v1/health`
 - `https://sahmi-kasban.fly.dev/api/v1/health/database`
 
-The second endpoint must report the database as reachable.
+The first endpoint confirms that the API process is alive. The second endpoint independently confirms that Neon is reachable.
 
 ## Firebase status
 
