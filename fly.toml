@@ -1,0 +1,52 @@
+app = "sahmi-kasban"
+primary_region = "fra"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "backend/Dockerfile"
+
+[deploy]
+  release_command = "python -m alembic upgrade head"
+  release_command_timeout = "10m"
+  strategy = "rolling"
+  wait_timeout = "10m"
+
+[env]
+  APP_ENV = "staging"
+  DEBUG = "false"
+  PORT = "8080"
+  APP_PUBLIC_URL = "https://sahmi-kasban.fly.dev"
+  LOG_LEVEL = "INFO"
+  LOG_JSON = "true"
+  MARKET_TIMEZONE = "Africa/Cairo"
+  FCM_DELIVERY_MODE = "disabled"
+  FCM_PROJECT_ID = "project-f14e453c-deb8-4a94-b39"
+  GOOGLE_PLAY_VERIFICATION_MODE = "disabled"
+  ADMOB_SSV_VERIFICATION_MODE = "disabled"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 40
+    hard_limit = 60
+
+[[http_service.checks]]
+  grace_period = "45s"
+  interval = "30s"
+  method = "GET"
+  timeout = "10s"
+  path = "/api/v1/health/ready"
+  protocol = "http"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpus = 1
+  cpu_kind = "shared"
