@@ -11,9 +11,12 @@ from app.core.avatars import DEFAULT_AVATAR_KEY, validate_avatar_key
 from app.core.config import get_settings
 from app.core.security import (
     create_access_token,
+    generate_numeric_code,
     generate_opaque_token,
+    hash_account_code,
     hash_opaque_token,
     hash_password,
+    verify_account_code_hash,
     verify_password,
 )
 from app.models import AccountToken, AuthSession, Subscription, User, WalletAccount
@@ -21,6 +24,7 @@ from app.services.wallet import grant_weekly_points_for_subscription
 
 EMAIL_VERIFICATION = "email_verification"
 PASSWORD_RESET = "password_reset"
+EMAIL_VERIFICATION_CODE_MINUTES = 10
 
 
 class AuthenticationError(RuntimeError):
@@ -50,6 +54,24 @@ def normalize_email(email: str) -> str:
     return email.strip().casefold()
 
 
+def _invalidate_open_account_tokens(
+    db: Session,
+    *,
+    user_id: UUID,
+    token_type: str,
+    moment: datetime,
+) -> None:
+    db.execute(
+        update(AccountToken)
+        .where(
+            AccountToken.user_id == user_id,
+            AccountToken.token_type == token_type,
+            AccountToken.used_at.is_(None),
+        )
+        .values(used_at=moment)
+    )
+
+
 def issue_account_token(
     db: Session,
     *,
@@ -58,14 +80,11 @@ def issue_account_token(
     expires_at: datetime,
 ) -> str:
     now = datetime.now(UTC)
-    db.execute(
-        update(AccountToken)
-        .where(
-            AccountToken.user_id == user_id,
-            AccountToken.token_type == token_type,
-            AccountToken.used_at.is_(None),
-        )
-        .values(used_at=now)
+    _invalidate_open_account_tokens(
+        db,
+        user_id=user_id,
+        token_type=token_type,
+        moment=now,
     )
     raw_token = generate_opaque_token()
     db.add(
@@ -78,6 +97,31 @@ def issue_account_token(
     )
     db.flush()
     return raw_token
+
+
+def issue_email_verification_code(db: Session, *, user_id: UUID) -> str:
+    now = datetime.now(UTC)
+    _invalidate_open_account_tokens(
+        db,
+        user_id=user_id,
+        token_type=EMAIL_VERIFICATION,
+        moment=now,
+    )
+    code = generate_numeric_code(6)
+    db.add(
+        AccountToken(
+            user_id=user_id,
+            token_hash=hash_account_code(
+                user_id=user_id,
+                token_type=EMAIL_VERIFICATION,
+                code=code,
+            ),
+            token_type=EMAIL_VERIFICATION,
+            expires_at=now + timedelta(minutes=EMAIL_VERIFICATION_CODE_MINUTES),
+        )
+    )
+    db.flush()
+    return code
 
 
 def consume_account_token(
@@ -107,6 +151,46 @@ def consume_account_token(
     return user
 
 
+def consume_email_verification_code(
+    db: Session,
+    *,
+    email: str,
+    code: str,
+) -> User:
+    normalized_email = normalize_email(email)
+    user = db.scalar(
+        select(User).where(User.email == normalized_email).with_for_update()
+    )
+    if user is None or user.status != "active":
+        raise InvalidAccountTokenError("Invalid or expired verification code")
+    if user.email_verified:
+        return user
+
+    now = datetime.now(UTC)
+    token = db.scalar(
+        select(AccountToken)
+        .where(
+            AccountToken.user_id == user.id,
+            AccountToken.token_type == EMAIL_VERIFICATION,
+            AccountToken.used_at.is_(None),
+            AccountToken.expires_at > now,
+        )
+        .order_by(AccountToken.created_at.desc())
+        .with_for_update()
+    )
+    if token is None or not verify_account_code_hash(
+        expected_hash=token.token_hash,
+        user_id=user.id,
+        token_type=EMAIL_VERIFICATION,
+        code=code,
+    ):
+        raise InvalidAccountTokenError("Invalid or expired verification code")
+
+    token.used_at = now
+    db.flush()
+    return user
+
+
 def register_user(
     db: Session,
     *,
@@ -115,7 +199,6 @@ def register_user(
     display_name: str,
     avatar_key: str = DEFAULT_AVATAR_KEY,
 ) -> tuple[User, str]:
-    settings = get_settings()
     normalized_email = normalize_email(email)
     existing = db.scalar(select(User.id).where(User.email == normalized_email))
     if existing is not None:
@@ -146,16 +229,12 @@ def register_user(
     db.flush()
     grant_weekly_points_for_subscription(db, subscription, moment=now)
 
-    token = issue_account_token(
-        db,
-        user_id=user.id,
-        token_type=EMAIL_VERIFICATION,
-        expires_at=now + timedelta(hours=settings.email_verification_hours),
-    )
-    return user, token
+    code = issue_email_verification_code(db, user_id=user.id)
+    return user, code
 
 
 def verify_user_email(db: Session, raw_token: str) -> User:
+    """Consume verification links issued by versions before numeric codes."""
     user = consume_account_token(
         db,
         raw_token=raw_token,
@@ -168,16 +247,24 @@ def verify_user_email(db: Session, raw_token: str) -> User:
     return user
 
 
-def create_email_verification_token(db: Session, user: User) -> str | None:
+def verify_user_email_code(db: Session, *, email: str, code: str) -> User:
+    user = consume_email_verification_code(db, email=email, code=code)
+    if not user.email_verified:
+        user.email_verified = True
+        user.email_verified_at = datetime.now(UTC)
+    db.flush()
+    return user
+
+
+def create_email_verification_code(db: Session, user: User) -> str | None:
     if user.status != "active" or user.email_verified:
         return None
-    settings = get_settings()
-    return issue_account_token(
-        db,
-        user_id=user.id,
-        token_type=EMAIL_VERIFICATION,
-        expires_at=datetime.now(UTC) + timedelta(hours=settings.email_verification_hours),
-    )
+    return issue_email_verification_code(db, user_id=user.id)
+
+
+def create_email_verification_token(db: Session, user: User) -> str | None:
+    """Backward-compatible alias for callers that still use the old name."""
+    return create_email_verification_code(db, user)
 
 
 def authenticate_user(db: Session, *, email: str, password: str) -> User:
