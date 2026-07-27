@@ -177,21 +177,22 @@ jobs:
           $FLUTTER_HOME/bin/flutter test 2>&1 \
             | tee "$RUNNER_TEMP/flutter-tests.log"
 
-      - name: Build Android debug APK
+      - name: Build Android staging release APK
         working-directory: mobile
         shell: bash
         run: |
           set -o pipefail
-          $FLUTTER_HOME/bin/flutter build apk --debug \
-            --dart-define=API_BASE_URL=https://example.invalid \
-            --dart-define=DEMO_MODE=true 2>&1 \
+          $FLUTTER_HOME/bin/flutter build apk --release \
+            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev \
+            --dart-define=DEMO_MODE=false \
+            --dart-define=APP_ENV=staging 2>&1 \
             | tee "$RUNNER_TEMP/flutter-apk.log"
 
-      - name: Upload preview Android APK
+      - name: Upload staging Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: sahmi-kasban-preview-apk-${{ github.run_id }}
-          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          name: sahmi-kasban-staging-apk-${{ github.run_id }}
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
 
