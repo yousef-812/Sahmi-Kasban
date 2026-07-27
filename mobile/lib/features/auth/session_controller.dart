@@ -41,19 +41,33 @@ class SessionController extends StateNotifier<SessionState> {
     }
 
     state = const SessionState.loading();
-    final tokens = await _tokenStore.read();
-    if (tokens == null) {
-      state = const SessionState.unauthenticated();
-      return;
-    }
     try {
+      final tokens = await _tokenStore.read();
+      if (tokens == null) {
+        state = const SessionState.unauthenticated();
+        return;
+      }
+
       final profile = await _repository.getProfile();
       state = SessionState.authenticated(profile);
     } on ApiException catch (error) {
       if (error.statusCode == 401) {
-        await _tokenStore.clear();
+        await _clearTokensSafely();
       }
       state = SessionState.unauthenticated(errorMessage: error.message);
+    } on Object {
+      await _clearTokensSafely();
+      state = const SessionState.unauthenticated(
+        errorMessage: 'تعذر استعادة الجلسة السابقة. سجل الدخول مرة أخرى.',
+      );
+    }
+  }
+
+  Future<void> _clearTokensSafely() async {
+    try {
+      await _tokenStore.clear();
+    } on Object {
+      // Corrupted or restored encrypted storage must not prevent app startup.
     }
   }
 
