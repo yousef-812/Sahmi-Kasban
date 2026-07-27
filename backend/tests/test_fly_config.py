@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import tomllib
 from pathlib import Path
+from tomllib import loads
 
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_fly_config_targets_neon_staging_safely() -> None:
-    config = tomllib.loads((ROOT / "fly.toml").read_text(encoding="utf-8"))
+    config = loads((ROOT / "fly.toml").read_text(encoding="utf-8"))
 
     assert config["app"] == "sahmi-kasban"
     assert config["primary_region"] == "fra"
