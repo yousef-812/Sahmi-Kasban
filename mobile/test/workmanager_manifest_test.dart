@@ -8,7 +8,10 @@ void main() {
       'android/app/src/main/AndroidManifest.xml',
     ).readAsStringSync();
 
-    expect(manifest, contains('xmlns:tools="http://schemas.android.com/tools"'));
+    expect(
+      manifest,
+      contains('xmlns:tools="http://schemas.android.com/tools"'),
+    );
     expect(manifest, contains('androidx.startup.InitializationProvider'));
     expect(manifest, contains('androidx.work.WorkManagerInitializer'));
     expect(manifest, contains('tools:node="remove"'));
