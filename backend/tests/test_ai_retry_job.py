@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.jobs import retry_pending_ai_reviews as retry_job
 from app.models import Discussion
@@ -83,6 +83,12 @@ def test_retry_job_publishes_provider_failed_discussion(
     db_session.commit()
     assert failed.ai_status == "provider_failed"
 
+    isolated_session = sessionmaker(
+        bind=db_session.get_bind(),
+        autoflush=False,
+        expire_on_commit=False,
+    )
+    monkeypatch.setattr(retry_job, "SessionLocal", isolated_session)
     monkeypatch.setattr(retry_job, "ai_provider_is_configured", lambda: True)
     monkeypatch.setattr(
         retry_job,
