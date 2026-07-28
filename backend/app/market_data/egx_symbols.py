@@ -9,7 +9,7 @@ EGX_SEED_SYMBOLS: tuple[str, ...] = (
     "JUFO", "KZPC", "MFPC", "ORWE", "PHDC", "TMGH", "ADIB", "AKHO",
     "ALCN", "ALEX", "AMER", "ASEC", "ASEM", "ATQA", "ATRC", "BHGR",
     "BMCL", "BTFH", "BTRC", "BUFH", "CIRA", "CLHO", "CNIN", "DCRC",
-    "DICA", "DIAL", "DORA", "DSGI", "DTPC", "EGCH", "EGCI", "EGLG",
+    "DICA", "DIAL", "DORA", "DSCW", "DSGI", "DTPC", "EGCH", "EGCI", "EGLG",
     "EGTS", "EIIF", "ELEC", "ELSH", "EMFD", "EMIS", "EQS", "ESEG",
     "ESER", "ETAB", "EWAP", "FIPP", "GASC", "GCAP", "GSPC", "GURO",
     "GYPC", "HELI", "ICAP", "IDBT", "IDRE", "IETF", "INCO", "INTE",
