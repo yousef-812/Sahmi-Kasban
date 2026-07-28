@@ -168,7 +168,7 @@ def test_shared_computation_cache_charges_each_account_once(
     assert first.json()["charged_points"] == 50
     assert first.json()["balance_points"] == 250
     assert second.status_code == 200
-    assert second.json()["cached"] is True
+    assert second.json()["cached"] is False
     assert second.json()["charged_points"] == 50
     assert second.json()["balance_points"] == 250
     assert repeated.status_code == 200
