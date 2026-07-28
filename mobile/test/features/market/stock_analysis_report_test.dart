@@ -40,19 +40,12 @@ void main() {
             'technical': {
               'score': 99.0,
               'confidence': 94.3,
-              'details': {
-                'trend': 'uptrend',
-                'close': 1.97,
-                'rsi': 67.52,
-              },
+              'details': {'trend': 'uptrend', 'close': 1.97, 'rsi': 67.52},
             },
             'risk': {
               'score': 83.79,
               'confidence': 88.0,
-              'details': {
-                'risk_level': 'low',
-                'total_risk_pct': 16.21,
-              },
+              'details': {'risk_level': 'low', 'total_risk_pct': 16.21},
             },
             'scenario': {
               'score': 69.45,
