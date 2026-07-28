@@ -82,6 +82,69 @@ def test_resend_replaces_previous_verification_code(
     assert current_code.status_code == 200
 
 
+def test_re_registration_recovers_pending_account_without_duplicate_grant(
+    client: TestClient,
+    fake_email_service,
+) -> None:
+    email = "pending-recovery@example.com"
+    original_payload = _registration_payload(email)
+
+    first = client.post("/api/v1/auth/register", json=original_payload)
+    assert first.status_code == 201
+    first_user_id = first.json()["user_id"]
+    first_code = fake_email_service.verification_codes[email]
+
+    retry_payload = {
+        **original_payload,
+        "password": "DifferentPass456",
+        "display_name": "اسم مختلف",
+    }
+    recovered = client.post("/api/v1/auth/register", json=retry_payload)
+
+    assert recovered.status_code == 201
+    assert recovered.json()["user_id"] == first_user_id
+    assert recovered.json()["weekly_points_granted"] == 0
+    second_code = fake_email_service.verification_codes[email]
+    assert len(second_code) == 6
+    assert second_code.isdigit()
+
+    if first_code != second_code:
+        stale = client.post(
+            "/api/v1/auth/verify-email",
+            json={"email": email, "code": first_code},
+        )
+        assert stale.status_code == 400
+
+    verified = client.post(
+        "/api/v1/auth/verify-email",
+        json={"email": email, "code": second_code},
+    )
+    assert verified.status_code == 200
+
+    original_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": original_payload["password"]},
+    )
+    assert original_login.status_code == 200
+
+    replacement_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": retry_payload["password"]},
+    )
+    assert replacement_login.status_code == 401
+
+    headers = {"Authorization": f"Bearer {original_login.json()['access_token']}"}
+    wallet = client.get("/api/v1/wallet", headers=headers)
+    history = client.get("/api/v1/wallet/history", headers=headers)
+    assert wallet.status_code == 200
+    assert wallet.json()["balance_points"] == 300
+    assert history.status_code == 200
+    assert history.json()["total"] == 1
+
+    verified_duplicate = client.post("/api/v1/auth/register", json=original_payload)
+    assert verified_duplicate.status_code == 409
+
+
 def test_verification_email_contains_plain_text_and_branded_html(monkeypatch) -> None:
     captured: list[EmailMessage] = []
 
