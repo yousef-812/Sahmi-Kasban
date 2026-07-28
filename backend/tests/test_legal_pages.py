@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from fastapi.testclient import TestClient
-
 
 PUBLIC_LEGAL_PATHS = (
     "/legal",
@@ -24,7 +21,9 @@ def test_public_legal_pages_are_rtl_html(client: TestClient) -> None:
         assert "سهمي كسبان" in response.text
 
 
-def test_delete_account_page_uses_existing_authenticated_api(client: TestClient) -> None:
+def test_delete_account_page_uses_existing_authenticated_api(
+    client: TestClient,
+) -> None:
     response = client.get("/delete-account")
     assert response.status_code == 200
     assert "/api/v1/auth/login" in response.text
