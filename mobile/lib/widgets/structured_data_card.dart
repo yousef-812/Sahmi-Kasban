@@ -14,20 +14,21 @@ class StructuredDataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInternalTitle(title)) {
+      return const SizedBox.shrink();
+    }
+
+    final visibleData = _visibleMap(data);
+    if (visibleData.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Card(
       child: ExpansionTile(
         initiallyExpanded: initiallyExpanded,
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
-          if (data.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Text('لا توجد تفاصيل إضافية.'),
-            )
-          else
-            _ReadableMap(data: data),
-        ],
+        children: [_ReadableMap(data: visibleData)],
       ),
     );
   }
@@ -41,12 +42,11 @@ class _ReadableMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = data.entries
-        .where((entry) => !_hiddenKeys.contains(entry.key))
-        .toList(growable: false);
+    final entries = _visibleMap(data).entries.toList(growable: false);
     if (entries.isEmpty) {
-      return const Text('لا توجد تفاصيل إضافية.');
+      return const SizedBox.shrink();
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -78,10 +78,13 @@ class _ReadableEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentValue = value;
     if (currentValue is Map<Object?, Object?>) {
-      final nested = <String, dynamic>{
+      final nested = _visibleMap({
         for (final entry in currentValue.entries)
           entry.key.toString(): entry.value,
-      };
+      });
+      if (nested.isEmpty) {
+        return const SizedBox.shrink();
+      }
       return ExpansionTile(
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsetsDirectional.only(start: 12, bottom: 8),
@@ -90,66 +93,23 @@ class _ReadableEntry extends StatelessWidget {
         children: [_ReadableMap(data: nested, depth: depth + 1)],
       );
     }
+
     if (currentValue is List<Object?>) {
       if (currentValue.isEmpty) {
         return _ValueRow(label: label, value: 'لا يوجد');
       }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          for (final item in currentValue)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 7),
-                    child: Icon(Icons.circle, size: 6),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _ReadableValue(value: item, depth: depth + 1),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      );
+      final readable = currentValue
+          .where((item) => item is! Map<Object?, Object?>)
+          .map(_formatValue)
+          .where((item) => item.isNotEmpty)
+          .toList(growable: false);
+      if (readable.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return _ValueRow(label: label, value: readable.join('، '));
     }
+
     return _ValueRow(label: label, value: _formatValue(currentValue));
-  }
-}
-
-class _ReadableValue extends StatelessWidget {
-  const _ReadableValue({required this.value, required this.depth});
-
-  final dynamic value;
-  final int depth;
-
-  @override
-  Widget build(BuildContext context) {
-    final currentValue = value;
-    if (currentValue is Map<Object?, Object?>) {
-      return _ReadableMap(
-        data: <String, dynamic>{
-          for (final entry in currentValue.entries)
-            entry.key.toString(): entry.value,
-        },
-        depth: depth,
-      );
-    }
-    if (currentValue is List<Object?>) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final item in currentValue) Text('• ${_formatValue(item)}'),
-        ],
-      );
-    }
-    return Text(_formatValue(currentValue));
   }
 }
 
@@ -166,10 +126,7 @@ class _ValueRow extends StatelessWidget {
       children: [
         Expanded(
           flex: 4,
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
         ),
         const SizedBox(width: 12),
         Expanded(flex: 5, child: Text(value, textAlign: TextAlign.end)),
@@ -178,11 +135,34 @@ class _ValueRow extends StatelessWidget {
   }
 }
 
+bool _isInternalTitle(String title) {
+  final normalized = title.trim().toLowerCase();
+  return normalized.contains('البيانات التقنية الخام') ||
+      normalized.contains('raw data') ||
+      normalized.contains('json');
+}
+
+Map<String, dynamic> _visibleMap(Map<String, dynamic> data) {
+  return {
+    for (final entry in data.entries)
+      if (!_hiddenKeys.contains(entry.key) && entry.value != null)
+        entry.key: entry.value,
+  };
+}
+
 const _hiddenKeys = <String>{
   'fingerprint',
   'source_text_sha256',
   'cache_key',
   'version',
+  'attempts',
+  'attempted_at',
+  'actor_type',
+  'provider_message_id',
+  'request_id',
+  'trace_id',
+  'debug',
+  'diagnostics',
 };
 
 const _labels = <String, String>{
@@ -200,10 +180,7 @@ const _labels = <String, String>{
   'ai': 'مراجعة الذكاء الاصطناعي',
   'status': 'الحالة',
   'error_code': 'سبب التعذر',
-  'attempts': 'عدد المحاولات',
-  'attempted_at': 'وقت آخر محاولة',
   'review': 'قرار المراجعة',
-  'actor_type': 'جهة المراجعة',
   'decision': 'القرار',
   'reason_code': 'سبب القرار',
   'details': 'التفاصيل',
@@ -260,38 +237,34 @@ String _labelFor(String key) {
 
 String _formatValue(dynamic value) {
   if (value == null) {
-    return 'غير محدد';
+    return 'لا يوجد';
   }
   if (value is bool) {
     return value ? 'نعم' : 'لا';
   }
   if (value is num) {
-    return value is double ? value.toStringAsFixed(2) : value.toString();
+    return value.toString();
   }
   final text = value.toString().trim();
-  const translations = <String, String>{
-    'true': 'نعم',
-    'false': 'لا',
-    'rules': 'فحص القواعد',
-    'completed': 'مكتملة',
-    'awaiting_ai': 'في انتظار المراجعة الذكية',
-    'awaiting_ai_retry': 'تعذرت المراجعة الذكية وسيتم إعادة المحاولة',
-    'failed': 'تعذرت المحاولة',
-    'provider_unavailable': 'مزود الذكاء الاصطناعي غير متاح مؤقتًا',
-    'approved': 'مقبول',
-    'rejected': 'مرفوض',
-    'published': 'منشور',
-    'up': 'صعود',
-    'down': 'هبوط',
-    'neutral': 'حركة عرضية',
-    'next_session': 'الجلسة القادمة',
-    'week': 'أسبوع',
-    'month': 'شهر',
-    'BUY': 'شراء مشروط',
-    'WATCH': 'مراقبة',
-    'AVOID': 'تجنب',
-    'ai': 'الذكاء الاصطناعي',
-    'deterministic': 'المحرك التحليلي',
+  if (text.isEmpty) {
+    return 'لا يوجد';
+  }
+  return switch (text.toLowerCase()) {
+    'published' => 'منشور',
+    'pending_review' => 'قيد المراجعة',
+    'awaiting_ai_retry' => 'بانتظار إعادة المراجعة',
+    'complete' => 'مكتمل',
+    'completed' => 'مكتمل',
+    'failed' => 'تعذر مؤقتًا',
+    'provider_unavailable' => 'خدمة الذكاء الاصطناعي غير متاحة مؤقتًا',
+    'buy' => 'شراء مشروط',
+    'watch' => 'مراقبة',
+    'avoid' => 'تجنب',
+    'up' => 'صعود',
+    'down' => 'هبوط',
+    'neutral' => 'محايد',
+    'ai' => 'ذكاء اصطناعي',
+    'deterministic' => 'المحركات الحسابية',
+    _ => text,
   };
-  return translations[text] ?? (text.isEmpty ? 'غير محدد' : text);
 }
