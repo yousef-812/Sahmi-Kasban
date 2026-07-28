@@ -176,11 +176,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!mounted) {
         return;
       }
+      final recoveredPendingAccount = result.weeklyPointsGranted == 0;
       AppNotice.show(
         context,
-        title: 'تم إنشاء الحساب',
-        message:
-            'أضفنا ${result.weeklyPointsGranted ~/ 100} عملات إلى خطتك المجانية وأرسلنا كود التأكيد إلى بريدك.',
+        title: recoveredPendingAccount
+            ? 'استكمال تأكيد الحساب'
+            : 'تم إنشاء الحساب',
+        message: recoveredPendingAccount
+            ? 'الحساب موجود لكنه لم يُؤكد بعد. أرسلنا كودًا جديدًا إلى بريدك دون إنشاء حساب أو رصيد مكرر.'
+            : 'أضفنا ${result.weeklyPointsGranted ~/ 100} عملات إلى خطتك المجانية وأرسلنا كود التأكيد إلى بريدك.',
         tone: AppNoticeTone.success,
         duration: const Duration(seconds: 5),
       );
