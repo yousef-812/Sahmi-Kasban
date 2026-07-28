@@ -12,6 +12,10 @@ from app.core.config import Environment, get_settings
 from app.core.observability import configure_observability
 from app.db.session import SessionLocal
 from app.jobs.generate_daily_top10 import run_daily_top10_scan
+from app.jobs.retry_pending_ai_reviews import (
+    ai_provider_is_configured,
+    retry_pending_ai_reviews,
+)
 from app.market_calendar import EGXTradingCalendar
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
@@ -58,15 +62,29 @@ async def _daily_market_report_scheduler() -> None:
         await asyncio.sleep(60)
 
 
+async def _community_ai_retry_scheduler() -> None:
+    """Retry provider-failed discussions after AI credentials become available."""
+
+    while True:
+        try:
+            await retry_pending_ai_reviews()
+        except Exception:
+            logger.exception("Pending discussion AI retry batch failed")
+        await asyncio.sleep(600)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     warmup_task: asyncio.Task[None] | None = None
-    scheduler_task: asyncio.Task[None] | None = None
+    market_scheduler_task: asyncio.Task[None] | None = None
+    ai_retry_task: asyncio.Task[None] | None = None
     if settings.app_env is not Environment.TEST:
         warmup_task = asyncio.create_task(_warm_market_instrument_catalog())
-        scheduler_task = asyncio.create_task(_daily_market_report_scheduler())
+        market_scheduler_task = asyncio.create_task(_daily_market_report_scheduler())
+        if ai_provider_is_configured():
+            ai_retry_task = asyncio.create_task(_community_ai_retry_scheduler())
     yield
-    for task in (warmup_task, scheduler_task):
+    for task in (warmup_task, market_scheduler_task, ai_retry_task):
         if task is not None and not task.done():
             task.cancel()
             with suppress(asyncio.CancelledError):
