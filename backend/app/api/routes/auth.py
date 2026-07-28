@@ -87,6 +87,26 @@ def _deliver_password_reset_email(
         logger.exception("Password reset email failed for user %s", user_id)
 
 
+def _recover_pending_registration(
+    db: Session,
+    *,
+    email: str,
+) -> tuple[User, str] | None:
+    user = db.scalar(
+        select(User)
+        .where(User.email == normalize_email(email))
+        .with_for_update()
+    )
+    if user is None or user.status != "active" or user.email_verified:
+        return None
+
+    verification_code = create_email_verification_code(db, user)
+    if verification_code is None:
+        return None
+    db.commit()
+    return user, verification_code
+
+
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 def register(
     payload: RegisterRequest,
@@ -94,6 +114,7 @@ def register(
     db: DatabaseSession,
     email_service: EmailService,
 ) -> RegisterResponse:
+    recovered_pending_account = False
     try:
         user, verification_code = register_user(
             db,
@@ -105,10 +126,18 @@ def register(
         db.commit()
     except DuplicateEmailError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email is already registered",
-        ) from exc
+        recovered = _recover_pending_registration(
+            db,
+            email=str(payload.email),
+        )
+        if recovered is None:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email is already registered",
+            ) from exc
+        user, verification_code = recovered
+        recovered_pending_account = True
     except ValueError as exc:
         db.rollback()
         raise _validation_error(exc) from exc
@@ -120,7 +149,11 @@ def register(
         verification_code,
         str(user.id),
     )
-    return RegisterResponse(user_id=user.id, email=user.email)
+    return RegisterResponse(
+        user_id=user.id,
+        email=user.email,
+        weekly_points_granted=0 if recovered_pending_account else 300,
+    )
 
 
 @router.post("/verify-email", response_model=MessageResponse)
