@@ -15,6 +15,8 @@ from app.jobs.retry_pending_ai_reviews import (
     retry_pending_ai_reviews,
 )
 from app.jobs.scheduler import run_daily_scan_scheduler
+from app.jobs.weekly_grants import run_weekly_grant_scheduler
+from app.legal_pages import router as legal_router
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
 
@@ -47,14 +49,21 @@ async def _community_ai_retry_scheduler() -> None:
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     warmup_task: asyncio.Task[None] | None = None
     market_scheduler_task: asyncio.Task[None] | None = None
+    weekly_grant_task: asyncio.Task[None] | None = None
     ai_retry_task: asyncio.Task[None] | None = None
     if settings.app_env is not Environment.TEST:
         warmup_task = asyncio.create_task(_warm_market_instrument_catalog())
         market_scheduler_task = asyncio.create_task(run_daily_scan_scheduler())
+        weekly_grant_task = asyncio.create_task(run_weekly_grant_scheduler())
         if ai_provider_is_configured():
             ai_retry_task = asyncio.create_task(_community_ai_retry_scheduler())
     yield
-    for task in (warmup_task, market_scheduler_task, ai_retry_task):
+    for task in (
+        warmup_task,
+        market_scheduler_task,
+        weekly_grant_task,
+        ai_retry_task,
+    ):
         if task is not None and not task.done():
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -81,6 +90,7 @@ if cors_origins:
     )
 
 app.add_middleware(RequestContextMiddleware)
+app.include_router(legal_router)
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 
@@ -90,4 +100,7 @@ def root() -> dict[str, str]:
         "service": settings.app_name,
         "status": "running",
         "health": f"{settings.api_v1_prefix}/health",
+        "legal": "/legal",
+        "privacy": "/privacy",
+        "delete_account": "/delete-account",
     }

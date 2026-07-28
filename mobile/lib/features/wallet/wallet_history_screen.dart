@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart' show DateFormat;
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
@@ -55,6 +54,13 @@ class _WalletHistoryScreenState extends ConsumerState<WalletHistoryScreen> {
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _error = error.message);
+      }
+    } on Object {
+      if (mounted) {
+        setState(
+          () =>
+              _error = 'تعذر عرض سجل المحفظة. حاول مرة أخرى بعد تحديث التطبيق.',
+        );
       }
     } finally {
       if (mounted) {
@@ -134,7 +140,7 @@ class _WalletEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final positive = entry.amountPoints >= 0;
     final amount = '${positive ? '+' : ''}${entry.amountCoins} عملة';
-    final date = DateFormat('d MMM yyyy، h:mm a', 'ar').format(entry.createdAt);
+    final date = _formatArabicDateTime(entry.createdAt);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
@@ -142,7 +148,7 @@ class _WalletEntryCard extends StatelessWidget {
           child: Icon(positive ? Icons.add_rounded : Icons.remove_rounded),
         ),
         title: Text(_entryLabel(entry)),
-        subtitle: Text('$date\nالحالة: ${entry.status}'),
+        subtitle: Text('$date\nالحالة: ${_statusLabel(entry.status)}'),
         isThreeLine: true,
         trailing: Text(
           amount,
@@ -159,17 +165,80 @@ class _WalletEntryCard extends StatelessWidget {
   }
 
   String _entryLabel(WalletEntryModel entry) {
+    switch (entry.entryType) {
+      case 'weekly_plan_grant':
+        return 'توزيع الخطة الأسبوعي';
+      case 'stock_analysis_debit':
+        return 'تحليل سهم';
+      case 'market_report_debit':
+        return 'فتح تقرير أفضل 10';
+      case 'community_submission_hold':
+        return 'حجز مراجعة مناقشة';
+      case 'community_submission_refund':
+        return 'استرداد مراجعة مناقشة';
+      case 'prediction_reward':
+        return 'مكافأة توقع';
+      case 'rewarded_ad_credit':
+        return 'مكافأة إعلان';
+      case 'coin_purchase':
+        return 'شراء عملات';
+    }
     switch (entry.referenceType) {
       case 'stock_analysis':
         return 'تحليل سهم';
       case 'market_report':
         return 'فتح تقرير أفضل 10';
       case 'weekly_grant':
+      case 'subscription':
         return 'توزيع الخطة الأسبوعي';
+      case 'discussion':
+        return 'عملية مناقشة';
+      case 'billing_purchase':
+        return 'عملية شراء';
       default:
-        return entry.entryType;
+        return 'عملية بالمحفظة';
     }
   }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'confirmed':
+        return 'مكتملة';
+      case 'held':
+        return 'محجوزة مؤقتًا';
+      case 'released':
+        return 'تم ردها';
+      case 'pending':
+        return 'قيد التنفيذ';
+      case 'failed':
+        return 'لم تكتمل';
+      default:
+        return 'مسجلة';
+    }
+  }
+}
+
+String _formatArabicDateTime(DateTime value) {
+  const months = <String>[
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+  final local = value.toLocal();
+  final hour12 = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour < 12 ? 'ص' : 'م';
+  return '${local.day} ${months[local.month - 1]} ${local.year}، '
+      '$hour12:$minute $period';
 }
 
 class _MessageCard extends StatelessWidget {

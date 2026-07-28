@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/avatar_assets.dart';
+import '../../core/config/app_config.dart';
+import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
@@ -25,6 +28,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late final TextEditingController _nameController;
   late String _avatarKey;
   bool _saving = false;
+  bool _deleting = false;
 
   @override
   void initState() {
@@ -69,6 +73,94 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       if (mounted) {
         setState(() => _saving = false);
       }
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    if (_deleting) {
+      return;
+    }
+    final passwordController = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الحساب نهائيًا'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'سيتم إلغاء جلساتك وإخفاء البريد والاسم، ولن تتمكن من استعادة الحساب. أدخل كلمة المرور للتأكيد.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'كلمة المرور الحالية',
+                prefixIcon: Icon(Icons.lock_outline_rounded),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            onPressed: () {
+              final value = passwordController.text;
+              if (value.isNotEmpty) {
+                Navigator.pop(dialogContext, value);
+              }
+            },
+            child: const Text('تأكيد الحذف'),
+          ),
+        ],
+      ),
+    );
+    passwordController.dispose();
+    if (password == null || !mounted) {
+      return;
+    }
+
+    setState(() => _deleting = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.delete<Map<String, dynamic>>(
+        '/profile/me',
+        data: <String, dynamic>{'password': password},
+      );
+      await ref.read(sessionControllerProvider.notifier).logout();
+    } on Object catch (error) {
+      if (mounted) {
+        final message = ref.read(apiClientProvider).mapError(error).message;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _deleting = false);
+      }
+    }
+  }
+
+  Future<void> _copyLegalUrl(String path) async {
+    final baseUrl = ref
+        .read(appConfigProvider)
+        .apiBaseUrl
+        .replaceFirst(RegExp(r'/+$'), '');
+    await Clipboard.setData(ClipboardData(text: '$baseUrl$path'));
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم نسخ الرابط.')));
     }
   }
 
@@ -171,6 +263,53 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       )
                     : const Icon(Icons.save_outlined),
                 label: const Text('حفظ التعديلات'),
+              ),
+              const SizedBox(height: 24),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'الخصوصية والحساب',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'الصفحات القانونية منشورة على خادم التطبيق ويمكن استخدام روابطها في Google Play.',
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => _copyLegalUrl('/privacy'),
+                        icon: const Icon(Icons.copy_rounded),
+                        label: const Text('نسخ رابط سياسة الخصوصية'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => _copyLegalUrl('/delete-account'),
+                        icon: const Icon(Icons.copy_rounded),
+                        label: const Text('نسخ رابط حذف الحساب'),
+                      ),
+                      const Divider(height: 28),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                        onPressed: _deleting ? null : _deleteAccount,
+                        icon: _deleting
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : const Icon(Icons.delete_forever_outlined),
+                        label: const Text('حذف الحساب نهائيًا'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
