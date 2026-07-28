@@ -79,6 +79,7 @@ void main() {
     expect(find.text('خطة التداول الافتراضية'), findsOneWidget);
     expect(find.text('الملخص الفني'), findsOneWidget);
     expect(find.text('السيناريوهات المحتملة'), findsOneWidget);
-    expect(find.text('البيانات التقنية الخام'), findsOneWidget);
+    expect(find.text('البيانات التقنية الخام'), findsNothing);
+    expect(find.textContaining('"market_data"'), findsNothing);
   });
 }
