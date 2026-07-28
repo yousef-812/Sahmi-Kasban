@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart' show DateFormat;
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
-import '../../widgets/structured_data_card.dart';
 import '../auth/session_controller.dart';
 import '../wallet/wallet_providers.dart';
+import 'stock_analysis_report.dart';
 
 class StockAnalysisTab extends ConsumerStatefulWidget {
   const StockAnalysisTab({super.key});
@@ -277,49 +276,9 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
         ],
         if (_analysis case final analysis?) ...[
           const SizedBox(height: 16),
-          _AnalysisHeader(analysis: analysis),
-          StructuredDataCard(title: 'تفاصيل التحليل', data: analysis.payload),
+          StockAnalysisReport(analysis: analysis),
         ],
       ],
-    );
-  }
-}
-
-class _AnalysisHeader extends StatelessWidget {
-  const _AnalysisHeader({required this.analysis});
-
-  final StockAnalysisResult analysis;
-
-  @override
-  Widget build(BuildContext context) {
-    final timestamp = DateFormat(
-      'd MMM yyyy، h:mm a',
-      'ar',
-    ).format(analysis.dataAsOf.toLocal());
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              analysis.ticker,
-              textDirection: TextDirection.ltr,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text('البيانات حتى: $timestamp'),
-            Text(
-              analysis.cached
-                  ? 'تم استخدام تحليل مخزن — لا يوجد خصم جديد.'
-                  : 'تم خصم ${analysis.chargedCoins} عملة بعد نجاح التحليل.',
-            ),
-            Text('الرصيد بعد العملية: ${analysis.balanceCoins} عملة'),
-          ],
-        ),
-      ),
     );
   }
 }
