@@ -13,9 +13,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockBackendRepository();
-    when(
-      () => repository.getWalletHistory(limit: 20, offset: 0),
-    ).thenAnswer(
+    when(() => repository.getWalletHistory(limit: 20, offset: 0)).thenAnswer(
       (_) async => WalletHistoryPage(
         total: 1,
         limit: 20,
