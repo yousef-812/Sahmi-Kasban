@@ -1,7 +1,7 @@
 name: sahmi_kasban_mobile
 description: Arabic-first Flutter client for the Sahmi Kasban backend.
 publish_to: none
-version: 0.4.1+7
+version: 0.4.2+8
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
