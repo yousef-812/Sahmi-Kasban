@@ -10,7 +10,13 @@ from app.main import app
 from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
-from app.models import MarketDataSnapshot, StockAnalysis, WalletAccount, WalletEntry
+from app.models import (
+    MarketDataSnapshot,
+    StockAnalysis,
+    StockAnalysisAccess,
+    WalletAccount,
+    WalletEntry,
+)
 from app.services.stock_analysis import get_stock_ai_service
 from sahmi_kasban.ai import AIProviderError
 
@@ -136,7 +142,7 @@ def test_market_instrument_registry_is_deduplicated(client: TestClient) -> None:
     assert all(item["provider_symbol"].startswith("EGX:") for item in payload["items"])
 
 
-def test_analysis_charges_after_success_then_reuses_cache_for_free(
+def test_analysis_charges_after_success_then_reuses_account_access_for_free(
     client: TestClient,
     fake_email_service,
     db_session: Session,
@@ -158,6 +164,9 @@ def test_analysis_charges_after_success_then_reuses_cache_for_free(
     assert first_payload["charged_coins"] == "0.50"
     assert first_payload["balance_points"] == 250
     assert first_payload["payload"]["explanation_source"] == "ai"
+    assert first_payload["payload"]["market_data"]["valid_until"] == (
+        "next_egx_market_session"
+    )
 
     second = client.post(
         "/api/v1/stocks/COMI/analysis",
@@ -174,17 +183,19 @@ def test_analysis_charges_after_success_then_reuses_cache_for_free(
     assert provider.calls == 1
 
     analyses = db_session.scalars(select(StockAnalysis)).all()
+    accesses = db_session.scalars(select(StockAnalysisAccess)).all()
     snapshots = db_session.scalars(select(MarketDataSnapshot)).all()
     debits = db_session.scalars(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")
     ).all()
     assert len(analyses) == 1
+    assert len(accesses) == 1
     assert len(snapshots) == 1
     assert len(debits) == 1
     assert debits[0].amount_points == -50
 
 
-def test_insufficient_balance_does_not_persist_analysis_or_debit(
+def test_insufficient_balance_does_not_persist_analysis_access_or_debit(
     client: TestClient,
     fake_email_service,
     db_session: Session,
@@ -204,6 +215,7 @@ def test_insufficient_balance_does_not_persist_analysis_or_debit(
     )
     assert response.status_code == 402
     assert db_session.scalars(select(StockAnalysis)).all() == []
+    assert db_session.scalars(select(StockAnalysisAccess)).all() == []
     assert db_session.scalars(select(MarketDataSnapshot)).all() == []
     debits = db_session.scalars(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")
@@ -230,6 +242,7 @@ def test_provider_failure_does_not_charge_user(
     assert wallet is not None
     assert wallet.balance_points == 300
     assert db_session.scalars(select(StockAnalysis)).all() == []
+    assert db_session.scalars(select(StockAnalysisAccess)).all() == []
 
 
 def test_ai_failure_uses_deterministic_explanation_and_still_completes(
