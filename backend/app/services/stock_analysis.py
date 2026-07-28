@@ -4,9 +4,10 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from functools import lru_cache
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from sqlalchemy import select
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
-from app.models import StockAnalysis, User
+from app.models import StockAnalysis, StockAnalysisAccess, User
 from app.services.operations_settings import get_int_setting
 from app.services.wallet import (
     InsufficientBalanceError,
@@ -63,11 +64,19 @@ def _json_safe(value: object) -> object:
     return json.loads(json.dumps(value, default=_json_default, ensure_ascii=False))
 
 
+def _market_session_date(series: CandleSeries) -> date:
+    settings = get_settings()
+    value = series.data_as_of
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(ZoneInfo(settings.market_timezone)).date()
+
+
 def _analysis_cache_key(series: CandleSeries, language: str) -> str:
     settings = get_settings()
     identity = {
         "ticker": series.ticker,
-        "fingerprint": series.fingerprint,
+        "market_session_date": _market_session_date(series).isoformat(),
         "language": language,
         "engine_version": settings.analysis_engine_version,
         "capital": settings.analysis_default_capital,
@@ -98,6 +107,106 @@ def get_stock_ai_service() -> SahmiAIService:
     return SahmiAIService()
 
 
+def _access_for_user(
+    db: Session,
+    *,
+    user_id,
+    analysis_id,
+) -> StockAnalysisAccess | None:
+    return db.scalar(
+        select(StockAnalysisAccess).where(
+            StockAnalysisAccess.user_id == user_id,
+            StockAnalysisAccess.analysis_id == analysis_id,
+        )
+    )
+
+
+def _finish_with_user_access(
+    db: Session,
+    *,
+    user: User,
+    analysis: StockAnalysis,
+    analysis_cost_points: int,
+    market_snapshot_cached: bool,
+) -> StockAnalysisExecution:
+    existing_access = _access_for_user(
+        db,
+        user_id=user.id,
+        analysis_id=analysis.id,
+    )
+    if existing_access is not None:
+        db.commit()
+        account = get_wallet_account(db, user.id)
+        return StockAnalysisExecution(
+            analysis=analysis,
+            cached=True,
+            charged_points=0,
+            balance_points=account.balance_points,
+            market_snapshot_cached=market_snapshot_cached,
+        )
+
+    account = get_wallet_account(db, user.id)
+    if account.balance_points < analysis_cost_points:
+        db.rollback()
+        raise InsufficientBalanceError("Insufficient balance for stock analysis")
+
+    transaction_id = f"stock-analysis:{user.id}:{analysis.id}"
+    try:
+        debit_points(
+            db,
+            user_id=user.id,
+            amount_points=analysis_cost_points,
+            transaction_id=transaction_id,
+            entry_type="stock_analysis_debit",
+            reference_type="stock_analysis",
+            reference_id=str(analysis.id),
+            details={
+                "ticker": analysis.ticker,
+                "data_as_of": analysis.data_as_of.isoformat(),
+                "engine_version": get_settings().analysis_engine_version,
+                "configured_cost_points": analysis_cost_points,
+            },
+        )
+        db.add(
+            StockAnalysisAccess(
+                user_id=user.id,
+                analysis_id=analysis.id,
+                wallet_transaction_id=transaction_id,
+                unlocked_at=datetime.now(UTC),
+            )
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raced = _access_for_user(
+            db,
+            user_id=user.id,
+            analysis_id=analysis.id,
+        )
+        if raced is None:
+            raise
+        account = get_wallet_account(db, user.id)
+        return StockAnalysisExecution(
+            analysis=analysis,
+            cached=True,
+            charged_points=0,
+            balance_points=account.balance_points,
+            market_snapshot_cached=market_snapshot_cached,
+        )
+    except Exception:
+        db.rollback()
+        raise
+
+    account = get_wallet_account(db, user.id)
+    return StockAnalysisExecution(
+        analysis=analysis,
+        cached=False,
+        charged_points=analysis_cost_points,
+        balance_points=account.balance_points,
+        market_snapshot_cached=market_snapshot_cached,
+    )
+
+
 async def execute_stock_analysis(
     db: Session,
     *,
@@ -122,13 +231,11 @@ async def execute_stock_analysis(
         )
     )
     if existing is not None:
-        db.commit()
-        account = get_wallet_account(db, user.id)
-        return StockAnalysisExecution(
+        return _finish_with_user_access(
+            db,
+            user=user,
             analysis=existing,
-            cached=True,
-            charged_points=0,
-            balance_points=account.balance_points,
+            analysis_cost_points=analysis_cost_points,
             market_snapshot_cached=market_snapshot_cached,
         )
 
@@ -176,8 +283,10 @@ async def execute_stock_analysis(
             "interval": series.interval,
             "period": series.period,
             "data_as_of": series.data_as_of.isoformat(),
+            "market_session_date": _market_session_date(series).isoformat(),
             "fingerprint": series.fingerprint,
             "candle_count": series.candle_count,
+            "valid_until": "next_egx_market_session",
         },
         "analysis": report_payload,
         "explanation": explanation,
@@ -204,41 +313,18 @@ async def execute_stock_analysis(
         )
         if raced is None:
             raise
-        account = get_wallet_account(db, user.id)
-        return StockAnalysisExecution(
+        return _finish_with_user_access(
+            db,
+            user=user,
             analysis=raced,
-            cached=True,
-            charged_points=0,
-            balance_points=account.balance_points,
+            analysis_cost_points=analysis_cost_points,
             market_snapshot_cached=market_snapshot_cached,
         )
 
-    try:
-        debit_points(
-            db,
-            user_id=user.id,
-            amount_points=analysis_cost_points,
-            transaction_id=f"stock-analysis:{user.id}:{analysis.id}",
-            entry_type="stock_analysis_debit",
-            reference_type="stock_analysis",
-            reference_id=str(analysis.id),
-            details={
-                "ticker": series.ticker,
-                "data_fingerprint": series.fingerprint,
-                "engine_version": settings.analysis_engine_version,
-                "configured_cost_points": analysis_cost_points,
-            },
-        )
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-
-    account = get_wallet_account(db, user.id)
-    return StockAnalysisExecution(
+    return _finish_with_user_access(
+        db,
+        user=user,
         analysis=analysis,
-        cached=False,
-        charged_points=analysis_cost_points,
-        balance_points=account.balance_points,
+        analysis_cost_points=analysis_cost_points,
         market_snapshot_cached=market_snapshot_cached,
     )
