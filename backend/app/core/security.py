@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -17,6 +18,10 @@ password_hash = PasswordHash.recommended()
 
 class InvalidAccessTokenError(ValueError):
     """Raised when an access token is missing, invalid, or expired."""
+
+
+class InvalidVerificationReferenceError(ValueError):
+    """Raised when a signed email-verification reference is invalid."""
 
 
 def validate_password_strength(password: str) -> None:
@@ -48,8 +53,81 @@ def generate_opaque_token() -> str:
     return secrets.token_urlsafe(48)
 
 
+def generate_numeric_code(digits: int = 6) -> str:
+    if not 4 <= digits <= 10:
+        raise ValueError("Numeric codes must contain between 4 and 10 digits")
+    return f"{secrets.randbelow(10**digits):0{digits}d}"
+
+
 def hash_opaque_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def hash_account_code(*, user_id: UUID, token_type: str, code: str) -> str:
+    settings = get_settings()
+    payload = f"{user_id}:{token_type}:{code}".encode()
+    return hmac.new(
+        settings.secret_key.encode(),
+        payload,
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def verify_account_code_hash(
+    *,
+    expected_hash: str,
+    user_id: UUID,
+    token_type: str,
+    code: str,
+) -> bool:
+    supplied_hash = hash_account_code(
+        user_id=user_id,
+        token_type=token_type,
+        code=code,
+    )
+    return hmac.compare_digest(expected_hash, supplied_hash)
+
+
+def create_email_verification_reference(
+    *,
+    email: str,
+    code: str,
+    expires_minutes: int = 10,
+) -> str:
+    settings = get_settings()
+    issued_at = datetime.now(UTC)
+    payload: dict[str, Any] = {
+        "type": "email_verification_reference",
+        "email": email,
+        "code": code,
+        "iat": issued_at,
+        "exp": issued_at + timedelta(minutes=expires_minutes),
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+
+
+def decode_email_verification_reference(token: str) -> tuple[str, str]:
+    settings = get_settings()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.jwt_algorithm],
+            options={"require": ["type", "email", "code", "iat", "exp"]},
+        )
+    except InvalidTokenError as exc:
+        raise InvalidVerificationReferenceError(
+            "Invalid or expired verification reference"
+        ) from exc
+    if payload.get("type") != "email_verification_reference":
+        raise InvalidVerificationReferenceError("Invalid verification reference type")
+    email = payload.get("email")
+    code = payload.get("code")
+    if not isinstance(email, str) or not email.strip():
+        raise InvalidVerificationReferenceError("Invalid verification reference email")
+    if not isinstance(code, str) or not code.isdigit() or len(code) != 6:
+        raise InvalidVerificationReferenceError("Invalid verification reference code")
+    return email, code
 
 
 def create_access_token(user_id: UUID, auth_version: int) -> tuple[str, int]:

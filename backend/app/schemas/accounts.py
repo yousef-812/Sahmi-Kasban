@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.core.avatars import DEFAULT_AVATAR_KEY, validate_avatar_key
 
@@ -36,11 +36,22 @@ class RegisterResponse(BaseModel):
     user_id: UUID
     email: EmailStr
     requires_email_verification: bool = True
+    verification_code_expires_in_seconds: int = 600
     weekly_points_granted: int = 300
 
 
 class VerifyEmailRequest(BaseModel):
-    token: str = Field(min_length=20, max_length=500)
+    email: EmailStr | None = None
+    code: str | None = Field(default=None, pattern=r"^\d{6}$")
+    token: str | None = Field(default=None, min_length=20, max_length=500)
+
+    @model_validator(mode="after")
+    def require_code_or_legacy_token(self) -> VerifyEmailRequest:
+        has_code = self.email is not None and self.code is not None
+        has_token = self.token is not None
+        if has_code == has_token:
+            raise ValueError("Provide email and code, or provide a legacy token")
+        return self
 
 
 class ResendVerificationRequest(BaseModel):

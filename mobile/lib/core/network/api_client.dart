@@ -7,6 +7,16 @@ import '../config/app_config.dart';
 import 'api_exception.dart';
 import 'token_store.dart';
 
+BaseOptions _apiOptions(String baseUrl) {
+  return BaseOptions(
+    baseUrl: '$baseUrl/api/v1',
+    connectTimeout: const Duration(seconds: 12),
+    sendTimeout: const Duration(seconds: 20),
+    receiveTimeout: const Duration(seconds: 30),
+    headers: const <String, String>{'Accept': 'application/json'},
+  );
+}
+
 class ApiClient {
   ApiClient({
     required String baseUrl,
@@ -14,9 +24,8 @@ class ApiClient {
     Dio? dio,
     Dio? refreshDio,
   }) : _tokenStore = tokenStore,
-       _dio = dio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')),
-       _refreshDio =
-           refreshDio ?? Dio(BaseOptions(baseUrl: '$baseUrl/api/v1')) {
+       _dio = dio ?? Dio(_apiOptions(baseUrl)),
+       _refreshDio = refreshDio ?? Dio(_apiOptions(baseUrl)) {
     _dio.interceptors.add(
       InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
     );
@@ -121,13 +130,28 @@ class ApiClient {
       final response = error.response;
       final payload = response?.data;
       return ApiException(
-        message: _extractMessage(payload),
+        message: _networkMessage(error, payload),
         statusCode: response?.statusCode,
         payload: payload,
         retryAfterSeconds: _parseRetryAfter(response?.headers),
       );
     }
     return ApiException(message: error.toString());
+  }
+
+  String _networkMessage(DioException error, Object? payload) {
+    if (payload is Map) {
+      return _extractMessage(payload);
+    }
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout =>
+        'الخادم استغرق وقتًا أطول من المتوقع. حاول مرة أخرى.',
+      DioExceptionType.connectionError =>
+        'تعذر الوصول إلى الخادم. تحقق من الإنترنت وحاول مجددًا.',
+      _ => 'تعذر الاتصال بالخادم. حاول مرة أخرى.',
+    };
   }
 
   String _extractMessage(Object? payload) {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
+import '../../core/ui/app_notice.dart';
 import 'session_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -42,9 +43,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      AppNotice.show(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+        title: error.statusCode == 403
+            ? 'البريد غير مؤكد'
+            : 'تعذر تسجيل الدخول',
+        message: error.statusCode == 403
+            ? 'أكد بريدك بالكود المرسل أولًا.'
+            : error.message,
+        tone: error.statusCode == 403
+            ? AppNoticeTone.warning
+            : AppNoticeTone.error,
+      );
       if (error.statusCode == 403) {
         final email = Uri.encodeQueryComponent(_emailController.text.trim());
         context.go('/verify-email?email=$email');
@@ -166,21 +176,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'تم إنشاء الحساب وإضافة '
-            '${result.weeklyPointsGranted ~/ 100} عملات. راجع بريدك للتأكيد.',
-          ),
-        ),
+      AppNotice.show(
+        context,
+        title: 'تم إنشاء الحساب',
+        message:
+            'أضفنا ${result.weeklyPointsGranted ~/ 100} عملات إلى خطتك المجانية وأرسلنا كود التأكيد إلى بريدك.',
+        tone: AppNoticeTone.success,
+        duration: const Duration(seconds: 5),
       );
       final email = Uri.encodeQueryComponent(result.email);
       context.go('/verify-email?email=$email');
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        AppNotice.show(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+          title: 'تعذر إنشاء الحساب',
+          message: error.message,
+          tone: AppNoticeTone.error,
+        );
       }
     } finally {
       if (mounted) {

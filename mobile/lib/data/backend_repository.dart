@@ -39,10 +39,10 @@ class BackendRepository {
     }
   }
 
-  Future<String> verifyEmail(String token) {
+  Future<String> verifyEmail({required String email, required String code}) {
     return _anonymousMessage(
       path: '/auth/verify-email',
-      data: <String, dynamic>{'token': token.trim()},
+      data: <String, dynamic>{'email': email.trim(), 'code': code.trim()},
     );
   }
 
