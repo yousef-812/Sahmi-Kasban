@@ -15,6 +15,7 @@ from app.jobs.retry_pending_ai_reviews import (
     retry_pending_ai_reviews,
 )
 from app.jobs.scheduler import run_daily_scan_scheduler
+from app.legal_pages import router as legal_router
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
 
@@ -81,6 +82,7 @@ if cors_origins:
     )
 
 app.add_middleware(RequestContextMiddleware)
+app.include_router(legal_router)
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 
@@ -90,4 +92,7 @@ def root() -> dict[str, str]:
         "service": settings.app_name,
         "status": "running",
         "health": f"{settings.api_v1_prefix}/health",
+        "legal": "/legal",
+        "privacy": "/privacy",
+        "delete_account": "/delete-account",
     }
