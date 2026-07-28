@@ -76,10 +76,12 @@ class _ReadableEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (value is Map) {
-      final nested = value.map<String, dynamic>(
-        (key, item) => MapEntry(key.toString(), item),
-      );
+    final currentValue = value;
+    if (currentValue is Map<Object?, Object?>) {
+      final nested = <String, dynamic>{
+        for (final entry in currentValue.entries)
+          entry.key.toString(): entry.value,
+      };
       return ExpansionTile(
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsetsDirectional.only(start: 12, bottom: 8),
@@ -88,8 +90,8 @@ class _ReadableEntry extends StatelessWidget {
         children: [_ReadableMap(data: nested, depth: depth + 1)],
       );
     }
-    if (value is List) {
-      if (value.isEmpty) {
+    if (currentValue is List<Object?>) {
+      if (currentValue.isEmpty) {
         return _ValueRow(label: label, value: 'لا يوجد');
       }
       return Column(
@@ -97,7 +99,7 @@ class _ReadableEntry extends StatelessWidget {
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          for (final item in value)
+          for (final item in currentValue)
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
@@ -117,7 +119,7 @@ class _ReadableEntry extends StatelessWidget {
         ],
       );
     }
-    return _ValueRow(label: label, value: _formatValue(value));
+    return _ValueRow(label: label, value: _formatValue(currentValue));
   }
 }
 
@@ -129,21 +131,25 @@ class _ReadableValue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (value is Map) {
+    final currentValue = value;
+    if (currentValue is Map<Object?, Object?>) {
       return _ReadableMap(
-        data: value.map<String, dynamic>(
-          (key, item) => MapEntry(key.toString(), item),
-        ),
+        data: <String, dynamic>{
+          for (final entry in currentValue.entries)
+            entry.key.toString(): entry.value,
+        },
         depth: depth,
       );
     }
-    if (value is List) {
+    if (currentValue is List<Object?>) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [for (final item in value) Text('• ${_formatValue(item)}')],
+        children: [
+          for (final item in currentValue) Text('• ${_formatValue(item)}'),
+        ],
       );
     }
-    return Text(_formatValue(value));
+    return Text(_formatValue(currentValue));
   }
 }
 
