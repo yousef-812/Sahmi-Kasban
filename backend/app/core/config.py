@@ -71,12 +71,17 @@ class Settings(BaseSettings):
     tradingview_websocket_url: str = (
         "wss://data.tradingview.com/socket.io/websocket"
     )
+    tradingview_scanner_url: str = "https://scanner.tradingview.com/egypt/scan"
     tradingview_origin: str = "https://www.tradingview.com"
     tradingview_user_agent: str = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36"
     )
     tradingview_auth_token: str = "unauthorized_user_token"
+    market_instrument_catalog_refresh_hours: int = 12
+    market_instrument_catalog_retry_minutes: int = 10
+    market_instrument_catalog_timeout_seconds: float = 8.0
+    market_instrument_catalog_max_symbols: int = 1_000
 
     analysis_cost_points: int = 50
     analysis_default_capital: float = 150_000.0
@@ -172,10 +177,20 @@ class Settings(BaseSettings):
             raise ValueError("MARKET_DATA_MIN_CANDLES must be at least 60")
         if not self.tradingview_websocket_url.startswith("wss://"):
             raise ValueError("TRADINGVIEW_WEBSOCKET_URL must use wss://")
+        if not self.tradingview_scanner_url.startswith("https://"):
+            raise ValueError("TRADINGVIEW_SCANNER_URL must use https://")
         if not self.tradingview_origin.startswith("https://"):
             raise ValueError("TRADINGVIEW_ORIGIN must use https://")
         if not self.tradingview_auth_token.strip():
             raise ValueError("TRADINGVIEW_AUTH_TOKEN must not be empty")
+        if not 1 <= self.market_instrument_catalog_refresh_hours <= 168:
+            raise ValueError("MARKET_INSTRUMENT_CATALOG_REFRESH_HOURS must be 1..168")
+        if not 1 <= self.market_instrument_catalog_retry_minutes <= 1440:
+            raise ValueError("MARKET_INSTRUMENT_CATALOG_RETRY_MINUTES must be 1..1440")
+        if not 1 <= self.market_instrument_catalog_timeout_seconds <= 60:
+            raise ValueError("MARKET_INSTRUMENT_CATALOG_TIMEOUT_SECONDS must be 1..60")
+        if not 100 <= self.market_instrument_catalog_max_symbols <= 5_000:
+            raise ValueError("MARKET_INSTRUMENT_CATALOG_MAX_SYMBOLS must be 100..5000")
         if self.analysis_cost_points <= 0:
             raise ValueError("ANALYSIS_COST_POINTS must be positive")
         if self.analysis_default_capital <= 0:
