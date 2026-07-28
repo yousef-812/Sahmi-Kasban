@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from functools import lru_cache
 from typing import Any
 
@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
-from app.models import StockAnalysis, User
+from app.models import StockAnalysis, StockAnalysisAccess, User, WalletEntry
 from app.services.operations_settings import get_int_setting
 from app.services.wallet import (
     InsufficientBalanceError,
@@ -64,10 +64,20 @@ def _json_safe(value: object) -> object:
 
 
 def _analysis_cache_key(series: CandleSeries, language: str) -> str:
+    """Build one deterministic analysis per completed market-data session.
+
+    The market fingerprint is intentionally not part of the identity. Providers can
+    serialize the same daily session slightly differently after a reconnect. Using
+    the final candle timestamp keeps reinstalling the app or reconnecting the data
+    provider from creating another paid analysis for the same market session.
+    """
+
     settings = get_settings()
     identity = {
         "ticker": series.ticker,
-        "fingerprint": series.fingerprint,
+        "data_as_of": series.data_as_of.isoformat(),
+        "interval": series.interval,
+        "period": series.period,
         "language": language,
         "engine_version": settings.analysis_engine_version,
         "capital": settings.analysis_default_capital,
@@ -91,6 +101,88 @@ def _deterministic_explanation(report: dict[str, object]) -> str:
         f"بثقة {confidence:.1f}%. السهم {qualification_text}. "
         "راجع خطة المخاطر والتحذيرات داخل التقرير قبل اتخاذ أي قرار."
     )
+
+
+def _find_account_access(
+    db: Session,
+    *,
+    user: User,
+    analysis: StockAnalysis,
+) -> StockAnalysisAccess | None:
+    access = db.scalar(
+        select(StockAnalysisAccess).where(
+            StockAnalysisAccess.user_id == user.id,
+            StockAnalysisAccess.analysis_id == analysis.id,
+        )
+    )
+    if access is not None:
+        return access
+
+    # Preserve ownership for analyses paid before the access table existed.
+    legacy_debit = db.scalar(
+        select(WalletEntry).where(
+            WalletEntry.user_id == user.id,
+            WalletEntry.entry_type == "stock_analysis_debit",
+            WalletEntry.reference_type == "stock_analysis",
+            WalletEntry.reference_id == str(analysis.id),
+        )
+    )
+    if legacy_debit is None:
+        return None
+
+    access = StockAnalysisAccess(
+        user_id=user.id,
+        analysis_id=analysis.id,
+        wallet_transaction_id=legacy_debit.transaction_id,
+        unlocked_at=legacy_debit.confirmed_at or legacy_debit.created_at,
+    )
+    db.add(access)
+    db.flush()
+    return access
+
+
+def _unlock_analysis_for_account(
+    db: Session,
+    *,
+    user: User,
+    analysis: StockAnalysis,
+    analysis_cost_points: int,
+) -> tuple[int, int]:
+    if _find_account_access(db, user=user, analysis=analysis) is not None:
+        account = get_wallet_account(db, user.id)
+        return 0, account.balance_points
+
+    account = get_wallet_account(db, user.id)
+    if account.balance_points < analysis_cost_points:
+        db.rollback()
+        raise InsufficientBalanceError("Insufficient balance for stock analysis")
+
+    transaction_id = f"stock-analysis:{user.id}:{analysis.id}"
+    debit_points(
+        db,
+        user_id=user.id,
+        amount_points=analysis_cost_points,
+        transaction_id=transaction_id,
+        entry_type="stock_analysis_debit",
+        reference_type="stock_analysis",
+        reference_id=str(analysis.id),
+        details={
+            "ticker": analysis.ticker,
+            "data_as_of": analysis.data_as_of.isoformat(),
+            "configured_cost_points": analysis_cost_points,
+        },
+    )
+    db.add(
+        StockAnalysisAccess(
+            user_id=user.id,
+            analysis_id=analysis.id,
+            wallet_transaction_id=transaction_id,
+            unlocked_at=datetime.now(UTC),
+        )
+    )
+    db.flush()
+    account = get_wallet_account(db, user.id)
+    return analysis_cost_points, account.balance_points
 
 
 @lru_cache
@@ -122,20 +214,29 @@ async def execute_stock_analysis(
         )
     )
     if existing is not None:
-        db.commit()
-        account = get_wallet_account(db, user.id)
+        try:
+            charged_points, balance_points = _unlock_analysis_for_account(
+                db,
+                user=user,
+                analysis=existing,
+                analysis_cost_points=analysis_cost_points,
+            )
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            access = _find_account_access(db, user=user, analysis=existing)
+            if access is None:
+                raise
+            account = get_wallet_account(db, user.id)
+            charged_points = 0
+            balance_points = account.balance_points
         return StockAnalysisExecution(
             analysis=existing,
             cached=True,
-            charged_points=0,
-            balance_points=account.balance_points,
+            charged_points=charged_points,
+            balance_points=balance_points,
             market_snapshot_cached=market_snapshot_cached,
         )
-
-    account = get_wallet_account(db, user.id)
-    if account.balance_points < analysis_cost_points:
-        db.rollback()
-        raise InsufficientBalanceError("Insufficient balance for stock analysis")
 
     config = AnalysisConfig(
         capital=settings.analysis_default_capital,
@@ -204,41 +305,37 @@ async def execute_stock_analysis(
         )
         if raced is None:
             raise
-        account = get_wallet_account(db, user.id)
+        charged_points, balance_points = _unlock_analysis_for_account(
+            db,
+            user=user,
+            analysis=raced,
+            analysis_cost_points=analysis_cost_points,
+        )
+        db.commit()
         return StockAnalysisExecution(
             analysis=raced,
             cached=True,
-            charged_points=0,
-            balance_points=account.balance_points,
+            charged_points=charged_points,
+            balance_points=balance_points,
             market_snapshot_cached=market_snapshot_cached,
         )
 
     try:
-        debit_points(
+        charged_points, balance_points = _unlock_analysis_for_account(
             db,
-            user_id=user.id,
-            amount_points=analysis_cost_points,
-            transaction_id=f"stock-analysis:{user.id}:{analysis.id}",
-            entry_type="stock_analysis_debit",
-            reference_type="stock_analysis",
-            reference_id=str(analysis.id),
-            details={
-                "ticker": series.ticker,
-                "data_fingerprint": series.fingerprint,
-                "engine_version": settings.analysis_engine_version,
-                "configured_cost_points": analysis_cost_points,
-            },
+            user=user,
+            analysis=analysis,
+            analysis_cost_points=analysis_cost_points,
         )
         db.commit()
     except Exception:
         db.rollback()
         raise
 
-    account = get_wallet_account(db, user.id)
     return StockAnalysisExecution(
         analysis=analysis,
         cached=False,
-        charged_points=analysis_cost_points,
-        balance_points=account.balance_points,
+        charged_points=charged_points,
+        balance_points=balance_points,
         market_snapshot_cached=market_snapshot_cached,
     )
