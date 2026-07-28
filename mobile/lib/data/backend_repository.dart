@@ -220,7 +220,9 @@ class BackendRepository {
     }
   }
 
-  Future<StockAnalysisResult?> getLatestOwnedStockAnalysis(String ticker) async {
+  Future<StockAnalysisResult?> getLatestOwnedStockAnalysis(
+    String ticker,
+  ) async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
         '/stocks/${ticker.trim().toUpperCase()}/analysis/latest',
@@ -284,7 +286,8 @@ class BackendRepository {
         data: data,
         options: Options(extra: <String, dynamic>{'anonymous': true}),
       );
-      return (_requiredData(response)['message'] as String?) ?? 'تم تنفيذ الطلب.';
+      return (_requiredData(response)['message'] as String?) ??
+          'تم تنفيذ الطلب.';
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
