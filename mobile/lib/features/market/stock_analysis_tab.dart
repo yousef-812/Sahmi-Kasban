@@ -58,8 +58,9 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
 
   Future<void> _search({String? query, int? revision}) async {
     _searchDebounce?.cancel();
-    final normalizedQuery =
-        (query ?? _queryController.text).trim().toUpperCase();
+    final normalizedQuery = (query ?? _queryController.text)
+        .trim()
+        .toUpperCase();
     final requestRevision = revision ?? ++_searchRevision;
     if (normalizedQuery.isEmpty) {
       if (mounted) {
