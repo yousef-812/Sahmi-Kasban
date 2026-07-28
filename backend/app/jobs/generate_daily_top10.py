@@ -5,9 +5,14 @@ import json
 import logging
 from datetime import UTC, datetime
 
+from sqlalchemy import select
+
 from app.db.session import SessionLocal
 from app.market_calendar import NonTradingSessionError, ScanNotDueError
+from app.market_data.catalog import ensure_market_instrument_catalog
+from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
+from app.models import MarketInstrumentCatalog
 from app.services.daily_reports import (
     DailyReportGenerationError,
     DailyScanAlreadyRunningError,
@@ -18,14 +23,28 @@ from app.services.stock_analysis import get_stock_ai_service
 logger = logging.getLogger(__name__)
 
 
+def _active_catalog_tickers(db) -> tuple[str, ...]:
+    tickers = tuple(
+        db.scalars(
+            select(MarketInstrumentCatalog.ticker)
+            .where(MarketInstrumentCatalog.active.is_(True))
+            .order_by(MarketInstrumentCatalog.ticker)
+        ).all()
+    )
+    return tickers or EGX_SEED_SYMBOLS
+
+
 async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, object]:
     with SessionLocal() as db:
         try:
+            await ensure_market_instrument_catalog(db)
+            tickers = _active_catalog_tickers(db)
             result = await generate_daily_top10_report(
                 db,
                 provider=get_market_data_provider(),
                 ai_service=get_stock_ai_service(),
                 moment=moment or datetime.now(UTC),
+                tickers=tickers,
             )
         except ScanNotDueError as exc:
             db.rollback()
@@ -54,6 +73,7 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
             if result.report.generated_at is not None
             else None
         ),
+        "universe_size": result.report.source_snapshot.get("universe_size", len(tickers)),
     }
     logger.info("Daily top-ten scan result: %s", payload)
     return payload
