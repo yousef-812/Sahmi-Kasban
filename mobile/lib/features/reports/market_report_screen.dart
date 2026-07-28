@@ -146,7 +146,9 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 10),
-                  Text('التكلفة: ${widget.preview?.unlockCostCoins ?? '1'} عملة'),
+                  Text(
+                    'التكلفة: ${widget.preview?.unlockCostCoins ?? '1'} عملة',
+                  ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
                     onPressed: _loading ? null : _unlock,
@@ -210,9 +212,7 @@ class _ReportHeader extends StatelessWidget {
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'الترتيب ناتج عن التحليل الآلي ولا يمثل ضمانًا للربح.',
-            ),
+            const Text('الترتيب ناتج عن التحليل الآلي ولا يمثل ضمانًا للربح.'),
           ],
         ),
       ),
@@ -374,7 +374,10 @@ class _ErrorCard extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 10),
-            OutlinedButton(onPressed: retry, child: const Text('إعادة المحاولة')),
+            OutlinedButton(
+              onPressed: retry,
+              child: const Text('إعادة المحاولة'),
+            ),
           ],
         ),
       ),
@@ -392,7 +395,8 @@ String _integer(Object? value) => value is num ? value.toInt().toString() : '—
 
 String _decimal(Object? value) => value is num ? value.toStringAsFixed(1) : '—';
 
-String _money(Object? value) => value is num ? '${value.toStringAsFixed(4)} ج.م' : '—';
+String _money(Object? value) =>
+    value is num ? '${value.toStringAsFixed(4)} ج.م' : '—';
 
 String _decision(String? signal) => switch (signal?.toUpperCase()) {
   'BUY' => 'فرصة شراء مشروطة',
