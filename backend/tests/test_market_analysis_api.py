@@ -128,9 +128,10 @@ def test_market_instrument_registry_is_deduplicated(client: TestClient) -> None:
     response = client.get("/api/v1/market/instruments", params={"limit": 200})
     assert response.status_code == 200
     payload = response.json()
-    assert payload["total_registry_size"] == 154
+    assert payload["total_registry_size"] == 155
     tickers = [item["ticker"] for item in payload["items"]]
     assert len(tickers) == len(EGX_SEED_SYMBOLS) == len(set(tickers))
+    assert "DSCW" in tickers
     assert all(item["provider_symbol"].endswith(".CA") for item in payload["items"])
 
 

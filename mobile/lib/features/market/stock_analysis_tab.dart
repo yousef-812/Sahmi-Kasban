@@ -35,6 +35,16 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     if (_searching) {
       return;
     }
+    final normalizedQuery = _queryController.text.trim().toUpperCase();
+    if (normalizedQuery.isEmpty) {
+      setState(() {
+        _results = const [];
+        _selected = null;
+        _analysis = null;
+        _error = 'اكتب رمز السهم أولًا.';
+      });
+      return;
+    }
     setState(() {
       _searching = true;
       _error = null;
@@ -43,9 +53,23 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     try {
       final results = await ref
           .read(backendRepositoryProvider)
-          .searchInstruments(_queryController.text);
+          .searchInstruments(normalizedQuery);
+      MarketInstrument? exactMatch;
+      for (final instrument in results) {
+        if (instrument.ticker == normalizedQuery) {
+          exactMatch = instrument;
+          break;
+        }
+      }
+      exactMatch ??= results.length == 1 ? results.first : null;
       if (mounted) {
-        setState(() => _results = results);
+        setState(() {
+          _results = results;
+          _selected = exactMatch;
+          _error = results.isEmpty
+              ? 'رمز السهم غير موجود في قائمة الأسهم المدعومة.'
+              : null;
+        });
       }
     } on ApiException catch (error) {
       if (mounted) {
@@ -140,17 +164,30 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                   decoration: InputDecoration(
                     labelText: 'رمز السهم',
                     hintText: 'COMI',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: IconButton(
+                    prefixIcon: IconButton(
+                      tooltip: 'بحث عن السهم',
                       onPressed: _searching ? null : _search,
                       icon: _searching
                           ? const SizedBox.square(
                               dimension: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.arrow_forward_rounded),
+                          : const Icon(Icons.search_rounded),
                     ),
                   ),
+                  onChanged: (_) {
+                    if (_selected != null ||
+                        _results.isNotEmpty ||
+                        _error != null ||
+                        _analysis != null) {
+                      setState(() {
+                        _selected = null;
+                        _results = const [];
+                        _error = null;
+                        _analysis = null;
+                      });
+                    }
+                  },
                   onSubmitted: (_) => _search(),
                 ),
                 if (_results.isNotEmpty) ...[
