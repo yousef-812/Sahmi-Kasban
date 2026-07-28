@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,13 +24,26 @@ import '../features/profile/profile_edit_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
 
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void refresh() => notifyListeners();
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final onboarding = ref.watch(onboardingControllerProvider);
-  final session = ref.watch(sessionControllerProvider);
+  final refreshNotifier = _RouterRefreshNotifier();
+  ref.onDispose(refreshNotifier.dispose);
+  ref.listen<AsyncValue<bool>>(
+    onboardingControllerProvider,
+    (_, __) => refreshNotifier.refresh(),
+  );
+  ref.listen<SessionState>(
+    sessionControllerProvider,
+    (_, __) => refreshNotifier.refresh(),
+  );
 
   return GoRouter(
     initialLocation: '/splash',
     observers: AppObservability.navigatorObservers,
+    refreshListenable: refreshNotifier,
     routes: [
       GoRoute(
         path: '/splash',
@@ -123,6 +137,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
+      final onboarding = ref.read(onboardingControllerProvider);
+      final session = ref.read(sessionControllerProvider);
       final location = state.matchedLocation;
       final onboardingLoading = onboarding.isLoading;
       final sessionLoading = session.status == SessionStatus.loading;
