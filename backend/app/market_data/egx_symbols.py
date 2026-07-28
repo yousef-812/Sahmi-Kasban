@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import re
+
 from app.market_data.types import MarketInstrument, UnknownTickerError
 
 # Seed registry migrated from the legacy EGX-Pilot universe and deduplicated.
-# Production must replace or reconcile it with an authoritative licensed exchange feed.
+# It is now only a startup/failure fallback. The persistent catalog is refreshed
+# from TradingView and is authoritative for user-facing search and analysis.
 EGX_SEED_SYMBOLS: tuple[str, ...] = (
     "COMI", "CBKD", "HRHO", "EAST", "ESRS", "AUTO", "ETEL", "FWRY",
     "JUFO", "KZPC", "MFPC", "ORWE", "PHDC", "TMGH", "ADIB", "AKHO",
@@ -28,12 +31,14 @@ EGX_SEED_SYMBOLS: tuple[str, ...] = (
 )
 
 EGX_SYMBOL_SET = frozenset(EGX_SEED_SYMBOLS)
+_TICKER_PATTERN = re.compile(r"^[A-Z0-9]{1,24}$")
 
 
 def normalize_egx_ticker(ticker: str) -> str:
     normalized = ticker.strip().upper().removesuffix(".CA")
-    if normalized not in EGX_SYMBOL_SET:
-        raise UnknownTickerError(f"Unsupported EGX ticker: {normalized or ticker}")
+    normalized = normalized.removeprefix("EGX:")
+    if not _TICKER_PATTERN.fullmatch(normalized):
+        raise UnknownTickerError(f"Invalid EGX ticker: {normalized or ticker}")
     return normalized
 
 
@@ -49,6 +54,6 @@ def list_instruments(query: str = "", limit: int = 50) -> list[MarketInstrument]
         if not normalized_query or normalized_query in ticker
     )
     return [
-        MarketInstrument(ticker=ticker, provider_symbol=f"{ticker}.CA")
+        MarketInstrument(ticker=ticker, provider_symbol=f"EGX:{ticker}")
         for ticker in list(matches)[:limit]
     ]
