@@ -126,7 +126,10 @@ class _ValueRow extends StatelessWidget {
       children: [
         Expanded(
           flex: 4,
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(flex: 5, child: Text(value, textAlign: TextAlign.end)),
