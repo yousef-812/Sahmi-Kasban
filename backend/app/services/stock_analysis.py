@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from functools import lru_cache
 from typing import Any
+from uuid import UUID
 
 import pandas as pd
 from sqlalchemy import select
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
-from app.models import StockAnalysis, User, UserStockAnalysisAccess
+from app.models import StockAnalysis, User, UserStockAnalysisAccess, WalletEntry
 from app.services.operations_settings import get_int_setting
 from app.services.wallet import (
     InsufficientBalanceError,
@@ -101,14 +102,33 @@ def get_stock_ai_service() -> SahmiAIService:
 def _access_for(
     db: Session,
     *,
-    user_id,
-    analysis_id,
+    user_id: UUID,
+    analysis_id: UUID,
 ) -> UserStockAnalysisAccess | None:
     return db.scalar(
         select(UserStockAnalysisAccess).where(
             UserStockAnalysisAccess.user_id == user_id,
             UserStockAnalysisAccess.analysis_id == analysis_id,
         )
+    )
+
+
+def _legacy_payment_exists(
+    db: Session,
+    *,
+    user_id: UUID,
+    analysis_id: UUID,
+) -> bool:
+    return (
+        db.scalar(
+            select(WalletEntry.id).where(
+                WalletEntry.user_id == user_id,
+                WalletEntry.entry_type == "stock_analysis_debit",
+                WalletEntry.reference_type == "stock_analysis",
+                WalletEntry.reference_id == str(analysis_id),
+            )
+        )
+        is not None
     )
 
 
@@ -144,6 +164,13 @@ def _deliver_existing_analysis(
 ) -> StockAnalysisExecution:
     current = datetime.now(UTC)
     access = _access_for(db, user_id=user.id, analysis_id=analysis.id)
+    if access is None and _legacy_payment_exists(
+        db,
+        user_id=user.id,
+        analysis_id=analysis.id,
+    ):
+        access = _grant_access(db, user=user, analysis=analysis, moment=current)
+
     account = get_wallet_account(db, user.id)
     if access is not None:
         access.last_viewed_at = current
@@ -187,6 +214,42 @@ def _deliver_existing_analysis(
     )
 
 
+def _recover_latest_legacy_analysis(
+    db: Session,
+    *,
+    user: User,
+    ticker: str,
+) -> StockAnalysis | None:
+    entries = db.scalars(
+        select(WalletEntry)
+        .where(
+            WalletEntry.user_id == user.id,
+            WalletEntry.entry_type == "stock_analysis_debit",
+            WalletEntry.reference_type == "stock_analysis",
+            WalletEntry.reference_id.is_not(None),
+        )
+        .order_by(WalletEntry.created_at.desc())
+        .limit(200)
+    ).all()
+    for entry in entries:
+        try:
+            analysis_id = UUID(str(entry.reference_id))
+        except (TypeError, ValueError):
+            continue
+        analysis = db.get(StockAnalysis, analysis_id)
+        if analysis is None or analysis.status != "complete" or analysis.ticker != ticker:
+            continue
+        _grant_access(
+            db,
+            user=user,
+            analysis=analysis,
+            moment=datetime.now(UTC),
+        )
+        db.commit()
+        return analysis
+    return None
+
+
 def latest_owned_stock_analysis(
     db: Session,
     *,
@@ -208,8 +271,15 @@ def latest_owned_stock_analysis(
         .limit(1)
     ).one_or_none()
     if row is None:
-        return None
-    access, analysis = row
+        analysis = _recover_latest_legacy_analysis(db, user=user, ticker=ticker)
+        if analysis is None:
+            return None
+        access = _access_for(db, user_id=user.id, analysis_id=analysis.id)
+        if access is None:
+            return None
+    else:
+        access, analysis = row
+
     access.last_viewed_at = datetime.now(UTC)
     db.commit()
     account = get_wallet_account(db, user.id)
