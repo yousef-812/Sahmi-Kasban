@@ -58,7 +58,8 @@ class _WalletHistoryScreenState extends ConsumerState<WalletHistoryScreen> {
     } on Object {
       if (mounted) {
         setState(
-          () => _error = 'تعذر عرض سجل المحفظة. حاول مرة أخرى بعد تحديث التطبيق.',
+          () =>
+              _error = 'تعذر عرض سجل المحفظة. حاول مرة أخرى بعد تحديث التطبيق.',
         );
       }
     } finally {
