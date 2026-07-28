@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Response, status
+import sentry_sdk
+from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.dependencies import CurrentAdmin, DatabaseSession
 from app.core.config import get_settings
+from app.core.observability import sentry_is_enabled
 from app.db.session import database_is_ready
 from app.schemas.quality import (
     QualityStatusResponse,
@@ -58,3 +60,20 @@ def quality_status(
     _admin: CurrentAdmin,
 ) -> QualityStatusResponse:
     return QualityStatusResponse(**build_quality_status(db))
+
+
+@admin_router.post("/quality/sentry-test")
+def send_sentry_test(_admin: CurrentAdmin) -> dict[str, str]:
+    """Send a PII-free marker so staging can verify Sentry and alert routing."""
+
+    if not sentry_is_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Sentry is not configured",
+        )
+    event_id = sentry_sdk.capture_message(
+        "Sahmi Kasban staging monitoring probe",
+        level="warning",
+    )
+    sentry_sdk.flush(timeout=5)
+    return {"status": "sent", "event_id": str(event_id)}
