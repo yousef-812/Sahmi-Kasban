@@ -25,6 +25,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
   MarketInstrument? _selected;
   StockAnalysisResult? _analysis;
   bool _searching = false;
+  bool _loadingSaved = false;
   bool _analyzing = false;
   String? _error;
 
@@ -44,6 +45,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
       _results = const [];
       _error = null;
       _analysis = null;
+      _loadingSaved = false;
       _searching = normalizedQuery.isNotEmpty;
     });
     if (normalizedQuery.isEmpty) {
@@ -102,6 +104,9 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
             ? 'لم نعثر على سهم مصري مطابق في كتالوج السوق.'
             : null;
       });
+      if (exactMatch != null) {
+        unawaited(_loadSavedAnalysis(exactMatch, requestRevision));
+      }
     } on ApiException catch (error) {
       if (mounted && requestRevision == _searchRevision) {
         setState(() => _error = error.message);
@@ -109,6 +114,42 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     } finally {
       if (mounted && requestRevision == _searchRevision) {
         setState(() => _searching = false);
+      }
+    }
+  }
+
+  void _selectInstrument(MarketInstrument instrument) {
+    final revision = ++_searchRevision;
+    setState(() {
+      _selected = instrument;
+      _analysis = null;
+      _error = null;
+    });
+    unawaited(_loadSavedAnalysis(instrument, revision));
+  }
+
+  Future<void> _loadSavedAnalysis(
+    MarketInstrument instrument,
+    int revision,
+  ) async {
+    if (mounted) {
+      setState(() => _loadingSaved = true);
+    }
+    try {
+      final saved = await ref
+          .read(backendRepositoryProvider)
+          .getLatestOwnedStockAnalysis(instrument.ticker);
+      if (!mounted || revision != _searchRevision) {
+        return;
+      }
+      if (_selected?.ticker == instrument.ticker) {
+        setState(() => _analysis = saved);
+      }
+    } on ApiException {
+      // A saved analysis is optional; the user can still request a fresh one.
+    } finally {
+      if (mounted && revision == _searchRevision) {
+        setState(() => _loadingSaved = false);
       }
     }
   }
@@ -123,7 +164,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
       builder: (context) => AlertDialog(
         title: Text('تحليل ${instrument.ticker}'),
         content: const Text(
-          'تكلفة التحليل الجديد 0.5 عملة. لن يتم الخصم إلا بعد نجاح التحليل، وإعادة نفس التحليل المخزن لا تخصم مرة أخرى.',
+          'تكلفة التحليل بالبيانات الجديدة 0.5 عملة. التحليل المحفوظ لنفس الحساب ونفس بيانات السوق يُعرض دون خصم جديد.',
         ),
         actions: [
           TextButton(
@@ -144,7 +185,6 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     setState(() {
       _analyzing = true;
       _error = null;
-      _analysis = null;
     });
     try {
       final analysis = await ref
@@ -230,7 +270,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                               ? Theme.of(context).colorScheme.secondaryContainer
                               : null,
                           child: ListTile(
-                            onTap: () => setState(() => _selected = instrument),
+                            onTap: () => _selectInstrument(instrument),
                             leading: Icon(
                               selected
                                   ? Icons.radio_button_checked_rounded
@@ -248,6 +288,20 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                         );
                       },
                     ),
+                ],
+                if (_loadingSaved) ...[
+                  const SizedBox(height: 10),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 8),
+                      Text('جاري البحث عن آخر تحليل محفوظ للحساب...'),
+                    ],
+                  ),
                 ],
                 const SizedBox(height: 16),
                 FilledButton.icon(
