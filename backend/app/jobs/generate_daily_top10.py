@@ -6,6 +6,7 @@ import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.market_calendar import NonTradingSessionError, ScanNotDueError
@@ -18,12 +19,13 @@ from app.services.daily_reports import (
     DailyScanAlreadyRunningError,
     generate_daily_top10_report,
 )
+from app.services.notifications import broadcast_system_notification
 from app.services.stock_analysis import get_stock_ai_service
 
 logger = logging.getLogger(__name__)
 
 
-def _active_catalog_tickers(db) -> tuple[str, ...]:
+def _active_catalog_tickers(db: Session) -> tuple[str, ...]:
     tickers = tuple(
         db.scalars(
             select(MarketInstrumentCatalog.ticker)
@@ -60,21 +62,51 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
             logger.exception("Daily top-ten report generation failed")
             raise
 
-    payload = {
-        "status": "created" if result.created else "already_exists",
-        "report_id": str(result.report.id),
-        "scan_run_id": str(result.scan_run.id),
-        "source_session_date": result.report.source_snapshot.get(
-            "source_session_date"
-        ),
-        "target_session_date": result.report.target_session_date.isoformat(),
-        "generated_at": (
-            result.report.generated_at.isoformat()
-            if result.report.generated_at is not None
-            else None
-        ),
-        "universe_size": result.report.source_snapshot.get("universe_size", len(tickers)),
-    }
+        notification_result = None
+        if result.created:
+            try:
+                notification_result = broadcast_system_notification(
+                    db,
+                    title="تقرير أفضل 10 أصبح جاهزًا",
+                    body=(
+                        "اكتمل تحليل أسهم البورصة المصرية للجلسة القادمة. "
+                        "افتح التطبيق للاطلاع على التقرير."
+                    ),
+                    category="market_report",
+                    data={
+                        "route": "/reports/latest",
+                        "report_id": str(result.report.id),
+                        "target_session_date": result.report.target_session_date.isoformat(),
+                    },
+                )
+                db.commit()
+            except Exception:
+                db.rollback()
+                logger.exception("Daily report was created but user notification failed")
+
+        payload = {
+            "status": "created" if result.created else "already_exists",
+            "report_id": str(result.report.id),
+            "scan_run_id": str(result.scan_run.id),
+            "source_session_date": result.report.source_snapshot.get(
+                "source_session_date"
+            ),
+            "target_session_date": result.report.target_session_date.isoformat(),
+            "generated_at": (
+                result.report.generated_at.isoformat()
+                if result.report.generated_at is not None
+                else None
+            ),
+            "universe_size": result.report.source_snapshot.get(
+                "universe_size",
+                len(tickers),
+            ),
+            "notifications_created": (
+                notification_result.notifications_created
+                if notification_result is not None
+                else 0
+            ),
+        }
     logger.info("Daily top-ten scan result: %s", payload)
     return payload
 
