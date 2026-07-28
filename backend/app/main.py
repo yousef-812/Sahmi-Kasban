@@ -10,6 +10,7 @@ from app.api.router import api_router
 from app.core.config import Environment, get_settings
 from app.core.observability import configure_observability
 from app.db.session import SessionLocal
+from app.jobs.daily_scheduler import run_daily_report_scheduler
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
 
@@ -29,14 +30,17 @@ async def _warm_market_instrument_catalog() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    warmup_task: asyncio.Task[None] | None = None
+    tasks: list[asyncio.Task[None]] = []
     if settings.app_env is not Environment.TEST:
-        warmup_task = asyncio.create_task(_warm_market_instrument_catalog())
+        tasks.append(asyncio.create_task(_warm_market_instrument_catalog()))
+        tasks.append(asyncio.create_task(run_daily_report_scheduler()))
     yield
-    if warmup_task is not None and not warmup_task.done():
-        warmup_task.cancel()
+    for task in tasks:
+        if not task.done():
+            task.cancel()
+    for task in tasks:
         with suppress(asyncio.CancelledError):
-            await warmup_task
+            await task
 
 
 app = FastAPI(

@@ -4,9 +4,7 @@ import 'package:sahmi_kasban_mobile/domain/models.dart';
 import 'package:sahmi_kasban_mobile/features/market/stock_analysis_report.dart';
 
 void main() {
-  testWidgets('renders Arabic analysis cards without locale initialization', (
-    tester,
-  ) async {
+  testWidgets('renders Arabic analysis cards without raw JSON', (tester) async {
     final analysis = StockAnalysisResult(
       analysisId: 'analysis-1',
       ticker: 'DSCW',
@@ -79,6 +77,6 @@ void main() {
     expect(find.text('خطة التداول الافتراضية'), findsOneWidget);
     expect(find.text('الملخص الفني'), findsOneWidget);
     expect(find.text('السيناريوهات المحتملة'), findsOneWidget);
-    expect(find.text('البيانات التقنية الخام'), findsOneWidget);
+    expect(find.text('البيانات التقنية الخام'), findsNothing);
   });
 }
