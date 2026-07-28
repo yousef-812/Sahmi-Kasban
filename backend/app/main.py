@@ -2,6 +2,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,8 @@ from app.api.router import api_router
 from app.core.config import Environment, get_settings
 from app.core.observability import configure_observability
 from app.db.session import SessionLocal
+from app.jobs.generate_daily_top10 import run_daily_top10_scan
+from app.market_calendar import EGXTradingCalendar
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
 
@@ -27,16 +30,47 @@ async def _warm_market_instrument_catalog() -> None:
         logger.exception("Market instrument catalog warm-up failed")
 
 
+async def _daily_market_report_scheduler() -> None:
+    """Run the Cairo 5 PM scan without requiring an external cron service."""
+
+    last_attempt_at: datetime | None = None
+    completed_session_date: date | None = None
+    retry_interval = timedelta(minutes=15)
+    while True:
+        now = datetime.now(UTC)
+        calendar = EGXTradingCalendar.from_settings()
+        local = now.astimezone(calendar.timezone)
+        due = (
+            calendar.is_trading_session(local.date())
+            and local.timetz().replace(tzinfo=None) >= calendar.scan_time
+        )
+        retry_due = last_attempt_at is None or now - last_attempt_at >= retry_interval
+        if due and completed_session_date != local.date() and retry_due:
+            last_attempt_at = now
+            try:
+                result = await run_daily_top10_scan(now)
+                status = str(result.get("status", ""))
+                logger.info("Scheduled daily market scan finished: %s", result)
+                if status in {"created", "already_exists"}:
+                    completed_session_date = local.date()
+            except Exception:
+                logger.exception("Scheduled daily market scan failed; retrying in 15 minutes")
+        await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     warmup_task: asyncio.Task[None] | None = None
+    scheduler_task: asyncio.Task[None] | None = None
     if settings.app_env is not Environment.TEST:
         warmup_task = asyncio.create_task(_warm_market_instrument_catalog())
+        scheduler_task = asyncio.create_task(_daily_market_report_scheduler())
     yield
-    if warmup_task is not None and not warmup_task.done():
-        warmup_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await warmup_task
+    for task in (warmup_task, scheduler_task):
+        if task is not None and not task.done():
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
 
 app = FastAPI(
