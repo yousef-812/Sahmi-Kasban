@@ -4,7 +4,7 @@ import 'package:sahmi_kasban_mobile/domain/models.dart';
 import 'package:sahmi_kasban_mobile/features/market/stock_analysis_report.dart';
 
 void main() {
-  testWidgets('renders Arabic analysis cards without locale initialization', (
+  testWidgets('renders Arabic analysis cards without raw payloads', (
     tester,
   ) async {
     final analysis = StockAnalysisResult(
@@ -79,6 +79,6 @@ void main() {
     expect(find.text('خطة التداول الافتراضية'), findsOneWidget);
     expect(find.text('الملخص الفني'), findsOneWidget);
     expect(find.text('السيناريوهات المحتملة'), findsOneWidget);
-    expect(find.text('البيانات التقنية الخام'), findsOneWidget);
+    expect(find.text('البيانات التقنية الخام'), findsNothing);
   });
 }
