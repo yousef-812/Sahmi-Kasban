@@ -14,6 +14,9 @@ class StructuredDataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (title == 'البيانات التقنية الخام') {
+      return const SizedBox.shrink();
+    }
     final visible = data.entries
         .where((entry) => !_hiddenKeys.contains(entry.key))
         .toList(growable: false);
