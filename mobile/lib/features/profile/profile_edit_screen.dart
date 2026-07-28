@@ -152,10 +152,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Future<void> _copyLegalUrl(String path) async {
-    final baseUrl = ref.read(appConfigProvider).apiBaseUrl.replaceFirst(
-      RegExp(r'/+$'),
-      '',
-    );
+    final baseUrl = ref
+        .read(appConfigProvider)
+        .apiBaseUrl
+        .replaceFirst(RegExp(r'/+$'), '');
     await Clipboard.setData(ClipboardData(text: '$baseUrl$path'));
     if (mounted) {
       ScaffoldMessenger.of(
@@ -273,9 +273,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     children: [
                       Text(
                         'الخصوصية والحساب',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -301,7 +300,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         icon: _deleting
                             ? const SizedBox.square(
                                 dimension: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2.5),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
                               )
                             : const Icon(Icons.delete_forever_outlined),
                         label: const Text('حذف الحساب نهائيًا'),
