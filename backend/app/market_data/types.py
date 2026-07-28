@@ -10,7 +10,7 @@ class MarketDataError(RuntimeError):
 
 
 class UnknownTickerError(MarketDataError):
-    """Raised when a ticker is outside the supported EGX registry."""
+    """Raised when a ticker is outside the supported EGX catalog."""
 
 
 class MarketDataUnavailableError(MarketDataError):
@@ -22,12 +22,14 @@ class MarketInstrument:
     ticker: str
     provider_symbol: str
     exchange: str = "EGX"
+    description: str = ""
 
     def to_dict(self) -> dict[str, str]:
         return {
             "ticker": self.ticker,
             "provider_symbol": self.provider_symbol,
             "exchange": self.exchange,
+            "description": self.description,
         }
 
 
