@@ -52,10 +52,7 @@ class StockAnalysisReport extends StatelessWidget {
         const SizedBox(height: 12),
         _EngineScoresCard(engines: engines),
         const SizedBox(height: 12),
-        _MarketDataCard(
-          marketData: marketData,
-          dataAsOf: analysis.dataAsOf,
-        ),
+        _MarketDataCard(marketData: marketData, dataAsOf: analysis.dataAsOf),
         if (warnings.isNotEmpty) ...[
           const SizedBox(height: 12),
           _NoticeCard(
@@ -137,9 +134,8 @@ class _DecisionCard extends StatelessWidget {
                       Text(
                         ticker,
                         textDirection: TextDirection.ltr,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -208,10 +204,14 @@ class _TradePlanCard extends StatelessWidget {
     return _SectionCard(
       icon: Icons.route_rounded,
       title: 'خطة التداول الافتراضية',
-      subtitle: 'الأرقام محسوبة آليًا وفق إعدادات رأس المال والمخاطر داخل النظام.',
+      subtitle:
+          'الأرقام محسوبة آليًا وفق إعدادات رأس المال والمخاطر داخل النظام.',
       child: _MetricGrid(
         items: [
-          _MetricData(label: 'سعر الدخول', value: _formatMoney(tradePlan['entry'])),
+          _MetricData(
+            label: 'سعر الدخول',
+            value: _formatMoney(tradePlan['entry']),
+          ),
           _MetricData(
             label: 'وقف الخسارة',
             value: _formatMoney(tradePlan['stop_loss']),
@@ -297,7 +297,10 @@ class _TechnicalOverviewCard extends StatelessWidget {
             label: 'متوسط 200 يوم',
             value: _formatMoney(technical['sma_200']),
           ),
-          _MetricData(label: 'MACD', value: _formatNumber(technical['macd'], decimals: 4)),
+          _MetricData(
+            label: 'MACD',
+            value: _formatNumber(technical['macd'], decimals: 4),
+          ),
           _MetricData(
             label: 'عائد 20 يوم',
             value: '${_formatNumber(technical['return_20d_pct'])}%',
@@ -413,7 +416,10 @@ class _EngineScoreRow extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+              child: Text(
+                name,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
             Text('${_formatNumber(score)}/100'),
           ],
@@ -452,7 +458,9 @@ class _MarketDataCard extends StatelessWidget {
         items: [
           _MetricData(
             label: 'المصدر',
-            value: provider.toLowerCase() == 'tradingview' ? 'TradingView' : provider,
+            value: provider.toLowerCase() == 'tradingview'
+                ? 'TradingView'
+                : provider,
           ),
           _MetricData(
             label: 'عدد الشموع',
@@ -542,7 +550,10 @@ class _MetricGrid extends StatelessWidget {
           runSpacing: 10,
           children: [
             for (final item in items)
-              SizedBox(width: width, child: _MetricTile(data: item)),
+              SizedBox(
+                width: width,
+                child: _MetricTile(data: item),
+              ),
           ],
         );
       },
@@ -582,9 +593,9 @@ class _MetricTile extends StatelessWidget {
             textDirection: _containsLatinOrNumber(data.value)
                 ? TextDirection.ltr
                 : TextDirection.rtl,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
           if (data.subtitle case final subtitle?) ...[
             const SizedBox(height: 4),
@@ -625,7 +636,10 @@ class _NoticeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 6),
                   Text(body),
                 ],
@@ -652,10 +666,7 @@ List<Object?> _asList(Object? value) {
   return value is List ? value.cast<Object?>() : const [];
 }
 
-Map<String, dynamic> _engineDetails(
-  Map<String, dynamic> engines,
-  String key,
-) {
+Map<String, dynamic> _engineDetails(Map<String, dynamic> engines, String key) {
   return _asMap(_asMap(engines[key])['details']);
 }
 
@@ -770,7 +781,9 @@ String _formatArabicDate(DateTime value) {
     'ديسمبر',
   ];
   final local = value.toLocal();
-  final hour = local.hour == 0 ? 12 : (local.hour > 12 ? local.hour - 12 : local.hour);
+  final hour = local.hour == 0
+      ? 12
+      : (local.hour > 12 ? local.hour - 12 : local.hour);
   final minute = local.minute.toString().padLeft(2, '0');
   final period = local.hour >= 12 ? 'م' : 'ص';
   return '${local.day} ${months[local.month - 1]} ${local.year}، $hour:$minute $period';
