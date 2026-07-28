@@ -3,7 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import CurrentUser, DatabaseSession
-from app.market_data.egx_symbols import EGX_SEED_SYMBOLS, list_instruments
+from app.market_data.catalog import market_instrument_exists, search_market_instruments
+from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.provider import get_market_data_provider
 from app.market_data.types import (
     MarketDataProvider,
@@ -30,13 +31,19 @@ StockAIService = Annotated[SahmiAIService, Depends(get_stock_ai_service)]
 
 
 @router.get("/market/instruments", response_model=MarketInstrumentListResponse)
-def get_market_instruments(
-    query: str = Query(default="", max_length=24),
-    limit: int = Query(default=50, ge=1, le=200),
+async def get_market_instruments(
+    db: DatabaseSession,
+    query: str = Query(default="", max_length=64),
+    limit: int = Query(default=30, ge=1, le=100),
 ) -> MarketInstrumentListResponse:
-    instruments = list_instruments(query=query, limit=limit)
+    source, total, instruments = await search_market_instruments(
+        db,
+        query=query,
+        limit=limit,
+    )
     return MarketInstrumentListResponse(
-        total_registry_size=len(EGX_SEED_SYMBOLS),
+        source=source,
+        total_registry_size=total,
         items=[MarketInstrumentResponse(**instrument.to_dict()) for instrument in instruments],
     )
 
@@ -54,10 +61,13 @@ async def analyze_stock(
     ai_service: StockAIService,
 ) -> StockAnalysisResponse:
     try:
+        normalized_ticker = normalize_egx_ticker(ticker)
+        if not await market_instrument_exists(db, normalized_ticker):
+            raise UnknownTickerError(f"Unsupported EGX ticker: {normalized_ticker}")
         execution = await execute_stock_analysis(
             db,
             user=current_user,
-            ticker=ticker,
+            ticker=normalized_ticker,
             provider=provider,
             ai_service=ai_service,
             language=request.language,
