@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -18,6 +20,8 @@ class StockAnalysisTab extends ConsumerStatefulWidget {
 
 class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
   final _queryController = TextEditingController();
+  Timer? _searchDebounce;
+  int _searchRevision = 0;
   List<MarketInstrument> _results = const [];
   MarketInstrument? _selected;
   StockAnalysisResult? _analysis;
@@ -27,33 +31,63 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _queryController.dispose();
     super.dispose();
   }
 
-  Future<void> _search() async {
-    if (_searching) {
-      return;
-    }
-    final normalizedQuery = _queryController.text.trim().toUpperCase();
-    if (normalizedQuery.isEmpty) {
-      setState(() {
-        _results = const [];
-        _selected = null;
-        _analysis = null;
-        _error = 'اكتب رمز السهم أولًا.';
-      });
-      return;
-    }
+  void _onQueryChanged(String value) {
+    _searchDebounce?.cancel();
+    final normalizedQuery = value.trim().toUpperCase();
+    final revision = ++_searchRevision;
     setState(() {
-      _searching = true;
+      _selected = null;
+      _results = const [];
       _error = null;
       _analysis = null;
+      _searching = normalizedQuery.isNotEmpty;
     });
+    if (normalizedQuery.isEmpty) {
+      return;
+    }
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => _search(query: normalizedQuery, revision: revision),
+    );
+  }
+
+  Future<void> _search({String? query, int? revision}) async {
+    _searchDebounce?.cancel();
+    final normalizedQuery = (query ?? _queryController.text)
+        .trim()
+        .toUpperCase();
+    final requestRevision = revision ?? ++_searchRevision;
+    if (normalizedQuery.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _results = const [];
+          _selected = null;
+          _analysis = null;
+          _searching = false;
+          _error = 'اكتب رمز السهم أو اسم الشركة أولًا.';
+        });
+      }
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _searching = true;
+        _error = null;
+        _analysis = null;
+      });
+    }
     try {
       final results = await ref
           .read(backendRepositoryProvider)
           .searchInstruments(normalizedQuery);
+      if (!mounted || requestRevision != _searchRevision) {
+        return;
+      }
       MarketInstrument? exactMatch;
       for (final instrument in results) {
         if (instrument.ticker == normalizedQuery) {
@@ -62,21 +96,19 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
         }
       }
       exactMatch ??= results.length == 1 ? results.first : null;
-      if (mounted) {
-        setState(() {
-          _results = results;
-          _selected = exactMatch;
-          _error = results.isEmpty
-              ? 'رمز السهم غير موجود في قائمة الأسهم المدعومة.'
-              : null;
-        });
-      }
+      setState(() {
+        _results = results;
+        _selected = exactMatch;
+        _error = results.isEmpty
+            ? 'لم نعثر على سهم مصري مطابق في كتالوج السوق.'
+            : null;
+      });
     } on ApiException catch (error) {
-      if (mounted) {
+      if (mounted && requestRevision == _searchRevision) {
         setState(() => _error = error.message);
       }
     } finally {
-      if (mounted) {
+      if (mounted && requestRevision == _searchRevision) {
         setState(() => _searching = false);
       }
     }
@@ -119,10 +151,15 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
       final analysis = await ref
           .read(backendRepositoryProvider)
           .analyzeStock(instrument.ticker);
-      await ref.read(sessionControllerProvider.notifier).refreshProfile();
-      ref.invalidate(walletSummaryProvider);
       if (mounted) {
         setState(() => _analysis = analysis);
+      }
+      ref.invalidate(walletSummaryProvider);
+      try {
+        await ref.read(sessionControllerProvider.notifier).refreshProfile();
+      } on Object {
+        // The completed analysis must remain visible even if the optional
+        // profile refresh fails. Wallet data will retry through its provider.
       }
     } on ApiException catch (error) {
       if (mounted) {
@@ -154,7 +191,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'ابحث بالرمز، اختر السهم الصحيح، ثم ابدأ التحليل المدفوع.',
+                  'اكتب رمز السهم أو اسم الشركة، وستظهر النتائج تلقائيًا.',
                 ),
                 const SizedBox(height: 18),
                 TextField(
@@ -162,11 +199,11 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                   textDirection: TextDirection.ltr,
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
-                    labelText: 'رمز السهم',
+                    labelText: 'رمز السهم أو اسم الشركة',
                     hintText: 'COMI',
                     prefixIcon: IconButton(
-                      tooltip: 'بحث عن السهم',
-                      onPressed: _searching ? null : _search,
+                      tooltip: 'تحديث البحث',
+                      onPressed: _searching ? null : () => _search(),
                       icon: _searching
                           ? const SizedBox.square(
                               dimension: 18,
@@ -175,23 +212,16 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                           : const Icon(Icons.search_rounded),
                     ),
                   ),
-                  onChanged: (_) {
-                    if (_selected != null ||
-                        _results.isNotEmpty ||
-                        _error != null ||
-                        _analysis != null) {
-                      setState(() {
-                        _selected = null;
-                        _results = const [];
-                        _error = null;
-                        _analysis = null;
-                      });
-                    }
-                  },
+                  onChanged: _onQueryChanged,
                   onSubmitted: (_) => _search(),
                 ),
                 if (_results.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  Text(
+                    '${_results.length} نتيجة',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 4),
                   for (final instrument in _results)
                     Builder(
                       builder: (context) {

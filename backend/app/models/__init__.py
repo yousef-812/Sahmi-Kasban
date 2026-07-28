@@ -16,7 +16,7 @@ from app.models.entities import (
     User,
     WalletEntry,
 )
-from app.models.market_data import MarketDataSnapshot
+from app.models.market_data import MarketDataSnapshot, MarketInstrumentCatalog
 from app.models.market_reports import MarketReportUnlock, MarketScanRun
 from app.models.monetization import BillingPurchase, RewardedAdClaim, RewardedAdSession
 from app.models.operations import (
@@ -43,6 +43,7 @@ __all__ = [
     "DiscussionModerationEvent",
     "DiscussionReport",
     "MarketDataSnapshot",
+    "MarketInstrumentCatalog",
     "MarketReport",
     "MarketReportEvaluation",
     "MarketReportItem",

@@ -11,6 +11,7 @@ class MarketInstrumentResponse(BaseModel):
     ticker: str
     provider_symbol: str
     exchange: str
+    description: str = ""
 
 
 class MarketInstrumentListResponse(BaseModel):
