@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from functools import lru_cache
 from typing import Any
 
@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
-from app.models import StockAnalysis, User
+from app.models import StockAnalysis, User, UserStockAnalysisAccess
 from app.services.operations_settings import get_int_setting
 from app.services.wallet import (
     InsufficientBalanceError,
@@ -98,6 +98,130 @@ def get_stock_ai_service() -> SahmiAIService:
     return SahmiAIService()
 
 
+def _access_for(
+    db: Session,
+    *,
+    user_id,
+    analysis_id,
+) -> UserStockAnalysisAccess | None:
+    return db.scalar(
+        select(UserStockAnalysisAccess).where(
+            UserStockAnalysisAccess.user_id == user_id,
+            UserStockAnalysisAccess.analysis_id == analysis_id,
+        )
+    )
+
+
+def _grant_access(
+    db: Session,
+    *,
+    user: User,
+    analysis: StockAnalysis,
+    moment: datetime,
+) -> UserStockAnalysisAccess:
+    access = _access_for(db, user_id=user.id, analysis_id=analysis.id)
+    if access is None:
+        access = UserStockAnalysisAccess(
+            user_id=user.id,
+            analysis_id=analysis.id,
+            ticker=analysis.ticker,
+            last_viewed_at=moment,
+        )
+        db.add(access)
+    else:
+        access.last_viewed_at = moment
+    db.flush()
+    return access
+
+
+def _deliver_existing_analysis(
+    db: Session,
+    *,
+    user: User,
+    analysis: StockAnalysis,
+    analysis_cost_points: int,
+    market_snapshot_cached: bool,
+) -> StockAnalysisExecution:
+    current = datetime.now(UTC)
+    access = _access_for(db, user_id=user.id, analysis_id=analysis.id)
+    account = get_wallet_account(db, user.id)
+    if access is not None:
+        access.last_viewed_at = current
+        db.commit()
+        return StockAnalysisExecution(
+            analysis=analysis,
+            cached=True,
+            charged_points=0,
+            balance_points=account.balance_points,
+            market_snapshot_cached=market_snapshot_cached,
+        )
+
+    if account.balance_points < analysis_cost_points:
+        db.rollback()
+        raise InsufficientBalanceError("Insufficient balance for stock analysis")
+
+    _grant_access(db, user=user, analysis=analysis, moment=current)
+    debit_points(
+        db,
+        user_id=user.id,
+        amount_points=analysis_cost_points,
+        transaction_id=f"stock-analysis:{user.id}:{analysis.id}",
+        entry_type="stock_analysis_debit",
+        reference_type="stock_analysis",
+        reference_id=str(analysis.id),
+        details={
+            "ticker": analysis.ticker,
+            "data_as_of": analysis.data_as_of.isoformat(),
+            "reused_computation": True,
+            "configured_cost_points": analysis_cost_points,
+        },
+    )
+    db.commit()
+    account = get_wallet_account(db, user.id)
+    return StockAnalysisExecution(
+        analysis=analysis,
+        cached=True,
+        charged_points=analysis_cost_points,
+        balance_points=account.balance_points,
+        market_snapshot_cached=market_snapshot_cached,
+    )
+
+
+def latest_owned_stock_analysis(
+    db: Session,
+    *,
+    user: User,
+    ticker: str,
+) -> StockAnalysisExecution | None:
+    row = db.execute(
+        select(UserStockAnalysisAccess, StockAnalysis)
+        .join(StockAnalysis, StockAnalysis.id == UserStockAnalysisAccess.analysis_id)
+        .where(
+            UserStockAnalysisAccess.user_id == user.id,
+            UserStockAnalysisAccess.ticker == ticker,
+            StockAnalysis.status == "complete",
+        )
+        .order_by(
+            StockAnalysis.data_as_of.desc(),
+            UserStockAnalysisAccess.created_at.desc(),
+        )
+        .limit(1)
+    ).one_or_none()
+    if row is None:
+        return None
+    access, analysis = row
+    access.last_viewed_at = datetime.now(UTC)
+    db.commit()
+    account = get_wallet_account(db, user.id)
+    return StockAnalysisExecution(
+        analysis=analysis,
+        cached=True,
+        charged_points=0,
+        balance_points=account.balance_points,
+        market_snapshot_cached=True,
+    )
+
+
 async def execute_stock_analysis(
     db: Session,
     *,
@@ -122,13 +246,11 @@ async def execute_stock_analysis(
         )
     )
     if existing is not None:
-        db.commit()
-        account = get_wallet_account(db, user.id)
-        return StockAnalysisExecution(
+        return _deliver_existing_analysis(
+            db,
+            user=user,
             analysis=existing,
-            cached=True,
-            charged_points=0,
-            balance_points=account.balance_points,
+            analysis_cost_points=analysis_cost_points,
             market_snapshot_cached=market_snapshot_cached,
         )
 
@@ -204,16 +326,21 @@ async def execute_stock_analysis(
         )
         if raced is None:
             raise
-        account = get_wallet_account(db, user.id)
-        return StockAnalysisExecution(
+        return _deliver_existing_analysis(
+            db,
+            user=user,
             analysis=raced,
-            cached=True,
-            charged_points=0,
-            balance_points=account.balance_points,
+            analysis_cost_points=analysis_cost_points,
             market_snapshot_cached=market_snapshot_cached,
         )
 
     try:
+        _grant_access(
+            db,
+            user=user,
+            analysis=analysis,
+            moment=datetime.now(UTC),
+        )
         debit_points(
             db,
             user_id=user.id,
