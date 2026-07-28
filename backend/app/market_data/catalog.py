@@ -25,6 +25,14 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def seed_market_instrument_catalog(db: Session) -> None:
     now = _utcnow()
     existing = set(
@@ -149,9 +157,11 @@ async def ensure_market_instrument_catalog(db: Session) -> str:
     if settings.app_env is Environment.TEST:
         return "legacy_seed_registry"
 
-    latest_seen = db.scalar(
-        select(func.max(MarketInstrumentCatalog.last_seen_at)).where(
-            MarketInstrumentCatalog.source == "tradingview_scanner"
+    latest_seen = _as_utc(
+        db.scalar(
+            select(func.max(MarketInstrumentCatalog.last_seen_at)).where(
+                MarketInstrumentCatalog.source == "tradingview_scanner"
+            )
         )
     )
     refresh_after = timedelta(hours=settings.market_instrument_catalog_refresh_hours)
@@ -162,8 +172,11 @@ async def ensure_market_instrument_catalog(db: Session) -> str:
         _last_refresh_attempt_at is not None
         and _last_refresh_attempt_at > now - retry_after
     )
-    if not catalog_stale or recently_attempted:
-        return "tradingview_scanner" if latest_seen is not None else "legacy_seed_registry"
+    current_source = (
+        "tradingview_scanner" if latest_seen is not None else "legacy_seed_registry"
+    )
+    if not catalog_stale or recently_attempted or _refresh_lock.locked():
+        return current_source
 
     async with _refresh_lock:
         now = _utcnow()
@@ -172,7 +185,7 @@ async def ensure_market_instrument_catalog(db: Session) -> str:
             and _last_refresh_attempt_at > now - retry_after
         )
         if recently_attempted:
-            return "tradingview_scanner" if latest_seen is not None else "legacy_seed_registry"
+            return current_source
         _last_refresh_attempt_at = now
         try:
             await refresh_market_instrument_catalog(db)
@@ -180,7 +193,7 @@ async def ensure_market_instrument_catalog(db: Session) -> str:
         except Exception:
             db.rollback()
             logger.exception("Could not refresh the TradingView EGX instrument catalog")
-            return "tradingview_scanner" if latest_seen is not None else "legacy_seed_registry"
+            return current_source
 
 
 async def search_market_instruments(
@@ -191,7 +204,9 @@ async def search_market_instruments(
 ) -> tuple[str, int, list[MarketInstrument]]:
     source = await ensure_market_instrument_catalog(db)
     normalized_query = query.strip().upper()
-    statement = select(MarketInstrumentCatalog).where(MarketInstrumentCatalog.active.is_(True))
+    statement = select(MarketInstrumentCatalog).where(
+        MarketInstrumentCatalog.active.is_(True)
+    )
     if normalized_query:
         pattern = f"%{normalized_query}%"
         statement = statement.where(
@@ -202,7 +217,12 @@ async def search_market_instruments(
         ).order_by(
             case(
                 (func.upper(MarketInstrumentCatalog.ticker) == normalized_query, 0),
-                (func.upper(MarketInstrumentCatalog.ticker).like(f"{normalized_query}%"), 1),
+                (
+                    func.upper(MarketInstrumentCatalog.ticker).like(
+                        f"{normalized_query}%"
+                    ),
+                    1,
+                ),
                 else_=2,
             ),
             MarketInstrumentCatalog.ticker,
@@ -221,6 +241,7 @@ async def search_market_instruments(
             ticker=row.ticker,
             provider_symbol=row.provider_symbol,
             exchange=row.exchange,
+            description=row.description,
         )
         for row in rows
     ]
@@ -229,7 +250,7 @@ async def search_market_instruments(
 
 async def market_instrument_exists(db: Session, ticker: str) -> bool:
     await ensure_market_instrument_catalog(db)
-    normalized = ticker.strip().upper().removesuffix(".CA")
+    normalized = ticker.strip().upper().removesuffix(".CA").removeprefix("EGX:")
     if not _TICKER_PATTERN.fullmatch(normalized):
         return False
     return (
