@@ -125,6 +125,37 @@ class StockAnalysis(TimestampMixin, Base):
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
 
 
+class StockAnalysisAccess(TimestampMixin, Base):
+    __tablename__ = "stock_analysis_access"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "analysis_id",
+            name="uq_stock_analysis_access_user_analysis",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    analysis_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("stock_analyses.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    wallet_transaction_id: Mapped[str] = mapped_column(
+        String(120),
+        unique=True,
+        nullable=False,
+    )
+    unlocked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class Discussion(TimestampMixin, Base):
     __tablename__ = "discussions"
     __table_args__ = (
