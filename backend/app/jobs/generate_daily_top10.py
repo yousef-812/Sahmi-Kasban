@@ -5,28 +5,82 @@ import json
 import logging
 from datetime import UTC, datetime
 
+from sqlalchemy import select
+
 from app.db.session import SessionLocal
 from app.market_calendar import NonTradingSessionError, ScanNotDueError
+from app.market_data.catalog import ensure_market_instrument_catalog
+from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
+from app.models import MarketInstrumentCatalog, User
 from app.services.daily_reports import (
     DailyReportGenerationError,
     DailyScanAlreadyRunningError,
     generate_daily_top10_report,
 )
+from app.services.notifications import create_notification
+from app.services.operations_settings import get_bool_setting
 from app.services.stock_analysis import get_stock_ai_service
 
 logger = logging.getLogger(__name__)
 
 
+async def _scan_universe(db) -> tuple[str, ...]:
+    await ensure_market_instrument_catalog(db)
+    tickers = tuple(
+        db.scalars(
+            select(MarketInstrumentCatalog.ticker)
+            .where(MarketInstrumentCatalog.active.is_(True))
+            .order_by(MarketInstrumentCatalog.ticker)
+        ).all()
+    )
+    return tickers or EGX_SEED_SYMBOLS
+
+
+def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int:
+    if not get_bool_setting(db, "notifications_enabled"):
+        return 0
+    user_ids = db.scalars(
+        select(User.id).where(
+            User.status == "active",
+            User.email_verified.is_(True),
+        )
+    ).all()
+    for user_id in user_ids:
+        create_notification(
+            db,
+            user_id=user_id,
+            title="تقرير أفضل 10 أسهم جاهز",
+            body="تم تحليل أسهم البورصة المصرية وتجهيز تقرير الجلسة القادمة.",
+            category="market_report",
+            data={
+                "report_id": report_id,
+                "target_session_date": target_session_date,
+                "route": f"/reports/{report_id}",
+            },
+        )
+    db.commit()
+    return len(user_ids)
+
+
 async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, object]:
     with SessionLocal() as db:
         try:
+            tickers = await _scan_universe(db)
             result = await generate_daily_top10_report(
                 db,
                 provider=get_market_data_provider(),
                 ai_service=get_stock_ai_service(),
                 moment=moment or datetime.now(UTC),
+                tickers=tickers,
             )
+            notification_count = 0
+            if result.created:
+                notification_count = _notify_report_ready(
+                    db,
+                    report_id=str(result.report.id),
+                    target_session_date=result.report.target_session_date.isoformat(),
+                )
         except ScanNotDueError as exc:
             db.rollback()
             return {"status": "skipped", "reason": "before_scan_time", "detail": str(exc)}
@@ -45,15 +99,15 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
         "status": "created" if result.created else "already_exists",
         "report_id": str(result.report.id),
         "scan_run_id": str(result.scan_run.id),
-        "source_session_date": result.report.source_snapshot.get(
-            "source_session_date"
-        ),
+        "source_session_date": result.report.source_snapshot.get("source_session_date"),
         "target_session_date": result.report.target_session_date.isoformat(),
         "generated_at": (
             result.report.generated_at.isoformat()
             if result.report.generated_at is not None
             else None
         ),
+        "universe_size": len(tickers),
+        "notifications_created": notification_count,
     }
     logger.info("Daily top-ten scan result: %s", payload)
     return payload

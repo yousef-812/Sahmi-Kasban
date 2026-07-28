@@ -1,4 +1,5 @@
 from app.models.accounts import AccountToken, AuthSession, WalletAccount, WeeklyGrant
+from app.models.analysis_access import UserStockAnalysisAccess
 from app.models.community import (
     CommunityAdminEvent,
     DiscussionAppeal,
@@ -62,6 +63,7 @@ __all__ = [
     "Subscription",
     "User",
     "UserMute",
+    "UserStockAnalysisAccess",
     "WalletAccount",
     "WalletEntry",
     "WeeklyGrant",

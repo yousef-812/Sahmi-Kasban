@@ -132,7 +132,7 @@ def register_and_login(
     return {"Authorization": f"Bearer {login.json()['access_token']}"}
 
 
-def test_shared_analysis_cache_charges_only_the_creator(
+def test_shared_analysis_cache_charges_once_per_account(
     client: TestClient,
     fake_email_service,
     db_session: Session,
@@ -158,16 +158,18 @@ def test_shared_analysis_cache_charges_only_the_creator(
     assert first.json()["balance_points"] == 250
     assert second.status_code == 200
     assert second.json()["cached"] is True
-    assert second.json()["charged_points"] == 0
-    assert second.json()["balance_points"] == 300
+    assert second.json()["charged_points"] == 50
+    assert second.json()["balance_points"] == 250
     assert provider.calls == 1
 
     debits = db_session.scalars(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")
     ).all()
-    wallets = db_session.scalars(select(WalletAccount).order_by(WalletAccount.balance_points)).all()
-    assert len(debits) == 1
-    assert [wallet.balance_points for wallet in wallets] == [250, 300]
+    wallets = db_session.scalars(
+        select(WalletAccount).order_by(WalletAccount.balance_points)
+    ).all()
+    assert len(debits) == 2
+    assert [wallet.balance_points for wallet in wallets] == [250, 250]
 
 
 def test_core_engine_failure_rolls_back_snapshot_analysis_and_debit(
