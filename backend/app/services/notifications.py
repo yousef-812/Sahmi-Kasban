@@ -313,6 +313,106 @@ def _target_users(
     return list(db.scalars(query.order_by(User.id).limit(5_000)).all())
 
 
+def _deliver_to_devices(
+    db: Session,
+    *,
+    notification: Notification,
+    title: str,
+    body: str,
+    data: dict,
+    sender: FCMPushSender,
+    moment: datetime,
+) -> tuple[int, int, int]:
+    sent = failed = skipped = 0
+    devices = db.scalars(
+        select(PushDevice).where(
+            PushDevice.user_id == notification.user_id,
+            PushDevice.enabled.is_(True),
+        )
+    ).all()
+    for device in devices:
+        status, message_id, error_code = sender.send(
+            token=_decrypt_token(device.encrypted_token),
+            title=title,
+            body=body,
+            data=data,
+        )
+        if status == "sent":
+            sent += 1
+            device.last_error = None
+        elif status == "failed":
+            failed += 1
+            device.last_error = error_code
+        else:
+            skipped += 1
+        db.add(
+            NotificationDelivery(
+                notification_id=notification.id,
+                push_device_id=device.id,
+                status=status,
+                provider_message_id=message_id,
+                error_code=error_code,
+                attempted_at=moment,
+            )
+        )
+    return sent, failed, skipped
+
+
+def broadcast_system_notification(
+    db: Session,
+    *,
+    title: str,
+    body: str,
+    category: str,
+    data: dict,
+    sender: FCMPushSender | None = None,
+    moment: datetime | None = None,
+) -> BroadcastResult:
+    """Create an in-app notification for every active user and attempt FCM delivery."""
+
+    if not get_bool_setting(db, "notifications_enabled"):
+        return BroadcastResult(0, 0, 0, 0, 0)
+    current = moment or datetime.now(UTC)
+    targets = _target_users(
+        db,
+        audience="all",
+        plan_code=None,
+        user_ids=[],
+    )
+    push_sender = sender or FCMPushSender()
+    sent = failed = skipped = 0
+    for user in targets:
+        notification = create_notification(
+            db,
+            user_id=user.id,
+            title=title,
+            body=body,
+            category=category,
+            data=data,
+            moment=current,
+        )
+        delivery = _deliver_to_devices(
+            db,
+            notification=notification,
+            title=title,
+            body=body,
+            data=data,
+            sender=push_sender,
+            moment=current,
+        )
+        sent += delivery[0]
+        failed += delivery[1]
+        skipped += delivery[2]
+    db.flush()
+    return BroadcastResult(
+        targeted_users=len(targets),
+        notifications_created=len(targets),
+        push_sent=sent,
+        push_failed=failed,
+        push_skipped=skipped,
+    )
+
+
 def broadcast_notifications(
     db: Session,
     *,
@@ -350,37 +450,18 @@ def broadcast_notifications(
             moment=current,
         )
         notifications_created += 1
-        devices = db.scalars(
-            select(PushDevice).where(
-                PushDevice.user_id == user.id,
-                PushDevice.enabled.is_(True),
-            )
-        ).all()
-        for device in devices:
-            status, message_id, error_code = push_sender.send(
-                token=_decrypt_token(device.encrypted_token),
-                title=title,
-                body=body,
-                data=data,
-            )
-            if status == "sent":
-                sent += 1
-                device.last_error = None
-            elif status == "failed":
-                failed += 1
-                device.last_error = error_code
-            else:
-                skipped += 1
-            db.add(
-                NotificationDelivery(
-                    notification_id=notification.id,
-                    push_device_id=device.id,
-                    status=status,
-                    provider_message_id=message_id,
-                    error_code=error_code,
-                    attempted_at=current,
-                )
-            )
+        delivery = _deliver_to_devices(
+            db,
+            notification=notification,
+            title=title,
+            body=body,
+            data=data,
+            sender=push_sender,
+            moment=current,
+        )
+        sent += delivery[0]
+        failed += delivery[1]
+        skipped += delivery[2]
     db.add(
         CommunityAdminEvent(
             actor_user_id=admin_user_id,
