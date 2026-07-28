@@ -18,9 +18,11 @@ from app.schemas.market import (
     StockAnalysisResponse,
 )
 from app.services.stock_analysis import (
+    StockAnalysisExecution,
     StockAnalysisExecutionError,
     execute_stock_analysis,
     get_stock_ai_service,
+    latest_owned_stock_analysis,
 )
 from app.services.wallet import InsufficientBalanceError, points_to_coins
 from sahmi_kasban.ai import SahmiAIService
@@ -28,6 +30,22 @@ from sahmi_kasban.ai import SahmiAIService
 router = APIRouter(tags=["market"])
 MarketProvider = Annotated[MarketDataProvider, Depends(get_market_data_provider)]
 StockAIService = Annotated[SahmiAIService, Depends(get_stock_ai_service)]
+
+
+def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisResponse:
+    analysis = execution.analysis
+    return StockAnalysisResponse(
+        analysis_id=analysis.id,
+        ticker=analysis.ticker,
+        cached=execution.cached,
+        market_snapshot_cached=execution.market_snapshot_cached,
+        charged_points=execution.charged_points,
+        charged_coins=points_to_coins(execution.charged_points),
+        balance_points=execution.balance_points,
+        balance_coins=points_to_coins(execution.balance_points),
+        data_as_of=analysis.data_as_of,
+        payload=analysis.payload,
+    )
 
 
 @router.get("/market/instruments", response_model=MarketInstrumentListResponse)
@@ -46,6 +64,34 @@ async def get_market_instruments(
         total_registry_size=total,
         items=[MarketInstrumentResponse(**instrument.to_dict()) for instrument in instruments],
     )
+
+
+@router.get(
+    "/stocks/{ticker}/analysis/latest",
+    response_model=StockAnalysisResponse,
+)
+async def get_latest_owned_analysis(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> StockAnalysisResponse:
+    normalized_ticker = normalize_egx_ticker(ticker)
+    if not await market_instrument_exists(db, normalized_ticker):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unsupported EGX ticker: {normalized_ticker}",
+        )
+    execution = latest_owned_stock_analysis(
+        db,
+        user=current_user,
+        ticker=normalized_ticker,
+    )
+    if execution is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No saved analysis exists for this account and ticker",
+        )
+    return _analysis_response(execution)
 
 
 @router.post(
@@ -90,16 +136,4 @@ async def analyze_stock(
             detail="The stock analysis could not be completed",
         ) from exc
 
-    analysis = execution.analysis
-    return StockAnalysisResponse(
-        analysis_id=analysis.id,
-        ticker=analysis.ticker,
-        cached=execution.cached,
-        market_snapshot_cached=execution.market_snapshot_cached,
-        charged_points=execution.charged_points,
-        charged_coins=points_to_coins(execution.charged_points),
-        balance_points=execution.balance_points,
-        balance_coins=points_to_coins(execution.balance_points),
-        data_as_of=analysis.data_as_of,
-        payload=analysis.payload,
-    )
+    return _analysis_response(execution)
