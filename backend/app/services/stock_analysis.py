@@ -232,7 +232,7 @@ async def execute_stock_analysis(
             balance_points = account.balance_points
         return StockAnalysisExecution(
             analysis=existing,
-            cached=True,
+            cached=charged_points == 0,
             charged_points=charged_points,
             balance_points=balance_points,
             market_snapshot_cached=market_snapshot_cached,
@@ -314,7 +314,7 @@ async def execute_stock_analysis(
         db.commit()
         return StockAnalysisExecution(
             analysis=raced,
-            cached=True,
+            cached=charged_points == 0,
             charged_points=charged_points,
             balance_points=balance_points,
             market_snapshot_cached=market_snapshot_cached,
