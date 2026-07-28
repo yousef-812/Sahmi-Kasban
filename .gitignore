@@ -12,6 +12,8 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
+*.dump
+backups/
 backend/.env
 .github/.cache/
 .github/.ci-results/
