@@ -108,7 +108,9 @@ class _ReadableEntry extends StatelessWidget {
                     child: Icon(Icons.circle, size: 6),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: _ReadableValue(value: item, depth: depth + 1)),
+                  Expanded(
+                    child: _ReadableValue(value: item, depth: depth + 1),
+                  ),
                 ],
               ),
             ),
@@ -158,13 +160,13 @@ class _ValueRow extends StatelessWidget {
       children: [
         Expanded(
           flex: 4,
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          flex: 5,
-          child: Text(value, textAlign: TextAlign.end),
-        ),
+        Expanded(flex: 5, child: Text(value, textAlign: TextAlign.end)),
       ],
     );
   }
