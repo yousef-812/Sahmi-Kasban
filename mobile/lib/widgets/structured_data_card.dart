@@ -6,18 +6,20 @@ class StructuredDataCard extends StatelessWidget {
   const StructuredDataCard({
     required this.title,
     required this.data,
+    this.initiallyExpanded = true,
     super.key,
   });
 
   final String title;
   final Map<String, dynamic> data;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
     final formatted = const JsonEncoder.withIndent('  ').convert(data);
     return Card(
       child: ExpansionTile(
-        initiallyExpanded: true,
+        initiallyExpanded: initiallyExpanded,
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
