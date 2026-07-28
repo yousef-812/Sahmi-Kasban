@@ -1,0 +1,37 @@
+name: Fly Staging Acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Fly application base URL
+        required: true
+        default: https://sahmi-kasban.fly.dev
+      requests:
+        description: Number of health requests
+        required: true
+        default: "200"
+      concurrency:
+        description: Concurrent workers
+        required: true
+        default: "25"
+
+permissions:
+  contents: read
+
+jobs:
+  external-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run Fly smoke and load test
+        run: >-
+          python scripts/staging_acceptance.py
+          --base-url "${{ inputs.base_url }}"
+          --requests "${{ inputs.requests }}"
+          --concurrency "${{ inputs.concurrency }}"
+          --max-p95-ms 1000
