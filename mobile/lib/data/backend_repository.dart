@@ -220,6 +220,22 @@ class BackendRepository {
     }
   }
 
+  Future<StockAnalysisResult?> getLatestOwnedStockAnalysis(String ticker) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/stocks/${ticker.trim().toUpperCase()}/analysis/latest',
+      );
+      return StockAnalysisResult.fromJson(_requiredData(response));
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      throw _apiClient.mapError(error);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReportPreview?> getLatestReportPreview() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
@@ -268,30 +284,29 @@ class BackendRepository {
         data: data,
         options: Options(extra: <String, dynamic>{'anonymous': true}),
       );
-      final payload = _requiredData(response);
-      return payload['message'] as String? ?? 'تم تنفيذ الطلب بنجاح.';
+      return (_requiredData(response)['message'] as String?) ?? 'تم تنفيذ الطلب.';
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
   }
+}
 
-  Map<String, dynamic> _requiredData(Response<Map<String, dynamic>> response) {
-    final data = response.data;
-    if (data == null) {
-      throw const ApiException(message: 'استجابة الخادم فارغة.');
-    }
-    return data;
+Map<String, dynamic> _requiredData(Response<Map<String, dynamic>> response) {
+  final data = response.data;
+  if (data == null) {
+    throw const ApiException(message: 'استجابة الخادم غير صالحة.');
   }
+  return data;
+}
 
-  Map<String, dynamic> _requiredMap(Object? value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      return Map<String, dynamic>.from(value);
-    }
-    throw const ApiException(message: 'بيانات الخادم غير صالحة.');
+Map<String, dynamic> _requiredMap(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return value;
   }
+  if (value is Map) {
+    return value.map((key, item) => MapEntry(key.toString(), item));
+  }
+  throw const ApiException(message: 'صيغة البيانات غير صالحة.');
 }
 
 final backendRepositoryProvider = Provider<BackendRepository>((ref) {
