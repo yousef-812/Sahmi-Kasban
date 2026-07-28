@@ -9,7 +9,13 @@ from sqlalchemy.orm import Session
 from app.main import app
 from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries
-from app.models import MarketDataSnapshot, StockAnalysis, WalletAccount, WalletEntry
+from app.models import (
+    MarketDataSnapshot,
+    StockAnalysis,
+    StockAnalysisAccess,
+    WalletAccount,
+    WalletEntry,
+)
 from app.services.stock_analysis import get_stock_ai_service
 
 PASSWORD = "StrongPass123"
@@ -132,7 +138,7 @@ def register_and_login(
     return {"Authorization": f"Bearer {login.json()['access_token']}"}
 
 
-def test_shared_analysis_cache_charges_only_the_creator(
+def test_analysis_is_computed_once_but_each_account_unlocks_once(
     client: TestClient,
     fake_email_service,
     db_session: Session,
@@ -152,25 +158,38 @@ def test_shared_analysis_cache_charges_only_the_creator(
         headers=second_headers,
         json={"language": "ar"},
     )
+    second_repeat = client.post(
+        "/api/v1/stocks/COMI/analysis",
+        headers=second_headers,
+        json={"language": "ar"},
+    )
 
     assert first.status_code == 200
     assert first.json()["charged_points"] == 50
     assert first.json()["balance_points"] == 250
     assert second.status_code == 200
-    assert second.json()["cached"] is True
-    assert second.json()["charged_points"] == 0
-    assert second.json()["balance_points"] == 300
+    assert second.json()["cached"] is False
+    assert second.json()["charged_points"] == 50
+    assert second.json()["balance_points"] == 250
+    assert second_repeat.status_code == 200
+    assert second_repeat.json()["cached"] is True
+    assert second_repeat.json()["charged_points"] == 0
+    assert second_repeat.json()["analysis_id"] == second.json()["analysis_id"]
     assert provider.calls == 1
 
     debits = db_session.scalars(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")
     ).all()
-    wallets = db_session.scalars(select(WalletAccount).order_by(WalletAccount.balance_points)).all()
-    assert len(debits) == 1
-    assert [wallet.balance_points for wallet in wallets] == [250, 300]
+    accesses = db_session.scalars(select(StockAnalysisAccess)).all()
+    wallets = db_session.scalars(
+        select(WalletAccount).order_by(WalletAccount.id)
+    ).all()
+    assert len(debits) == 2
+    assert len(accesses) == 2
+    assert [wallet.balance_points for wallet in wallets] == [250, 250]
 
 
-def test_core_engine_failure_rolls_back_snapshot_analysis_and_debit(
+def test_core_engine_failure_rolls_back_snapshot_analysis_access_and_debit(
     client: TestClient,
     fake_email_service,
     db_session: Session,
@@ -191,6 +210,7 @@ def test_core_engine_failure_rolls_back_snapshot_analysis_and_debit(
     assert wallet.balance_points == 300
     assert db_session.scalars(select(MarketDataSnapshot)).all() == []
     assert db_session.scalars(select(StockAnalysis)).all() == []
+    assert db_session.scalars(select(StockAnalysisAccess)).all() == []
     debits = db_session.scalars(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")
     ).all()
