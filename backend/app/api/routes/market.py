@@ -34,7 +34,7 @@ StockAIService = Annotated[SahmiAIService, Depends(get_stock_ai_service)]
 async def get_market_instruments(
     db: DatabaseSession,
     query: str = Query(default="", max_length=64),
-    limit: int = Query(default=30, ge=1, le=100),
+    limit: int = Query(default=30, ge=1, le=500),
 ) -> MarketInstrumentListResponse:
     source, total, instruments = await search_market_instruments(
         db,
