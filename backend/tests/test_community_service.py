@@ -56,7 +56,7 @@ def test_submission_holds_points_and_is_idempotent(db_session: Session) -> None:
     assert first.discussion.id == repeated.discussion.id
     assert repeated.idempotent is True
     assert first.discussion.status == "pending_review"
-    assert get_wallet_account(db_session, user.id).balance_points == 250
+    assert get_wallet_account(db_session, user.id).balance_points == 450
 
     holds = db_session.scalars(
         select(WalletEntry).where(
@@ -96,7 +96,7 @@ def test_accepting_discussion_confirms_hold_once(db_session: Session) -> None:
     assert accepted.status == "published"
     assert accepted.published_at is not None
     assert accepted.frozen_prediction["direction"] == "up"
-    assert get_wallet_account(db_session, user.id).balance_points == 250
+    assert get_wallet_account(db_session, user.id).balance_points == 450
 
     hold = db_session.scalar(
         select(WalletEntry).where(
@@ -124,7 +124,7 @@ def test_static_rejection_releases_full_hold_once(db_session: Session) -> None:
     assert first.discussion.status == "rejected"
     assert first.discussion.rejection_code in {"phone_number", "contact_details"}
     assert repeated.idempotent is True
-    assert get_wallet_account(db_session, user.id).balance_points == 300
+    assert get_wallet_account(db_session, user.id).balance_points == 500
 
     hold = db_session.scalar(
         select(WalletEntry).where(

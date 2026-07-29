@@ -172,7 +172,7 @@ def test_prediction_verification_rewards_once_and_updates_stats(
     assert payload["verification"]["strength"] == "very_strong"
     assert payload["verification"]["reward_points"] == 200
     assert payload["verification"]["evidence"]["explanation"]["reward_ignored"] is True
-    assert payload["balance_points"] == 500
+    assert payload["balance_points"] == 1_200
     assert payload["idempotent"] is False
 
     repeated = client.post(

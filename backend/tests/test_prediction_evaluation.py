@@ -293,7 +293,7 @@ def test_reward_and_verification_are_idempotent(db_session: Session) -> None:
     assert first.idempotent is False
     assert repeated.idempotent is True
     assert first.verification.id == repeated.verification.id
-    assert get_wallet_account(db_session, user.id).balance_points == 400
+    assert get_wallet_account(db_session, user.id).balance_points == 600
     rewards = db_session.scalars(
         select(WalletEntry).where(
             WalletEntry.entry_type == "prediction_verification_reward"

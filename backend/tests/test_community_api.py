@@ -89,7 +89,7 @@ def test_community_submission_list_report_and_mute_flow(
     assert submitted_payload["discussion"]["ticker"] == "COMI"
     assert submitted_payload["discussion"]["status"] == "pending_review"
     assert submitted_payload["held_points"] == 50
-    assert submitted_payload["balance_points"] == 250
+    assert submitted_payload["balance_points"] == 950
     assert submitted_payload["idempotent"] is False
 
     repeated = client.post(
@@ -99,7 +99,7 @@ def test_community_submission_list_report_and_mute_flow(
     )
     assert repeated.status_code == 201
     assert repeated.json()["idempotent"] is True
-    assert repeated.json()["balance_points"] == 250
+    assert repeated.json()["balance_points"] == 950
 
     discussion_id = submitted_payload["discussion"]["id"]
     discussion_uuid = UUID(discussion_id)
@@ -208,7 +208,7 @@ def test_static_rejection_returns_full_balance(
         "contact_details",
     }
     assert body["held_points"] == 0
-    assert body["balance_points"] == 300
+    assert body["balance_points"] == 1_000
 
     user = db_session.scalar(
         select(User).where(User.email == "api-rejected@example.com")
