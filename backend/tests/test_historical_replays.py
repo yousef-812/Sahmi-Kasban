@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, date, datetime, timedelta
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -28,9 +29,9 @@ class FakeReplayProvider:
         interval: str,
     ) -> CandleSeries:
         self.calls += 1
-        start = datetime.now(UTC) - timedelta(days=360)
+        start = datetime.now(UTC) - timedelta(days=420)
         candles: list[dict[str, object]] = []
-        for index in range(350):
+        for index in range(420):
             close = 30 + index * 0.04 + ((index % 9) - 4) * 0.03
             timestamp = start + timedelta(days=index)
             candles.append(
@@ -193,7 +194,7 @@ def test_replay_worker_processes_five_tickers_and_exports_engine_details(
     assert provider.calls == 5
 
     db_session.expire_all()
-    job = db_session.get(AnalysisReplayJob, job_id)
+    job = db_session.get(AnalysisReplayJob, UUID(job_id))
     assert job is not None
     assert job.total_tickers >= 5
     assert job.processed_tickers == 5
@@ -204,7 +205,11 @@ def test_replay_worker_processes_five_tickers_and_exports_engine_details(
     assert rows
     analyzed = [row for row in rows if row.signal is not None]
     assert analyzed
-    assert all(row.data_as_of.date() < row.analysis_date for row in analyzed if row.data_as_of)
+    assert all(
+        row.data_as_of.date() < row.analysis_date
+        for row in analyzed
+        if row.data_as_of
+    )
     assert "quantitative" in analyzed[0].engines
     assert analyzed[0].engine_version == "core-v2"
 
