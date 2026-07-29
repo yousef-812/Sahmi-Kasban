@@ -2,6 +2,9 @@ from fastapi import APIRouter
 
 from app.api.routes.admin_backtests import router as admin_backtests_router
 from app.api.routes.admin_operations import router as admin_operations_router
+from app.api.routes.admin_performance_recovery import (
+    router as admin_performance_recovery_router,
+)
 from app.api.routes.admin_wallet import router as admin_wallet_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.community import router as community_router
@@ -37,6 +40,7 @@ api_router.include_router(community_verification_router)
 api_router.include_router(community_admin_router)
 api_router.include_router(community_admin_appeals_router)
 api_router.include_router(admin_operations_router)
+api_router.include_router(admin_performance_recovery_router)
 api_router.include_router(admin_wallet_router)
 api_router.include_router(admin_backtests_router)
 api_router.include_router(quality_admin_router)
