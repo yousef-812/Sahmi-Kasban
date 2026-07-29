@@ -6,12 +6,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-if (file("google-services.json").exists()) {
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (file("google-services.json").exists() && keystorePropertiesFile.exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
 
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
 val releaseSigningConfigured = keystorePropertiesFile.exists().also { exists ->
     if (exists) {
         keystorePropertiesFile.inputStream().use(keystoreProperties::load)
