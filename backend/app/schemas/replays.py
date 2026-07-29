@@ -15,7 +15,7 @@ class HistoricalReplayCreateRequest(BaseModel):
     neutral_band_pct: float = Field(default=1.0, ge=0, le=10)
 
     @model_validator(mode="after")
-    def validate_range(self) -> "HistoricalReplayCreateRequest":
+    def validate_range(self) -> HistoricalReplayCreateRequest:
         today = date.today()
         if self.end_date < self.start_date:
             raise ValueError("تاريخ النهاية يجب أن يكون بعد تاريخ البداية")
