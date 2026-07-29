@@ -15,6 +15,7 @@
 - Welcome credit settles inside the email-verification transaction; profile reads remain side-effect free.
 - Existing subscriptions are migrated by Alembic revision `0013_economy_v2`.
 - Old accounts are not retroactively granted the welcome bonus.
+- API and service-level wallet tests distinguish verified welcome balances from unverified internal fixtures.
 - The first move from an old debug-signed APK to the stable key requires one uninstall; later stable-key APKs update normally.
 - Signing files and passwords remain outside Git.
 
