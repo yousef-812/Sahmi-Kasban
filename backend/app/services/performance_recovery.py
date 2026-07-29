@@ -6,6 +6,7 @@ from datetime import UTC, datetime, time
 from sqlalchemy.orm import Session
 
 from app.services.performance_experience import (
+    PerformanceExperienceError,
     get_performance_report_detail,
     get_performance_summary,
     list_delayed_performance_reports,
@@ -71,6 +72,8 @@ def _empty_summary(window_sessions: int, error: Exception) -> dict:
 def safe_get_performance_summary(db: Session, *, window_sessions: int) -> dict:
     try:
         return get_performance_summary(db, window_sessions=window_sessions)
+    except PerformanceExperienceError:
+        raise
     except Exception as exc:  # recovery boundary for legacy production rows
         logger.exception("Performance summary failed; returning a safe empty ledger")
         return _empty_summary(window_sessions, exc)
@@ -87,6 +90,8 @@ def safe_list_performance_reports(
         for item in items:
             _fallback_generated_at(item)
         return items, total
+    except PerformanceExperienceError:
+        raise
     except Exception:  # recovery boundary for legacy production rows
         logger.exception("Performance report list failed; returning an empty page")
         return [], 0
@@ -106,6 +111,8 @@ def safe_list_delayed_performance_reports(
 ) -> tuple[list[dict], int]:
     try:
         return list_delayed_performance_reports(db, limit=limit, offset=offset)
+    except PerformanceExperienceError:
+        raise
     except Exception:  # recovery boundary for legacy production rows
         logger.exception("Delayed performance list failed; returning an empty page")
         return [], 0
