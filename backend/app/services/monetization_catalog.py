@@ -39,10 +39,11 @@ PLANS: tuple[PlanDefinition, ...] = (
             "5 عملات أسبوعيًا",
             "تحليل سهم كامل باستخدام المحركات الأساسية",
             "تقرير أفضل 10 لمدة يوم واحد",
+            "مقارنة حتى 3 أسهم مقابل 0.5 عملة",
             "إمكانية كسب عملات من الإعلانات المكافئة",
         ),
         comparison_monthly_allowance=0,
-        max_comparison_stocks=0,
+        max_comparison_stocks=3,
         priority_level=0,
     ),
     PlanDefinition(
