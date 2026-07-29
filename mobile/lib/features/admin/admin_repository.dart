@@ -161,9 +161,8 @@ class AdminRepository {
         throw const FormatException('ملف الاختبار فارغ.');
       }
       final disposition = response.headers.value('content-disposition') ?? '';
-      final filename = RegExp(
-            'filename="?([^";]+)',
-          ).firstMatch(disposition)?.group(1) ??
+      final filename =
+          RegExp('filename="?([^";]+)').firstMatch(disposition)?.group(1) ??
           'sahmi-engine-replay-$jobId.csv';
       return (bytes: Uint8List.fromList(data), filename: filename);
     } on Object catch (error) {
