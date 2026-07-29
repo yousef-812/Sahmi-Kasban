@@ -41,7 +41,8 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
   }
 
   int get _maxStocks {
-    final plan = ref.read(sessionControllerProvider).profile?.planCode ?? 'free';
+    final plan =
+        ref.read(sessionControllerProvider).profile?.planCode ?? 'free';
     return switch (plan) {
       'basic' => 2,
       'advanced' => 3,
@@ -166,10 +167,14 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
       _error = null;
     });
     try {
-      final result = await ref.read(stockComparisonRepositoryProvider).compare(
-        requestKey: requestKey,
-        tickers: _selected.map((item) => item.ticker).toList(growable: false),
-      );
+      final result = await ref
+          .read(stockComparisonRepositoryProvider)
+          .compare(
+            requestKey: requestKey,
+            tickers: _selected
+                .map((item) => item.ticker)
+                .toList(growable: false),
+          );
       if (!mounted) {
         return;
       }
@@ -199,7 +204,8 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final planCode = ref.watch(sessionControllerProvider).profile?.planCode ?? 'free';
+    final planCode =
+        ref.watch(sessionControllerProvider).profile?.planCode ?? 'free';
     return Scaffold(
       appBar: AppBar(title: const Text('مقارنة الأسهم')),
       body: SafeArea(
@@ -235,7 +241,9 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                         prefixIcon: _searching
                             ? const Padding(
                                 padding: EdgeInsets.all(14),
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.search_rounded),
                       ),
@@ -250,7 +258,9 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                             textDirection: TextDirection.ltr,
                           ),
                           subtitle: Text(instrument.exchange),
-                          trailing: const Icon(Icons.add_circle_outline_rounded),
+                          trailing: const Icon(
+                            Icons.add_circle_outline_rounded,
+                          ),
                           onTap: () => _select(instrument),
                         ),
                     ],
@@ -281,7 +291,9 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                       )
                     : const Icon(Icons.compare_arrows_rounded),
                 label: Text(
-                  _comparing ? 'جاري تحليل المقارنة...' : 'قارن الأسهم المختارة',
+                  _comparing
+                      ? 'جاري تحليل المقارنة...'
+                      : 'قارن الأسهم المختارة',
                 ),
               ),
             ],
@@ -297,7 +309,8 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
             ],
             const SizedBox(height: 12),
             const FreePlanNativeAd(),
-            if (_result case final result?) _ComparisonResultView(result: result),
+            if (_result case final result?)
+              _ComparisonResultView(result: result),
           ],
         ),
       ),
@@ -324,9 +337,9 @@ class _ComparisonResultView extends StatelessWidget {
                 Text(
                   'الأفضل في المقارنة: ${result.bestTicker}',
                   textDirection: TextDirection.rtl,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
                 Text(result.summary),
@@ -404,7 +417,9 @@ class _ComparisonItemCard extends StatelessWidget {
                   ),
                 ),
                 Chip(
-                  label: Text('${item.comparisonScore.toStringAsFixed(1)} / 100'),
+                  label: Text(
+                    '${item.comparisonScore.toStringAsFixed(1)} / 100',
+                  ),
                 ),
               ],
             ),
@@ -414,7 +429,9 @@ class _ComparisonItemCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 Chip(label: Text(_signal(item.signal))),
-                Chip(label: Text('الثقة ${item.confidence.toStringAsFixed(1)}%')),
+                Chip(
+                  label: Text('الثقة ${item.confidence.toStringAsFixed(1)}%'),
+                ),
                 Chip(label: Text('الاتجاه ${_trend(item.trend)}')),
                 Chip(label: Text('المخاطرة ${_risk(item.riskLevel)}')),
               ],

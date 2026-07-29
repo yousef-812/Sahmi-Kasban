@@ -83,10 +83,12 @@ class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
       if (!mounted) {
         return;
       }
-      await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
-        enabled:
-            ref.read(sessionControllerProvider).profile?.adsEnabled == true,
-      );
+      await ref
+          .read(freePlanInterstitialProvider)
+          .recordMeaningfulAction(
+            enabled:
+                ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+          );
       if (!mounted) {
         return;
       }

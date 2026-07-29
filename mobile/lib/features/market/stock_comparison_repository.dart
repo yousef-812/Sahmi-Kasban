@@ -33,6 +33,8 @@ class StockComparisonRepository {
   }
 }
 
-final stockComparisonRepositoryProvider = Provider<StockComparisonRepository>((ref) {
+final stockComparisonRepositoryProvider = Provider<StockComparisonRepository>((
+  ref,
+) {
   return StockComparisonRepository(ref.watch(apiClientProvider));
 });

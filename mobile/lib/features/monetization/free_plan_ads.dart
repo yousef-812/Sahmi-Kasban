@@ -129,10 +129,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'إعلان',
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
+              Text('إعلان', style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 4),
               ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -262,7 +259,9 @@ class FreePlanInterstitialCoordinator {
   }
 }
 
-final freePlanInterstitialProvider = Provider<FreePlanInterstitialCoordinator>((ref) {
+final freePlanInterstitialProvider = Provider<FreePlanInterstitialCoordinator>((
+  ref,
+) {
   final coordinator = FreePlanInterstitialCoordinator(
     config: ref.watch(appConfigProvider),
   );

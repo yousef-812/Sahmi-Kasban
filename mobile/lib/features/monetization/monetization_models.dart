@@ -39,9 +39,9 @@ class MonetizationPlan {
       productId: json['product_id'] as String?,
       historyLimit: json['history_limit'] as int,
       reportHistoryDays: json['report_history_days'] as int,
-      features: _list(json['features'])
-          .map((value) => value.toString())
-          .toList(growable: false),
+      features: _list(
+        json['features'],
+      ).map((value) => value.toString()).toList(growable: false),
       comparisonMonthlyAllowance:
           json['comparison_monthly_allowance'] as int? ?? 0,
       maxComparisonStocks: json['max_comparison_stocks'] as int? ?? 0,

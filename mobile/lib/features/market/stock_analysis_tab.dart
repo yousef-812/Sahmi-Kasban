@@ -203,10 +203,13 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
         // profile refresh fails. Wallet data will retry through its provider.
       }
       if (mounted) {
-        await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
-          enabled:
-              ref.read(sessionControllerProvider).profile?.adsEnabled == true,
-        );
+        await ref
+            .read(freePlanInterstitialProvider)
+            .recordMeaningfulAction(
+              enabled:
+                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                  true,
+            );
       }
     } on ApiException catch (error) {
       if (mounted) {

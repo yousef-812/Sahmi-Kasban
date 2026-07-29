@@ -279,9 +279,7 @@ class _PlanCard extends StatelessWidget {
             if (plan.maxComparisonStocks > 0)
               Text('مقارنة حتى ${plan.maxComparisonStocks} أسهم'),
             if (plan.comparisonMonthlyAllowance > 0)
-              Text(
-                '${plan.comparisonMonthlyAllowance} مقارنة متضمنة شهريًا',
-              ),
+              Text('${plan.comparisonMonthlyAllowance} مقارنة متضمنة شهريًا'),
             if (plan.features.isNotEmpty) ...[
               const SizedBox(height: 12),
               for (final feature in plan.features)

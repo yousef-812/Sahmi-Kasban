@@ -135,10 +135,13 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
         ),
       );
       if (execution.chargedPoints > 0) {
-        await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
-          enabled:
-              ref.read(sessionControllerProvider).profile?.adsEnabled == true,
-        );
+        await ref
+            .read(freePlanInterstitialProvider)
+            .recordMeaningfulAction(
+              enabled:
+                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                  true,
+            );
       }
     } on ApiException catch (error) {
       if (mounted) {
