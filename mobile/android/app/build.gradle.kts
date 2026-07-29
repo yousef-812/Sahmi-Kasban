@@ -18,7 +18,8 @@ val releaseSigningConfigured = keystorePropertiesFile.exists().also { exists ->
     }
 }
 val allowCiPreviewSigning =
-    providers.environmentVariable("SAHMI_ALLOW_CI_PREVIEW_SIGNING").orNull == "true"
+    providers.environmentVariable("SAHMI_ALLOW_CI_PREVIEW_SIGNING").orNull == "true" ||
+        providers.environmentVariable("GITHUB_ACTIONS").orNull == "true"
 
 android {
     namespace = "com.sahmikasban.sahmi_kasban_mobile"
