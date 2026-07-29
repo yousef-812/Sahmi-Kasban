@@ -259,6 +259,10 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.app_env is Environment.PRODUCTION
 
+    @property
+    def sentry_enabled(self) -> bool:
+        return bool(self.sentry_dsn.strip())
+
 
 @lru_cache
 def get_settings() -> Settings:
