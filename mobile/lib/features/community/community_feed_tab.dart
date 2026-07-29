@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/avatar_assets.dart';
+import '../monetization/free_plan_ads.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
 
@@ -98,6 +99,8 @@ class _CommunityFeedTabState extends ConsumerState<CommunityFeedTab> {
               child: Chip(label: Text('السهم: $activeTicker')),
             ),
           ],
+          const SizedBox(height: 14),
+          const FreePlanNativeAd(),
           const SizedBox(height: 14),
           feed.when(
             loading: () => const Padding(

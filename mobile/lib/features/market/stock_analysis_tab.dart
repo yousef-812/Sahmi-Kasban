@@ -334,6 +334,8 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        const FreePlanNativeAd(),
         if (_error != null) ...[
           const SizedBox(height: 12),
           Card(

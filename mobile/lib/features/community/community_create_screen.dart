@@ -6,6 +6,7 @@ import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../monetization/free_plan_ads.dart';
 import '../wallet/wallet_providers.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
@@ -79,6 +80,13 @@ class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
       ref.invalidate(myDiscussionsProvider);
       ref.invalidate(walletSummaryProvider);
       await ref.read(sessionControllerProvider.notifier).refreshProfile();
+      if (!mounted) {
+        return;
+      }
+      await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
+        enabled:
+            ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+      );
       if (!mounted) {
         return;
       }

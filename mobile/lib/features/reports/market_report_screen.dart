@@ -5,6 +5,7 @@ import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../monetization/free_plan_ads.dart';
 import '../wallet/wallet_providers.dart';
 import 'report_providers.dart';
 
@@ -133,6 +134,12 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           ),
         ),
       );
+      if (execution.chargedPoints > 0) {
+        await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
+          enabled:
+              ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+        );
+      }
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _error = error.message);
@@ -190,6 +197,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
               ),
             ),
           ),
+          const FreePlanNativeAd(),
           if (_error != null) _ErrorCard(message: _error!, retry: _unlock),
         ],
       );
@@ -237,6 +245,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           ),
         ),
         _MarketSummaryCard(summary: report.marketSummary),
+        const FreePlanNativeAd(),
         for (final item in report.items)
           _SafeReportItemCard(key: ValueKey(item.ticker), item: item),
       ],

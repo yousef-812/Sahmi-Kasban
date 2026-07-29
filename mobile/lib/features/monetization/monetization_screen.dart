@@ -276,6 +276,31 @@ class _PlanCard extends StatelessWidget {
             Text('${plan.weeklyCoins} عملة أسبوعيًا'),
             Text(plan.adsEnabled ? 'مع الإعلانات' : 'بدون إعلانات'),
             Text('سجل التقارير: ${plan.reportHistoryDays} يوم'),
+            if (plan.maxComparisonStocks > 0)
+              Text('مقارنة حتى ${plan.maxComparisonStocks} أسهم'),
+            if (plan.comparisonMonthlyAllowance > 0)
+              Text(
+                '${plan.comparisonMonthlyAllowance} مقارنة متضمنة شهريًا',
+              ),
+            if (plan.features.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              for (final feature in plan.features)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(feature)),
+                    ],
+                  ),
+                ),
+            ],
             const SizedBox(height: 12),
             FilledButton.tonal(
               onPressed:
