@@ -12,6 +12,10 @@ class PlanDefinition:
     product_id: str | None
     history_limit: int
     report_history_days: int
+    features: tuple[str, ...]
+    comparison_monthly_allowance: int
+    max_comparison_stocks: int
+    priority_level: int
     badge_code: str | None = None
 
 
@@ -26,64 +30,108 @@ PLANS: tuple[PlanDefinition, ...] = (
     PlanDefinition(
         code="free",
         display_name_ar="المجانية",
-        weekly_points=300,
+        weekly_points=500,
         ads_enabled=True,
         product_id=None,
         history_limit=20,
         report_history_days=1,
+        features=(
+            "5 عملات أسبوعيًا",
+            "تحليل سهم كامل باستخدام المحركات الأساسية",
+            "تقرير أفضل 10 لمدة يوم واحد",
+            "إمكانية كسب عملات من الإعلانات المكافئة",
+        ),
+        comparison_monthly_allowance=0,
+        max_comparison_stocks=0,
+        priority_level=0,
     ),
     PlanDefinition(
         code="basic",
         display_name_ar="الأساسية",
-        weekly_points=1_000,
+        weekly_points=2_500,
         ads_enabled=False,
         product_id="sahmi_basic_monthly",
-        history_limit=100,
+        history_limit=200,
         report_history_days=30,
+        features=(
+            "25 عملة أسبوعيًا",
+            "بدون إعلانات",
+            "سجل موسع للتحليلات والتقارير",
+            "شرح ذكاء اصطناعي موسع",
+            "مقارنة سهمين أربع مرات شهريًا",
+            "ملف مخاطرة شخصي",
+        ),
+        comparison_monthly_allowance=4,
+        max_comparison_stocks=2,
+        priority_level=1,
         badge_code="basic",
     ),
     PlanDefinition(
         code="advanced",
         display_name_ar="المتقدمة",
-        weekly_points=1_500,
+        weekly_points=6_000,
         ads_enabled=False,
         product_id="sahmi_advanced_monthly",
-        history_limit=250,
-        report_history_days=90,
+        history_limit=1_000,
+        report_history_days=365,
+        features=(
+            "60 عملة أسبوعيًا",
+            "كل مزايا الخطة الأساسية",
+            "مقارنة حتى 3 أسهم 12 مرة شهريًا",
+            "تفاصيل كاملة للتحليل متعدد الأطر الزمنية",
+            "خطط دخول محافظة ومتوازنة وهجومية",
+            "ملخص مخاطرة مخصص لرأس المال",
+            "أولوية أعلى وقت الضغط",
+        ),
+        comparison_monthly_allowance=12,
+        max_comparison_stocks=3,
+        priority_level=2,
         badge_code="advanced",
     ),
     PlanDefinition(
         code="pro",
         display_name_ar="الاحترافية",
-        weekly_points=5_000,
+        weekly_points=15_000,
         ads_enabled=False,
         product_id="sahmi_pro_monthly",
-        history_limit=1_000,
-        report_history_days=365,
+        history_limit=5_000,
+        report_history_days=3_650,
+        features=(
+            "150 عملة أسبوعيًا",
+            "كل مزايا الخطة المتقدمة",
+            "مقارنة حتى 5 أسهم 40 مرة شهريًا",
+            "تحليل قطاع كامل",
+            "تصدير ومشاركة التقارير",
+            "عدة ملفات مخاطرة ومحاكاة صفقات",
+            "أولوية قصوى ووصول مبكر للميزات",
+        ),
+        comparison_monthly_allowance=40,
+        max_comparison_stocks=5,
+        priority_level=3,
         badge_code="pro",
     ),
 )
 
 COIN_PACKS: tuple[CoinPackDefinition, ...] = (
     CoinPackDefinition(
-        product_id="sahmi_coins_5",
-        display_name_ar="5 عملات",
-        points=500,
+        product_id="sahmi_coins_10",
+        display_name_ar="10 عملات",
+        points=1_000,
     ),
     CoinPackDefinition(
-        product_id="sahmi_coins_15",
-        display_name_ar="15 عملة",
-        points=1_500,
+        product_id="sahmi_coins_30",
+        display_name_ar="30 عملة",
+        points=3_000,
     ),
     CoinPackDefinition(
-        product_id="sahmi_coins_40",
-        display_name_ar="40 عملة",
-        points=4_000,
+        product_id="sahmi_coins_75",
+        display_name_ar="75 عملة",
+        points=7_500,
     ),
     CoinPackDefinition(
-        product_id="sahmi_coins_100",
-        display_name_ar="100 عملة",
-        points=10_000,
+        product_id="sahmi_coins_200",
+        display_name_ar="200 عملة",
+        points=20_000,
     ),
 )
 

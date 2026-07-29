@@ -64,7 +64,7 @@ def test_weekly_job_grants_the_active_plan_amount_once_per_cairo_week(
                 db_session,
                 user=user,
                 plan_code="free",
-                weekly_points=300,
+                weekly_points=500,
                 ads_enabled=True,
                 started_at=moment - timedelta(days=120),
             )
@@ -105,7 +105,7 @@ def test_weekly_job_uses_free_fallback_after_paid_subscription_expires(
         db_session,
         user=user,
         plan_code="free",
-        weekly_points=300,
+        weekly_points=500,
         ads_enabled=True,
         started_at=moment - timedelta(days=180),
     )
@@ -113,7 +113,7 @@ def test_weekly_job_uses_free_fallback_after_paid_subscription_expires(
         db_session,
         user=user,
         plan_code="pro",
-        weekly_points=5_000,
+        weekly_points=15_000,
         ads_enabled=False,
         started_at=moment - timedelta(days=31),
         expires_at=moment - timedelta(minutes=1),
@@ -122,8 +122,8 @@ def test_weekly_job_uses_free_fallback_after_paid_subscription_expires(
     granted = grant_due_weekly_points(db_session, moment=moment)
 
     assert granted == 1
-    assert get_wallet_balance(db_session, user.id) == 300
+    assert get_wallet_balance(db_session, user.id) == 500
     grant = db_session.scalar(select(WeeklyGrant).where(WeeklyGrant.user_id == user.id))
     assert grant is not None
     assert grant.plan_code == "free"
-    assert grant.amount_points == 300
+    assert grant.amount_points == 500

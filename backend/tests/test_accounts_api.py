@@ -16,7 +16,7 @@ def register_and_verify(client: TestClient, fake_email_service) -> dict:
         },
     )
     assert register_response.status_code == 201
-    assert register_response.json()["weekly_points_granted"] == 300
+    assert register_response.json()["weekly_points_granted"] == 500
 
     login_before_verification = client.post(
         "/api/v1/auth/login",
@@ -56,9 +56,9 @@ def test_registration_login_profile_and_wallet(
     assert profile_payload["email"] == EMAIL
     assert profile_payload["avatar_key"] == "avatar_02"
     assert profile_payload["plan_code"] == "free"
-    assert profile_payload["weekly_points"] == 300
-    assert profile_payload["balance_points"] == 300
-    assert profile_payload["balance_coins"] == "3.00"
+    assert profile_payload["weekly_points"] == 500
+    assert profile_payload["balance_points"] == 1_000
+    assert profile_payload["balance_coins"] == "10.00"
     assert profile_payload["ads_enabled"] is True
 
     updated = client.patch(
@@ -72,13 +72,15 @@ def test_registration_login_profile_and_wallet(
 
     wallet = client.get("/api/v1/wallet", headers=headers)
     assert wallet.status_code == 200
-    assert wallet.json()["balance_points"] == 300
+    assert wallet.json()["balance_points"] == 1_000
 
     history = client.get("/api/v1/wallet/history", headers=headers)
     assert history.status_code == 200
-    assert history.json()["total"] == 1
-    assert history.json()["items"][0]["entry_type"] == "weekly_plan_grant"
-    assert history.json()["items"][0]["amount_points"] == 300
+    assert history.json()["total"] == 2
+    entries = {item["entry_type"]: item for item in history.json()["items"]}
+    assert set(entries) == {"weekly_plan_grant", "welcome_bonus"}
+    assert entries["weekly_plan_grant"]["amount_points"] == 500
+    assert entries["welcome_bonus"]["amount_points"] == 500
 
 
 def test_refresh_token_is_rotated_and_logout_is_idempotent(

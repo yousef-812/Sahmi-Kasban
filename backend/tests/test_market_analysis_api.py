@@ -156,7 +156,7 @@ def test_analysis_charges_after_success_then_reuses_cache_for_free(
     assert first_payload["market_snapshot_cached"] is False
     assert first_payload["charged_points"] == 50
     assert first_payload["charged_coins"] == "0.50"
-    assert first_payload["balance_points"] == 250
+    assert first_payload["balance_points"] == 950
     assert first_payload["payload"]["explanation_source"] == "ai"
 
     second = client.post(
@@ -170,7 +170,7 @@ def test_analysis_charges_after_success_then_reuses_cache_for_free(
     assert second_payload["cached"] is True
     assert second_payload["market_snapshot_cached"] is True
     assert second_payload["charged_points"] == 0
-    assert second_payload["balance_points"] == 250
+    assert second_payload["balance_points"] == 950
     assert provider.calls == 1
 
     analyses = db_session.scalars(select(StockAnalysis)).all()
@@ -228,7 +228,7 @@ def test_provider_failure_does_not_charge_user(
     assert response.status_code == 503
     wallet = db_session.scalar(select(WalletAccount))
     assert wallet is not None
-    assert wallet.balance_points == 300
+    assert wallet.balance_points == 1_000
     assert db_session.scalars(select(StockAnalysis)).all() == []
 
 

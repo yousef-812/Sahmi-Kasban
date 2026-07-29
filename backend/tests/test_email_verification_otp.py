@@ -27,6 +27,7 @@ def test_registration_sends_six_digit_code_and_verifies(
 
     assert response.status_code == 201
     assert response.json()["verification_code_expires_in_seconds"] == 600
+    assert response.json()["weekly_points_granted"] == 500
     code = fake_email_service.verification_codes[email]
     assert len(code) == 6
     assert code.isdigit()
@@ -49,6 +50,20 @@ def test_registration_sends_six_digit_code_and_verifies(
     )
     assert login.status_code == 200
     assert login.json()["access_token"]
+
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    first_profile = client.get("/api/v1/profile/me", headers=headers)
+    second_profile = client.get("/api/v1/profile/me", headers=headers)
+    history = client.get("/api/v1/wallet/history", headers=headers)
+
+    assert first_profile.status_code == 200
+    assert first_profile.json()["balance_points"] == 1_000
+    assert second_profile.status_code == 200
+    assert second_profile.json()["balance_points"] == 1_000
+    assert history.status_code == 200
+    assert history.json()["total"] == 2
+    entry_types = {item["entry_type"] for item in history.json()["items"]}
+    assert entry_types == {"weekly_plan_grant", "welcome_bonus"}
 
 
 def test_resend_replaces_previous_verification_code(
@@ -91,6 +106,7 @@ def test_re_registration_recovers_pending_account_without_duplicate_grant(
 
     first = client.post("/api/v1/auth/register", json=original_payload)
     assert first.status_code == 201
+    assert first.json()["weekly_points_granted"] == 500
     first_user_id = first.json()["user_id"]
     first_code = fake_email_service.verification_codes[email]
 
@@ -134,12 +150,14 @@ def test_re_registration_recovers_pending_account_without_duplicate_grant(
     assert replacement_login.status_code == 401
 
     headers = {"Authorization": f"Bearer {original_login.json()['access_token']}"}
+    profile = client.get("/api/v1/profile/me", headers=headers)
     wallet = client.get("/api/v1/wallet", headers=headers)
     history = client.get("/api/v1/wallet/history", headers=headers)
+    assert profile.status_code == 200
     assert wallet.status_code == 200
-    assert wallet.json()["balance_points"] == 300
+    assert wallet.json()["balance_points"] == 1_000
     assert history.status_code == 200
-    assert history.json()["total"] == 1
+    assert history.json()["total"] == 2
 
     verified_duplicate = client.post("/api/v1/auth/register", json=original_payload)
     assert verified_duplicate.status_code == 409

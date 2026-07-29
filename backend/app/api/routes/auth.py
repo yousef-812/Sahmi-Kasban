@@ -40,6 +40,8 @@ from app.services.auth import (
     verify_user_email_code,
 )
 from app.services.email import AccountEmailService, get_account_email_service
+from app.services.monetization_catalog import get_plan
+from app.services.welcome_bonus import grant_welcome_bonus_if_eligible
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -152,7 +154,9 @@ def register(
     return RegisterResponse(
         user_id=user.id,
         email=user.email,
-        weekly_points_granted=0 if recovered_pending_account else 300,
+        weekly_points_granted=(
+            0 if recovered_pending_account else get_plan("free").weekly_points
+        ),
     )
 
 
@@ -160,13 +164,14 @@ def register(
 def verify_email(payload: VerifyEmailRequest, db: DatabaseSession) -> MessageResponse:
     try:
         if payload.email is not None and payload.code is not None:
-            verify_user_email_code(
+            user = verify_user_email_code(
                 db,
                 email=str(payload.email),
                 code=payload.code,
             )
         else:
-            verify_user_email(db, payload.token or "")
+            user = verify_user_email(db, payload.token or "")
+        grant_welcome_bonus_if_eligible(db, user)
         db.commit()
     except InvalidAccountTokenError as exc:
         db.rollback()

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart' show DateFormat;
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
-import '../../widgets/structured_data_card.dart';
 import '../auth/session_controller.dart';
 import '../wallet/wallet_providers.dart';
 import 'report_providers.dart';
@@ -60,6 +58,12 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           _error = error.statusCode == 402 ? null : error.message;
         });
       }
+    } on Object {
+      if (mounted) {
+        setState(
+          () => _error = 'تعذر عرض التقرير. حدّث التطبيق وحاول مرة أخرى.',
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -71,7 +75,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
     if (_loading) {
       return;
     }
-    final cost = widget.preview?.unlockCostCoins ?? '1';
+    final cost = widget.preview?.unlockCostCoins ?? '1.00';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -103,9 +107,6 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
       final execution = await ref
           .read(backendRepositoryProvider)
           .unlockMarketReport(widget.reportId);
-      await ref.read(sessionControllerProvider.notifier).refreshProfile();
-      ref.invalidate(walletSummaryProvider);
-      ref.invalidate(latestReportPreviewProvider);
       if (!mounted) {
         return;
       }
@@ -113,6 +114,16 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
         _report = execution.report;
         _locked = false;
       });
+      try {
+        await ref.read(sessionControllerProvider.notifier).refreshProfile();
+        ref.invalidate(walletSummaryProvider);
+        ref.invalidate(latestReportPreviewProvider);
+      } on Object {
+        // The purchased report must remain visible if the optional balance refresh fails.
+      }
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -125,6 +136,10 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _error = error.message);
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _error = 'تعذر فتح التقرير حاليًا. حاول مرة أخرى.');
       }
     } finally {
       if (mounted) {
@@ -163,7 +178,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'التكلفة: ${widget.preview?.unlockCostCoins ?? '1'} عملة',
+                    'التكلفة: ${widget.preview?.unlockCostCoins ?? '1.00'} عملة',
                   ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
@@ -179,6 +194,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
         ],
       );
     }
+
     final report = _report;
     if (report == null) {
       return ListView(
@@ -191,10 +207,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
         ],
       );
     }
-    final target = DateFormat(
-      'EEEE d MMMM yyyy',
-      'ar',
-    ).format(report.targetSessionDate);
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -210,7 +223,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  target,
+                  _formatArabicDate(report.targetSessionDate),
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
@@ -223,10 +236,91 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
             ),
           ),
         ),
-        StructuredDataCard(title: 'ملخص السوق', data: report.marketSummary),
-        for (final item in report.items) _ReportItemCard(item: item),
+        _MarketSummaryCard(summary: report.marketSummary),
+        for (final item in report.items)
+          _SafeReportItemCard(key: ValueKey(item.ticker), item: item),
       ],
     );
+  }
+}
+
+class _MarketSummaryCard extends StatelessWidget {
+  const _MarketSummaryCard({required this.summary});
+
+  final Map<String, dynamic> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final analyzed = _integer(summary['analyzed_count']);
+    final eligible = _integer(summary['eligible_count']);
+    final failed = _integer(summary['failed_count']);
+    final averageScore = _number(summary['average_top_score']);
+    final signals = _map(summary['signals']);
+    final buyCount = _integer(signals['BUY']);
+    final watchCount = _integer(signals['WATCH']);
+    final title = _text(summary['title']);
+    final disclaimer = _text(summary['disclaimer']);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'ملخص السوق',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            if (title.isNotEmpty) ...[const SizedBox(height: 6), Text(title)],
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _MetricChip(label: 'تم تحليلها', value: '$analyzed'),
+                _MetricChip(label: 'مؤهلة', value: '$eligible'),
+                _MetricChip(label: 'تعذر تحليلها', value: '$failed'),
+                _MetricChip(
+                  label: 'متوسط الدرجة',
+                  value: averageScore.toStringAsFixed(1),
+                ),
+                _MetricChip(label: 'شراء', value: '$buyCount'),
+                _MetricChip(label: 'مراقبة', value: '$watchCount'),
+              ],
+            ),
+            if (disclaimer.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(disclaimer, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SafeReportItemCard extends StatelessWidget {
+  const _SafeReportItemCard({required this.item, super.key});
+
+  final MarketReportItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      return _ReportItemCard(item: item);
+    } on Object {
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          leading: CircleAvatar(child: Text('${item.rank}')),
+          title: Text(item.ticker, textDirection: TextDirection.ltr),
+          subtitle: const Text('تعذر عرض بعض تفاصيل هذا السهم.'),
+        ),
+      );
+    }
   }
 }
 
@@ -237,6 +331,30 @@ class _ReportItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final payload = item.payload;
+    final analysis = _map(payload['analysis']);
+    final tradePlan = _map(analysis['trade_plan']);
+    final engines = _map(analysis['engines']);
+    final technical = _map(_map(engines['technical'])['details']);
+    final risk = _map(_map(engines['risk'])['details']);
+
+    final decision = _text(payload['decision']).isNotEmpty
+        ? _text(payload['decision'])
+        : _signalLabel(_text(payload['signal']));
+    final confidence = _number(payload['confidence']);
+    final price = _number(payload['price_at_analysis']);
+    final entry = _number(tradePlan['entry']);
+    final stop = _number(tradePlan['stop_loss']);
+    final target1 = _number(tradePlan['target_1']);
+    final target2 = _number(tradePlan['target_2']);
+    final rewardRisk = _number(tradePlan['reward_risk_1']);
+    final explanation = _text(payload['explanation']);
+    final trend = _trendLabel(_text(technical['trend']));
+    final rsi = _number(technical['rsi']);
+    final volumeRatio = _number(technical['volume_ratio']);
+    final riskLevel = _riskLabel(_text(risk['risk_level']));
+    final reasons = _collectReasons(engines);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -249,21 +367,125 @@ class _ReportItemCard extends StatelessWidget {
                 CircleAvatar(child: Text('${item.rank}')),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    item.ticker,
-                    textDirection: TextDirection.ltr,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.ticker,
+                        textDirection: TextDirection.ltr,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(decision.isEmpty ? 'مراقبة' : decision),
+                    ],
                   ),
                 ),
-                Chip(label: Text('${item.score.toStringAsFixed(2)} / 100')),
+                Chip(label: Text('${item.score.toStringAsFixed(1)} / 100')),
               ],
             ),
-            const SizedBox(height: 10),
-            StructuredDataCard(title: 'تفاصيل السهم', data: item.payload),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _MetricChip(
+                  label: 'الثقة',
+                  value: '${confidence.toStringAsFixed(1)}%',
+                ),
+                _MetricChip(label: 'السعر', value: _price(price)),
+                _MetricChip(label: 'الاتجاه', value: trend),
+                _MetricChip(label: 'المخاطرة', value: riskLevel),
+              ],
+            ),
+            if (entry > 0 || stop > 0 || target1 > 0) ...[
+              const SizedBox(height: 14),
+              Text(
+                'خطة التداول',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              _ValueRow(label: 'الدخول', value: _price(entry)),
+              _ValueRow(label: 'وقف الخسارة', value: _price(stop)),
+              _ValueRow(label: 'الهدف الأول', value: _price(target1)),
+              _ValueRow(label: 'الهدف الثاني', value: _price(target2)),
+              _ValueRow(
+                label: 'العائد مقابل المخاطرة',
+                value: rewardRisk > 0
+                    ? '${rewardRisk.toStringAsFixed(1)} : 1'
+                    : '—',
+              ),
+            ],
+            if (rsi > 0 || volumeRatio > 0) ...[
+              const Divider(height: 24),
+              _ValueRow(
+                label: 'مؤشر RSI',
+                value: rsi > 0 ? rsi.toStringAsFixed(1) : '—',
+              ),
+              _ValueRow(
+                label: 'نسبة الحجم',
+                value: volumeRatio > 0 ? volumeRatio.toStringAsFixed(2) : '—',
+              ),
+            ],
+            if (reasons.isNotEmpty) ...[
+              const Divider(height: 24),
+              Text(
+                'أسباب الاختيار',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 6),
+              for (final reason in reasons.take(5))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('• ${_reasonLabel(reason)}'),
+                ),
+            ],
+            if (explanation.isNotEmpty) ...[
+              const Divider(height: 24),
+              Text(explanation),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(label: Text('$label: $value'));
+  }
+}
+
+class _ValueRow extends StatelessWidget {
+  const _ValueRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          Text(
+            value,
+            textDirection: TextDirection.ltr,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ],
       ),
     );
   }
@@ -294,4 +516,108 @@ class _ErrorCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatArabicDate(DateTime value) {
+  const weekdays = <String>[
+    'الاثنين',
+    'الثلاثاء',
+    'الأربعاء',
+    'الخميس',
+    'الجمعة',
+    'السبت',
+    'الأحد',
+  ];
+  const months = <String>[
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+  final local = value.toLocal();
+  return '${weekdays[local.weekday - 1]} ${local.day} ${months[local.month - 1]} ${local.year}';
+}
+
+Map<String, dynamic> _map(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return Map<String, dynamic>.from(value);
+  }
+  return <String, dynamic>{};
+}
+
+String _text(Object? value) => value is String ? value.trim() : '';
+
+double _number(Object? value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  return double.tryParse('$value') ?? 0;
+}
+
+int _integer(Object? value) => _number(value).round();
+
+String _price(double value) => value > 0 ? value.toStringAsFixed(2) : '—';
+
+String _signalLabel(String value) {
+  return switch (value.toUpperCase()) {
+    'BUY' => 'فرصة شراء مشروطة',
+    'WATCH' => 'للمراقبة',
+    'AVOID' => 'تجنب حاليًا',
+    _ => value,
+  };
+}
+
+String _trendLabel(String value) {
+  return switch (value.toLowerCase()) {
+    'uptrend' || 'bullish' || 'weak_bullish' => 'صاعد',
+    'downtrend' || 'bearish' || 'weak_bearish' => 'هابط',
+    'sideways' || 'neutral' => 'عرضي',
+    _ => value.isEmpty ? 'غير محدد' : value,
+  };
+}
+
+String _riskLabel(String value) {
+  return switch (value.toLowerCase()) {
+    'low' => 'منخفضة',
+    'medium' => 'متوسطة',
+    'high' => 'مرتفعة',
+    _ => value.isEmpty ? 'غير محددة' : value,
+  };
+}
+
+List<String> _collectReasons(Map<String, dynamic> engines) {
+  final result = <String>[];
+  for (final value in engines.values) {
+    final engine = _map(value);
+    final reasons = engine['reasons'];
+    if (reasons is List) {
+      result.addAll(
+        reasons.whereType<String>().where((reason) => reason.trim().isNotEmpty),
+      );
+    }
+  }
+  return result;
+}
+
+String _reasonLabel(String reason) {
+  const labels = <String, String>{
+    'Price above SMA20': 'السعر أعلى من متوسط 20 جلسة',
+    'Price above SMA50': 'السعر أعلى من متوسط 50 جلسة',
+    'SMA20 above SMA50': 'متوسط 20 أعلى من متوسط 50',
+    'Long-term trend positive': 'الاتجاه طويل الأجل إيجابي',
+    'MACD bullish': 'مؤشر MACD إيجابي',
+    'Timeframe alignment: bullish': 'الأطر الزمنية متوافقة على اتجاه صاعد',
+  };
+  return labels[reason] ?? reason;
 }

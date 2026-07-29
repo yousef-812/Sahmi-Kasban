@@ -140,7 +140,7 @@ def test_admin_access_manual_review_hide_and_restore(
     assert approved.json()["discussion"]["status"] == "published"
     assert approved.json()["discussion"]["frozen_prediction"]["ticker"] == "COMI"
     assert approved.json()["idempotent"] is False
-    assert get_wallet_account(db_session, author.id).balance_points == 250
+    assert get_wallet_account(db_session, author.id).balance_points == 950
 
     hold = db_session.scalar(
         select(WalletEntry).where(
@@ -164,7 +164,7 @@ def test_admin_access_manual_review_hide_and_restore(
     )
     assert repeated_approval.status_code == 200
     assert repeated_approval.json()["idempotent"] is True
-    assert get_wallet_account(db_session, author.id).balance_points == 250
+    assert get_wallet_account(db_session, author.id).balance_points == 950
 
     hidden = client.post(
         f"/api/v1/admin/community/discussions/{discussion.id}/action",
@@ -262,7 +262,7 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
         ticker="SWDY",
         suffix="معلقة وقت الحظر",
     )
-    assert get_wallet_account(db_session, target.id).balance_points == 200
+    assert get_wallet_account(db_session, target.id).balance_points == 900
 
     self_block = client.post(
         f"/api/v1/admin/community/users/{admin.id}/block",
@@ -293,7 +293,7 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
     assert published.status == "hidden"
     assert pending.status == "rejected"
     assert pending.rejection_code == "account_suspended"
-    assert get_wallet_account(db_session, target.id).balance_points == 250
+    assert get_wallet_account(db_session, target.id).balance_points == 950
 
     old_token_access = client.get(
         "/api/v1/community/discussions/mine",
@@ -308,7 +308,7 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
     )
     assert repeated_block.status_code == 200
     assert repeated_block.json()["idempotent"] is True
-    assert get_wallet_account(db_session, target.id).balance_points == 250
+    assert get_wallet_account(db_session, target.id).balance_points == 950
 
     unblocked = client.post(
         f"/api/v1/admin/community/users/{target.id}/unblock",

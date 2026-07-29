@@ -155,11 +155,11 @@ def test_shared_analysis_cache_charges_once_per_account(
 
     assert first.status_code == 200
     assert first.json()["charged_points"] == 50
-    assert first.json()["balance_points"] == 250
+    assert first.json()["balance_points"] == 950
     assert second.status_code == 200
     assert second.json()["cached"] is True
     assert second.json()["charged_points"] == 50
-    assert second.json()["balance_points"] == 250
+    assert second.json()["balance_points"] == 950
     assert provider.calls == 1
 
     debits = db_session.scalars(
@@ -169,7 +169,7 @@ def test_shared_analysis_cache_charges_once_per_account(
         select(WalletAccount).order_by(WalletAccount.balance_points)
     ).all()
     assert len(debits) == 2
-    assert [wallet.balance_points for wallet in wallets] == [250, 250]
+    assert [wallet.balance_points for wallet in wallets] == [950, 950]
 
 
 def test_core_engine_failure_rolls_back_snapshot_analysis_and_debit(
@@ -190,7 +190,7 @@ def test_core_engine_failure_rolls_back_snapshot_analysis_and_debit(
     assert response.status_code == 422
     wallet = db_session.scalar(select(WalletAccount))
     assert wallet is not None
-    assert wallet.balance_points == 300
+    assert wallet.balance_points == 1_000
     assert db_session.scalars(select(MarketDataSnapshot)).all() == []
     assert db_session.scalars(select(StockAnalysis)).all() == []
     debits = db_session.scalars(

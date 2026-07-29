@@ -67,7 +67,7 @@ def test_same_content_with_new_submission_key_is_idempotent(db_session: Session)
     assert first.discussion.id == repeated.discussion.id
     assert repeated.idempotent is True
     assert first.discussion.content_fingerprint is not None
-    assert get_wallet_account(db_session, user.id).balance_points == 250
+    assert get_wallet_account(db_session, user.id).balance_points == 450
 
 
 def test_short_window_rate_limit_rejects_before_extra_debit(db_session: Session) -> None:
@@ -84,7 +84,7 @@ def test_short_window_rate_limit_rejects_before_extra_debit(db_session: Session)
         assert created.idempotent is False
         db_session.commit()
 
-    assert get_wallet_account(db_session, user.id).balance_points == 150
+    assert get_wallet_account(db_session, user.id).balance_points == 350
 
     try:
         create_safe_discussion(
@@ -101,4 +101,4 @@ def test_short_window_rate_limit_rejects_before_extra_debit(db_session: Session)
     else:
         raise AssertionError("Expected a short-window community rate limit")
 
-    assert get_wallet_account(db_session, user.id).balance_points == 150
+    assert get_wallet_account(db_session, user.id).balance_points == 350

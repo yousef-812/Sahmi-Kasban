@@ -139,7 +139,7 @@ def test_ai_acceptance_publishes_and_freezes_server_authoritative_prediction(
     assert prediction["specificity"] == 1.0
     assert prediction["claims"] == ["اختراق المقاومة", "تحسن الحجم"]
     assert len(prediction["source_text_sha256"]) == 64
-    assert get_wallet_account(db_session, user.id).balance_points == 250
+    assert get_wallet_account(db_session, user.id).balance_points == 450
 
     hold = db_session.scalar(
         select(WalletEntry).where(
@@ -169,7 +169,7 @@ def test_ai_rejection_releases_hold_and_records_reason(db_session: Session) -> N
     assert result.ai_status == "rejected"
     assert result.discussion.status == "rejected"
     assert result.discussion.rejection_code == "off_topic"
-    assert get_wallet_account(db_session, user.id).balance_points == 300
+    assert get_wallet_account(db_session, user.id).balance_points == 500
 
     hold = db_session.scalar(
         select(WalletEntry).where(
@@ -202,7 +202,7 @@ def test_ai_provider_failure_keeps_pending_hold_and_allows_safe_retry(
     assert failed.discussion.status == "pending_review"
     assert failed.discussion.moderation_result["review_stage"] == "awaiting_ai_retry"
     assert failed.discussion.moderation_result["ai"]["attempts"] == 1
-    assert get_wallet_account(db_session, user.id).balance_points == 250
+    assert get_wallet_account(db_session, user.id).balance_points == 450
 
     hold = db_session.scalar(
         select(WalletEntry).where(
@@ -223,7 +223,7 @@ def test_ai_provider_failure_keeps_pending_hold_and_allows_safe_retry(
 
     assert retried.ai_status == "published"
     assert retried.discussion.status == "published"
-    assert get_wallet_account(db_session, user.id).balance_points == 250
+    assert get_wallet_account(db_session, user.id).balance_points == 450
 
     failure_events = db_session.scalars(
         select(DiscussionModerationEvent).where(
@@ -255,4 +255,4 @@ def test_ai_approval_without_clear_prediction_rejects_and_refunds(
     assert result.ai_status == "rejected"
     assert result.discussion.status == "rejected"
     assert result.discussion.rejection_code == "prediction_not_clear"
-    assert get_wallet_account(db_session, user.id).balance_points == 300
+    assert get_wallet_account(db_session, user.id).balance_points == 500

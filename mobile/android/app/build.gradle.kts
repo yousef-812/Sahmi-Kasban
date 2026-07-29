@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
@@ -5,6 +7,14 @@ plugins {
 
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+val releaseSigningConfigured = keystorePropertiesFile.exists().also { exists ->
+    if (exists) {
+        keystorePropertiesFile.inputStream().use(keystoreProperties::load)
+    }
 }
 
 android {
@@ -28,9 +38,25 @@ android {
                 ?: "ca-app-pub-3940256099942544~3347511713"
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (releaseSigningConfigured) {
+                signingConfigs.getByName("release")
+            } else {
+                // CI can still validate pull requests before the protected signing secrets exist.
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

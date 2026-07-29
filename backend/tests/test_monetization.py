@@ -53,7 +53,7 @@ def _provision_user(db: Session, email: str) -> User:
             user_id=user.id,
             plan_code="free",
             status="active",
-            weekly_points=300,
+            weekly_points=500,
             ads_enabled=True,
             started_at=now - timedelta(days=1),
             expires_at=None,
@@ -77,7 +77,7 @@ def test_coin_purchase_is_idempotent_and_token_cannot_move_users(
         process_google_play_purchase(
             db_session,
             user_id=buyer.id,
-            product_id="sahmi_coins_5",
+            product_id="sahmi_coins_10",
             purchase_token=token,
             verifier=verifier,
             cipher=cipher,
@@ -87,7 +87,7 @@ def test_coin_purchase_is_idempotent_and_token_cannot_move_users(
         process_google_play_purchase(
             db_session,
             user_id=buyer.id,
-            product_id="sahmi_coins_5",
+            product_id="sahmi_coins_10",
             purchase_token=token,
             verifier=verifier,
             cipher=cipher,
@@ -97,7 +97,7 @@ def test_coin_purchase_is_idempotent_and_token_cannot_move_users(
     assert first.entitlement_granted is True
     assert first.idempotent is False
     assert second.idempotent is True
-    assert get_wallet_balance(db_session, buyer.id) == 500
+    assert get_wallet_balance(db_session, buyer.id) == 1_000
     assert token not in first.purchase.purchase_token_encrypted
     assert cipher.decrypt(first.purchase.purchase_token_encrypted) == token
 
@@ -106,7 +106,7 @@ def test_coin_purchase_is_idempotent_and_token_cannot_move_users(
             process_google_play_purchase(
                 db_session,
                 user_id=other.id,
-                product_id="sahmi_coins_5",
+                product_id="sahmi_coins_10",
                 purchase_token=token,
                 verifier=verifier,
                 cipher=cipher,
@@ -134,7 +134,7 @@ def test_subscription_purchase_activates_server_catalog_entitlement(
     subscription = get_active_subscription(db_session, user.id)
     assert result.plan_code == "basic"
     assert subscription.plan_code == "basic"
-    assert subscription.weekly_points == 1_000
+    assert subscription.weekly_points == 2_500
     assert subscription.ads_enabled is False
     assert subscription.expires_at is not None
 
@@ -160,7 +160,7 @@ def test_expired_paid_subscription_falls_back_to_free_plan(
 
     fallback = get_active_subscription(db_session, user.id)
     assert fallback.plan_code == "free"
-    assert fallback.weekly_points == 300
+    assert fallback.weekly_points == 500
     assert fallback.ads_enabled is True
 
 

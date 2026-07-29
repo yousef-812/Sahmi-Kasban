@@ -47,18 +47,18 @@ def test_debit_is_idempotent_and_cannot_make_balance_negative(db_session: Sessio
     db_session.commit()
 
     assert first.id == repeated.id
-    assert get_wallet_account(db_session, user.id).balance_points == 200
+    assert get_wallet_account(db_session, user.id).balance_points == 400
 
     with pytest.raises(InsufficientBalanceError):
         debit_points(
             db_session,
             user_id=user.id,
-            amount_points=201,
+            amount_points=401,
             transaction_id="analysis:two",
             entry_type="stock_analysis_debit",
         )
     db_session.rollback()
-    assert get_wallet_account(db_session, user.id).balance_points == 200
+    assert get_wallet_account(db_session, user.id).balance_points == 400
 
 
 def test_reused_transaction_id_must_match_original_operation(db_session: Session) -> None:
@@ -86,18 +86,18 @@ def test_weekly_grant_is_unique_for_user_and_week(db_session: Session) -> None:
     user = create_registered_user(db_session)
     subscription = db_session.query(Subscription).filter_by(user_id=user.id).one()
     account = db_session.query(WalletAccount).filter_by(user_id=user.id).one()
-    assert account.balance_points == 300
+    assert account.balance_points == 500
 
     current = datetime.now(UTC)
     grant_weekly_points_for_subscription(db_session, subscription, moment=current)
     grant_weekly_points_for_subscription(db_session, subscription, moment=current)
     db_session.commit()
-    assert account.balance_points == 300
+    assert account.balance_points == 500
 
     next_week = current + timedelta(days=7)
     grant_weekly_points_for_subscription(db_session, subscription, moment=next_week)
     db_session.commit()
-    assert account.balance_points == 600
+    assert account.balance_points == 1_000
 
 
 def test_bulk_weekly_job_does_not_duplicate_grants(db_session: Session) -> None:
@@ -112,8 +112,8 @@ def test_bulk_weekly_job_does_not_duplicate_grants(db_session: Session) -> None:
 
     assert first_run == 2
     assert second_run == 0
-    assert get_wallet_account(db_session, first_user.id).balance_points == 600
-    assert get_wallet_account(db_session, second_user.id).balance_points == 600
+    assert get_wallet_account(db_session, first_user.id).balance_points == 1_000
+    assert get_wallet_account(db_session, second_user.id).balance_points == 1_000
 
 
 def test_bulk_weekly_job_uses_active_paid_plan_allocation(db_session: Session) -> None:
@@ -123,7 +123,7 @@ def test_bulk_weekly_job_uses_active_paid_plan_allocation(db_session: Session) -
         user_id=user.id,
         plan_code="basic",
         status="active",
-        weekly_points=1_000,
+        weekly_points=2_500,
         ads_enabled=False,
         started_at=moment - timedelta(days=2),
         expires_at=moment + timedelta(days=28),
@@ -138,7 +138,7 @@ def test_bulk_weekly_job_uses_active_paid_plan_allocation(db_session: Session) -
 
     assert first_run == 1
     assert second_run == 0
-    assert get_wallet_account(db_session, user.id).balance_points == 1_300
+    assert get_wallet_account(db_session, user.id).balance_points == 3_000
 
 
 def test_bulk_weekly_job_falls_back_to_free_after_paid_expiry(
@@ -150,7 +150,7 @@ def test_bulk_weekly_job_falls_back_to_free_after_paid_expiry(
         user_id=user.id,
         plan_code="pro",
         status="active",
-        weekly_points=5_000,
+        weekly_points=15_000,
         ads_enabled=False,
         started_at=moment - timedelta(days=40),
         expires_at=moment - timedelta(minutes=1),
@@ -165,4 +165,4 @@ def test_bulk_weekly_job_falls_back_to_free_after_paid_expiry(
 
     assert first_run == 1
     assert second_run == 0
-    assert get_wallet_account(db_session, user.id).balance_points == 600
+    assert get_wallet_account(db_session, user.id).balance_points == 1_000

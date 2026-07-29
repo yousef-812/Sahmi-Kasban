@@ -22,6 +22,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models import AccountToken, AuthSession, Subscription, User, WalletAccount
+from app.services.monetization_catalog import get_plan
 from app.services.wallet import grant_weekly_points_for_subscription
 
 EMAIL_VERIFICATION = "email_verification"
@@ -218,13 +219,14 @@ def register_user(
     db.add(user)
     db.flush()
 
+    free_plan = get_plan("free")
     wallet = WalletAccount(user_id=user.id, balance_points=0)
     subscription = Subscription(
         user_id=user.id,
-        plan_code="free",
+        plan_code=free_plan.code,
         status="active",
-        weekly_points=300,
-        ads_enabled=True,
+        weekly_points=free_plan.weekly_points,
+        ads_enabled=free_plan.ads_enabled,
         started_at=now,
     )
     db.add_all([wallet, subscription])

@@ -1,0 +1,107 @@
+name: Signed Android Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-signed-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
+      FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Require protected signing secrets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required GitHub secret: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure Firebase Android app
+        if: ${{ env.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON != '' }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON" > mobile/android/app/google-services.json
+          python -m json.tool mobile/android/app/google-services.json >/dev/null
+
+      - name: Configure stable Android signing
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > mobile/android/app/upload-keystore.jks
+          cat > mobile/android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+          keytool -list -keystore mobile/android/app/upload-keystore.jks \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+
+      - name: Install Flutter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          echo "$FLUTTER_HOME/bin" >> "$GITHUB_PATH"
+          "$FLUTTER_HOME/bin/flutter" config --no-analytics
+
+      - name: Fetch Flutter packages
+        working-directory: mobile
+        run: $FLUTTER_HOME/bin/flutter pub get
+
+      - name: Build signed staging APK
+        working-directory: mobile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          $FLUTTER_HOME/bin/flutter build apk --release \
+            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev \
+            --dart-define=DEMO_MODE=false \
+            --dart-define=APP_ENV=staging
+
+      - name: Record signing certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          keytool -printcert -jarfile mobile/build/app/outputs/flutter-apk/app-release.apk \
+            | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          grep -q "SHA256:" mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sahmi-kasban-signed-apk-${{ github.run_id }}
+          path: |
+            mobile/build/app/outputs/flutter-apk/app-release.apk
+            mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove protected files
+        if: always()
+        shell: bash
+        run: |
+          rm -f mobile/android/app/upload-keystore.jks
+          rm -f mobile/android/key.properties
+          rm -f mobile/android/app/google-services.json
