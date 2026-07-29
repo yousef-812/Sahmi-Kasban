@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import 'performance_models.dart';
 import 'performance_providers.dart';
@@ -15,21 +14,29 @@ class PerformanceScreen extends ConsumerWidget {
     final window = ref.watch(performanceWindowProvider);
     final summary = ref.watch(performanceSummaryProvider);
     final reports = ref.watch(performanceReportsProvider);
+
+    Future<void> refresh() async {
+      await Future.wait([
+        ref.refresh(performanceSummaryProvider.future),
+        ref.refresh(performanceReportsProvider.future),
+      ]);
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('سجل الأداء الفعلي')),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(performanceSummaryProvider);
-            ref.invalidate(performanceReportsProvider);
-          },
+          onRefresh: refresh,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
               const PerformanceNotice(),
               const SizedBox(height: 14),
-              Center(
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
                 child: SegmentedButton<int>(
+                  showSelectedIcon: false,
                   segments: const [
                     ButtonSegment(value: 7, label: Text('آخر 7 جلسات')),
                     ButtonSegment(value: 30, label: Text('آخر 30 جلسة')),
@@ -112,7 +119,7 @@ class _SummarySection extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 LinearProgressIndicator(
-                  value: summary.dataCompletenessPct / 100,
+                  value: performanceProgress(summary.dataCompletenessPct),
                   minHeight: 10,
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -131,99 +138,132 @@ class _SummarySection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            PerformanceMetric(
-              label: 'متوسط الحركة',
-              value: formatBasisPoints(summary.averageReturnBp),
-            ),
-            PerformanceMetric(
-              label: 'وسيط الحركة',
-              value: formatBasisPoints(summary.medianReturnBp),
-            ),
-            PerformanceMetric(
-              label: 'الأسهم الصاعدة',
-              value: '${summary.positiveCount}',
-            ),
-            PerformanceMetric(
-              label: 'الأسهم الهابطة',
-              value: '${summary.negativeCount}',
-            ),
-            PerformanceMetric(
-              label: 'نسبة الصعود',
-              value: formatPercent(summary.positiveRatePct),
-            ),
-            PerformanceMetric(
-              label: 'دقة الاتجاه',
-              value: formatPercent(summary.directionAccuracyPct),
-            ),
-            PerformanceMetric(
-              label: 'تحقق الهدف الأول',
-              value: formatPercent(summary.targetOneHitRatePct),
-            ),
-            PerformanceMetric(
-              label: 'لمس وقف الخسارة',
-              value: formatPercent(summary.stopLossHitRatePct),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: PerformanceExtreme(
-                title: 'أفضل نتيجة',
-                item: summary.bestOutcome,
+        if (summary.evaluatedItems == 0)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(18),
+              child: Text(
+                'لم تكتمل أي نتيجة فعلية في المدة المختارة بعد. ستظهر المقاييس فور توفر بيانات إغلاق الجلسات.',
+                textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: PerformanceExtreme(
-                title: 'أسوأ نتيجة',
-                item: summary.worstOutcome,
+          )
+        else ...[
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              PerformanceMetric(
+                label: 'متوسط الحركة',
+                value: formatBasisPoints(summary.averageReturnBp),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        Text(
-          'أداء المراكز من 1 إلى 10',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columns: const [
-                DataColumn(label: Text('المركز')),
-                DataColumn(label: Text('النتائج')),
-                DataColumn(label: Text('المتوسط')),
-                DataColumn(label: Text('الصعود')),
-                DataColumn(label: Text('دقة الاتجاه')),
-              ],
-              rows: summary.ranks
-                  .map(
-                    (rank) => DataRow(
-                      cells: [
-                        DataCell(Text('${rank.rank}')),
-                        DataCell(Text('${rank.evaluatedItems}')),
-                        DataCell(Text(formatBasisPoints(rank.averageReturnBp))),
-                        DataCell(Text(formatPercent(rank.positiveRatePct))),
-                        DataCell(
-                          Text(formatPercent(rank.directionAccuracyPct)),
-                        ),
-                      ],
-                    ),
-                  )
-                  .toList(growable: false),
+              PerformanceMetric(
+                label: 'وسيط الحركة',
+                value: formatBasisPoints(summary.medianReturnBp),
+              ),
+              PerformanceMetric(
+                label: 'الأسهم الصاعدة',
+                value: '${summary.positiveCount}',
+              ),
+              PerformanceMetric(
+                label: 'الأسهم الهابطة',
+                value: '${summary.negativeCount}',
+              ),
+              PerformanceMetric(
+                label: 'نسبة الصعود',
+                value: formatPercent(summary.positiveRatePct),
+              ),
+              PerformanceMetric(
+                label: 'دقة الاتجاه',
+                value: formatPercent(summary.directionAccuracyPct),
+              ),
+              PerformanceMetric(
+                label: 'تحقق الهدف الأول',
+                value: formatPercent(summary.targetOneHitRatePct),
+              ),
+              PerformanceMetric(
+                label: 'لمس وقف الخسارة',
+                value: formatPercent(summary.stopLossHitRatePct),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cards = [
+                Expanded(
+                  child: PerformanceExtreme(
+                    title: 'أفضل نتيجة',
+                    item: summary.bestOutcome,
+                  ),
+                ),
+                Expanded(
+                  child: PerformanceExtreme(
+                    title: 'أسوأ نتيجة',
+                    item: summary.worstOutcome,
+                  ),
+                ),
+              ];
+              if (constraints.maxWidth >= 360) {
+                return Row(
+                  children: [cards.first, const SizedBox(width: 10), cards.last],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PerformanceExtreme(
+                    title: 'أفضل نتيجة',
+                    item: summary.bestOutcome,
+                  ),
+                  PerformanceExtreme(
+                    title: 'أسوأ نتيجة',
+                    item: summary.worstOutcome,
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'أداء المراكز من 1 إلى 10',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('المركز')),
+                  DataColumn(label: Text('النتائج')),
+                  DataColumn(label: Text('المتوسط')),
+                  DataColumn(label: Text('الصعود')),
+                  DataColumn(label: Text('دقة الاتجاه')),
+                ],
+                rows: summary.ranks
+                    .map(
+                      (rank) => DataRow(
+                        cells: [
+                          DataCell(Text('${rank.rank}')),
+                          DataCell(Text('${rank.evaluatedItems}')),
+                          DataCell(
+                            Text(formatBasisPoints(rank.averageReturnBp)),
+                          ),
+                          DataCell(Text(formatPercent(rank.positiveRatePct))),
+                          DataCell(
+                            Text(formatPercent(rank.directionAccuracyPct)),
+                          ),
+                        ],
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
             ),
           ),
-        ),
+        ],
         if (summary.benchmark['status'] != 'available')
           const Card(
             child: Padding(
@@ -245,20 +285,21 @@ class _ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateFormat(
-      'EEEE d MMMM yyyy',
-      'ar',
-    ).format(item.targetSessionDate);
+    final date = formatPerformanceDate(item.targetSessionDate);
+    final status = performanceStatusLabel(item.evaluationStatus);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         onTap: () => context.push('/performance/reports/${item.reportId}'),
+        isThreeLine: true,
         leading: CircleAvatar(child: Text('${item.evaluatedItems}')),
-        title: Text(date),
+        title: Text(date, maxLines: 2, overflow: TextOverflow.ellipsis),
         subtitle: Text(
-          '${item.dataCompletenessPct.toStringAsFixed(0)}% مكتملة • '
+          '$status • ${item.dataCompletenessPct.toStringAsFixed(0)}% مكتملة\n'
           'متوسط ${formatBasisPoints(item.averageReturnBp)} • '
           '${item.positiveCount} صاعدة / ${item.negativeCount} هابطة',
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
         ),
         trailing: const Icon(Icons.chevron_left_rounded),
       ),
