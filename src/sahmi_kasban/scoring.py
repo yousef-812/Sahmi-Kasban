@@ -102,7 +102,10 @@ def calculate_score_diagnostics(
 
     raw_score = weighted_score / used_weight
     base_confidence = weighted_confidence / used_weight
-    variance = sum(weight * (score - raw_score) ** 2 for score, weight in observations) / used_weight
+    variance = (
+        sum(weight * (score - raw_score) ** 2 for score, weight in observations)
+        / used_weight
+    )
     dispersion = math.sqrt(max(0.0, variance))
     consensus = max(0.0, 1.0 - min(1.0, dispersion / 35.0))
     conflict = bool(bullish and bearish)
