@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
 import 'admin_models.dart';
+import 'historical_replay_models.dart';
 
 class AdminRepository {
   const AdminRepository(this._apiClient);
@@ -95,6 +99,77 @@ class AdminRepository {
     }
   }
 
+  Future<List<HistoricalReplayJob>> historicalReplayJobs() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/admin/operations/historical-replays/jobs',
+        queryParameters: const <String, dynamic>{'limit': 50},
+      );
+      return _list(_required(response.data)['items'])
+          .map((item) => HistoricalReplayJob.fromJson(_map(item)))
+          .toList(growable: false);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<HistoricalReplayJob> createHistoricalReplay({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int horizonSessions,
+  }) async {
+    try {
+      final requestKey = 'replay_${DateTime.now().microsecondsSinceEpoch}';
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/historical-replays/jobs',
+        data: <String, dynamic>{
+          'request_key': requestKey,
+          'start_date': _dateOnly(startDate),
+          'end_date': _dateOnly(endDate),
+          'horizon_sessions': horizonSessions,
+          'min_train_size': 200,
+          'neutral_band_pct': 1.0,
+        },
+      );
+      return HistoricalReplayJob.fromJson(_required(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<HistoricalReplayJob> historicalReplayJob(String jobId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/admin/operations/historical-replays/jobs/$jobId',
+      );
+      return HistoricalReplayJob.fromJson(_required(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<({Uint8List bytes, String filename})> downloadHistoricalReplay(
+    String jobId,
+  ) async {
+    try {
+      final response = await _apiClient.dio.get<List<int>>(
+        '/admin/operations/historical-replays/jobs/$jobId/export.csv',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final data = response.data;
+      if (data == null || data.isEmpty) {
+        throw const FormatException('ملف الاختبار فارغ.');
+      }
+      final disposition = response.headers.value('content-disposition') ?? '';
+      final filename =
+          RegExp('filename="?([^";]+)').firstMatch(disposition)?.group(1) ??
+          'sahmi-engine-replay-$jobId.csv';
+      return (bytes: Uint8List.fromList(data), filename: filename);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<List<AdminAuditItem>> audit() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
@@ -181,6 +256,12 @@ class AdminRepository {
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
+  }
+
+  String _dateOnly(DateTime value) {
+    return '${value.year.toString().padLeft(4, '0')}-'
+        '${value.month.toString().padLeft(2, '0')}-'
+        '${value.day.toString().padLeft(2, '0')}';
   }
 
   Map<String, dynamic> _required(Map<String, dynamic>? value) {
