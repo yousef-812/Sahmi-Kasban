@@ -51,7 +51,9 @@ class _HistoricalReplayScreenState
   Future<void> _load({bool silent = false}) async {
     if (!silent && mounted) setState(() => _loading = true);
     try {
-      final jobs = await ref.read(adminRepositoryProvider).historicalReplayJobs();
+      final jobs = await ref
+          .read(adminRepositoryProvider)
+          .historicalReplayJobs();
       if (!mounted) return;
       setState(() {
         _jobs = jobs;
@@ -132,7 +134,9 @@ class _HistoricalReplayScreenState
     }
     setState(() => _submitting = true);
     try {
-      await ref.read(adminRepositoryProvider).createHistoricalReplay(
+      await ref
+          .read(adminRepositoryProvider)
+          .createHistoricalReplay(
             startDate: _startDate,
             endDate: _endDate,
             horizonSessions: _horizonSessions,
@@ -339,7 +343,10 @@ class _HistoricalReplayScreenState
               ),
             ),
             const SizedBox(height: 16),
-            Text('اختبارات حسابي', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'اختبارات حسابي',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             if (_loading) const Center(child: CircularProgressIndicator()),
             if (_error != null)
@@ -357,12 +364,13 @@ class _HistoricalReplayScreenState
                   child: Center(child: Text('لم تبدأ أي اختبارات بعد.')),
                 ),
               ),
-            for (final job in _jobs) _JobCard(
-              job: job,
-              dateFormat: dateFormat,
-              onDownload: job.downloadReady ? () => _download(job) : null,
-              onDetails: () => _showDetails(job),
-            ),
+            for (final job in _jobs)
+              _JobCard(
+                job: job,
+                dateFormat: dateFormat,
+                onDownload: job.downloadReady ? () => _download(job) : null,
+                onDetails: () => _showDetails(job),
+              ),
           ],
         ),
       ),
