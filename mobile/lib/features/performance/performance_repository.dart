@@ -50,7 +50,7 @@ class PerformanceRepository {
   Future<List<PerformanceDelayedItem>> delayed() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
-        '/admin/operations/performance/delayed',
+        '/admin/operations/performance/ledger-delayed',
         queryParameters: const <String, dynamic>{'limit': 100},
       );
       final payload = _required(response.data);
