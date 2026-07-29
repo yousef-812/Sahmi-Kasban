@@ -6,19 +6,19 @@ from dataclasses import asdict, dataclass
 
 from sahmi_kasban.models import EngineResult, Signal
 
+# Only directional evidence belongs in the directional score. Qualification is
+# an eligibility gate and risk is a sizing/downside gate; mixing either into the
+# direction score makes a tradability or volatility decision look like a price
+# forecast. These weights preserve the previous relative directional weights.
 DEFAULT_WEIGHTS: dict[str, float] = {
-    "stock_qualification": 0.08,
-    "market_environment": 0.12,
-    "technical": 0.22,
-    "smc": 0.18,
-    "multi_timeframe": 0.14,
-    "quantitative": 0.14,
-    "risk": 0.12,
+    "market_environment": 0.15,
+    "technical": 0.275,
+    "smc": 0.225,
+    "multi_timeframe": 0.175,
+    "quantitative": 0.175,
 }
 
-DIRECTIONAL_ENGINES = frozenset(
-    {"market_environment", "technical", "smc", "multi_timeframe", "quantitative"}
-)
+DIRECTIONAL_ENGINES = frozenset(DEFAULT_WEIGHTS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +42,8 @@ class ScoreDiagnostics:
         payload["bearish_engines"] = list(self.bearish_engines)
         payload["neutral_engines"] = list(self.neutral_engines)
         payload["failed_engines"] = list(self.failed_engines)
+        payload["scoring_version"] = "directional-v2.1"
+        payload["non_directional_gates"] = ["stock_qualification", "risk"]
         return payload
 
 
@@ -49,7 +51,7 @@ def calculate_score_diagnostics(
     engines: Mapping[str, EngineResult],
     weights: Mapping[str, float] | None = None,
 ) -> ScoreDiagnostics:
-    """Aggregate engine scores while penalizing weak evidence and disagreement."""
+    """Aggregate directional engine scores and penalize weak agreement."""
 
     selected_weights = dict(weights or DEFAULT_WEIGHTS)
     weighted_score = 0.0
