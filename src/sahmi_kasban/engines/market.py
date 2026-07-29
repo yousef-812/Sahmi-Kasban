@@ -81,12 +81,14 @@ class StockQualificationEngine(AnalysisEngine):
         close = safe_float(latest["close"])
         atr_value = safe_float(latest.get("atr"))
         atr_pct = (atr_value / close * 100.0) if close > 0 else 0.0
-        average_volume = safe_float(candles["volume"].tail(20).mean())
+        recent = candles.tail(20)
+        average_volume = safe_float(recent["volume"].mean())
+        average_turnover = safe_float((recent["close"] * recent["volume"]).mean())
         zero_volume_ratio = float((candles["volume"].tail(60) <= 0).mean())
 
         checks = {
             "history": history_count >= self.config.min_history,
-            "liquidity": average_volume >= self.config.min_average_volume,
+            "liquidity": average_turnover >= self.config.min_average_turnover_egp,
             "atr_range": self.config.atr_min_pct <= atr_pct <= self.config.atr_max_pct,
             "volume_continuity": zero_volume_ratio <= 0.20,
             "valid_price": close > 0,
@@ -108,6 +110,7 @@ class StockQualificationEngine(AnalysisEngine):
         qualified = score >= self.config.min_qualification_score and all(critical_checks)
         context["qualified"] = qualified
         context["atr_pct"] = atr_pct
+        context["average_turnover_egp"] = average_turnover
 
         failed = [key for key, passed in checks.items() if not passed]
         return EngineResult(
@@ -120,6 +123,11 @@ class StockQualificationEngine(AnalysisEngine):
                 "checks": checks,
                 "history_count": history_count,
                 "average_volume_20": round(average_volume, 2),
+                "average_turnover_egp_20": round(average_turnover, 2),
+                "liquidity_threshold_egp": round(
+                    self.config.min_average_turnover_egp,
+                    2,
+                ),
                 "atr_pct": round(atr_pct, 2),
                 "zero_volume_ratio": round(zero_volume_ratio, 3),
             },

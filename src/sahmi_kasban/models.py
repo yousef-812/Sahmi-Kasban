@@ -15,6 +15,7 @@ class AnalysisConfig:
     max_positions: int = 4
     min_history: int = 60
     min_average_volume: float = 100_000.0
+    min_average_turnover_egp: float = 1_000_000.0
     atr_min_pct: float = 0.5
     atr_max_pct: float = 8.0
     min_qualification_score: float = 50.0
@@ -29,6 +30,10 @@ class AnalysisConfig:
             raise ValueError("risk_per_trade must be between 0 and 0.10")
         if self.max_position_value <= 0:
             raise ValueError("max_position_value must be positive")
+        if self.min_average_volume < 0:
+            raise ValueError("min_average_volume cannot be negative")
+        if self.min_average_turnover_egp < 0:
+            raise ValueError("min_average_turnover_egp cannot be negative")
         if self.atr_min_pct < 0 or self.atr_max_pct <= self.atr_min_pct:
             raise ValueError("invalid ATR range")
 
