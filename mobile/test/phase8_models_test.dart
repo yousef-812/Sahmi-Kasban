@@ -21,6 +21,27 @@ void main() {
     expect(overview.openReports, 2);
   });
 
+  test('renders administrator audit codes as Arabic text', () {
+    final item = AdminAuditItem.fromJson(<String, dynamic>{
+      'action': 'admin_wallet_credit',
+      'reason_code': 'admin_credit',
+      'details': <String, dynamic>{
+        'amount_coins': 5,
+        'balance_before_points': 100,
+        'balance_after_points': 600,
+        'request_id': 'hidden-request-id',
+      },
+      'created_at': '2026-07-29T17:00:00Z',
+    });
+
+    expect(item.action, 'إضافة عملات لمستخدم');
+    expect(item.reasonCode, 'إضافة رصيد بواسطة الإدارة');
+    expect(item.details.toString(), contains('العملات المضافة: 5'));
+    expect(item.details.toString(), contains('الرصيد قبل العملية: 100'));
+    expect(item.details.toString(), isNot(contains('request_id')));
+    expect(item.details.toString(), isNot(contains('{')));
+  });
+
   test('parses notification unread state', () {
     final page = NotificationPage.fromJson(<String, dynamic>{
       'items': <Map<String, dynamic>>[
