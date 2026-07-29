@@ -60,7 +60,9 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
       }
     } on Object {
       if (mounted) {
-        setState(() => _error = 'تعذر عرض التقرير. حدّث التطبيق وحاول مرة أخرى.');
+        setState(
+          () => _error = 'تعذر عرض التقرير. حدّث التطبيق وحاول مرة أخرى.',
+        );
       }
     } finally {
       if (mounted) {
@@ -272,10 +274,7 @@ class _MarketSummaryCard extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
             ),
-            if (title.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(title),
-            ],
+            if (title.isNotEmpty) ...[const SizedBox(height: 6), Text(title)],
             const SizedBox(height: 14),
             Wrap(
               spacing: 8,
@@ -294,10 +293,7 @@ class _MarketSummaryCard extends StatelessWidget {
             ),
             if (disclaimer.isNotEmpty) ...[
               const SizedBox(height: 14),
-              Text(
-                disclaimer,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(disclaimer, style: Theme.of(context).textTheme.bodySmall),
             ],
           ],
         ),
@@ -417,7 +413,9 @@ class _ReportItemCard extends StatelessWidget {
               _ValueRow(label: 'الهدف الثاني', value: _price(target2)),
               _ValueRow(
                 label: 'العائد مقابل المخاطرة',
-                value: rewardRisk > 0 ? '${rewardRisk.toStringAsFixed(1)} : 1' : '—',
+                value: rewardRisk > 0
+                    ? '${rewardRisk.toStringAsFixed(1)} : 1'
+                    : '—',
               ),
             ],
             if (rsi > 0 || volumeRatio > 0) ...[
@@ -509,7 +507,10 @@ class _ErrorCard extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 10),
-            OutlinedButton(onPressed: retry, child: const Text('إعادة المحاولة')),
+            OutlinedButton(
+              onPressed: retry,
+              child: const Text('إعادة المحاولة'),
+            ),
           ],
         ),
       ),
