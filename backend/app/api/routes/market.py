@@ -240,7 +240,10 @@ async def analyze_stock(
     except StockAnalysisExecutionError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
+            detail=(
+                "لم يكتمل التحليل لأن تاريخ السهم أو بياناته لا تكفي "
+                "للمحركات حاليًا."
+            ),
         ) from exc
 
     return _analysis_response(execution)
