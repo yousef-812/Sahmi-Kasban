@@ -63,6 +63,29 @@ class StockComparisonItem {
   }
 }
 
+class StockComparisonFailure {
+  const StockComparisonFailure({
+    required this.ticker,
+    required this.code,
+    required this.message,
+    required this.retryable,
+  });
+
+  final String ticker;
+  final String code;
+  final String message;
+  final bool retryable;
+
+  factory StockComparisonFailure.fromJson(Map<String, dynamic> json) {
+    return StockComparisonFailure(
+      ticker: _string(json['ticker']),
+      code: _string(json['code']),
+      message: _string(json['message']),
+      retryable: json['retryable'] as bool? ?? true,
+    );
+  }
+}
+
 class StockComparisonResult {
   const StockComparisonResult({
     required this.comparisonId,
@@ -71,6 +94,7 @@ class StockComparisonResult {
     required this.bestTicker,
     required this.summary,
     required this.items,
+    required this.failedItems,
     required this.includedAllowance,
     required this.comparisonChargedPoints,
     required this.comparisonChargedCoins,
@@ -90,6 +114,7 @@ class StockComparisonResult {
   final String bestTicker;
   final String summary;
   final List<StockComparisonItem> items;
+  final List<StockComparisonFailure> failedItems;
   final bool includedAllowance;
   final int comparisonChargedPoints;
   final String comparisonChargedCoins;
@@ -111,6 +136,9 @@ class StockComparisonResult {
       summary: _string(json['summary']),
       items: _list(json['items'])
           .map((item) => StockComparisonItem.fromJson(_map(item)))
+          .toList(growable: false),
+      failedItems: _list(json['failed_items'])
+          .map((item) => StockComparisonFailure.fromJson(_map(item)))
           .toList(growable: false),
       includedAllowance: json['included_allowance'] as bool? ?? false,
       comparisonChargedPoints: _int(json['comparison_charged_points']),
