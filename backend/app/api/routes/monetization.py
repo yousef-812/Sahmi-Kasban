@@ -35,6 +35,7 @@ from app.services.monetization import (
     process_rewarded_ad_callback,
     rewarded_ad_eligibility,
 )
+from app.services.monetization_catalog import get_plan
 from app.services.monetization_security import (
     AdMobSsvVerifier,
     GooglePlayVerifier,
@@ -53,9 +54,20 @@ def monetization_catalog(
     db: DatabaseSession, current_user: CurrentUser
 ) -> MonetizationCatalogResponse:
     del current_user
-    return MonetizationCatalogResponse.model_validate(
-        catalog_payload(runtime_monetization_settings(db))
-    )
+    payload = catalog_payload(runtime_monetization_settings(db))
+    for raw_plan in payload["plans"]:
+        if not isinstance(raw_plan, dict):
+            continue
+        plan = get_plan(str(raw_plan.get("code", "")))
+        raw_plan.update(
+            {
+                "features": list(plan.features),
+                "comparison_monthly_allowance": plan.comparison_monthly_allowance,
+                "max_comparison_stocks": plan.max_comparison_stocks,
+                "priority_level": plan.priority_level,
+            }
+        )
+    return MonetizationCatalogResponse.model_validate(payload)
 
 
 @router.get("/status", response_model=MonetizationStatusResponse)
