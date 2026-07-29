@@ -1,0 +1,108 @@
+name: Update economy regression expectations
+
+on:
+  push:
+    branches: [agent/welcome-economy-signing-report]
+
+permissions:
+  contents: write
+
+jobs:
+  update-tests:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/welcome-economy-signing-report
+          fetch-depth: 0
+      - name: Update targeted balance expectations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              if old not in text:
+                  raise SystemExit(f"Expected text not found in {path}: {old!r}")
+              file.write_text(text.replace(old, new), encoding="utf-8")
+
+          accounts = "backend/tests/test_accounts_api.py"
+          replace(accounts, 'assert register_response.json()["weekly_points_granted"] == 300', 'assert register_response.json()["weekly_points_granted"] == 500')
+          replace(accounts, 'assert profile_payload["weekly_points"] == 300', 'assert profile_payload["weekly_points"] == 500')
+          replace(accounts, 'assert profile_payload["balance_points"] == 300', 'assert profile_payload["balance_points"] == 1_000')
+          replace(accounts, 'assert profile_payload["balance_coins"] == "3.00"', 'assert profile_payload["balance_coins"] == "10.00"')
+          replace(accounts, 'assert wallet.json()["balance_points"] == 300', 'assert wallet.json()["balance_points"] == 1_000')
+          replace(
+              accounts,
+              '''    assert history.json()["total"] == 1
+              assert history.json()["items"][0]["entry_type"] == "weekly_plan_grant"
+              assert history.json()["items"][0]["amount_points"] == 300''',
+              '''    assert history.json()["total"] == 2
+              entries = {item["entry_type"]: item for item in history.json()["items"]}
+              assert set(entries) == {"weekly_plan_grant", "welcome_bonus"}
+              assert entries["weekly_plan_grant"]["amount_points"] == 500
+              assert entries["welcome_bonus"]["amount_points"] == 500''',
+          )
+
+          # API tests verify email, so they receive 500 weekly points + 500 welcome points.
+          api_replacements = {
+              "backend/tests/test_community_admin.py": {"== 250": "== 950", "== 200": "== 900"},
+              "backend/tests/test_community_api.py": {"== 250": "== 950", "== 300": "== 1_000"},
+              "backend/tests/test_market_analysis_api.py": {"== 250": "== 950", "== 300": "== 1_000"},
+          }
+          for path, replacements in api_replacements.items():
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              for old, new in replacements.items():
+                  text = text.replace(old, new)
+              file.write_text(text, encoding="utf-8")
+
+          replace(
+              "backend/tests/test_prediction_verification_api.py",
+              'assert payload["balance_points"] == 500',
+              'assert payload["balance_points"] == 1_200',
+          )
+
+          # Service-level tests create unverified users directly, so they receive only 500 weekly points.
+          service_replacements = {
+              "backend/tests/test_ai_retry_job.py": {"== 250": "== 450"},
+              "backend/tests/test_community_ai.py": {"== 250": "== 450", "== 300": "== 500"},
+              "backend/tests/test_community_safety.py": {"== 250": "== 450", "== 150": "== 350"},
+              "backend/tests/test_community_service.py": {"== 250": "== 450", "== 300": "== 500"},
+              "backend/tests/test_market_analysis_transactions.py": {"== 250": "== 450", "== 300": "== 500"},
+          }
+          for path, replacements in service_replacements.items():
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              for old, new in replacements.items():
+                  text = text.replace(old, new)
+              file.write_text(text, encoding="utf-8")
+
+          replace(
+              "backend/tests/test_prediction_evaluation.py",
+              'get_wallet_account(db_session, user.id).balance_points == 400',
+              'get_wallet_account(db_session, user.id).balance_points == 600',
+          )
+
+          wallet = "backend/tests/test_wallet_service.py"
+          replace(wallet, 'balance_points == 200', 'balance_points == 400')
+          replace(wallet, 'amount_points=201', 'amount_points=401')
+          replace(wallet, 'assert account.balance_points == 300', 'assert account.balance_points == 500')
+          replace(wallet, 'assert account.balance_points == 600', 'assert account.balance_points == 1_000')
+          replace(wallet, 'first_user.id).balance_points == 600', 'first_user.id).balance_points == 1_000')
+          replace(wallet, 'second_user.id).balance_points == 600', 'second_user.id).balance_points == 1_000')
+          replace(wallet, 'weekly_points=1_000', 'weekly_points=2_500')
+          replace(wallet, 'user.id).balance_points == 1_300', 'user.id).balance_points == 3_000')
+          replace(wallet, 'weekly_points=5_000', 'weekly_points=15_000')
+          replace(wallet, 'user.id).balance_points == 600', 'user.id).balance_points == 1_000')
+          PY
+          rm -f .github/workflows/update-economy-tests.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backend/tests .github/workflows/update-economy-tests.yml
+          git commit -m "Update tests for welcome and weekly coins"
+          git push origin HEAD:agent/welcome-economy-signing-report
