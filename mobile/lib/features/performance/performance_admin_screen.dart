@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/network/api_exception.dart';
 import 'performance_models.dart';
@@ -26,11 +25,23 @@ class _PerformanceAdminScreenState
   Widget build(BuildContext context) {
     final delayed = ref.watch(delayedPerformanceProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('تشغيل سجل الأداء')),
+      appBar: AppBar(
+        title: const Text('عمليات الإدارة'),
+        actions: [
+          IconButton(
+            onPressed: () => context.push('/admin/wallet-credit'),
+            icon: const Icon(Icons.add_card_rounded),
+            tooltip: 'إضافة عملات للمستخدمين',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async => ref.invalidate(delayedPerformanceProvider),
+          onRefresh: () async {
+            await ref.refresh(delayedPerformanceProvider.future);
+          },
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
               Card(
@@ -46,6 +57,12 @@ class _PerformanceAdminScreenState
                         ),
                       ),
                       const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () => context.push('/admin/wallet-credit'),
+                        icon: const Icon(Icons.add_card_rounded),
+                        label: const Text('إضافة عملات للمستخدمين'),
+                      ),
+                      const SizedBox(height: 8),
                       FilledButton.icon(
                         onPressed: _busy ? null : _evaluateDue,
                         icon: const Icon(Icons.playlist_add_check_rounded),
@@ -83,8 +100,8 @@ class _PerformanceAdminScreenState
               const SizedBox(height: 10),
               delayed.when(
                 loading: () => const PerformanceLoading(),
-                error: (_, __) => PerformanceFailure(
-                  message: 'تعذر تحميل قائمة التأخير.',
+                error: (error, __) => PerformanceFailure(
+                  message: 'تعذر تحميل قائمة التأخير. ${_errorMessage(error)}',
                   retry: () => ref.invalidate(delayedPerformanceProvider),
                 ),
                 data: (items) => items.isEmpty
@@ -191,7 +208,7 @@ class _DelayedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateFormat('d MMMM yyyy', 'ar').format(item.targetSessionDate);
+    final date = formatPerformanceDate(item.targetSessionDate);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -237,4 +254,8 @@ class _DelayedCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _errorMessage(Object error) {
+  return error is ApiException ? error.message : 'حاول مرة أخرى.';
 }
