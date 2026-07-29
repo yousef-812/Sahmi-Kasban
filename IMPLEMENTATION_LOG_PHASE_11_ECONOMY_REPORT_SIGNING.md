@@ -12,6 +12,7 @@
 ## Safety properties
 
 - Welcome credit is server-authoritative and idempotent by user ID.
+- Welcome credit settles inside the email-verification transaction; profile reads remain side-effect free.
 - Existing subscriptions are migrated by Alembic revision `0013_economy_v2`.
 - Old accounts are not retroactively granted the welcome bonus.
 - The first move from an old debug-signed APK to the stable key requires one uninstall; later stable-key APKs update normally.
