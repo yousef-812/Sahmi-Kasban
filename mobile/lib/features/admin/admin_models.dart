@@ -253,10 +253,11 @@ String _auditActionLabel(String value) => switch (value) {
   'user_unblocked' || 'unblock_user' => 'إلغاء حظر مستخدم',
   'setting_updated' || 'update_operational_setting' => 'تعديل إعداد تشغيلي',
   'notification_broadcast' || 'broadcast_notification' => 'إرسال إشعار جماعي',
-  'performance_outcome_corrected' || 'correct_performance_outcome' =>
-    'تصحيح نتيجة أداء موثقة',
-  'admin_wallet_credit' || 'wallet_credit' || 'credit_user_wallet' =>
-    'إضافة عملات لمستخدم',
+  'performance_outcome_corrected' ||
+  'correct_performance_outcome' => 'تصحيح نتيجة أداء موثقة',
+  'admin_wallet_credit' ||
+  'wallet_credit' ||
+  'credit_user_wallet' => 'إضافة عملات لمستخدم',
   'report_refund' || 'refund_discussion' => 'إرجاع رصيد لمستخدم',
   _ => 'إجراء إداري',
 };
@@ -316,9 +317,10 @@ String _auditValue(Object? value) {
     'healthy' => 'سليم',
     'degraded' => 'جزئي',
     'failed' => 'فاشل',
-    _ => text.length > 36 && text.contains('-')
-        ? '${text.substring(0, 8)}…'
-        : text,
+    _ =>
+      text.length > 36 && text.contains('-')
+          ? '${text.substring(0, 8)}…'
+          : text,
   };
 }
 
