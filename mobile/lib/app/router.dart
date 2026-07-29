@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/observability/app_observability.dart';
 import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
+import '../features/admin/admin_wallet_credit_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
@@ -116,6 +117,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/performance',
         builder: (context, state) => const PerformanceAdminScreen(),
+      ),
+      GoRoute(
+        path: '/admin/wallet-credit',
+        builder: (context, state) => const AdminWalletCreditScreen(),
       ),
       GoRoute(
         path: '/community/new',

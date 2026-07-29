@@ -74,6 +74,27 @@ class AdminRepository {
     }
   }
 
+  Future<Map<String, dynamic>> creditUserCoins({
+    required String userId,
+    required int amountCoins,
+    required String reason,
+    required String requestId,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/users/$userId/wallet-credit',
+        data: <String, dynamic>{
+          'amount_coins': amountCoins,
+          'reason': reason.trim(),
+          'request_id': requestId,
+        },
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<List<AdminAuditItem>> audit() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
