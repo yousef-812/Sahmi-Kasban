@@ -72,6 +72,13 @@ class StockComparisonItemResponse(BaseModel):
     reward_risk_1: float = Field(ge=0)
 
 
+class StockComparisonFailureResponse(BaseModel):
+    ticker: str
+    code: str
+    message: str
+    retryable: bool = True
+
+
 class StockComparisonResponse(BaseModel):
     comparison_id: UUID
     request_key: str
@@ -79,6 +86,7 @@ class StockComparisonResponse(BaseModel):
     best_ticker: str
     summary: str
     items: list[StockComparisonItemResponse]
+    failed_items: list[StockComparisonFailureResponse] = Field(default_factory=list)
     included_allowance: bool
     comparison_charged_points: int = Field(ge=0)
     comparison_charged_coins: str
