@@ -16,6 +16,9 @@ from app.schemas.market import (
     MarketInstrumentResponse,
     StockAnalysisRequest,
     StockAnalysisResponse,
+    StockComparisonItemResponse,
+    StockComparisonRequest,
+    StockComparisonResponse,
 )
 from app.services.stock_analysis import (
     StockAnalysisExecution,
@@ -23,6 +26,12 @@ from app.services.stock_analysis import (
     execute_stock_analysis,
     get_stock_ai_service,
     latest_owned_stock_analysis,
+)
+from app.services.stock_comparisons import (
+    ComparisonConflictError,
+    ComparisonPlanLimitError,
+    StockComparisonExecution,
+    execute_stock_comparison,
 )
 from app.services.wallet import InsufficientBalanceError, points_to_coins
 from sahmi_kasban.ai import SahmiAIService
@@ -48,6 +57,31 @@ def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisRespon
     )
 
 
+def _comparison_response(execution: StockComparisonExecution) -> StockComparisonResponse:
+    comparison = execution.comparison
+    payload = comparison.payload
+    raw_items = payload.get("items", [])
+    return StockComparisonResponse(
+        comparison_id=comparison.id,
+        request_key=comparison.request_key,
+        tickers=comparison.tickers,
+        best_ticker=str(payload.get("best_ticker", "")),
+        summary=str(payload.get("summary", "")),
+        items=[StockComparisonItemResponse(**item) for item in raw_items],
+        included_allowance=comparison.included_allowance,
+        comparison_charged_points=comparison.charged_points,
+        comparison_charged_coins=points_to_coins(comparison.charged_points),
+        analysis_charged_points=comparison.analysis_charged_points,
+        analysis_charged_coins=points_to_coins(comparison.analysis_charged_points),
+        allowance_used=execution.allowance_used,
+        allowance_remaining=execution.allowance_remaining,
+        idempotent=execution.idempotent,
+        balance_points=execution.balance_points,
+        balance_coins=points_to_coins(execution.balance_points),
+        disclaimer=str(payload.get("disclaimer", "")),
+    )
+
+
 @router.get("/market/instruments", response_model=MarketInstrumentListResponse)
 async def get_market_instruments(
     db: DatabaseSession,
@@ -64,6 +98,56 @@ async def get_market_instruments(
         total_registry_size=total,
         items=[MarketInstrumentResponse(**instrument.to_dict()) for instrument in instruments],
     )
+
+
+@router.post("/market/comparisons", response_model=StockComparisonResponse)
+async def compare_stocks(
+    request: StockComparisonRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+    provider: MarketProvider,
+    ai_service: StockAIService,
+) -> StockComparisonResponse:
+    try:
+        normalized: list[str] = []
+        for ticker in request.tickers:
+            symbol = normalize_egx_ticker(ticker)
+            if not await market_instrument_exists(db, symbol):
+                raise UnknownTickerError(f"Unsupported EGX ticker: {symbol}")
+            normalized.append(symbol)
+
+        execution = await execute_stock_comparison(
+            db,
+            user=current_user,
+            request_key=request.request_key,
+            tickers=normalized,
+            provider=provider,
+            ai_service=ai_service,
+            language=request.language,
+        )
+    except UnknownTickerError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ComparisonConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except ComparisonPlanLimitError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except InsufficientBalanceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Insufficient coin balance for this comparison and any new analyses",
+        ) from exc
+    except MarketDataUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Market data is temporarily unavailable",
+        ) from exc
+    except StockAnalysisExecutionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="One of the selected stocks could not be analyzed",
+        ) from exc
+
+    return _comparison_response(execution)
 
 
 @router.get(
