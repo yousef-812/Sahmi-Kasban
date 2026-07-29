@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/network/api_exception.dart';
 import '../auth/session_controller.dart';
@@ -25,6 +24,7 @@ class PerformanceReportScreen extends ConsumerWidget {
         child: detail.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
               PerformanceFailure(
@@ -48,17 +48,17 @@ class _DetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final date = DateFormat(
-      'EEEE d MMMM yyyy',
-      'ar',
-    ).format(detail.targetSessionDate);
+    final date = formatPerformanceDate(detail.targetSessionDate);
     final isAdmin =
         ref.watch(sessionControllerProvider).profile?.isAdmin == true;
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(performanceReportDetailProvider(detail.reportId));
+        await ref.refresh(
+          performanceReportDetailProvider(detail.reportId).future,
+        );
       },
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
           const PerformanceNotice(),
@@ -77,7 +77,9 @@ class _DetailBody extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
-                    value: detail.session.dataCompletenessPct / 100,
+                    value: performanceProgress(
+                      detail.session.dataCompletenessPct,
+                    ),
                     minHeight: 9,
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -86,18 +88,32 @@ class _DetailBody extends ConsumerWidget {
                     '${detail.session.dataCompletenessPct.toStringAsFixed(1)}% مكتملة • '
                     '${detail.session.evaluatedItems}/${detail.session.totalItems} نتيجة',
                   ),
-                  Text('حالة التقييم: ${detail.evaluationStatus}'),
+                  Text(
+                    'حالة التقييم: '
+                    '${performanceStatusLabel(detail.evaluationStatus)}',
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 8),
-          for (final outcome in detail.outcomes)
-            _OutcomeCard(
-              outcome: outcome,
-              canCorrect: isAdmin,
-              onCorrect: () => _showCorrection(context, ref, outcome),
-            ),
+          if (detail.outcomes.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'لا توجد نتائج أسهم مسجلة لهذه الجلسة حتى الآن.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          else
+            for (final outcome in detail.outcomes)
+              _OutcomeCard(
+                outcome: outcome,
+                canCorrect: isAdmin && outcome.isComplete,
+                onCorrect: () => _showCorrection(context, ref, outcome),
+              ),
           if (detail.revisions.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
@@ -115,10 +131,10 @@ class _DetailBody extends ConsumerWidget {
                   ),
                   title: Text(revision.reason),
                   subtitle: Text(
-                    DateFormat(
-                      'd MMM yyyy – HH:mm',
-                      'ar',
-                    ).format(revision.createdAt.toLocal()),
+                    formatPerformanceDate(
+                      revision.createdAt,
+                      includeTime: true,
+                    ),
                   ),
                 ),
               ),
@@ -200,12 +216,21 @@ class _OutcomeCard extends StatelessWidget {
                   child: Text(
                     outcome.ticker,
                     textDirection: ui.TextDirection.ltr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
-                Chip(label: Text(outcome.isComplete ? result : outcome.status)),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text(
+                    outcome.isComplete
+                        ? result
+                        : performanceStatusLabel(outcome.status),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -262,6 +287,7 @@ class _CorrectionDialogState extends State<_CorrectionDialog> {
   late final TextEditingController _close;
   late final TextEditingController _provider;
   late final TextEditingController _fingerprint;
+  String? _validationError;
 
   @override
   void initState() {
@@ -276,7 +302,9 @@ class _CorrectionDialogState extends State<_CorrectionDialog> {
     _provider = TextEditingController(
       text: widget.outcome.provider ?? 'manual',
     );
-    _fingerprint = TextEditingController();
+    _fingerprint = TextEditingController(
+      text: '${widget.outcome.evidence['data_fingerprint'] ?? ''}',
+    );
   }
 
   @override
@@ -310,6 +338,12 @@ class _CorrectionDialogState extends State<_CorrectionDialog> {
             _number(_close, 'الإغلاق'),
             _field(_provider, 'المزود'),
             _field(_fingerprint, 'بصمة البيانات'),
+            if (_validationError != null)
+              Text(
+                _validationError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                textAlign: TextAlign.center,
+              ),
           ],
         ),
       ),
@@ -346,29 +380,58 @@ class _CorrectionDialogState extends State<_CorrectionDialog> {
 
   void _submit() {
     final values = [
-      double.tryParse(_open.text),
-      double.tryParse(_high.text),
-      double.tryParse(_low.text),
-      double.tryParse(_close.text),
+      double.tryParse(_open.text.trim()),
+      double.tryParse(_high.text.trim()),
+      double.tryParse(_low.text.trim()),
+      double.tryParse(_close.text.trim()),
     ];
-    if (_reason.text.trim().length < 8 ||
-        _fingerprint.text.trim().length < 4 ||
-        values.any((value) => value == null || value <= 0)) {
+    if (_reason.text.trim().length < 8) {
+      _showValidation('سبب التصحيح يجب ألا يقل عن 8 أحرف.');
       return;
     }
+    if (_provider.text.trim().length < 2) {
+      _showValidation('اسم مزود البيانات غير صالح.');
+      return;
+    }
+    if (_fingerprint.text.trim().length < 4) {
+      _showValidation('بصمة البيانات يجب ألا تقل عن 4 أحرف.');
+      return;
+    }
+    if (values.any((value) => value == null || value <= 0)) {
+      _showValidation('أدخل أسعارًا موجبة وصحيحة لكل حقول الجلسة.');
+      return;
+    }
+
+    final open = values[0]!;
+    final high = values[1]!;
+    final low = values[2]!;
+    final close = values[3]!;
+    if (high < open || high < close || high < low) {
+      _showValidation('سعر الأعلى يجب أن يكون أكبر من باقي أسعار الجلسة.');
+      return;
+    }
+    if (low > open || low > close || low > high) {
+      _showValidation('سعر الأدنى يجب أن يكون أقل من باقي أسعار الجلسة.');
+      return;
+    }
+
     Navigator.pop(
       context,
       _CorrectionData(
         reason: _reason.text.trim(),
-        open: values[0]!,
-        high: values[1]!,
-        low: values[2]!,
-        close: values[3]!,
+        open: open,
+        high: high,
+        low: low,
+        close: close,
         provider: _provider.text.trim(),
         fingerprint: _fingerprint.text.trim(),
-        dataAsOf: DateTime.now().toUtc(),
+        dataAsOf: widget.outcome.dataAsOf ?? DateTime.now().toUtc(),
       ),
     );
+  }
+
+  void _showValidation(String message) {
+    setState(() => _validationError = message);
   }
 }
 
