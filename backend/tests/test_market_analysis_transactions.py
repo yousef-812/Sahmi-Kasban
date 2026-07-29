@@ -169,7 +169,7 @@ def test_shared_analysis_cache_charges_once_per_account(
         select(WalletAccount).order_by(WalletAccount.balance_points)
     ).all()
     assert len(debits) == 2
-    assert [wallet.balance_points for wallet in wallets] == [250, 250]
+    assert [wallet.balance_points for wallet in wallets] == [950, 950]
 
 
 def test_core_engine_failure_rolls_back_snapshot_analysis_and_debit(
