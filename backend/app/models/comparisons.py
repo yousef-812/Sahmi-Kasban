@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, JSON, String, UniqueConstraint, Uuid
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
@@ -13,7 +22,10 @@ class StockComparison(TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("user_id", "request_key", name="uq_stock_comparison_user_request"),
         CheckConstraint("charged_points >= 0", name="stock_comparison_charge_non_negative"),
-        CheckConstraint("analysis_charged_points >= 0", name="stock_comparison_analysis_charge_non_negative"),
+        CheckConstraint(
+            "analysis_charged_points >= 0",
+            name="stock_comparison_analysis_charge_non_negative",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
