@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 GRADLE = ROOT / "mobile" / "android" / "app" / "build.gradle.kts"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
@@ -16,6 +15,7 @@ def test_ci_preview_cannot_impersonate_a_real_update() -> None:
 
     assert 'applicationIdSuffix = ".ci"' in gradle
     assert 'versionNameSuffix = "-ci"' in gradle
+    assert 'google-services.json").exists() && keystorePropertiesFile.exists()' in gradle
     assert "ci-preview-not-an-update" in ci
     assert "sahmi-kasban-staging-apk-" not in ci
 
