@@ -77,6 +77,7 @@ class AnalysisReport:
     engines: dict[str, EngineResult]
     trade_plan: TradePlan | None = None
     warnings: list[str] = field(default_factory=list)
+    analysis_quality: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -88,4 +89,5 @@ class AnalysisReport:
             "engines": {name: result.to_dict() for name, result in self.engines.items()},
             "trade_plan": self.trade_plan.to_dict() if self.trade_plan else None,
             "warnings": list(self.warnings),
+            "analysis_quality": dict(self.analysis_quality),
         }
