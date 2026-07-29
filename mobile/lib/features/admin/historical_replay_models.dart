@@ -83,12 +83,8 @@ class HistoricalReplayJob {
       errorMessage: json['error_message'] as String?,
       tickers: rawTickers is List
           ? rawTickers
-                .whereType<Map>()
-                .map(
-                  (item) => HistoricalReplayTicker.fromJson(
-                    Map<String, dynamic>.from(item),
-                  ),
-                )
+                .whereType<Map<String, dynamic>>()
+                .map(HistoricalReplayTicker.fromJson)
                 .toList(growable: false)
           : const <HistoricalReplayTicker>[],
     );
