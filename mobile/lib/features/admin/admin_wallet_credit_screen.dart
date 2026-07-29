@@ -47,9 +47,8 @@ class _AdminWalletCreditScreenState
             Expanded(
               child: users.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _Failure(
-                  retry: () => ref.invalidate(adminUsersProvider),
-                ),
+                error: (_, __) =>
+                    _Failure(retry: () => ref.invalidate(adminUsersProvider)),
                 data: (items) {
                   final query = _search.text.trim().toLowerCase();
                   final filtered = items
@@ -83,9 +82,7 @@ class _AdminWalletCreditScreenState
                               children: [
                                 Text(
                                   user.displayName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(fontWeight: FontWeight.w900),
                                 ),
                                 const SizedBox(height: 4),
@@ -199,9 +196,7 @@ class _CreditDialogState extends State<_CreditDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'الرصيد الحالي: ${_coins(widget.user.balancePoints)} عملة',
-            ),
+            Text('الرصيد الحالي: ${_coins(widget.user.balancePoints)} عملة'),
             const SizedBox(height: 14),
             TextField(
               controller: _amount,
@@ -238,10 +233,7 @@ class _CreditDialogState extends State<_CreditDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('إلغاء'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('تأكيد الإضافة'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('تأكيد الإضافة')),
       ],
     );
   }
@@ -286,7 +278,10 @@ class _Failure extends StatelessWidget {
           children: [
             const Text('تعذر تحميل المستخدمين.'),
             const SizedBox(height: 10),
-            OutlinedButton(onPressed: retry, child: const Text('إعادة المحاولة')),
+            OutlinedButton(
+              onPressed: retry,
+              child: const Text('إعادة المحاولة'),
+            ),
           ],
         ),
       ),
