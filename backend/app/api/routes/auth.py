@@ -40,6 +40,7 @@ from app.services.auth import (
     verify_user_email_code,
 )
 from app.services.email import AccountEmailService, get_account_email_service
+from app.services.monetization_catalog import get_plan
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -152,7 +153,9 @@ def register(
     return RegisterResponse(
         user_id=user.id,
         email=user.email,
-        weekly_points_granted=0 if recovered_pending_account else 300,
+        weekly_points_granted=(
+            0 if recovered_pending_account else get_plan("free").weekly_points
+        ),
     )
 
 
