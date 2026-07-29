@@ -53,9 +53,10 @@ class _DetailBody extends ConsumerWidget {
         ref.watch(sessionControllerProvider).profile?.isAdmin == true;
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.refresh(
+        final refreshed = ref.refresh(
           performanceReportDetailProvider(detail.reportId).future,
         );
+        await refreshed;
       },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
