@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi.testclient import TestClient
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.jobs import historical_replays as replay_worker
 from app.market_data.types import CandleSeries
@@ -175,6 +175,12 @@ def test_replay_worker_processes_five_tickers_and_exports_engine_details(
         "get_market_data_provider",
         lambda: provider,
     )
+    worker_sessions = sessionmaker(
+        bind=db_session.get_bind(),
+        autoflush=False,
+        expire_on_commit=False,
+    )
+    monkeypatch.setattr(replay_worker, "SessionLocal", worker_sessions)
     today = date.today()
     created = client.post(
         "/api/v1/admin/operations/historical-replays/jobs",
