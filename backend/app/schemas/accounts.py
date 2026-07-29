@@ -37,7 +37,7 @@ class RegisterResponse(BaseModel):
     email: EmailStr
     requires_email_verification: bool = True
     verification_code_expires_in_seconds: int = 600
-    weekly_points_granted: int = 300
+    weekly_points_granted: int = 500
 
 
 class VerifyEmailRequest(BaseModel):
