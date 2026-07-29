@@ -336,7 +336,7 @@ async def execute_analysis_backtest(
         run.failed_tickers = failed
         run.details = {
             "request_signature": signature,
-            "failures": failures,
+            "failures": [dict(item) for item in failures],
         }
         db.commit()
 
