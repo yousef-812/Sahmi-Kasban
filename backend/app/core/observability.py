@@ -15,6 +15,7 @@ import sentry_sdk
 from app.core.config import Settings
 
 _request_id: ContextVar[str] = ContextVar("request_id", default="-")
+_UPSTREAM_STATUS_CODES = {502, 503, 504}
 
 
 class RequestContextFilter(logging.Filter):
@@ -80,6 +81,9 @@ class RequestMetricsRegistry:
         self._status_counts: Counter[int] = Counter()
         self._total_requests = 0
         self._error_requests = 0
+        self._upstream_error_requests = 0
+        self._server_error_requests = 0
+        self._client_error_requests = 0
         self._slow_requests = 0
         self._in_flight = 0
         self._started_at = datetime.now(UTC)
@@ -100,8 +104,14 @@ class RequestMetricsRegistry:
             self._total_requests += 1
             self._status_counts[status_code] += 1
             self._latencies_ms.append(round(duration_ms, 3))
+            if 400 <= status_code < 500:
+                self._client_error_requests += 1
             if status_code >= 500:
-                self._error_requests += 1
+                self._server_error_requests += 1
+                if status_code in _UPSTREAM_STATUS_CODES:
+                    self._upstream_error_requests += 1
+                else:
+                    self._error_requests += 1
             if duration_ms >= slow_threshold_ms:
                 self._slow_requests += 1
 
@@ -111,6 +121,9 @@ class RequestMetricsRegistry:
             self._status_counts.clear()
             self._total_requests = 0
             self._error_requests = 0
+            self._upstream_error_requests = 0
+            self._server_error_requests = 0
+            self._client_error_requests = 0
             self._slow_requests = 0
             self._in_flight = 0
             self._started_at = datetime.now(UTC)
@@ -127,7 +140,15 @@ class RequestMetricsRegistry:
             else:
                 p95 = 0.0
                 maximum = 0.0
-            error_rate = (self._error_requests / total * 100) if total else 0.0
+            internal_error_rate = (
+                self._error_requests / total * 100 if total else 0.0
+            )
+            upstream_error_rate = (
+                self._upstream_error_requests / total * 100 if total else 0.0
+            )
+            server_error_rate = (
+                self._server_error_requests / total * 100 if total else 0.0
+            )
             return {
                 "started_at": self._started_at,
                 "sample_capacity": self._max_samples,
@@ -135,7 +156,14 @@ class RequestMetricsRegistry:
                 "total_requests": total,
                 "in_flight": self._in_flight,
                 "error_requests": self._error_requests,
-                "error_rate_percent": round(error_rate, 3),
+                "internal_error_requests": self._error_requests,
+                "upstream_error_requests": self._upstream_error_requests,
+                "server_error_requests": self._server_error_requests,
+                "client_error_requests": self._client_error_requests,
+                "error_rate_percent": round(internal_error_rate, 3),
+                "internal_error_rate_percent": round(internal_error_rate, 3),
+                "upstream_error_rate_percent": round(upstream_error_rate, 3),
+                "server_error_rate_percent": round(server_error_rate, 3),
                 "slow_requests": self._slow_requests,
                 "average_latency_ms": round(average, 3),
                 "p95_latency_ms": round(p95, 3),
