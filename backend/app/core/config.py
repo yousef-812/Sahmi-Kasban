@@ -87,7 +87,7 @@ class Settings(BaseSettings):
     analysis_default_capital: float = 150_000.0
     analysis_risk_per_trade: float = 0.01
     analysis_max_position_value: float = 40_000.0
-    analysis_engine_version: str = "core-v1"
+    analysis_engine_version: str = "core-v2"
 
     egx_holidays: str = ""
     daily_scan_hour: int = 17

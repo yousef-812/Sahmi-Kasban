@@ -48,12 +48,19 @@ class QuantitativeEngine(AnalysisEngine):
             score -= 4
         score = self.clamp(score)
 
+        sample_quality = min(1.0, len(returns) / 252.0)
+        edge_strength = min(1.0, abs(bullish_probability - 0.5) * 2.0)
+        confidence = min(90.0, 50.0 + sample_quality * 25.0 + edge_strength * 15.0)
+
         context["bullish_probability"] = bullish_probability
         return EngineResult(
             name=self.name,
             score=score,
-            confidence=min(90.0, 55.0 + len(returns) / 4.0),
+            confidence=confidence,
             details={
+                "model_version": "momentum-logit-v2",
+                "sample_size": len(returns),
+                "sample_quality_pct": round(sample_quality * 100, 2),
                 "momentum_5d_pct": round(momentum_5 * 100, 2),
                 "momentum_20d_pct": round(momentum_20 * 100, 2),
                 "momentum_60d_pct": round(momentum_60 * 100, 2),
