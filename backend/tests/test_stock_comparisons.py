@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.main import app
 from app.market_data.provider import get_market_data_provider
-from app.market_data.types import CandleSeries
+from app.market_data.types import CandleSeries, MarketDataUnavailableError
 from app.models import StockComparison, Subscription
 from app.services.stock_analysis import get_stock_ai_service
 
@@ -18,8 +18,9 @@ PASSWORD = "StrongPass123"
 class ComparisonMarketDataProvider:
     name = "comparison-fake"
 
-    def __init__(self) -> None:
+    def __init__(self, *, fail_ticker: str | None = None) -> None:
         self.calls = 0
+        self.fail_ticker = fail_ticker
 
     async def get_history(
         self,
@@ -29,6 +30,8 @@ class ComparisonMarketDataProvider:
         interval: str,
     ) -> CandleSeries:
         self.calls += 1
+        if ticker.upper() == self.fail_ticker:
+            raise MarketDataUnavailableError(f"temporary failure for {ticker}")
         start = datetime(2025, 9, 1, tzinfo=UTC)
         ticker_bias = 0.08 if ticker.upper() == "COMI" else 0.04
         candles = []
@@ -121,6 +124,7 @@ def test_free_comparison_charges_once_and_reuses_owned_analyses(
     assert result["analysis_charged_points"] == 100
     assert result["balance_points"] == 850
     assert len(result["items"]) == 2
+    assert result["failed_items"] == []
     assert result["items"][0]["rank"] == 1
     assert result["best_ticker"] in {"COMI", "DSCW"}
     assert "{" not in result["summary"]
@@ -129,6 +133,44 @@ def test_free_comparison_charges_once_and_reuses_owned_analyses(
     assert repeated.json()["idempotent"] is True
     assert repeated.json()["balance_points"] == 850
     assert provider.calls == 2
+    assert len(db_session.scalars(select(StockComparison)).all()) == 1
+
+
+def test_comparison_keeps_two_results_when_one_ticker_temporarily_fails(
+    client: TestClient,
+    fake_email_service,
+    db_session: Session,
+) -> None:
+    provider = ComparisonMarketDataProvider(fail_ticker="DSCW")
+    _install(provider)
+    headers = _register_login(client, fake_email_service, "partial-compare@example.com")
+
+    response = client.post(
+        "/api/v1/market/comparisons",
+        headers=headers,
+        json={
+            "request_key": "comparison_partial_001",
+            "tickers": ["COMI", "DSCW", "SWDY"],
+            "language": "ar",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["items"]) == 2
+    assert payload["failed_items"] == [
+        {
+            "ticker": "DSCW",
+            "code": "market_data_unavailable",
+            "message": "بيانات السوق غير متاحة لهذا السهم حاليًا.",
+            "retryable": True,
+        }
+    ]
+    assert "DSCW" in payload["summary"]
+    assert payload["analysis_charged_points"] == 100
+    assert payload["comparison_charged_points"] == 50
+    assert payload["balance_points"] == 850
+    assert provider.calls == 3
     assert len(db_session.scalars(select(StockComparison)).all()) == 1
 
 
