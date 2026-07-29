@@ -17,7 +17,7 @@ from sahmi_kasban.engines import (
 )
 from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 from sahmi_kasban.models import AnalysisConfig, AnalysisReport, EngineResult, TradePlan
-from sahmi_kasban.scoring import calculate_final_score, score_to_signal
+from sahmi_kasban.scoring import calculate_score_diagnostics, score_to_signal
 
 
 class SahmiKasbanAnalyzer:
@@ -83,15 +83,32 @@ class SahmiKasbanAnalyzer:
             warnings.append(f"Engine scenario failed: {exc}")
         results[scenario.name] = scenario
 
-        final_score, confidence = calculate_final_score(results)
-        risk_score = results.get("risk", EngineResult("risk", 0, 0)).score
-        signal = score_to_signal(final_score, qualified, risk_score)
+        diagnostics = calculate_score_diagnostics(results)
+        final_score = diagnostics.final_score
+        confidence = diagnostics.confidence
+        risk_result = results.get("risk", EngineResult("risk", 0, 0))
+        signal = score_to_signal(final_score, qualified, risk_result.score)
         trade_plan = context.get("trade_plan")
         if not isinstance(trade_plan, TradePlan):
             trade_plan = None
 
         if not qualified:
             warnings.extend(qualification.reasons)
+
+        if diagnostics.conflict:
+            warnings.append("Directional engines disagree; confidence and score were reduced")
+
+        if signal == "BUY" and (
+            len(diagnostics.bullish_engines) < 3 or diagnostics.bearish_engines
+        ):
+            signal = "WATCH"
+            warnings.append("BUY downgraded because directional confirmation is insufficient")
+
+        risk_level = str(risk_result.details.get("risk_level", ""))
+        if signal == "BUY" and risk_level == "high":
+            signal = "WATCH"
+            warnings.append("BUY downgraded because the risk engine classified risk as high")
+
         if signal == "BUY" and confidence < 65:
             signal = "WATCH"
             warnings.append("BUY downgraded because aggregate confidence is low")
@@ -105,4 +122,5 @@ class SahmiKasbanAnalyzer:
             engines=results,
             trade_plan=trade_plan,
             warnings=warnings,
+            analysis_quality=diagnostics.to_dict(),
         )
