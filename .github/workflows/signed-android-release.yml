@@ -20,6 +20,7 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_EXPECTED_CERT_SHA256: ${{ secrets.ANDROID_EXPECTED_CERT_SHA256 }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -70,7 +71,7 @@ jobs:
         working-directory: mobile
         run: $FLUTTER_HOME/bin/flutter pub get
 
-      - name: Build signed staging APK
+      - name: Build signed update APK
         working-directory: mobile
         shell: bash
         run: |
@@ -80,21 +81,59 @@ jobs:
             --dart-define=DEMO_MODE=false \
             --dart-define=APP_ENV=staging
 
-      - name: Record signing certificate
+      - name: Verify update package and signing certificate
         shell: bash
         run: |
           set -Eeuo pipefail
-          keytool -printcert -jarfile mobile/build/app/outputs/flutter-apk/app-release.apk \
-            | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
-          grep -q "SHA256:" mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          apk="mobile/build/app/outputs/flutter-apk/app-release.apk"
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          aapt="$(find "$sdk_root/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -x "$aapt"
 
-      - name: Upload signed APK
+          badging="$($aapt dump badging "$apk" | head -n 1)"
+          package_id="$(printf '%s\n' "$badging" | sed -n "s/package: name='\([^']*\)'.*/\1/p")"
+          version_code="$(printf '%s\n' "$badging" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          version_name="$(printf '%s\n' "$badging" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          if [ "$package_id" != "com.sahmikasban.sahmi_kasban_mobile" ]; then
+            echo "Signed update has unexpected package ID: $package_id" >&2
+            exit 1
+          fi
+
+          keytool -printcert -jarfile "$apk" \
+            | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          cert_sha256="$(sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' \
+            mobile/build/app/outputs/flutter-apk/signing-certificate.txt | head -n 1)"
+          test -n "$cert_sha256"
+
+          normalize() {
+            printf '%s' "$1" | tr '[:lower:]' '[:upper:]' | tr -d ':[:space:]'
+          }
+          if [ -n "${ANDROID_EXPECTED_CERT_SHA256:-}" ] && \
+             [ "$(normalize "$cert_sha256")" != "$(normalize "$ANDROID_EXPECTED_CERT_SHA256")" ]; then
+            echo "Signing certificate does not match ANDROID_EXPECTED_CERT_SHA256" >&2
+            exit 1
+          fi
+
+          safe_version="${version_name//+/-}"
+          output="mobile/build/app/outputs/flutter-apk/sahmi-kasban-${safe_version}-${version_code}-signed-update.apk"
+          cp "$apk" "$output"
+          cat > mobile/build/app/outputs/flutter-apk/release-metadata.txt <<EOF
+          package_id=$package_id
+          version_name=$version_name
+          version_code=$version_code
+          certificate_sha256=$cert_sha256
+          source_commit=${GITHUB_SHA}
+          EOF
+          echo "SIGNED_UPDATE_APK=$output" >> "$GITHUB_ENV"
+
+      - name: Upload signed update APK
         uses: actions/upload-artifact@v4
         with:
-          name: sahmi-kasban-signed-apk-${{ github.run_id }}
+          name: sahmi-kasban-signed-update-${{ github.run_id }}
           path: |
-            mobile/build/app/outputs/flutter-apk/app-release.apk
+            ${{ env.SIGNED_UPDATE_APK }}
             mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+            mobile/build/app/outputs/flutter-apk/release-metadata.txt
           if-no-files-found: error
           retention-days: 30
 

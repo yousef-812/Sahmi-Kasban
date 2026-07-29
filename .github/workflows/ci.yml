@@ -177,7 +177,7 @@ jobs:
           $FLUTTER_HOME/bin/flutter test 2>&1 \
             | tee "$RUNNER_TEMP/flutter-tests.log"
 
-      - name: Build Android staging release APK
+      - name: Build Android CI preview APK
         working-directory: mobile
         shell: bash
         run: |
@@ -187,12 +187,14 @@ jobs:
             --dart-define=DEMO_MODE=false \
             --dart-define=APP_ENV=staging 2>&1 \
             | tee "$RUNNER_TEMP/flutter-apk.log"
+          mv build/app/outputs/flutter-apk/app-release.apk \
+            build/app/outputs/flutter-apk/sahmi-kasban-ci-preview-not-an-update.apk
 
-      - name: Upload staging Android APK
+      - name: Upload Android CI preview
         uses: actions/upload-artifact@v4
         with:
-          name: sahmi-kasban-staging-apk-${{ github.run_id }}
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          name: sahmi-kasban-ci-preview-not-an-update-${{ github.run_id }}
+          path: mobile/build/app/outputs/flutter-apk/sahmi-kasban-ci-preview-not-an-update.apk
           if-no-files-found: error
           retention-days: 14
 

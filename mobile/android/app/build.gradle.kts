@@ -1,21 +1,25 @@
 import java.util.Properties
+import org.gradle.api.GradleException
 
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-if (file("google-services.json").exists()) {
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (file("google-services.json").exists() && keystorePropertiesFile.exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
 
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
 val releaseSigningConfigured = keystorePropertiesFile.exists().also { exists ->
     if (exists) {
         keystorePropertiesFile.inputStream().use(keystoreProperties::load)
     }
 }
+val allowCiPreviewSigning =
+    providers.environmentVariable("SAHMI_ALLOW_CI_PREVIEW_SIGNING").orNull == "true" ||
+        providers.environmentVariable("GITHUB_ACTIONS").orNull == "true"
 
 android {
     namespace = "com.sahmikasban.sahmi_kasban_mobile"
@@ -51,11 +55,23 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (releaseSigningConfigured) {
-                signingConfigs.getByName("release")
-            } else {
-                // CI can still validate pull requests before the protected signing secrets exist.
-                signingConfigs.getByName("debug")
+            when {
+                releaseSigningConfigured -> {
+                    signingConfig = signingConfigs.getByName("release")
+                }
+                allowCiPreviewSigning -> {
+                    // CI previews are deliberately a different Android package. They can be
+                    // installed beside the real app but can never be mistaken for an update.
+                    signingConfig = signingConfigs.getByName("debug")
+                    applicationIdSuffix = ".ci"
+                    versionNameSuffix = "-ci"
+                }
+                else -> {
+                    throw GradleException(
+                        "Release signing is not configured. Use Signed Android Release, or set " +
+                            "SAHMI_ALLOW_CI_PREVIEW_SIGNING=true for a separate .ci preview package.",
+                    )
+                }
             }
         }
     }
