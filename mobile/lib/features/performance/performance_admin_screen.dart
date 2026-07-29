@@ -38,7 +38,8 @@ class _PerformanceAdminScreenState
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            await ref.refresh(delayedPerformanceProvider.future);
+            final refreshed = ref.refresh(delayedPerformanceProvider.future);
+            await refreshed;
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
