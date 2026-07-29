@@ -69,8 +69,7 @@ class HistoricalReplayJob {
       parallelism: (json['parallelism'] as num?)?.toInt() ?? 5,
       totalTickers: (json['total_tickers'] as num?)?.toInt() ?? 0,
       processedTickers: (json['processed_tickers'] as num?)?.toInt() ?? 0,
-      successfulTickers:
-          (json['successful_tickers'] as num?)?.toInt() ?? 0,
+      successfulTickers: (json['successful_tickers'] as num?)?.toInt() ?? 0,
       failedTickers: (json['failed_tickers'] as num?)?.toInt() ?? 0,
       totalRows: (json['total_rows'] as num?)?.toInt() ?? 0,
       evaluatedRows: (json['evaluated_rows'] as num?)?.toInt() ?? 0,
