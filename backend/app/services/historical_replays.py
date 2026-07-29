@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.market_data.catalog import ensure_market_instrument_catalog
-from app.market_data.types import CandleSeries, MarketDataProvider
+from app.market_data.types import CandleSeries
 from app.models import (
     AnalysisReplayJob,
     AnalysisReplayRow,
@@ -123,7 +123,10 @@ def create_historical_replay_job(
         select(AnalysisReplayJob).where(AnalysisReplayJob.request_key == request_key)
     )
     if existing is not None:
-        if existing.requested_by != actor_user_id or existing.details.get("request_signature") != signature:
+        if (
+            existing.requested_by != actor_user_id
+            or existing.details.get("request_signature") != signature
+        ):
             raise HistoricalReplayConflictError(
                 "مفتاح الطلب مستخدم بالفعل لاختبار تاريخي مختلف"
             )
@@ -166,7 +169,10 @@ def create_historical_replay_job(
         )
         if raced is None:
             raise
-        if raced.requested_by != actor_user_id or raced.details.get("request_signature") != signature:
+        if (
+            raced.requested_by != actor_user_id
+            or raced.details.get("request_signature") != signature
+        ):
             raise HistoricalReplayConflictError(
                 "مفتاح الطلب مستخدم بالفعل لاختبار تاريخي مختلف"
             ) from exc
@@ -616,7 +622,10 @@ def build_historical_replay_csv(
     rows = db.scalars(
         select(AnalysisReplayRow)
         .where(AnalysisReplayRow.job_id == job.id)
-        .order_by(AnalysisReplayRow.analysis_date.asc(), AnalysisReplayRow.ticker.asc())
+        .order_by(
+            AnalysisReplayRow.analysis_date.asc(),
+            AnalysisReplayRow.ticker.asc(),
+        )
     ).all()
     output = io.StringIO(newline="")
     writer = csv.writer(output)
@@ -669,14 +678,34 @@ def build_historical_replay_csv(
                 row.entry if row.entry is not None else "",
                 row.evaluation_date.isoformat() if row.evaluation_date else "",
                 row.exit if row.exit is not None else "",
-                _pct(row.forward_return_bp) if row.forward_return_bp is not None else "",
+                (
+                    _pct(row.forward_return_bp)
+                    if row.forward_return_bp is not None
+                    else ""
+                ),
                 _pct(row.max_upside_bp) if row.max_upside_bp is not None else "",
-                _pct(row.max_drawdown_bp) if row.max_drawdown_bp is not None else "",
+                (
+                    _pct(row.max_drawdown_bp)
+                    if row.max_drawdown_bp is not None
+                    else ""
+                ),
                 row.correct if row.correct is not None else "",
                 json.dumps(row.engines, ensure_ascii=False, separators=(",", ":")),
-                json.dumps(row.trade_plan, ensure_ascii=False, separators=(",", ":")) if row.trade_plan else "",
+                (
+                    json.dumps(
+                        row.trade_plan,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                    if row.trade_plan
+                    else ""
+                ),
                 json.dumps(row.warnings, ensure_ascii=False, separators=(",", ":")),
-                json.dumps(row.analysis_quality, ensure_ascii=False, separators=(",", ":")),
+                json.dumps(
+                    row.analysis_quality,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
                 row.error_code or "",
                 row.error_message or "",
             ]
