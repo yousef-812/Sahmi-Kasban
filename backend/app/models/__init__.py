@@ -38,12 +38,16 @@ from app.models.performance import (
     MarketReportItemOutcome,
     MarketReportOutcomeRevision,
 )
+from app.models.replays import AnalysisReplayJob, AnalysisReplayRow, AnalysisReplayTicker
 
 __all__ = [
     "AccountToken",
     "AnalysisBacktestObservation",
     "AnalysisBacktestResult",
     "AnalysisBacktestRun",
+    "AnalysisReplayJob",
+    "AnalysisReplayRow",
+    "AnalysisReplayTicker",
     "AppSetting",
     "AuthSession",
     "BillingPurchase",
