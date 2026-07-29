@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import CommunityAdminEvent, User, WalletEntry
@@ -70,17 +70,6 @@ def credit_user_coins(
         )
 
     db.flush()
-    audit_count = int(
-        db.scalar(
-            select(func.count(CommunityAdminEvent.id)).where(
-                CommunityAdminEvent.action == "wallet_credit",
-                CommunityAdminEvent.target_user_id == target_user_id,
-                CommunityAdminEvent.details["transaction_id"].as_string()
-                == transaction_id,
-            )
-        )
-        or 0
-    )
     return {
         "user_id": target_user_id,
         "wallet_entry_id": entry.id,
@@ -89,5 +78,5 @@ def credit_user_coins(
         "amount_points": amount_points,
         "balance_points": int(account.balance_points),
         "balance_coins": points_to_coins(int(account.balance_points)),
-        "idempotent": idempotent or audit_count > 1,
+        "idempotent": idempotent,
     }
