@@ -5,11 +5,19 @@ class AppConfig {
     required this.apiBaseUrl,
     required this.admobAndroidBannerId,
     required this.admobIosBannerId,
+    required this.admobAndroidNativeId,
+    required this.admobIosNativeId,
+    required this.admobAndroidInterstitialId,
+    required this.admobIosInterstitialId,
   });
 
   final String apiBaseUrl;
   final String admobAndroidBannerId;
   final String admobIosBannerId;
+  final String admobAndroidNativeId;
+  final String admobIosNativeId;
+  final String admobAndroidInterstitialId;
+  final String admobIosInterstitialId;
 
   factory AppConfig.fromEnvironment() {
     const configuredUrl = String.fromEnvironment(
@@ -24,10 +32,30 @@ class AppConfig {
       'ADMOB_IOS_BANNER_ID',
       defaultValue: 'ca-app-pub-3940256099942544/2435281174',
     );
+    const androidNativeId = String.fromEnvironment(
+      'ADMOB_ANDROID_NATIVE_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/2247696110',
+    );
+    const iosNativeId = String.fromEnvironment(
+      'ADMOB_IOS_NATIVE_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/3986624511',
+    );
+    const androidInterstitialId = String.fromEnvironment(
+      'ADMOB_ANDROID_INTERSTITIAL_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/1033173712',
+    );
+    const iosInterstitialId = String.fromEnvironment(
+      'ADMOB_IOS_INTERSTITIAL_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/4411468910',
+    );
     return const AppConfig(
       apiBaseUrl: configuredUrl,
       admobAndroidBannerId: androidBannerId,
       admobIosBannerId: iosBannerId,
+      admobAndroidNativeId: androidNativeId,
+      admobIosNativeId: iosNativeId,
+      admobAndroidInterstitialId: androidInterstitialId,
+      admobIosInterstitialId: iosInterstitialId,
     );
   }
 }

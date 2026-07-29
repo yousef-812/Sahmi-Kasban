@@ -16,6 +16,10 @@ class PlanCatalogItem(BaseModel):
     product_id: str | None
     history_limit: int = Field(ge=0)
     report_history_days: int = Field(ge=0)
+    features: list[str] = Field(default_factory=list)
+    comparison_monthly_allowance: int = Field(default=0, ge=0)
+    max_comparison_stocks: int = Field(default=0, ge=0, le=5)
+    priority_level: int = Field(default=0, ge=0, le=3)
     badge_code: str | None
 
 

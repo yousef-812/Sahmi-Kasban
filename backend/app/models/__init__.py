@@ -7,6 +7,7 @@ from app.models.community import (
     DiscussionReport,
     UserMute,
 )
+from app.models.comparisons import StockComparison
 from app.models.entities import (
     Discussion,
     MarketReport,
@@ -60,6 +61,7 @@ __all__ = [
     "RewardedAdSession",
     "ServiceHealthEvent",
     "StockAnalysis",
+    "StockComparison",
     "Subscription",
     "User",
     "UserMute",

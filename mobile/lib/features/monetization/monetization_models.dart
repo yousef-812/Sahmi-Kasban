@@ -8,6 +8,10 @@ class MonetizationPlan {
     required this.productId,
     required this.historyLimit,
     required this.reportHistoryDays,
+    required this.features,
+    required this.comparisonMonthlyAllowance,
+    required this.maxComparisonStocks,
+    required this.priorityLevel,
     required this.badgeCode,
   });
 
@@ -19,6 +23,10 @@ class MonetizationPlan {
   final String? productId;
   final int historyLimit;
   final int reportHistoryDays;
+  final List<String> features;
+  final int comparisonMonthlyAllowance;
+  final int maxComparisonStocks;
+  final int priorityLevel;
   final String? badgeCode;
 
   factory MonetizationPlan.fromJson(Map<String, dynamic> json) {
@@ -31,6 +39,13 @@ class MonetizationPlan {
       productId: json['product_id'] as String?,
       historyLimit: json['history_limit'] as int,
       reportHistoryDays: json['report_history_days'] as int,
+      features: _list(
+        json['features'],
+      ).map((value) => value.toString()).toList(growable: false),
+      comparisonMonthlyAllowance:
+          json['comparison_monthly_allowance'] as int? ?? 0,
+      maxComparisonStocks: json['max_comparison_stocks'] as int? ?? 0,
+      priorityLevel: json['priority_level'] as int? ?? 0,
       badgeCode: json['badge_code'] as String?,
     );
   }

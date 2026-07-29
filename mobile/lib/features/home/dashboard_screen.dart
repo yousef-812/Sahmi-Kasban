@@ -7,6 +7,7 @@ import '../../domain/models.dart';
 import '../auth/session_controller.dart';
 import '../community/community_feed_tab.dart';
 import '../market/stock_analysis_tab.dart';
+import '../monetization/free_plan_ads.dart';
 import '../notifications/notification_providers.dart';
 import '../reports/report_providers.dart';
 import '../wallet/wallet_providers.dart';
@@ -151,6 +152,8 @@ class _HomeTab extends ConsumerWidget {
                 : _ReportPreviewCard(report: report),
           ),
           const SizedBox(height: 16),
+          const FreePlanNativeAd(),
+          const SizedBox(height: 16),
           const _DisclaimerCard(),
         ],
       ),
@@ -235,6 +238,8 @@ class _WalletTab extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          const FreePlanNativeAd(),
+          const SizedBox(height: 12),
           wallet.when(
             loading: () => const _LoadingCard(),
             error: (error, stackTrace) => _ErrorCard(
@@ -299,6 +304,8 @@ class _ProfileTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        const FreePlanNativeAd(),
+        const SizedBox(height: 12),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(22),
