@@ -1,0 +1,338 @@
+name: Complete ads and comparison UI wiring
+
+on:
+  push:
+    branches: [agent/free-ads-stock-comparison-v2]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/free-ads-stock-comparison-v2
+          fetch-depth: 0
+
+      - name: Apply targeted integrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              if old not in text:
+                  raise SystemExit(f"Expected block missing from {path}: {old[:120]!r}")
+              file.write_text(text.replace(old, new), encoding="utf-8")
+
+          replace(
+              "backend/app/services/monetization.py",
+              '''        "report_history_days": plan.report_history_days,
+                  "badge_code": plan.badge_code,''',
+              '''        "report_history_days": plan.report_history_days,
+                  "features": list(plan.features),
+                  "comparison_monthly_allowance": plan.comparison_monthly_allowance,
+                  "max_comparison_stocks": plan.max_comparison_stocks,
+                  "priority_level": plan.priority_level,
+                  "badge_code": plan.badge_code,''',
+          )
+
+          models = "mobile/lib/features/monetization/monetization_models.dart"
+          replace(
+              models,
+              '''    required this.reportHistoryDays,
+                  required this.badgeCode,''',
+              '''    required this.reportHistoryDays,
+                  required this.features,
+                  required this.comparisonMonthlyAllowance,
+                  required this.maxComparisonStocks,
+                  required this.priorityLevel,
+                  required this.badgeCode,''',
+          )
+          replace(
+              models,
+              '''  final int reportHistoryDays;
+                final String? badgeCode;''',
+              '''  final int reportHistoryDays;
+                final List<String> features;
+                final int comparisonMonthlyAllowance;
+                final int maxComparisonStocks;
+                final int priorityLevel;
+                final String? badgeCode;''',
+          )
+          replace(
+              models,
+              '''      reportHistoryDays: json['report_history_days'] as int,
+                    badgeCode: json['badge_code'] as String?,''',
+              '''      reportHistoryDays: json['report_history_days'] as int,
+                    features: _list(json['features'])
+                        .map((value) => value.toString())
+                        .toList(growable: false),
+                    comparisonMonthlyAllowance:
+                        json['comparison_monthly_allowance'] as int? ?? 0,
+                    maxComparisonStocks: json['max_comparison_stocks'] as int? ?? 0,
+                    priorityLevel: json['priority_level'] as int? ?? 0,
+                    badgeCode: json['badge_code'] as String?,''',
+          )
+
+          screen = "mobile/lib/features/monetization/monetization_screen.dart"
+          replace(
+              screen,
+              '''            Text('سجل التقارير: ${plan.reportHistoryDays} يوم'),
+                        const SizedBox(height: 12),''',
+              '''            Text('سجل التقارير: ${plan.reportHistoryDays} يوم'),
+                        if (plan.comparisonMonthlyAllowance > 0)
+                          Text(
+                            'مقارنات متضمنة: ${plan.comparisonMonthlyAllowance} شهريًا حتى ${plan.maxComparisonStocks} أسهم',
+                          )
+                        else if (plan.maxComparisonStocks > 0)
+                          Text(
+                            'مقارنة حتى ${plan.maxComparisonStocks} أسهم مقابل العملات',
+                          ),
+                        const SizedBox(height: 10),
+                        for (final feature in plan.features)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.check_circle_outline_rounded, size: 18),
+                                const SizedBox(width: 7),
+                                Expanded(child: Text(feature)),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 12),''',
+          )
+
+          stock = "mobile/lib/features/market/stock_analysis_tab.dart"
+          replace(
+              stock,
+              '''import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+              import '../../core/network/api_exception.dart';''',
+              '''import 'package:flutter_riverpod/flutter_riverpod.dart';
+              import 'package:go_router/go_router.dart';
+
+              import '../../core/network/api_exception.dart';''',
+          )
+          replace(
+              stock,
+              '''import '../auth/session_controller.dart';
+              import '../wallet/wallet_providers.dart';''',
+              '''import '../auth/session_controller.dart';
+              import '../monetization/free_plan_ads.dart';
+              import '../wallet/wallet_providers.dart';''',
+          )
+          replace(
+              stock,
+              '''      try {
+                    await ref.read(sessionControllerProvider.notifier).refreshProfile();
+                  } on Object {
+                    // The completed analysis must remain visible even if the optional
+                    // profile refresh fails. Wallet data will retry through its provider.
+                  }
+                } on ApiException catch (error) {''',
+              '''      try {
+                    await ref.read(sessionControllerProvider.notifier).refreshProfile();
+                  } on Object {
+                    // The completed analysis must remain visible even if the optional
+                    // profile refresh fails. Wallet data will retry through its provider.
+                  }
+                  if (mounted) {
+                    await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
+                      enabled:
+                          ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+                    );
+                  }
+                } on ApiException catch (error) {''',
+          )
+          replace(
+              stock,
+              '''                FilledButton.icon(
+                          onPressed: _selected == null || _analyzing ? null : _analyze,
+                          icon: _analyzing
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                                )
+                              : const Icon(Icons.auto_graph_rounded),
+                          label: const Text('تحليل السهم — 0.5 عملة'),
+                        ),''',
+              '''                FilledButton.icon(
+                          onPressed: _selected == null || _analyzing ? null : _analyze,
+                          icon: _analyzing
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                                )
+                              : const Icon(Icons.auto_graph_rounded),
+                          label: const Text('تحليل السهم — 0.5 عملة'),
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: _analyzing
+                              ? null
+                              : () => context.push('/market/compare'),
+                          icon: const Icon(Icons.compare_arrows_rounded),
+                          label: const Text('مقارنة سهمين أو أكثر'),
+                        ),''',
+          )
+
+          report = "mobile/lib/features/reports/market_report_screen.dart"
+          replace(
+              report,
+              '''import '../auth/session_controller.dart';
+              import '../wallet/wallet_providers.dart';''',
+              '''import '../auth/session_controller.dart';
+              import '../monetization/free_plan_ads.dart';
+              import '../wallet/wallet_providers.dart';''',
+          )
+          replace(
+              report,
+              '''      ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        execution.chargedPoints == 0
+                            ? 'التقرير كان مفتوحًا بالفعل ولم يحدث خصم جديد.'
+                            : 'تم فتح التقرير وخصم ${execution.chargedCoins} عملة.',
+                      ),
+                    ),
+                  );
+                } on ApiException catch (error) {''',
+              '''      ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        execution.chargedPoints == 0
+                            ? 'التقرير كان مفتوحًا بالفعل ولم يحدث خصم جديد.'
+                            : 'تم فتح التقرير وخصم ${execution.chargedCoins} عملة.',
+                      ),
+                    ),
+                  );
+                  await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
+                    enabled:
+                        ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+                  );
+                } on ApiException catch (error) {''',
+          )
+
+          community_create = "mobile/lib/features/community/community_create_screen.dart"
+          replace(
+              community_create,
+              '''import '../auth/session_controller.dart';
+              import '../wallet/wallet_providers.dart';''',
+              '''import '../auth/session_controller.dart';
+              import '../monetization/free_plan_ads.dart';
+              import '../wallet/wallet_providers.dart';''',
+          )
+          replace(
+              community_create,
+              '''      ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(message)));
+                  context.pop();''',
+              '''      ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(message)));
+                  await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
+                    enabled:
+                        ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+                  );
+                  if (mounted) {
+                    context.pop();
+                  }''',
+          )
+
+          dashboard = "mobile/lib/features/home/dashboard_screen.dart"
+          replace(
+              dashboard,
+              '''import '../market/stock_analysis_tab.dart';
+              import '../notifications/notification_providers.dart';''',
+              '''import '../market/stock_analysis_tab.dart';
+              import '../monetization/free_plan_ads.dart';
+              import '../notifications/notification_providers.dart';''',
+          )
+          replace(
+              dashboard,
+              '''          const SizedBox(height: 16),
+                        const _DisclaimerCard(),''',
+              '''          const SizedBox(height: 16),
+                        const FreePlanNativeAd(),
+                        const _DisclaimerCard(),''',
+          )
+
+          community_feed = "mobile/lib/features/community/community_feed_tab.dart"
+          replace(
+              community_feed,
+              '''import '../../core/avatar_assets.dart';
+              import 'community_models.dart';''',
+              '''import '../../core/avatar_assets.dart';
+              import '../monetization/free_plan_ads.dart';
+              import 'community_models.dart';''',
+          )
+          replace(
+              community_feed,
+              '''                  for (final discussion in page.items) ...[
+                                CommunityDiscussionCard(discussion: discussion),
+                                const SizedBox(height: 12),
+                              ],''',
+              '''                  for (
+                                var index = 0;
+                                index < page.items.length;
+                                index++
+                              ) ...[
+                                CommunityDiscussionCard(
+                                  discussion: page.items[index],
+                                ),
+                                const SizedBox(height: 12),
+                                if ((index + 1) % 6 == 0) ...[
+                                  const FreePlanNativeAd(),
+                                  const SizedBox(height: 12),
+                                ],
+                              ],''',
+          )
+
+          wallet = "mobile/lib/features/wallet/wallet_history_screen.dart"
+          replace(
+              wallet,
+              '''      case 'stock_analysis_debit':
+                        return 'تحليل سهم';''',
+              '''      case 'stock_analysis_debit':
+                        return 'تحليل سهم';
+                      case 'stock_comparison_debit':
+                        return 'مقارنة أسهم';''',
+          )
+
+          pubspec = Path("mobile/pubspec.yaml")
+          text = pubspec.read_text(encoding="utf-8")
+          if "version: 0.8.0+14" not in text:
+              raise SystemExit("Unexpected mobile version")
+          pubspec.write_text(
+              text.replace("version: 0.8.0+14", "version: 0.9.0+15"),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Install Flutter formatter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+
+      - name: Format changed sources and commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          "$RUNNER_TEMP/flutter/bin/dart" format mobile/lib mobile/test
+          rm -f .github/workflows/finish-ads-comparison-ui.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add backend mobile .github/workflows/finish-ads-comparison-ui.yml
+          git commit -m "Wire stock comparisons and free-plan ad placements"
+          git push origin HEAD:agent/free-ads-stock-comparison-v2
