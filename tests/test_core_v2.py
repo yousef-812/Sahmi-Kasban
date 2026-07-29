@@ -89,7 +89,7 @@ def test_quantitative_probability_is_not_saturated_for_moderate_trend() -> None:
         }
     )
 
-    result = QuantitativeEngine().analyze(candles, {})
+    result = QuantitativeEngine(AnalysisConfig()).analyze(candles, {})
     probability = float(result.details["bullish_probability_pct"])
 
     assert result.details["model_version"] == "momentum-logit-v3-calibrated"
