@@ -4,8 +4,8 @@ import csv
 import io
 import json
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -79,7 +79,12 @@ def calculate_replay_export_metrics(
             if row.status == "evaluated" and row.forward_return_bp is not None
         ]
         benchmark_bp = (
-            int(round(sum(int(row.forward_return_bp or 0) for row in evaluated) / len(evaluated)))
+            int(
+                round(
+                    sum(int(row.forward_return_bp or 0) for row in evaluated)
+                    / len(evaluated)
+                )
+            )
             if evaluated
             else None
         )
@@ -93,7 +98,11 @@ def calculate_replay_export_metrics(
                 else None
             )
             benchmark_correct: bool | None = None
-            if scope == "directional" and row.status == "evaluated" and excess_bp is not None:
+            if (
+                scope == "directional"
+                and row.status == "evaluated"
+                and excess_bp is not None
+            ):
                 if row.signal == "BUY":
                     benchmark_correct = excess_bp > neutral_band_bp
                 elif row.signal == "AVOID":
@@ -197,7 +206,9 @@ def build_historical_replay_csv(
                 "qualified": row.qualified if row.qualified is not None else "",
                 "evaluation_scope": metric.evaluation_scope,
                 "entry": row.entry if row.entry is not None else "",
-                "evaluation_date": row.evaluation_date.isoformat() if row.evaluation_date else "",
+                "evaluation_date": (
+                    row.evaluation_date.isoformat() if row.evaluation_date else ""
+                ),
                 "exit": row.exit if row.exit is not None else "",
                 "forward_return_pct": _pct(row.forward_return_bp),
                 "market_benchmark_return_pct": _pct(metric.benchmark_return_bp),
