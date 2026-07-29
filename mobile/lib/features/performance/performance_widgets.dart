@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'performance_models.dart';
 
@@ -10,6 +11,41 @@ String formatBasisPoints(int? value) {
 
 String formatPercent(double? value) {
   return value == null ? '-' : '${value.toStringAsFixed(1)}%';
+}
+
+String formatPerformanceDate(DateTime value, {bool includeTime = false}) {
+  final local = value.toLocal();
+  try {
+    return DateFormat(
+      includeTime ? 'd MMM yyyy – HH:mm' : 'EEEE d MMMM yyyy',
+      'ar',
+    ).format(local);
+  } on Object {
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final year = local.year.toString();
+    if (!includeTime) return '$day/$month/$year';
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year – $hour:$minute';
+  }
+}
+
+double performanceProgress(double percent) {
+  return (percent.clamp(0, 100) / 100).toDouble();
+}
+
+String performanceStatusLabel(String status) {
+  return switch (status) {
+    'complete' => 'مكتمل',
+    'partial' => 'مكتمل جزئيًا',
+    'pending' || 'pending_data' => 'بانتظار البيانات',
+    'running' => 'جارٍ التقييم',
+    'failed' => 'تعذر التقييم',
+    'not_started' => 'لم يبدأ التقييم',
+    'empty_report' => 'التقرير بلا نتائج',
+    _ => status.trim().isEmpty ? 'غير محدد' : status,
+  };
 }
 
 class PerformanceNotice extends StatelessWidget {
@@ -97,6 +133,8 @@ class PerformanceExtreme extends StatelessWidget {
             Text(
               item?.ticker ?? '-',
               textDirection: TextDirection.ltr,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
