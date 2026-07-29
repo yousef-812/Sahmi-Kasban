@@ -267,7 +267,7 @@ async def execute_analysis_backtest(
     db.add(run)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
         raced = db.scalar(
             select(AnalysisBacktestRun).where(
@@ -279,7 +279,7 @@ async def execute_analysis_backtest(
         if raced.details.get("request_signature") != signature:
             raise AnalysisBacktestConflictError(
                 "The request key is already used for a different backtest"
-            )
+            ) from exc
         return AnalysisBacktestExecution(
             run=raced,
             results=_result_rows(db, run=raced),
