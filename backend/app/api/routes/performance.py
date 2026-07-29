@@ -13,9 +13,11 @@ from app.schemas.performance import (
 from app.services.performance_experience import (
     PerformanceExperienceError,
     PerformanceReportNotFoundError,
-    get_performance_report_detail,
-    get_performance_summary,
-    list_performance_reports,
+)
+from app.services.performance_recovery import (
+    safe_get_performance_report_detail,
+    safe_get_performance_summary,
+    safe_list_performance_reports,
 )
 
 router = APIRouter(prefix="/market/performance", tags=["market-performance"])
@@ -29,7 +31,7 @@ def performance_summary(
 ) -> PerformanceSummaryResponse:
     try:
         return PerformanceSummaryResponse(
-            **get_performance_summary(db, window_sessions=window)
+            **safe_get_performance_summary(db, window_sessions=window)
         )
     except PerformanceExperienceError as exc:
         raise HTTPException(
@@ -45,7 +47,7 @@ def performance_reports(
     limit: int = Query(default=30, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> PerformanceReportListResponse:
-    items, total = list_performance_reports(db, limit=limit, offset=offset)
+    items, total = safe_list_performance_reports(db, limit=limit, offset=offset)
     return PerformanceReportListResponse(
         items=items,
         total=total,
@@ -65,7 +67,7 @@ def performance_report_detail(
 ) -> PerformanceReportDetailResponse:
     try:
         return PerformanceReportDetailResponse(
-            **get_performance_report_detail(db, report_id=report_id)
+            **safe_get_performance_report_detail(db, report_id=report_id)
         )
     except PerformanceReportNotFoundError as exc:
         raise HTTPException(
