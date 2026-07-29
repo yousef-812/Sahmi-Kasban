@@ -225,7 +225,8 @@ def test_provider_failure_does_not_charge_user(
         headers=headers,
         json={"language": "ar"},
     )
-    assert response.status_code == 503
+    assert response.status_code == 409
+    assert "بيانات السهم غير متاحة مؤقتًا" in response.json()["detail"]
     wallet = db_session.scalar(select(WalletAccount))
     assert wallet is not None
     assert wallet.balance_points == 1_000

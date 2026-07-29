@@ -71,7 +71,7 @@ def _fingerprint_candles(candles: list[dict[str, object]]) -> str:
 
 
 def _normalize_candles(candles: list[dict[str, object]]) -> list[dict[str, object]]:
-    normalized: list[dict[str, object]] = []
+    normalized_by_timestamp: dict[int, dict[str, object]] = {}
     for candle in candles:
         try:
             timestamp = int(candle["timestamp"])
@@ -82,17 +82,21 @@ def _normalize_candles(candles: list[dict[str, object]]) -> list[dict[str, objec
             volume = float(candle.get("volume", 0))
         except (KeyError, TypeError, ValueError):
             continue
-        normalized.append(
-            {
-                "timestamp": datetime.fromtimestamp(timestamp, tz=UTC).isoformat(),
-                "open": round(open_price, 6),
-                "high": round(high_price, 6),
-                "low": round(low_price, 6),
-                "close": round(close_price, 6),
-                "volume": round(max(volume, 0.0), 2),
-            }
-        )
-    return normalized
+        if min(open_price, high_price, low_price, close_price) <= 0:
+            continue
+        if high_price < max(open_price, low_price, close_price):
+            continue
+        if low_price > min(open_price, high_price, close_price):
+            continue
+        normalized_by_timestamp[timestamp] = {
+            "timestamp": datetime.fromtimestamp(timestamp, tz=UTC).isoformat(),
+            "open": round(open_price, 6),
+            "high": round(high_price, 6),
+            "low": round(low_price, 6),
+            "close": round(close_price, 6),
+            "volume": round(max(volume, 0.0), 2),
+        }
+    return [normalized_by_timestamp[key] for key in sorted(normalized_by_timestamp)]
 
 
 class TradingViewMarketDataProvider:
@@ -135,11 +139,9 @@ class TradingViewMarketDataProvider:
             await connector.close()
 
         candles = _normalize_candles(raw_candles)
-        if len(candles) < settings.market_data_min_candles:
+        if not candles:
             raise MarketDataUnavailableError(
-                "TradingView returned "
-                f"{len(candles)} candles for {provider_symbol}; "
-                f"at least {settings.market_data_min_candles} are required"
+                f"TradingView returned no usable candles for {provider_symbol}"
             )
 
         fetched_at = datetime.now(UTC)

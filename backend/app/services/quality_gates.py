@@ -29,13 +29,23 @@ def build_quality_status(
 
     alerts: list[dict[str, Any]] = []
     if metrics["total_requests"] >= settings.quality_min_request_count:
-        if metrics["error_rate_percent"] >= settings.quality_error_rate_alert_percent:
+        if metrics["internal_error_rate_percent"] >= settings.quality_error_rate_alert_percent:
             alerts.append(
                 {
-                    "code": "request_error_rate_high",
+                    "code": "request_internal_error_rate_high",
                     "severity": "critical",
-                    "message": "معدل أخطاء الخادم تجاوز الحد التشغيلي.",
-                    "observed_value": metrics["error_rate_percent"],
+                    "message": "معدل الأعطال الداخلية في الخادم تجاوز الحد التشغيلي.",
+                    "observed_value": metrics["internal_error_rate_percent"],
+                    "threshold": settings.quality_error_rate_alert_percent,
+                }
+            )
+        if metrics["upstream_error_rate_percent"] >= settings.quality_error_rate_alert_percent:
+            alerts.append(
+                {
+                    "code": "request_upstream_error_rate_high",
+                    "severity": "warning",
+                    "message": "طلبات كثيرة تعذرت بسبب مزودات خارجية، وليست أعطالًا داخلية.",
+                    "observed_value": metrics["upstream_error_rate_percent"],
                     "threshold": settings.quality_error_rate_alert_percent,
                 }
             )
@@ -64,12 +74,16 @@ def build_quality_status(
                 "stale": stale,
             }
         )
+        component_label = {
+            "market_data": "بيانات السوق",
+            "ai": "الذكاء الاصطناعي",
+        }.get(event.component, "خدمة تشغيلية")
         if event.status == "failed":
             alerts.append(
                 {
                     "code": f"provider_failed:{event.component}",
                     "severity": "critical",
-                    "message": f"فشل مزود الخدمة: {event.component}.",
+                    "message": f"تعطل مزود {component_label}.",
                     "observed_value": event.status,
                     "threshold": "healthy",
                 }
@@ -79,7 +93,7 @@ def build_quality_status(
                 {
                     "code": f"provider_degraded:{event.component}",
                     "severity": "warning",
-                    "message": f"مزود الخدمة يعمل بحالة غير مستقرة: {event.component}.",
+                    "message": f"مزود {component_label} يعمل بصورة جزئية.",
                     "observed_value": event.status,
                     "threshold": "healthy",
                 }
@@ -89,7 +103,7 @@ def build_quality_status(
                 {
                     "code": f"provider_probe_stale:{event.component}",
                     "severity": "warning",
-                    "message": f"فحص مزود الخدمة قديم: {event.component}.",
+                    "message": f"آخر فحص لمزود {component_label} قديم ويحتاج تحديثًا.",
                     "observed_value": observed_at.isoformat(),
                     "threshold": settings.quality_provider_stale_minutes,
                 }

@@ -5,6 +5,7 @@ import pytest
 
 from app.market_data.egx_symbols import normalize_egx_ticker, to_yahoo_symbol
 from app.market_data.provider import YFinanceMarketDataProvider
+from app.market_data.tradingview import _normalize_candles
 from app.market_data.types import UnknownTickerError
 
 
@@ -39,3 +40,29 @@ def test_yfinance_frame_normalization_rejects_invalid_rows() -> None:
     assert candles[0]["close"] == 10.5
     assert candles[1]["volume"] == 0.0
     assert str(candles[1]["timestamp"]).endswith("+00:00")
+
+
+def test_tradingview_normalization_accepts_short_valid_history() -> None:
+    candles = _normalize_candles(
+        [
+            {
+                "timestamp": 1_753_228_800,
+                "open": 10,
+                "high": 11,
+                "low": 9,
+                "close": 10.5,
+                "volume": 1_000,
+            },
+            {
+                "timestamp": 1_753_315_200,
+                "open": 10.5,
+                "high": 10,
+                "low": 9.5,
+                "close": 10.2,
+                "volume": 1_100,
+            },
+        ]
+    )
+
+    assert len(candles) == 1
+    assert candles[0]["close"] == 10.5

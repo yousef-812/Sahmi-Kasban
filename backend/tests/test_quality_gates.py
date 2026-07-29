@@ -70,10 +70,31 @@ def test_request_metrics_registry_calculates_error_rate_and_p95() -> None:
     snapshot = registry.snapshot()
     assert snapshot["total_requests"] == 3
     assert snapshot["error_requests"] == 1
+    assert snapshot["internal_error_requests"] == 1
+    assert snapshot["upstream_error_requests"] == 0
     assert snapshot["error_rate_percent"] == 33.333
     assert snapshot["slow_requests"] == 1
     assert snapshot["p95_latency_ms"] == 100.0
     assert snapshot["status_counts"] == {"200": 2, "500": 1}
+
+
+def test_upstream_503_is_not_reported_as_an_internal_failure() -> None:
+    registry = RequestMetricsRegistry(max_samples=10)
+    for status_code in (200, 503, 409):
+        registry.begin()
+        registry.complete(
+            status_code=status_code,
+            duration_ms=10,
+            slow_threshold_ms=50,
+        )
+
+    snapshot = registry.snapshot()
+    assert snapshot["internal_error_requests"] == 0
+    assert snapshot["upstream_error_requests"] == 1
+    assert snapshot["server_error_requests"] == 1
+    assert snapshot["client_error_requests"] == 1
+    assert snapshot["error_rate_percent"] == 0
+    assert snapshot["upstream_error_rate_percent"] == 33.333
 
 
 def test_readiness_and_admin_quality_are_protected(
@@ -102,6 +123,8 @@ def test_readiness_and_admin_quality_are_protected(
     payload = response.json()
     assert payload["status"] in {"healthy", "degraded", "critical"}
     assert payload["request_metrics"]["total_requests"] >= 1
+    assert "internal_error_requests" in payload["request_metrics"]
+    assert "upstream_error_requests" in payload["request_metrics"]
     assert payload["thresholds"]["minimum_requests"] >= 1
     assert isinstance(payload["alerts"], list)
 

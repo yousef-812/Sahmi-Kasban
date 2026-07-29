@@ -16,6 +16,7 @@ from app.schemas.market import (
     MarketInstrumentResponse,
     StockAnalysisRequest,
     StockAnalysisResponse,
+    StockComparisonFailureResponse,
     StockComparisonItemResponse,
     StockComparisonRequest,
     StockComparisonResponse,
@@ -29,6 +30,7 @@ from app.services.stock_analysis import (
 )
 from app.services.stock_comparisons import (
     ComparisonConflictError,
+    ComparisonInsufficientResultsError,
     ComparisonPlanLimitError,
     StockComparisonExecution,
     execute_stock_comparison,
@@ -61,6 +63,7 @@ def _comparison_response(execution: StockComparisonExecution) -> StockComparison
     comparison = execution.comparison
     payload = comparison.payload
     raw_items = payload.get("items", [])
+    raw_failed_items = payload.get("failed_items", [])
     return StockComparisonResponse(
         comparison_id=comparison.id,
         request_key=comparison.request_key,
@@ -68,6 +71,9 @@ def _comparison_response(execution: StockComparisonExecution) -> StockComparison
         best_ticker=str(payload.get("best_ticker", "")),
         summary=str(payload.get("summary", "")),
         items=[StockComparisonItemResponse(**item) for item in raw_items],
+        failed_items=[
+            StockComparisonFailureResponse(**item) for item in raw_failed_items
+        ],
         included_allowance=comparison.included_allowance,
         comparison_charged_points=comparison.charged_points,
         comparison_charged_coins=points_to_coins(comparison.charged_points),
@@ -126,25 +132,39 @@ async def compare_stocks(
             language=request.language,
         )
     except UnknownTickerError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير موجود في سوق EGX المدعوم.",
+        ) from exc
     except ComparisonConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     except ComparisonPlanLimitError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    except ComparisonInsufficientResultsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
     except InsufficientBalanceError as exc:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Insufficient coin balance for this comparison and any new analyses",
+            detail="الرصيد لا يكفي للمقارنة والتحليلات الجديدة المطلوبة.",
         ) from exc
     except MarketDataUnavailableError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Market data is temporarily unavailable",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="بيانات السوق غير متاحة مؤقتًا. أعد المحاولة بعد قليل.",
         ) from exc
     except StockAnalysisExecutionError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="One of the selected stocks could not be analyzed",
+            detail="تعذر إكمال تحليل الأسهم المختارة حاليًا.",
         ) from exc
 
     return _comparison_response(execution)
@@ -163,7 +183,7 @@ async def get_latest_owned_analysis(
     if not await market_instrument_exists(db, normalized_ticker):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Unsupported EGX ticker: {normalized_ticker}",
+            detail="رمز السهم غير موجود في سوق EGX المدعوم.",
         )
     execution = latest_owned_stock_analysis(
         db,
@@ -173,7 +193,7 @@ async def get_latest_owned_analysis(
     if execution is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No saved analysis exists for this account and ticker",
+            detail="لا يوجد تحليل محفوظ لهذا السهم في حسابك.",
         )
     return _analysis_response(execution)
 
@@ -203,21 +223,27 @@ async def analyze_stock(
             language=request.language,
         )
     except UnknownTickerError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير موجود في سوق EGX المدعوم.",
+        ) from exc
     except InsufficientBalanceError as exc:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Insufficient coin balance for this analysis",
+            detail="الرصيد لا يكفي لإجراء هذا التحليل.",
         ) from exc
     except MarketDataUnavailableError as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Market data is temporarily unavailable",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="بيانات السهم غير متاحة مؤقتًا. أعد المحاولة بعد قليل.",
         ) from exc
     except StockAnalysisExecutionError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="The stock analysis could not be completed",
+            detail=(
+                "لم يكتمل التحليل لأن تاريخ السهم أو بياناته لا تكفي "
+                "للمحركات حاليًا."
+            ),
         ) from exc
 
     return _analysis_response(execution)

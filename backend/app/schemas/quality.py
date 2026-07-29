@@ -25,7 +25,14 @@ class RequestMetricsResponse(BaseModel):
     total_requests: int
     in_flight: int
     error_requests: int
+    internal_error_requests: int = 0
+    upstream_error_requests: int = 0
+    server_error_requests: int = 0
+    client_error_requests: int = 0
     error_rate_percent: float
+    internal_error_rate_percent: float = 0
+    upstream_error_rate_percent: float = 0
+    server_error_rate_percent: float = 0
     slow_requests: int
     average_latency_ms: float
     p95_latency_ms: float

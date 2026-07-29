@@ -9,11 +9,15 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.market_data.types import MarketDataProvider
+from app.market_data.types import MarketDataProvider, MarketDataUnavailableError
 from app.models import StockComparison, User
 from app.services.monetization_catalog import get_plan
 from app.services.profile import get_active_subscription
-from app.services.stock_analysis import execute_stock_analysis
+from app.services.stock_analysis import (
+    StockAnalysisExecution,
+    StockAnalysisExecutionError,
+    execute_stock_analysis,
+)
 from app.services.wallet import debit_points, get_wallet_account
 from sahmi_kasban.ai import SahmiAIService
 
@@ -27,6 +31,18 @@ class ComparisonConflictError(RuntimeError):
 
 class ComparisonPlanLimitError(RuntimeError):
     """Raised when the selected plan cannot compare the requested number of stocks."""
+
+
+class ComparisonInsufficientResultsError(RuntimeError):
+    """Raised when fewer than two selected stocks can be analyzed."""
+
+    def __init__(self, failed_items: list[dict[str, object]]) -> None:
+        self.failed_items = failed_items
+        failed_tickers = "، ".join(str(item["ticker"]) for item in failed_items)
+        super().__init__(
+            "تعذر تجهيز سهمين صالحين للمقارنة. "
+            f"الأسهم التي تحتاج إعادة محاولة: {failed_tickers or 'غير محدد'}."
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,15 +152,46 @@ def _analysis_item(analysis) -> dict[str, object]:
     }
 
 
-def _summary(items: list[dict[str, object]]) -> str:
+def _failure_item(ticker: str, exc: Exception) -> dict[str, object]:
+    if isinstance(exc, MarketDataUnavailableError):
+        return {
+            "ticker": ticker,
+            "code": "market_data_unavailable",
+            "message": "بيانات السوق غير متاحة لهذا السهم حاليًا.",
+            "retryable": True,
+        }
+    if isinstance(exc, StockAnalysisExecutionError):
+        return {
+            "ticker": ticker,
+            "code": "analysis_not_completed",
+            "message": "لم تكتمل محركات التحليل لهذا السهم.",
+            "retryable": True,
+        }
+    return {
+        "ticker": ticker,
+        "code": "unexpected_analysis_error",
+        "message": "حدث عطل غير متوقع أثناء تحليل هذا السهم.",
+        "retryable": True,
+    }
+
+
+def _summary(
+    items: list[dict[str, object]],
+    failed_items: list[dict[str, object]],
+) -> str:
     best = items[0]
     strongest_risk = max(items, key=lambda item: _number(item.get("risk_score")))
     most_liquid = max(items, key=lambda item: _number(item.get("average_volume_20")))
     fragments = [
         f"{best['ticker']} حصل على أعلى تقييم مقارن بدرجة {best['comparison_score']} من 100.",
         f"{strongest_risk['ticker']} هو الأفضل في تقييم إدارة المخاطر.",
-        f"{most_liquid['ticker']} هو الأعلى في متوسط حجم التداول بين الأسهم المختارة.",
+        f"{most_liquid['ticker']} هو الأعلى في متوسط حجم التداول بين الأسهم المكتملة.",
     ]
+    if failed_items:
+        failed = "، ".join(str(item["ticker"]) for item in failed_items)
+        fragments.append(
+            f"اكتملت المقارنة دون الأسهم التالية لتعذر بياناتها مؤقتًا: {failed}."
+        )
     return " ".join(dict.fromkeys(fragments))
 
 
@@ -180,7 +227,7 @@ async def execute_stock_comparison(
     now = moment or datetime.now(UTC)
     normalized = list(dict.fromkeys(ticker.strip().upper() for ticker in tickers))
     if len(normalized) < 2:
-        raise ComparisonPlanLimitError("Choose at least two different stocks")
+        raise ComparisonPlanLimitError("اختر سهمين مختلفين على الأقل.")
 
     existing = db.scalar(
         select(StockComparison).where(
@@ -197,7 +244,7 @@ async def execute_stock_comparison(
     if existing is not None:
         if existing.tickers != normalized:
             raise ComparisonConflictError(
-                "The comparison request key was already used with other stocks"
+                "مفتاح طلب المقارنة استُخدم من قبل مع أسهم مختلفة."
             )
         return _execution_from_existing(
             db,
@@ -208,21 +255,29 @@ async def execute_stock_comparison(
 
     if len(normalized) > max_stocks:
         raise ComparisonPlanLimitError(
-            f"The {plan.display_name_ar} plan compares up to {max_stocks} stocks"
+            f"خطة {plan.display_name_ar} تسمح بمقارنة حتى {max_stocks} أسهم."
         )
 
-    executions = []
+    executions: list[StockAnalysisExecution] = []
+    failed_items: list[dict[str, object]] = []
     for ticker in normalized:
-        executions.append(
-            await execute_stock_analysis(
-                db,
-                user=user,
-                ticker=ticker,
-                provider=provider,
-                ai_service=ai_service,
-                language=language,
+        try:
+            executions.append(
+                await execute_stock_analysis(
+                    db,
+                    user=user,
+                    ticker=ticker,
+                    provider=provider,
+                    ai_service=ai_service,
+                    language=language,
+                )
             )
-        )
+        except (MarketDataUnavailableError, StockAnalysisExecutionError) as exc:
+            db.rollback()
+            failed_items.append(_failure_item(ticker, exc))
+
+    if len(executions) < 2:
+        raise ComparisonInsufficientResultsError(failed_items)
 
     items = [_analysis_item(execution.analysis) for execution in executions]
     items.sort(
@@ -254,16 +309,19 @@ async def execute_stock_comparison(
             reference_id=request_key,
             details={
                 "tickers": normalized,
+                "completed_tickers": [item["ticker"] for item in items],
+                "failed_tickers": [item["ticker"] for item in failed_items],
                 "plan_code": plan.code,
                 "included_allowance": False,
             },
         )
 
     payload: dict[str, object] = {
-        "version": 1,
+        "version": 2,
         "best_ticker": items[0]["ticker"],
-        "summary": _summary(items),
+        "summary": _summary(items, failed_items),
         "items": items,
+        "failed_items": failed_items,
         "disclaimer": (
             "المقارنة تحليل آلي لدعم القرار وليست توصية شراء أو بيع، "
             "ولا تضمن تحقيق أرباح."
