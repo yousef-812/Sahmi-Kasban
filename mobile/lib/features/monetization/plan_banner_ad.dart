@@ -47,17 +47,18 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
     final adUnitId = Platform.isAndroid
         ? config.admobAndroidBannerId
         : config.admobIosBannerId;
-    final width = MediaQuery.sizeOf(context).width.truncate();
-    final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
-    if (!mounted || size == null) {
+    if (adUnitId.isEmpty) {
       _loading = false;
       return;
     }
 
+    // Keep the always-visible free-plan banner compact. The previous large
+    // anchored-adaptive format could reserve up to a much taller slot and
+    // crowd the application's navigation and content on smaller phones.
     final banner = BannerAd(
       adUnitId: adUnitId,
       request: const AdRequest(),
-      size: size,
+      size: AdSize.banner,
       listener: BannerAdListener(
         onAdLoaded: (ad) {
           if (!mounted || !widget.enabled) {
@@ -106,10 +107,13 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
       child: ColoredBox(
         color: Theme.of(context).colorScheme.surface,
         child: Center(
-          child: SizedBox(
-            width: banner.size.width.toDouble(),
-            height: banner.size.height.toDouble(),
-            child: AdWidget(ad: banner),
+          child: Semantics(
+            label: 'إعلان بانر',
+            child: SizedBox(
+              width: banner.size.width.toDouble(),
+              height: banner.size.height.toDouble(),
+              child: AdWidget(ad: banner),
+            ),
           ),
         ),
       ),
