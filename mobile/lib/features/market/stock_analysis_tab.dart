@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../monetization/free_plan_ads.dart';
 import '../wallet/wallet_providers.dart';
 import 'stock_analysis_report.dart';
 
@@ -200,6 +202,12 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
         // The completed analysis must remain visible even if the optional
         // profile refresh fails. Wallet data will retry through its provider.
       }
+      if (mounted) {
+        await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
+          enabled:
+              ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+        );
+      }
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _error = error.message);
@@ -313,6 +321,14 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                         )
                       : const Icon(Icons.auto_graph_rounded),
                   label: const Text('تحليل السهم — 0.5 عملة'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _analyzing
+                      ? null
+                      : () => context.push('/market/compare'),
+                  icon: const Icon(Icons.compare_arrows_rounded),
+                  label: const Text('مقارنة سهمين أو أكثر'),
                 ),
               ],
             ),
