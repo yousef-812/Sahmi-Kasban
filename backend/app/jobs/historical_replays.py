@@ -21,20 +21,25 @@ logger = logging.getLogger(__name__)
 def _with_evaluation_scope(
     computation: ReplayTickerComputation,
 ) -> ReplayTickerComputation:
-    """Keep eligibility decisions out of directional accuracy metrics."""
+    """Keep eligibility and unavailable rows out of directional accuracy."""
 
     scoped_rows: list[dict[str, Any]] = []
     for original in computation.rows:
         row = dict(original)
         quality = dict(row.get("analysis_quality") or {})
-        if row.get("qualified") is False:
+        qualified = row.get("qualified")
+        if qualified is False:
             quality["evaluation_scope"] = "eligibility_exclusion"
             quality["directional_correct"] = None
             if row.get("status") == "evaluated":
                 row["correct"] = None
-        else:
+        elif qualified is True:
             quality["evaluation_scope"] = "directional"
             quality["directional_correct"] = row.get("correct")
+        else:
+            quality["evaluation_scope"] = "not_evaluated"
+            quality["directional_correct"] = None
+            row["correct"] = None
         row["analysis_quality"] = quality
         scoped_rows.append(row)
 
