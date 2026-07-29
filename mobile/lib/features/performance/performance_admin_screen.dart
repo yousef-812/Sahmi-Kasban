@@ -29,6 +29,11 @@ class _PerformanceAdminScreenState
         title: const Text('عمليات الإدارة'),
         actions: [
           IconButton(
+            onPressed: () => context.push('/admin/historical-replays'),
+            icon: const Icon(Icons.science_outlined),
+            tooltip: 'اختبار المحركات التاريخي',
+          ),
+          IconButton(
             onPressed: () => context.push('/admin/wallet-credit'),
             icon: const Icon(Icons.add_card_rounded),
             tooltip: 'إضافة عملات للمستخدمين',
@@ -58,6 +63,13 @@ class _PerformanceAdminScreenState
                         ),
                       ),
                       const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () =>
+                            context.push('/admin/historical-replays'),
+                        icon: const Icon(Icons.science_outlined),
+                        label: const Text('اختبار المحركات التاريخي'),
+                      ),
+                      const SizedBox(height: 8),
                       FilledButton.icon(
                         onPressed: () => context.push('/admin/wallet-credit'),
                         icon: const Icon(Icons.add_card_rounded),
