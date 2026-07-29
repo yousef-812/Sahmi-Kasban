@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import CommunityAdminEvent, User, WalletEntry
+from app.models import CommunityAdminEvent, User, WalletAccount, WalletEntry
 from app.services.wallet import POINTS_PER_COIN, credit_points, get_wallet_account, points_to_coins
 
 
@@ -25,6 +25,13 @@ def credit_user_coins(
     target = db.scalar(select(User).where(User.id == target_user_id))
     if target is None or target.status == "deleted":
         raise AdminWalletUserNotFoundError("Target user was not found")
+
+    account = db.scalar(
+        select(WalletAccount).where(WalletAccount.user_id == target_user_id)
+    )
+    if account is None:
+        db.add(WalletAccount(user_id=target_user_id, balance_points=0))
+        db.flush()
 
     amount_points = amount_coins * POINTS_PER_COIN
     transaction_id = f"admin-credit:{request_id}"
