@@ -11,7 +11,9 @@ Future<void> _initializeServices() async {
   try {
     await initializeDateFormatting('ar');
   } on Object catch (error, stackTrace) {
-    debugPrint('Arabic date formatting initialization skipped: $error\n$stackTrace');
+    debugPrint(
+      'Arabic date formatting initialization skipped: $error\n$stackTrace',
+    );
   }
 
   try {
