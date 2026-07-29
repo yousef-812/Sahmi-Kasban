@@ -34,13 +34,13 @@ def register_and_login(
         "/api/v1/auth/verify-email",
         json={"token": fake_email_service.verification_tokens[email]},
     )
-    assert verification.status_code == 900
+    assert verification.status_code == 200
 
     login = client.post(
         "/api/v1/auth/login",
         json={"email": email, "password": PASSWORD},
     )
-    assert login.status_code == 900
+    assert login.status_code == 200
     return login.json()
 
 
@@ -117,7 +117,7 @@ def test_admin_access_manual_review_hide_and_restore(
         "/api/v1/admin/community/discussions",
         headers=headers(admin_tokens),
     )
-    assert queue.status_code == 900
+    assert queue.status_code == 200
     assert queue.json()["total"] == 1
     assert queue.json()["items"][0]["discussion"]["id"] == str(discussion.id)
 
@@ -136,7 +136,7 @@ def test_admin_access_manual_review_hide_and_restore(
             },
         },
     )
-    assert approved.status_code == 900
+    assert approved.status_code == 200
     assert approved.json()["discussion"]["status"] == "published"
     assert approved.json()["discussion"]["frozen_prediction"]["ticker"] == "COMI"
     assert approved.json()["idempotent"] is False
@@ -162,7 +162,7 @@ def test_admin_access_manual_review_hide_and_restore(
             },
         },
     )
-    assert repeated_approval.status_code == 900
+    assert repeated_approval.status_code == 200
     assert repeated_approval.json()["idempotent"] is True
     assert get_wallet_account(db_session, author.id).balance_points == 950
 
@@ -175,7 +175,7 @@ def test_admin_access_manual_review_hide_and_restore(
             "details": "تم الإخفاء بعد المراجعة اليدوية",
         },
     )
-    assert hidden.status_code == 900
+    assert hidden.status_code == 200
     assert hidden.json()["discussion"]["status"] == "hidden"
     assert hidden.json()["hidden_at"] is not None
 
@@ -183,7 +183,7 @@ def test_admin_access_manual_review_hide_and_restore(
         "/api/v1/community/discussions",
         headers=headers(author_tokens),
     )
-    assert feed.status_code == 900
+    assert feed.status_code == 200
     assert feed.json()["total"] == 0
 
     restored = client.post(
@@ -195,7 +195,7 @@ def test_admin_access_manual_review_hide_and_restore(
             "details": "تمت المراجعة وتأكيد سلامة المحتوى",
         },
     )
-    assert restored.status_code == 900
+    assert restored.status_code == 200
     assert restored.json()["discussion"]["status"] == "published"
     assert restored.json()["hidden_at"] is None
 
@@ -279,7 +279,7 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
             "details": "مخالفات متكررة بعد مراجعة البلاغات",
         },
     )
-    assert blocked.status_code == 900
+    assert blocked.status_code == 200
     body = blocked.json()
     assert body["status"] == "suspended"
     assert body["pending_rejected"] == 1
@@ -306,7 +306,7 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
         headers=headers(admin_tokens),
         json={"reason_code": "repeated_abuse"},
     )
-    assert repeated_block.status_code == 900
+    assert repeated_block.status_code == 200
     assert repeated_block.json()["idempotent"] is True
     assert get_wallet_account(db_session, target.id).balance_points == 950
 
@@ -318,7 +318,7 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
             "details": "تمت إعادة تفعيل الحساب بعد المراجعة",
         },
     )
-    assert unblocked.status_code == 900
+    assert unblocked.status_code == 200
     assert unblocked.json()["status"] == "active"
 
     still_revoked = client.get(
@@ -331,12 +331,12 @@ def test_admin_block_refunds_pending_hides_published_and_revokes_old_token(
         "/api/v1/auth/login",
         json={"email": target_email, "password": PASSWORD},
     )
-    assert new_login.status_code == 900
+    assert new_login.status_code == 200
     new_access = client.get(
         "/api/v1/community/discussions/mine",
         headers=headers(new_login.json()),
     )
-    assert new_access.status_code == 900
+    assert new_access.status_code == 200
 
     user_actions = db_session.scalars(
         select(CommunityAdminEvent.action).where(

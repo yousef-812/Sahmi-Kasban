@@ -181,7 +181,7 @@ def test_prediction_verification_rewards_once_and_updates_stats(
     )
     assert repeated.status_code == 200
     assert repeated.json()["idempotent"] is True
-    assert repeated.json()["balance_points"] == 500
+    assert repeated.json()["balance_points"] == 1_200
     assert provider.calls == 1
 
     rewards = db_session.scalars(
