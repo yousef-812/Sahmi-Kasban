@@ -42,7 +42,7 @@ void main() {
   });
 
   test(
-    'StockComparisonResult parses server-authoritative costs and ranking',
+    'StockComparisonResult parses costs, ranking, and skipped stocks',
     () {
       final result = StockComparisonResult.fromJson(<String, dynamic>{
         'comparison_id': 'comparison-id',
@@ -72,25 +72,35 @@ void main() {
             'reward_risk_1': 1.6,
           },
         ],
+        'failed_items': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'ticker': 'DSCW',
+            'code': 'market_data_unavailable',
+            'message': 'بيانات السوق غير متاحة لهذا السهم حاليًا.',
+            'retryable': true,
+          },
+        ],
         'included_allowance': false,
         'comparison_charged_points': 50,
         'comparison_charged_coins': '0.50',
-        'analysis_charged_points': 100,
-        'analysis_charged_coins': '1.00',
+        'analysis_charged_points': 50,
+        'analysis_charged_coins': '0.50',
         'allowance_used': 0,
         'allowance_remaining': 0,
         'idempotent': false,
-        'balance_points': 850,
-        'balance_coins': '8.50',
+        'balance_points': 900,
+        'balance_coins': '9.00',
         'disclaimer': 'ليست توصية شراء أو بيع.',
       });
 
       expect(result.bestTicker, 'COMI');
       expect(result.comparisonChargedPoints, 50);
-      expect(result.analysisChargedPoints, 100);
-      expect(result.balanceCoins, '8.50');
+      expect(result.analysisChargedPoints, 50);
+      expect(result.balanceCoins, '9.00');
       expect(result.items.single.rank, 1);
       expect(result.items.single.comparisonScore, 80.1);
+      expect(result.failedItems.single.ticker, 'DSCW');
+      expect(result.failedItems.single.retryable, isTrue);
     },
   );
 }
