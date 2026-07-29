@@ -55,6 +55,7 @@ async def _compute_one(
 
 async def process_next_historical_replay_batch() -> bool:
     with SessionLocal() as db:
+        db.autoflush = True
         plan = await prepare_next_replay_batch(db)
     if plan is None:
         return False
@@ -68,6 +69,7 @@ async def process_next_historical_replay_batch() -> bool:
         )
     )
     with SessionLocal() as db:
+        db.autoflush = True
         persist_replay_batch(
             db,
             job_id=plan.job_id,
