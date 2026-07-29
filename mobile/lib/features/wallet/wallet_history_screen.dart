@@ -58,8 +58,7 @@ class _WalletHistoryScreenState extends ConsumerState<WalletHistoryScreen> {
     } on Object {
       if (mounted) {
         setState(
-          () =>
-              _error = 'تعذر عرض سجل المحفظة. حاول مرة أخرى بعد تحديث التطبيق.',
+          () => _error = 'تعذر عرض سجل المحفظة. حاول مرة أخرى بعد تحديث التطبيق.',
         );
       }
     } finally {
@@ -166,6 +165,8 @@ class _WalletEntryCard extends StatelessWidget {
 
   String _entryLabel(WalletEntryModel entry) {
     switch (entry.entryType) {
+      case 'welcome_bonus':
+        return 'رصيد ترحيبي';
       case 'weekly_plan_grant':
         return 'توزيع الخطة الأسبوعي';
       case 'stock_analysis_debit':
@@ -179,6 +180,7 @@ class _WalletEntryCard extends StatelessWidget {
       case 'prediction_reward':
         return 'مكافأة توقع';
       case 'rewarded_ad_credit':
+      case 'rewarded_ad':
         return 'مكافأة إعلان';
       case 'coin_purchase':
         return 'شراء عملات';
