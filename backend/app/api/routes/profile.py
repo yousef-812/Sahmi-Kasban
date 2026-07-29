@@ -24,6 +24,7 @@ from app.services.profile import (
     update_profile,
 )
 from app.services.wallet import points_to_coins
+from app.services.welcome_bonus import grant_welcome_bonus_if_eligible
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -64,6 +65,9 @@ def avatar_options() -> AvatarOptionsResponse:
 
 @router.get("/me", response_model=ProfileResponse)
 def get_my_profile(db: DatabaseSession, current_user: CurrentUser) -> ProfileResponse:
+    welcome_entry = grant_welcome_bonus_if_eligible(db, current_user)
+    if welcome_entry is not None:
+        db.commit()
     return build_profile_response(db, current_user)
 
 
