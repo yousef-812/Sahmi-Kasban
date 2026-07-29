@@ -64,7 +64,8 @@ class _AdminWalletCreditScreenState
                   }
                   return RefreshIndicator(
                     onRefresh: () async {
-                      await ref.refresh(adminUsersProvider.future);
+                      final refreshed = ref.refresh(adminUsersProvider.future);
+                      await refreshed;
                     },
                     child: ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(),
