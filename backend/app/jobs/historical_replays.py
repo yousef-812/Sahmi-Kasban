@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import Any
 
 from app.db.session import SessionLocal
 from app.market_data.provider import get_market_data_provider
@@ -17,6 +18,38 @@ from app.services.historical_replays import (
 logger = logging.getLogger(__name__)
 
 
+def _with_evaluation_scope(
+    computation: ReplayTickerComputation,
+) -> ReplayTickerComputation:
+    """Keep eligibility decisions out of directional accuracy metrics."""
+
+    scoped_rows: list[dict[str, Any]] = []
+    for original in computation.rows:
+        row = dict(original)
+        quality = dict(row.get("analysis_quality") or {})
+        if row.get("qualified") is False:
+            quality["evaluation_scope"] = "eligibility_exclusion"
+            quality["directional_correct"] = None
+            if row.get("status") == "evaluated":
+                row["correct"] = None
+        else:
+            quality["evaluation_scope"] = "directional"
+            quality["directional_correct"] = row.get("correct")
+        row["analysis_quality"] = quality
+        scoped_rows.append(row)
+
+    return ReplayTickerComputation(
+        ticker_task_id=computation.ticker_task_id,
+        ticker=computation.ticker,
+        provider=computation.provider,
+        data_fingerprint=computation.data_fingerprint,
+        candle_count=computation.candle_count,
+        rows=tuple(scoped_rows),
+        error_code=computation.error_code,
+        error_message=computation.error_message,
+    )
+
+
 async def _compute_one(
     plan: ReplayBatchPlan,
     *,
@@ -28,7 +61,7 @@ async def _compute_one(
     for attempt in range(2):
         try:
             series = await provider.get_history(ticker, period="5y", interval="1d")
-            return await asyncio.to_thread(
+            computation = await asyncio.to_thread(
                 compute_replay_rows,
                 ticker_task_id=ticker_task_id,
                 ticker=ticker,
@@ -40,6 +73,7 @@ async def _compute_one(
                 min_train_size=plan.min_train_size,
                 neutral_band_pct=plan.neutral_band_pct,
             )
+            return _with_evaluation_scope(computation)
         except Exception as exc:
             last_error = exc
             if attempt == 0:
