@@ -206,7 +206,11 @@ class _SummarySection extends StatelessWidget {
               ];
               if (constraints.maxWidth >= 360) {
                 return Row(
-                  children: [cards.first, const SizedBox(width: 10), cards.last],
+                  children: [
+                    cards.first,
+                    const SizedBox(width: 10),
+                    cards.last,
+                  ],
                 );
               }
               return Column(
