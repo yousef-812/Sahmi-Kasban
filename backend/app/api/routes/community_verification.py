@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -97,6 +98,35 @@ def _safe_ai_explanation(
     }
 
 
+async def _load_prediction_score(
+    *,
+    market_provider: MarketDataProvider,
+    discussion,
+    window,
+):
+    last_error: MarketDataUnavailableError | PredictionMarketEvidenceError | None = None
+    for attempt in range(2):
+        try:
+            series = await market_provider.get_history(
+                discussion.ticker,
+                period="6mo",
+                interval="1d",
+            )
+            candles = select_window_candles(series, window=window)
+            return calculate_prediction_score(
+                prediction=discussion.frozen_prediction,
+                candles=candles,
+                window=window,
+                ticker=discussion.ticker,
+            )
+        except (MarketDataUnavailableError, PredictionMarketEvidenceError) as exc:
+            last_error = exc
+            if attempt == 0:
+                await asyncio.sleep(0.75)
+    assert last_error is not None
+    raise last_error
+
+
 @router.get(
     "/discussions/{discussion_id}/verification",
     response_model=PredictionVerificationStatusResponse,
@@ -166,25 +196,18 @@ async def verify_prediction(
         )
 
     try:
-        series = await market_provider.get_history(
-            current_status.discussion.ticker,
-            period="6mo",
-            interval="1d",
-        )
-        candles = select_window_candles(
-            series,
+        score = await _load_prediction_score(
+            market_provider=market_provider,
+            discussion=current_status.discussion,
             window=current_status.window,
-        )
-        score = calculate_prediction_score(
-            prediction=current_status.discussion.frozen_prediction,
-            candles=candles,
-            window=current_status.window,
-            ticker=current_status.discussion.ticker,
         )
     except (MarketDataUnavailableError, PredictionMarketEvidenceError) as exc:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="بيانات الإغلاق النهائية غير مكتملة حاليًا. حاول لاحقًا.",
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "انتهت فترة التوقع، لكن مزود السوق لم يثبت إغلاق كل الجلسات بعد. "
+                "لم تُحسب نتيجة جزئية ولم تُصرف مكافأة؛ أعد المحاولة بعد قليل."
+            ),
         ) from exc
 
     try:
