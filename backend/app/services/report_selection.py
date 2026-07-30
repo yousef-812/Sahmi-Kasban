@@ -18,6 +18,9 @@ class OpportunityClassification:
     decision: str
     elite: bool
     top_fraction_pct: float
+    quality_score: float
+    gate_version: str
+    failed_checks: tuple[str, ...]
     note: str
     volatility_warning: str | None
 
@@ -27,6 +30,16 @@ def _number(value: object, default: float = 0.0) -> float:
         return float(value or default)
     except (TypeError, ValueError):
         return default
+
+
+def _mapping(value: object) -> dict:
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def _elite_assessment(payload: dict) -> dict:
+    analysis = _mapping(payload.get("analysis"))
+    analysis_quality = _mapping(analysis.get("analysis_quality"))
+    return _mapping(analysis_quality.get("elite_assessment"))
 
 
 def classify_report_item(
@@ -39,11 +52,22 @@ def classify_report_item(
     qualified = bool(payload.get("qualified", False))
     score = item.score_bp / 100.0
     top_fraction_pct = round(item.rank / max(eligible_count, 1) * 100.0, 2)
+    assessment = _elite_assessment(payload)
+    engine_ready = assessment.get("engine_ready") is True
+    quality_score = _number(assessment.get("readiness_score"))
+    gate_version = str(assessment.get("model_version", "elite-quality-unavailable"))
+    raw_failed_checks = assessment.get("failed_checks")
+    failed_checks = tuple(
+        str(value)
+        for value in raw_failed_checks
+        if str(value).strip()
+    ) if isinstance(raw_failed_checks, list) else ()
     elite = (
         item.rank <= 10
         and signal == "BUY"
         and qualified
         and score >= ELITE_SCORE_THRESHOLD
+        and engine_ready
     )
 
     if elite:
@@ -52,13 +76,16 @@ def classify_report_item(
             decision="فرصة نخبوية",
             elite=True,
             top_fraction_pct=top_fraction_pct,
+            quality_score=quality_score,
+            gate_version=gate_version,
+            failed_checks=(),
             note=(
-                "اختيار نخبوِي ضمن أعلى ترتيب يومي وبدرجة لا تقل عن 80. "
-                "التقييم القصير يتابع خمس جلسات، وليس وعدًا بتحقيق أهداف السعر."
+                "فرصة نخبوية اجتازت ترتيب اليوم ودرجة الاتجاه وبوابات Core v2.2 "
+                "للتمدد السعري والتذبذب والمخاطر وانتظام التداول."
             ),
             volatility_warning=(
-                "الفرص النخبوية أعلى تذبذبًا وقد تحقق حركة أكبر، لكنها قد "
-                "تتعرض أيضًا لهبوط مؤقت أقوى؛ التزم بوقف الخسارة وحجم المركز."
+                "حتى الفرص النخبوية قد تتعرض لتذبذب وهبوط مؤقت؛ التزم بوقف "
+                "الخسارة وحجم المركز ولا تعتبر التصنيف ضمانًا للربح."
             ),
         )
     if signal == "BUY":
@@ -67,9 +94,12 @@ def classify_report_item(
             decision="شراء مشروط",
             elite=False,
             top_fraction_pct=top_fraction_pct,
+            quality_score=quality_score,
+            gate_version=gate_version,
+            failed_checks=failed_checks,
             note=(
-                "إشارة شراء مشروطة ضمن أفضل ترتيب اليوم، لكنها ليست ضمن طبقة "
-                "الفرص النخبوية المثبتة بالدرجة. راقب شروط الدخول والمخاطر."
+                "إشارة شراء جيدة، لكنها لم تجتز جميع بوابات الفرصة النخبوية "
+                "الخاصة بالتمدد والمخاطر وجودة الحركة؛ راقب شروط الدخول."
             ),
             volatility_warning=None,
         )
@@ -78,6 +108,9 @@ def classify_report_item(
         decision="مراقبة",
         elite=False,
         top_fraction_pct=top_fraction_pct,
+        quality_score=quality_score,
+        gate_version=gate_version,
+        failed_checks=failed_checks,
         note=(
             "السهم ظهر ضمن أعلى ترتيب اليوم، لكن شروط الشراء غير مكتملة؛ "
             "يعرض للمراقبة ولا يعامل كتوصية دخول."
@@ -129,6 +162,9 @@ def enrich_daily_report_selection(
                 "opportunity_tier": classification.tier,
                 "elite_opportunity": classification.elite,
                 "elite_score_threshold": ELITE_SCORE_THRESHOLD,
+                "elite_quality_score": round(classification.quality_score, 2),
+                "elite_gate_version": classification.gate_version,
+                "elite_failed_checks": list(classification.failed_checks),
                 "selection_rank": item.rank,
                 "eligible_universe_size": eligible_count,
                 "top_fraction_pct": classification.top_fraction_pct,
@@ -151,21 +187,21 @@ def enrich_daily_report_selection(
 
     summary.update(
         {
-            "title": "أفضل 10 فرص مرتبة للجلسة القادمة وفق Core v2.1",
-            "ranking_scope": "ترتيب يومي انتقائي لأفضل الأسهم المؤهلة",
-            "selection_model": "cross-sectional-top10-v1",
+            "title": "أفضل 10 فرص مرتبة للجلسة القادمة وفق Core v2.2",
+            "ranking_scope": "ترتيب يومي مع بوابة جودة مستقلة للفرص النخبوية",
+            "selection_model": "cross-sectional-top10-v2.2-quality-gated",
             "short_horizon_sessions": SHORT_HORIZON_SESSIONS,
             "elite_score_threshold": ELITE_SCORE_THRESHOLD,
+            "elite_gate_version": "elite-quality-v2.2",
             "opportunity_tiers": tier_counts,
             "selection_notice": (
-                "قوة التقرير في ترتيب أفضل الفرص، وليس في اعتبار كل إشارة BUY "
-                "فرصة متساوية الجودة."
+                "اسم الفرصة النخبوية محفوظ، لكن الحصول عليه لم يعد يعتمد على "
+                "الدرجة وحدها؛ يجب اجتياز بوابات التمدد والتذبذب والمخاطر."
             ),
             "disclaimer": (
-                "هذا ترتيب تحليلي لدعم القرار وليس توصية شراء أو بيع. "
-                "الفرصة النخبوية تعني أعلى ترتيب مع درجة 80 فأكثر، وقد تكون "
-                "أعلى تذبذبًا. تقييم التقرير القصير بعد خمس جلسات، بينما أهداف "
-                "خطة التداول قد تحتاج مدة أطول."
+                "هذا ترتيب تحليلي لدعم القرار وليس توصية شراء أو بيع. الفرصة "
+                "النخبوية اجتازت بوابات Core v2.2، لكنها لا تضمن الربح. تقييم "
+                "التقرير القصير بعد خمس جلسات، وأهداف الخطة قد تحتاج مدة أطول."
             ),
         }
     )
