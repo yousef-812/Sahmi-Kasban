@@ -5,12 +5,14 @@ import json
 import logging
 from datetime import UTC, datetime
 
+from sqlalchemy import select
+
 from app.db.session import SessionLocal
 from app.market_calendar import NonTradingSessionError, ScanNotDueError
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
-from app.market_data.universe import tradable_market_universe
+from app.market_data.universe import apply_market_health_quarantine
 from app.models import User
 from app.services.daily_reports import (
     DailyReportGenerationError,
@@ -21,14 +23,13 @@ from app.services.notifications import create_notification
 from app.services.operations_settings import get_bool_setting
 from app.services.report_selection import enrich_daily_report_selection
 from app.services.stock_analysis import get_stock_ai_service
-from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
 
 async def _scan_universe(db) -> tuple[str, ...]:
     await ensure_market_instrument_catalog(db)
-    universe = tradable_market_universe(db)
+    universe = apply_market_health_quarantine(db)
     logger.info(
         "Daily universe health active=%s tradable=%s incompatible=%s quarantined=%s",
         universe.active_catalog_count,
@@ -89,13 +90,25 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
                 )
         except ScanNotDueError as exc:
             db.rollback()
-            return {"status": "skipped", "reason": "before_scan_time", "detail": str(exc)}
+            return {
+                "status": "skipped",
+                "reason": "before_scan_time",
+                "detail": str(exc),
+            }
         except NonTradingSessionError as exc:
             db.rollback()
-            return {"status": "skipped", "reason": "non_trading_session", "detail": str(exc)}
+            return {
+                "status": "skipped",
+                "reason": "non_trading_session",
+                "detail": str(exc),
+            }
         except DailyScanAlreadyRunningError as exc:
             db.rollback()
-            return {"status": "skipped", "reason": "already_running", "detail": str(exc)}
+            return {
+                "status": "skipped",
+                "reason": "already_running",
+                "detail": str(exc),
+            }
         except DailyReportGenerationError:
             db.rollback()
             logger.exception("Daily top-ten report generation failed")
