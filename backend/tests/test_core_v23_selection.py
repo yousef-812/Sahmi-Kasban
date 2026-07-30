@@ -56,7 +56,7 @@ def _payload(*, profile: str, volatility: float) -> dict:
     }
 
 
-def test_v23_report_activates_aggressive_only_in_supportive_regime(
+def test_v23_report_disables_unvalidated_public_elite_profiles(
     db_session: Session,
 ) -> None:
     report = MarketReport(
@@ -104,23 +104,25 @@ def test_v23_report_activates_aggressive_only_in_supportive_regime(
     }
 
     assert enriched.market_summary["selection_regime"]["profile"] == "speculative_bullish"
-    assert rows["BAL"]["decision"] == "فرصة نخبوية متوازنة"
-    assert rows["BAL"]["elite_profile"] == "balanced"
+
+    assert rows["BAL"]["decision"] == "شراء مشروط بجودة أعلى"
+    assert rows["BAL"]["elite_profile"] == "balanced_candidate"
+    assert rows["BAL"]["elite_opportunity"] is False
     assert rows["BAL"]["recommended_position_multiplier"] == 1.0
 
-    assert rows["AGG"]["decision"] == "فرصة نخبوية هجومية"
-    assert rows["AGG"]["elite_profile"] == "aggressive"
-    assert rows["AGG"]["recommended_position_multiplier"] == 0.5
-    assert rows["AGG"]["adjusted_trade_plan"]["position_size"] == 50
-    assert rows["AGG"]["adjusted_trade_plan"]["position_value"] == 10_000.0
-    assert rows["AGG"]["adjusted_trade_plan"]["risk_amount"] == 500.0
+    assert rows["AGG"]["decision"] == "شراء مشروط"
+    assert rows["AGG"]["elite_profile"] == "none"
+    assert rows["AGG"]["elite_opportunity"] is False
+    assert "aggressive:disabled_pending_validation" in rows["AGG"]["elite_failed_checks"]
+    assert rows["AGG"]["recommended_position_multiplier"] == 1.0
+    assert rows["AGG"]["adjusted_trade_plan"]["position_size"] == 100
 
     assert rows["COND"]["decision"] == "شراء مشروط"
     assert rows["COND"]["elite_opportunity"] is False
+    assert enriched.market_summary["public_elite_labels_enabled"] is False
+    assert enriched.market_summary["aggressive_profile_enabled"] is False
     assert enriched.market_summary["opportunity_tiers"] == {
-        "elite": 2,
-        "elite_balanced": 1,
-        "elite_aggressive": 1,
-        "conditional_buy": 1,
+        "conditional_buy_high_quality": 1,
+        "conditional_buy": 2,
         "watch": 0,
     }
