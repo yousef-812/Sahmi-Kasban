@@ -62,34 +62,31 @@ async def _compute_one(
     ticker: str,
 ) -> ReplayTickerComputation:
     provider = get_market_data_provider()
-    last_error: Exception | None = None
-    for attempt in range(2):
-        try:
-            series = await provider.get_history(ticker, period="5y", interval="1d")
-            computation = await asyncio.to_thread(
-                compute_replay_rows,
-                ticker_task_id=ticker_task_id,
-                ticker=ticker,
-                series=series,
-                engine_version=plan.engine_version,
-                start_date=plan.start_date,
-                end_date=plan.end_date,
-                horizon_sessions=plan.horizon_sessions,
-                min_train_size=plan.min_train_size,
-                neutral_band_pct=plan.neutral_band_pct,
-            )
-            return _with_evaluation_scope(computation)
-        except Exception as exc:
-            last_error = exc
-            if attempt == 0:
-                await asyncio.sleep(1.0)
-    assert last_error is not None
-    logger.warning("Historical replay failed for %s: %s", ticker, last_error)
-    return failed_ticker_computation(
-        ticker_task_id=ticker_task_id,
-        ticker=ticker,
-        exc=last_error,
-    )
+    try:
+        # The shared provider performs one bounded retry per source before moving
+        # to the fallback. Avoid an outer replay retry that would multiply load
+        # across five concurrent stocks.
+        series = await provider.get_history(ticker, period="5y", interval="1d")
+        computation = await asyncio.to_thread(
+            compute_replay_rows,
+            ticker_task_id=ticker_task_id,
+            ticker=ticker,
+            series=series,
+            engine_version=plan.engine_version,
+            start_date=plan.start_date,
+            end_date=plan.end_date,
+            horizon_sessions=plan.horizon_sessions,
+            min_train_size=plan.min_train_size,
+            neutral_band_pct=plan.neutral_band_pct,
+        )
+        return _with_evaluation_scope(computation)
+    except Exception as exc:
+        logger.warning("Historical replay failed for %s: %s", ticker, exc)
+        return failed_ticker_computation(
+            ticker_task_id=ticker_task_id,
+            ticker=ticker,
+            exc=exc,
+        )
 
 
 async def process_next_historical_replay_batch() -> bool:
