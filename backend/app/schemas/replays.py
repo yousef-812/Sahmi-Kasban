@@ -6,6 +6,18 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 
+def _validate_window(start_date: date, end_date: date) -> None:
+    today = date.today()
+    if end_date < start_date:
+        raise ValueError("تاريخ النهاية يجب أن يكون بعد تاريخ البداية")
+    if (end_date - start_date).days > 30:
+        raise ValueError("الحد الأقصى لكل اختبار هو 31 يومًا")
+    if end_date > today:
+        raise ValueError("لا يمكن اختبار أيام مستقبلية")
+    if start_date < today - timedelta(days=365 * 5 + 2):
+        raise ValueError("الاختبار متاح لآخر خمس سنوات فقط")
+
+
 class HistoricalReplayCreateRequest(BaseModel):
     request_key: str = Field(min_length=12, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
     start_date: date
@@ -16,15 +28,39 @@ class HistoricalReplayCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_range(self) -> HistoricalReplayCreateRequest:
-        today = date.today()
-        if self.end_date < self.start_date:
-            raise ValueError("تاريخ النهاية يجب أن يكون بعد تاريخ البداية")
-        if (self.end_date - self.start_date).days > 30:
-            raise ValueError("الحد الأقصى لكل اختبار هو 31 يومًا")
-        if self.end_date > today:
-            raise ValueError("لا يمكن اختبار أيام مستقبلية")
-        if self.start_date < today - timedelta(days=365 * 5 + 2):
-            raise ValueError("الاختبار متاح لآخر خمس سنوات فقط")
+        _validate_window(self.start_date, self.end_date)
+        return self
+
+
+class HistoricalReplayWindowRequest(BaseModel):
+    start_date: date
+    end_date: date
+
+    @model_validator(mode="after")
+    def validate_range(self) -> HistoricalReplayWindowRequest:
+        _validate_window(self.start_date, self.end_date)
+        return self
+
+
+class HistoricalReplayBatchCreateRequest(BaseModel):
+    request_key_prefix: str = Field(
+        min_length=8,
+        max_length=48,
+        pattern=r"^[A-Za-z0-9_-]+$",
+    )
+    windows: list[HistoricalReplayWindowRequest] = Field(min_length=2, max_length=12)
+    horizon_sessions: int = Field(default=5, ge=1, le=20)
+    min_train_size: int = Field(default=200, ge=60, le=1000)
+    neutral_band_pct: float = Field(default=1.0, ge=0, le=10)
+
+    @model_validator(mode="after")
+    def validate_unique_windows(self) -> HistoricalReplayBatchCreateRequest:
+        identities = {
+            (window.start_date, window.end_date)
+            for window in self.windows
+        }
+        if len(identities) != len(self.windows):
+            raise ValueError("لا يمكن تكرار نفس الفترة داخل الدفعة")
         return self
 
 
@@ -74,6 +110,13 @@ class HistoricalReplayJobResponse(BaseModel):
     download_ready: bool
     created_at: datetime
     tickers: list[HistoricalReplayTickerResponse] = Field(default_factory=list)
+
+
+class HistoricalReplayBatchCreateResponse(BaseModel):
+    items: list[HistoricalReplayJobResponse]
+    total: int = Field(ge=0)
+    shared_history_cache: bool = True
+    execution_order: str = "sequential_windows_shared_ticker_cache"
 
 
 class HistoricalReplayJobListResponse(BaseModel):
