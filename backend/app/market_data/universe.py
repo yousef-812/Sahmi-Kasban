@@ -36,9 +36,7 @@ def _replay_failure_quarantine(
     failure_count = func.sum(
         case(
             (
-                (
-                    AnalysisReplayTicker.status == "failed"
-                )
+                (AnalysisReplayTicker.status == "failed")
                 & AnalysisReplayTicker.error_code.in_(_PROVIDER_FAILURE_CODES),
                 1,
             ),
@@ -82,3 +80,30 @@ def tradable_market_universe(
         incompatible_symbol_count=len(active) - len(compatible),
         replay_failure_quarantine_count=len(set(compatible).intersection(quarantined)),
     )
+
+
+def apply_market_health_quarantine(
+    db: Session,
+    *,
+    min_failures: int = DEFAULT_FAILURE_QUARANTINE_THRESHOLD,
+) -> TradableUniverse:
+    """Deactivate symbols proven unusable without reacting to one transient failure.
+
+    Scanner refreshes may reactivate symbols because they are still listed. The replay
+    worker calls this immediately after a refresh, so only ISIN-like aliases or symbols
+    with at least three provider failures and no evaluated replay are removed.
+    """
+
+    universe = tradable_market_universe(db, min_failures=min_failures)
+    allowed = set(universe.tickers)
+    active_rows = db.scalars(
+        select(MarketInstrumentCatalog).where(MarketInstrumentCatalog.active.is_(True))
+    ).all()
+    changed = False
+    for row in active_rows:
+        if row.ticker not in allowed:
+            row.active = False
+            changed = True
+    if changed:
+        db.commit()
+    return universe
