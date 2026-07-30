@@ -17,6 +17,9 @@ from app.market_data.types import CandleSeries, MarketDataProvider, MarketDataUn
 
 logger = logging.getLogger(__name__)
 
+_PROVIDER_RETRY_ATTEMPTS = 2
+_PROVIDER_RETRY_BACKOFF_SECONDS = 0.4
+
 
 def _fingerprint_candles(candles: list[dict[str, object]]) -> str:
     canonical = json.dumps(
@@ -135,10 +138,22 @@ class YFinanceMarketDataProvider:
 
 
 class FallbackMarketDataProvider:
-    def __init__(self, providers: tuple[MarketDataProvider, ...]) -> None:
+    def __init__(
+        self,
+        providers: tuple[MarketDataProvider, ...],
+        *,
+        retry_attempts: int = _PROVIDER_RETRY_ATTEMPTS,
+        retry_backoff_seconds: float = _PROVIDER_RETRY_BACKOFF_SECONDS,
+    ) -> None:
         if not providers:
             raise ValueError("At least one market-data provider is required")
+        if retry_attempts < 1:
+            raise ValueError("retry_attempts must be at least one")
+        if retry_backoff_seconds < 0:
+            raise ValueError("retry_backoff_seconds cannot be negative")
         self.providers = providers
+        self.retry_attempts = retry_attempts
+        self.retry_backoff_seconds = retry_backoff_seconds
         self.name = "+".join(provider.name for provider in providers)
 
     async def get_history(
@@ -150,15 +165,28 @@ class FallbackMarketDataProvider:
     ) -> CandleSeries:
         failures: list[str] = []
         for provider in self.providers:
-            try:
-                return await provider.get_history(
-                    ticker,
-                    period=period,
-                    interval=interval,
-                )
-            except MarketDataUnavailableError as exc:
-                failures.append(f"{provider.name}: {exc}")
-                logger.warning("Market data provider failed: %s", exc)
+            last_failure: MarketDataUnavailableError | None = None
+            for attempt in range(1, self.retry_attempts + 1):
+                try:
+                    return await provider.get_history(
+                        ticker,
+                        period=period,
+                        interval=interval,
+                    )
+                except MarketDataUnavailableError as exc:
+                    last_failure = exc
+                    logger.warning(
+                        "Market data provider %s failed for %s on attempt %s/%s: %s",
+                        provider.name,
+                        ticker,
+                        attempt,
+                        self.retry_attempts,
+                        exc,
+                    )
+                    if attempt < self.retry_attempts:
+                        await asyncio.sleep(self.retry_backoff_seconds * attempt)
+            if last_failure is not None:
+                failures.append(f"{provider.name}: {last_failure}")
         raise MarketDataUnavailableError(
             " | ".join(failures) or "No provider returned data"
         )
