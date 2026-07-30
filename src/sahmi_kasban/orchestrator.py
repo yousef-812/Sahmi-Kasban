@@ -129,7 +129,6 @@ class SahmiKasbanAnalyzer:
             }
         )
         opportunity_quality = OpportunityQualityEngine(self.config).analyze(prepared, context)
-        results[opportunity_quality.name] = opportunity_quality
 
         analysis_quality = diagnostics.to_dict()
         analysis_quality.update(
