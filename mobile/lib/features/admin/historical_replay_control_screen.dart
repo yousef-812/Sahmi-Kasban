@@ -105,9 +105,7 @@ class _HistoricalReplayControlScreenState
       firstDate: start
           ? today.subtract(const Duration(days: 365 * 5))
           : _startDate,
-      lastDate: start
-          ? today
-          : (latestEnd.isBefore(today) ? latestEnd : today),
+      lastDate: start ? today : (latestEnd.isBefore(today) ? latestEnd : today),
       helpText: start ? 'اختر تاريخ البداية' : 'اختر تاريخ النهاية',
     );
     if (picked == null) return;
@@ -234,13 +232,11 @@ class _HistoricalReplayControlScreenState
           await repository.cancelHistoricalReplay(job.id);
       }
       if (mounted) {
-        _message(
-          switch (action) {
-            'pause' => 'تم طلب الإيقاف بعد الدفعة الحالية.',
-            'resume' => 'تم استكمال الاختبار.',
-            _ => 'تم إلغاء الاختبار.',
-          },
-        );
+        _message(switch (action) {
+          'pause' => 'تم طلب الإيقاف بعد الدفعة الحالية.',
+          'resume' => 'تم استكمال الاختبار.',
+          _ => 'تم إلغاء الاختبار.',
+        });
       }
       await _load(silent: true);
     } on Object catch (error) {
