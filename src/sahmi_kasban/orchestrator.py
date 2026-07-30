@@ -175,6 +175,10 @@ class SahmiKasbanAnalyzer:
                 "risk_level": risk_level,
                 "total_risk_pct": risk_result.details.get("total_risk_pct", 0),
                 "zero_volume_ratio": qualification.details.get("zero_volume_ratio", 1),
+                "average_turnover_egp": qualification.details.get(
+                    "average_turnover_egp_20",
+                    0,
+                ),
             }
         )
         opportunity_quality = OpportunityQualityEngine(self.config).analyze(prepared, context)
@@ -182,17 +186,27 @@ class SahmiKasbanAnalyzer:
         analysis_quality = diagnostics.to_dict()
         analysis_quality.update(
             {
-                "engine_version": "core-v2.2",
+                "engine_version": "core-v2.3",
                 "elite_assessment": dict(opportunity_quality.details),
             }
         )
         if signal == "BUY" and final_score >= 80 and not bool(
             opportunity_quality.details.get("engine_ready")
         ):
-            failed_checks = opportunity_quality.details.get("failed_checks", [])
+            balanced_failed = opportunity_quality.details.get(
+                "balanced_failed_checks",
+                [],
+            )
+            aggressive_failed = opportunity_quality.details.get(
+                "aggressive_failed_checks",
+                [],
+            )
             warnings.append(
-                "High score was not promoted to elite because quality gates failed: "
-                + ", ".join(str(item) for item in failed_checks)
+                "High score was not promoted to elite because both Core v2.3 "
+                "profiles failed. Balanced: "
+                + ", ".join(str(item) for item in balanced_failed)
+                + "; aggressive: "
+                + ", ".join(str(item) for item in aggressive_failed)
             )
 
         return AnalysisReport(
