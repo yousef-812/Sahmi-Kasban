@@ -10,6 +10,8 @@ from fastapi.responses import Response
 from app.api.dependencies import CurrentAdmin, DatabaseSession
 from app.models import AnalysisReplayJob, AnalysisReplayTicker
 from app.schemas.replays import (
+    HistoricalReplayBatchCreateRequest,
+    HistoricalReplayBatchCreateResponse,
     HistoricalReplayCreateRequest,
     HistoricalReplayJobListResponse,
     HistoricalReplayJobResponse,
@@ -158,6 +160,44 @@ def create_replay_job(
             detail=str(exc),
         ) from exc
     return _job_response(job)
+
+
+@router.post(
+    "/batches",
+    response_model=HistoricalReplayBatchCreateResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def create_replay_batch(
+    payload: HistoricalReplayBatchCreateRequest,
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+) -> HistoricalReplayBatchCreateResponse:
+    """Queue independent windows that reuse the worker's persisted history cache."""
+
+    jobs: list[AnalysisReplayJob] = []
+    try:
+        for index, window in enumerate(payload.windows, start=1):
+            request_key = f"{payload.request_key_prefix}-{index:02d}"
+            job, _idempotent = create_historical_replay_job(
+                db,
+                actor_user_id=admin.id,
+                request_key=request_key,
+                start_date=window.start_date,
+                end_date=window.end_date,
+                horizon_sessions=payload.horizon_sessions,
+                min_train_size=payload.min_train_size,
+                neutral_band_pct=payload.neutral_band_pct,
+            )
+            jobs.append(job)
+    except HistoricalReplayConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    return HistoricalReplayBatchCreateResponse(
+        items=[_job_response(job) for job in jobs],
+        total=len(jobs),
+    )
 
 
 @router.get("/jobs", response_model=HistoricalReplayJobListResponse)
