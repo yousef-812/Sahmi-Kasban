@@ -89,6 +89,13 @@ class Settings(BaseSettings):
     analysis_max_position_value: float = 40_000.0
     analysis_engine_version: str = "core-v2"
 
+    historical_replay_provider_concurrency: int = 5
+    historical_replay_cpu_concurrency: int = 2
+    historical_replay_cache_hours: int = 24
+    historical_replay_prepared_cache_entries: int = 320
+    historical_replay_active_poll_seconds: float = 0.5
+    historical_replay_idle_poll_seconds: float = 5.0
+
     egx_holidays: str = ""
     daily_scan_hour: int = 17
     daily_scan_minute: int = 0
@@ -201,6 +208,20 @@ class Settings(BaseSettings):
             )
         if self.analysis_max_position_value <= 0:
             raise ValueError("ANALYSIS_MAX_POSITION_VALUE must be positive")
+        if not 1 <= self.historical_replay_provider_concurrency <= 10:
+            raise ValueError("HISTORICAL_REPLAY_PROVIDER_CONCURRENCY must be 1..10")
+        if not 1 <= self.historical_replay_cpu_concurrency <= 8:
+            raise ValueError("HISTORICAL_REPLAY_CPU_CONCURRENCY must be 1..8")
+        if not 1 <= self.historical_replay_cache_hours <= 168:
+            raise ValueError("HISTORICAL_REPLAY_CACHE_HOURS must be 1..168")
+        if not 16 <= self.historical_replay_prepared_cache_entries <= 1_000:
+            raise ValueError(
+                "HISTORICAL_REPLAY_PREPARED_CACHE_ENTRIES must be 16..1000"
+            )
+        if not 0.1 <= self.historical_replay_active_poll_seconds <= 30:
+            raise ValueError("HISTORICAL_REPLAY_ACTIVE_POLL_SECONDS must be 0.1..30")
+        if not 1 <= self.historical_replay_idle_poll_seconds <= 300:
+            raise ValueError("HISTORICAL_REPLAY_IDLE_POLL_SECONDS must be 1..300")
         if not 0 <= self.daily_scan_hour <= 23:
             raise ValueError("DAILY_SCAN_HOUR must be between 0 and 23")
         if not 0 <= self.daily_scan_minute <= 59:
