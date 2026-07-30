@@ -20,8 +20,8 @@ class AnalysisConfig:
     atr_max_pct: float = 8.0
     min_qualification_score: float = 50.0
     stop_atr_multiple: float = 2.0
-    target_1_r: float = 2.0
-    target_2_r: float = 3.5
+    target_1_r: float = 1.0
+    target_2_r: float = 1.75
 
     def __post_init__(self) -> None:
         if self.capital <= 0:
@@ -36,6 +36,8 @@ class AnalysisConfig:
             raise ValueError("min_average_turnover_egp cannot be negative")
         if self.atr_min_pct < 0 or self.atr_max_pct <= self.atr_min_pct:
             raise ValueError("invalid ATR range")
+        if self.target_1_r <= 0 or self.target_2_r <= self.target_1_r:
+            raise ValueError("reward targets must be positive and increasing")
 
 
 @dataclass(slots=True)
