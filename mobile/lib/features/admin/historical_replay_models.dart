@@ -113,8 +113,8 @@ class HistoricalReplayJob {
       progressPct: (json['progress_pct'] as num?)?.toDouble() ?? 0,
       throughputTickersPerMinute:
           (json['throughput_tickers_per_minute'] as num?)?.toDouble(),
-      estimatedSecondsRemaining:
-          (json['estimated_seconds_remaining'] as num?)?.toInt(),
+      estimatedSecondsRemaining: (json['estimated_seconds_remaining'] as num?)
+          ?.toInt(),
       downloadReady: json['download_ready'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       startedAt: _optionalDateTime(json['started_at']),
