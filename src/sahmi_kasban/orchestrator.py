@@ -21,22 +21,72 @@ from sahmi_kasban.models import AnalysisConfig, AnalysisReport, EngineResult, Tr
 from sahmi_kasban.scoring import calculate_score_diagnostics, score_to_signal
 
 
+_REQUIRED_PREPARED_COLUMNS = frozenset(
+    {
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "sma_20",
+        "sma_50",
+        "sma_200",
+        "macd",
+        "macd_signal",
+        "rsi",
+        "atr",
+        "avg_volume_20",
+        "return_1d",
+        "return_20d",
+        "volatility_20d",
+    }
+)
+
+
 class SahmiKasbanAnalyzer:
     """Run the core analysis engines in a deterministic pipeline."""
 
     def __init__(self, config: AnalysisConfig | None = None):
         self.config = config or AnalysisConfig()
 
+    @staticmethod
+    def _symbol(ticker: str) -> str:
+        symbol = ticker.strip().upper()
+        if not symbol:
+            raise ValueError("ticker cannot be empty")
+        return symbol
+
     def analyze(
         self,
         ticker: str,
         candles: pd.DataFrame | Iterable[Mapping[str, Any]],
     ) -> AnalysisReport:
-        symbol = ticker.strip().upper()
-        if not symbol:
-            raise ValueError("ticker cannot be empty")
+        """Prepare raw candles and run the full analysis pipeline."""
 
+        symbol = self._symbol(ticker)
         prepared = enrich_indicators(prepare_candles(candles))
+        return self._analyze_enriched(symbol, prepared)
+
+    def analyze_prepared(self, ticker: str, candles: pd.DataFrame) -> AnalysisReport:
+        """Analyze a causal indicator frame that was prepared once by a replay.
+
+        Replay callers pass strict prefixes of a frame produced by
+        ``enrich_indicators``. Every indicator is trailing-only, so this is
+        equivalent to enriching each prefix separately without repeating the
+        rolling calculations thousands of times.
+        """
+
+        symbol = self._symbol(ticker)
+        if candles.empty:
+            raise ValueError("no valid candles")
+        missing = sorted(_REQUIRED_PREPARED_COLUMNS.difference(candles.columns))
+        if missing:
+            raise ValueError(
+                "prepared candles are missing indicator columns: " + ", ".join(missing)
+            )
+        return self._analyze_enriched(symbol, candles)
+
+    def _analyze_enriched(self, symbol: str, prepared: pd.DataFrame) -> AnalysisReport:
         context: dict[str, object] = {"ticker": symbol}
         results: dict[str, EngineResult] = {}
         warnings: list[str] = []
