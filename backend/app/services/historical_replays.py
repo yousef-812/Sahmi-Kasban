@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import csv
 import hashlib
-import io
 import json
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from threading import Lock
 from typing import Any
 from uuid import UUID
 
 import pandas as pd
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,10 +25,13 @@ from app.models import (
     MarketInstrumentCatalog,
 )
 from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.indicators import prepare_candles
+from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 
 REPLAY_PARALLELISM = 5
 REPLAY_MAX_RANGE_DAYS = 31
+
+_PREPARED_HISTORY_CACHE: OrderedDict[str, pd.DataFrame] = OrderedDict()
+_PREPARED_HISTORY_CACHE_LOCK = Lock()
 
 
 class HistoricalReplayError(RuntimeError):
@@ -40,6 +43,10 @@ class HistoricalReplayConflictError(HistoricalReplayError):
 
 
 class HistoricalReplayNotFoundError(HistoricalReplayError):
+    pass
+
+
+class HistoricalReplayControlError(HistoricalReplayError):
     pass
 
 
@@ -71,10 +78,6 @@ def _bp(value: float) -> int:
     return int(round(float(value) * 100.0))
 
 
-def _pct(value: int | None) -> float | None:
-    return None if value is None else round(value / 100.0, 2)
-
-
 def _signature(
     *,
     actor_user_id: UUID,
@@ -95,6 +98,15 @@ def _signature(
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def replay_control_state(job: AnalysisReplayJob) -> str:
+    details = dict(job.details or {})
+    if bool(details.get("cancelled")):
+        return "cancelled"
+    if bool(details.get("paused")):
+        return "paused"
+    return job.status
 
 
 def create_historical_replay_job(
@@ -155,6 +167,10 @@ def create_historical_replay_job(
             "request_signature": signature,
             "history_visibility": "strictly_before_analysis_date",
             "provider_period": "5y",
+            "execution_mode": "isolated_process_group_v1",
+            "prepared_indicators": "once_per_ticker_fingerprint",
+            "paused": False,
+            "cancelled": False,
         },
     )
     db.add(job)
@@ -234,13 +250,103 @@ def list_historical_replay_tickers(
     )
 
 
-async def prepare_next_replay_batch(db: Session) -> ReplayBatchPlan | None:
-    job = db.scalar(
-        select(AnalysisReplayJob)
-        .where(AnalysisReplayJob.status.in_(("pending", "running")))
-        .order_by(AnalysisReplayJob.created_at.asc())
-        .limit(1)
+def pause_historical_replay_job(
+    db: Session,
+    *,
+    job_id: UUID,
+    actor_user_id: UUID,
+) -> AnalysisReplayJob:
+    job = get_historical_replay_job(db, job_id=job_id, actor_user_id=actor_user_id)
+    if job.status not in {"pending", "running"}:
+        raise HistoricalReplayControlError("لا يمكن إيقاف اختبار انتهى بالفعل")
+    details = dict(job.details or {})
+    details["paused"] = True
+    details["paused_at"] = datetime.now(UTC).isoformat()
+    job.details = details
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def resume_historical_replay_job(
+    db: Session,
+    *,
+    job_id: UUID,
+    actor_user_id: UUID,
+) -> AnalysisReplayJob:
+    job = get_historical_replay_job(db, job_id=job_id, actor_user_id=actor_user_id)
+    details = dict(job.details or {})
+    if bool(details.get("cancelled")) or job.status not in {"pending", "running"}:
+        raise HistoricalReplayControlError("لا يمكن استكمال اختبار منتهي أو ملغي")
+    details["paused"] = False
+    details["resumed_at"] = datetime.now(UTC).isoformat()
+    job.details = details
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def cancel_historical_replay_job(
+    db: Session,
+    *,
+    job_id: UUID,
+    actor_user_id: UUID,
+) -> AnalysisReplayJob:
+    job = get_historical_replay_job(db, job_id=job_id, actor_user_id=actor_user_id)
+    if job.status not in {"pending", "running"}:
+        raise HistoricalReplayControlError("الاختبار منتهٍ بالفعل")
+    now = datetime.now(UTC)
+    details = dict(job.details or {})
+    details.update(
+        {
+            "paused": False,
+            "cancelled": True,
+            "cancelled_at": now.isoformat(),
+        }
     )
+    job.details = details
+    job.status = "failed"
+    job.completed_at = now
+    job.heartbeat_at = now
+    job.error_message = "أُلغي الاختبار بواسطة المسؤول"
+    db.execute(
+        update(AnalysisReplayTicker)
+        .where(
+            AnalysisReplayTicker.job_id == job.id,
+            AnalysisReplayTicker.status.in_(("pending", "running")),
+        )
+        .values(
+            status="failed",
+            completed_at=now,
+            error_code="cancelled_by_admin",
+            error_message="أُلغي الاختبار بواسطة المسؤول",
+        )
+    )
+    _refresh_job_totals(db, job)
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def _next_runnable_job(db: Session) -> AnalysisReplayJob | None:
+    candidates = list(
+        db.scalars(
+            select(AnalysisReplayJob)
+            .where(AnalysisReplayJob.status.in_(("pending", "running")))
+            .order_by(AnalysisReplayJob.created_at.asc())
+            .limit(50)
+        ).all()
+    )
+    for job in candidates:
+        details = dict(job.details or {})
+        if bool(details.get("cancelled")) or bool(details.get("paused")):
+            continue
+        return job
+    return None
+
+
+async def prepare_next_replay_batch(db: Session) -> ReplayBatchPlan | None:
+    job = _next_runnable_job(db)
     if job is None:
         return None
 
@@ -267,8 +373,8 @@ async def prepare_next_replay_batch(db: Session) -> ReplayBatchPlan | None:
                 .order_by(MarketInstrumentCatalog.ticker.asc())
             ).all()
         )
-        for ticker in tickers:
-            db.add(
+        db.add_all(
+            [
                 AnalysisReplayTicker(
                     job_id=job.id,
                     ticker=ticker,
@@ -279,7 +385,9 @@ async def prepare_next_replay_batch(db: Session) -> ReplayBatchPlan | None:
                     pending_rows=0,
                     failed_rows=0,
                 )
-            )
+                for ticker in tickers
+            ]
+        )
         job.total_tickers = len(tickers)
         db.flush()
 
@@ -331,6 +439,35 @@ async def prepare_next_replay_batch(db: Session) -> ReplayBatchPlan | None:
     )
 
 
+def _prepared_history(series: CandleSeries) -> pd.DataFrame:
+    settings = get_settings()
+    cache_key = f"{series.ticker}:{series.fingerprint}"
+    with _PREPARED_HISTORY_CACHE_LOCK:
+        cached = _PREPARED_HISTORY_CACHE.get(cache_key)
+        if cached is not None:
+            _PREPARED_HISTORY_CACHE.move_to_end(cache_key)
+            return cached
+
+    prepared = enrich_indicators(prepare_candles(pd.DataFrame(series.candles)))
+    if "timestamp" not in prepared.columns:
+        raise ValueError("Market history is missing timestamps")
+
+    with _PREPARED_HISTORY_CACHE_LOCK:
+        existing = _PREPARED_HISTORY_CACHE.get(cache_key)
+        if existing is not None:
+            _PREPARED_HISTORY_CACHE.move_to_end(cache_key)
+            return existing
+        _PREPARED_HISTORY_CACHE[cache_key] = prepared
+        while len(_PREPARED_HISTORY_CACHE) > settings.historical_replay_prepared_cache_entries:
+            _PREPARED_HISTORY_CACHE.popitem(last=False)
+    return prepared
+
+
+def clear_prepared_history_cache() -> None:
+    with _PREPARED_HISTORY_CACHE_LOCK:
+        _PREPARED_HISTORY_CACHE.clear()
+
+
 def compute_replay_rows(
     *,
     ticker_task_id: UUID,
@@ -352,10 +489,7 @@ def compute_replay_rows(
             min_history=min_train_size,
         )
     )
-    frame = prepare_candles(pd.DataFrame(series.candles))
-    if "timestamp" not in frame.columns:
-        raise ValueError("Market history is missing timestamps")
-
+    frame = _prepared_history(series)
     session_dates = frame["timestamp"].dt.date
     target_indexes = [
         index
@@ -365,7 +499,7 @@ def compute_replay_rows(
     rows: list[dict[str, Any]] = []
     for cutoff in target_indexes:
         analysis_date = session_dates.iloc[cutoff]
-        history = frame.iloc[:cutoff].copy()
+        history = frame.iloc[:cutoff]
         if len(history) < min_train_size:
             rows.append(
                 {
@@ -389,7 +523,7 @@ def compute_replay_rows(
         data_as_of_value = history.iloc[-1]["timestamp"]
         data_as_of = data_as_of_value.to_pydatetime()
         try:
-            report = analyzer.analyze(ticker, history)
+            report = analyzer.analyze_prepared(ticker, history)
         except Exception as exc:
             rows.append(
                 {
@@ -501,6 +635,22 @@ def persist_replay_batch(
     if job is None:
         raise HistoricalReplayNotFoundError("Historical replay job disappeared")
 
+    if bool((job.details or {}).get("cancelled")):
+        now = datetime.now(UTC)
+        for computation in computations:
+            task = db.get(AnalysisReplayTicker, computation.ticker_task_id)
+            if task is None or task.job_id != job_id:
+                continue
+            task.status = "failed"
+            task.completed_at = now
+            task.error_code = "cancelled_by_admin"
+            task.error_message = "أُلغي الاختبار بواسطة المسؤول"
+        _refresh_job_totals(db, job)
+        db.commit()
+        db.refresh(job)
+        return job
+
+    new_rows: list[AnalysisReplayRow] = []
     for computation in computations:
         task = db.get(AnalysisReplayTicker, computation.ticker_task_id)
         if task is None or task.job_id != job_id:
@@ -532,7 +682,7 @@ def persist_replay_batch(
             evaluated += int(status == "evaluated")
             pending += int(status == "pending_evaluation")
             failed += int(status == "failed")
-            db.add(
+            new_rows.append(
                 AnalysisReplayRow(
                     job_id=job_id,
                     ticker_task_id=task.id,
@@ -552,7 +702,13 @@ def persist_replay_batch(
         task.error_message = None
         task.completed_at = datetime.now(UTC)
 
+    if new_rows:
+        db.add_all(new_rows)
     job.heartbeat_at = datetime.now(UTC)
+    details = dict(job.details or {})
+    details["last_batch_size"] = len(computations)
+    details["last_batch_completed_at"] = job.heartbeat_at.isoformat()
+    job.details = details
     _refresh_job_totals(db, job)
     _finalize_job_if_done(db, job)
     db.commit()
@@ -588,6 +744,8 @@ def _refresh_job_totals(db: Session, job: AnalysisReplayJob) -> None:
 
 
 def _finalize_job_if_done(db: Session, job: AnalysisReplayJob) -> None:
+    if bool((job.details or {}).get("cancelled")):
+        return
     remaining = int(
         db.scalar(
             select(func.count())
@@ -619,95 +777,10 @@ def build_historical_replay_csv(
     *,
     job: AnalysisReplayJob,
 ) -> bytes:
-    rows = db.scalars(
-        select(AnalysisReplayRow)
-        .where(AnalysisReplayRow.job_id == job.id)
-        .order_by(
-            AnalysisReplayRow.analysis_date.asc(),
-            AnalysisReplayRow.ticker.asc(),
-        )
-    ).all()
-    output = io.StringIO(newline="")
-    writer = csv.writer(output)
-    writer.writerow(
-        [
-            "job_id",
-            "engine_version",
-            "ticker",
-            "analysis_date",
-            "status",
-            "provider",
-            "data_fingerprint",
-            "data_as_of",
-            "candle_count",
-            "signal",
-            "score",
-            "confidence",
-            "qualified",
-            "entry",
-            "evaluation_date",
-            "exit",
-            "forward_return_pct",
-            "max_upside_pct",
-            "max_drawdown_pct",
-            "correct",
-            "engines_json",
-            "trade_plan_json",
-            "warnings_json",
-            "analysis_quality_json",
-            "error_code",
-            "error_message",
-        ]
+    """Compatibility wrapper for callers that still import the old location."""
+
+    from app.services.historical_replay_exports import (
+        build_historical_replay_csv as build_export,
     )
-    for row in rows:
-        writer.writerow(
-            [
-                str(job.id),
-                row.engine_version,
-                row.ticker,
-                row.analysis_date.isoformat(),
-                row.status,
-                row.provider or "",
-                row.data_fingerprint or "",
-                row.data_as_of.isoformat() if row.data_as_of else "",
-                row.candle_count,
-                row.signal or "",
-                _pct(row.score_bp) if row.score_bp is not None else "",
-                _pct(row.confidence_bp) if row.confidence_bp is not None else "",
-                row.qualified if row.qualified is not None else "",
-                row.entry if row.entry is not None else "",
-                row.evaluation_date.isoformat() if row.evaluation_date else "",
-                row.exit if row.exit is not None else "",
-                (
-                    _pct(row.forward_return_bp)
-                    if row.forward_return_bp is not None
-                    else ""
-                ),
-                _pct(row.max_upside_bp) if row.max_upside_bp is not None else "",
-                (
-                    _pct(row.max_drawdown_bp)
-                    if row.max_drawdown_bp is not None
-                    else ""
-                ),
-                row.correct if row.correct is not None else "",
-                json.dumps(row.engines, ensure_ascii=False, separators=(",", ":")),
-                (
-                    json.dumps(
-                        row.trade_plan,
-                        ensure_ascii=False,
-                        separators=(",", ":"),
-                    )
-                    if row.trade_plan
-                    else ""
-                ),
-                json.dumps(row.warnings, ensure_ascii=False, separators=(",", ":")),
-                json.dumps(
-                    row.analysis_quality,
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                ),
-                row.error_code or "",
-                row.error_message or "",
-            ]
-        )
-    return ("\ufeff" + output.getvalue()).encode("utf-8")
+
+    return build_export(db, job=job)
