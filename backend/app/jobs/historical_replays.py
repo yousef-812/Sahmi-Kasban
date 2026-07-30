@@ -4,7 +4,9 @@ import asyncio
 import logging
 from typing import Any
 
+from app.core.config import get_settings
 from app.db.session import SessionLocal
+from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.provider import get_market_data_provider
 from app.services.historical_replays import (
     ReplayBatchPlan,
@@ -60,25 +62,40 @@ async def _compute_one(
     *,
     ticker_task_id,
     ticker: str,
+    provider_semaphore: asyncio.Semaphore,
+    cpu_semaphore: asyncio.Semaphore,
 ) -> ReplayTickerComputation:
     provider = get_market_data_provider()
+    settings = get_settings()
     try:
-        # The shared provider performs one bounded retry per source before moving
-        # to the fallback. Avoid an outer replay retry that would multiply load
-        # across five concurrent stocks.
-        series = await provider.get_history(ticker, period="5y", interval="1d")
-        computation = await asyncio.to_thread(
-            compute_replay_rows,
-            ticker_task_id=ticker_task_id,
-            ticker=ticker,
-            series=series,
-            engine_version=plan.engine_version,
-            start_date=plan.start_date,
-            end_date=plan.end_date,
-            horizon_sessions=plan.horizon_sessions,
-            min_train_size=plan.min_train_size,
-            neutral_band_pct=plan.neutral_band_pct,
-        )
+        # Network fetches can overlap, but CPU analysis is capped separately so a
+        # worker with two CPUs never launches five indicator/engine loops at once.
+        async with provider_semaphore:
+            with SessionLocal() as db:
+                series, _cached = await get_cached_or_fresh_history(
+                    db,
+                    provider,
+                    ticker,
+                    period="5y",
+                    interval="1d",
+                    cache_minutes=settings.historical_replay_cache_hours * 60,
+                    min_candles=plan.min_train_size,
+                )
+                db.commit()
+
+        async with cpu_semaphore:
+            computation = await asyncio.to_thread(
+                compute_replay_rows,
+                ticker_task_id=ticker_task_id,
+                ticker=ticker,
+                series=series,
+                engine_version=plan.engine_version,
+                start_date=plan.start_date,
+                end_date=plan.end_date,
+                horizon_sessions=plan.horizon_sessions,
+                min_train_size=plan.min_train_size,
+                neutral_band_pct=plan.neutral_band_pct,
+            )
         return _with_evaluation_scope(computation)
     except Exception as exc:
         logger.warning("Historical replay failed for %s: %s", ticker, exc)
@@ -96,11 +113,20 @@ async def process_next_historical_replay_batch() -> bool:
     if plan is None:
         return False
 
-    # The plan is capped at five ticker tasks. Provider requests and CPU analysis
-    # run concurrently, while persistence remains serialized for safe counters.
+    settings = get_settings()
+    provider_semaphore = asyncio.Semaphore(
+        settings.historical_replay_provider_concurrency
+    )
+    cpu_semaphore = asyncio.Semaphore(settings.historical_replay_cpu_concurrency)
     computations = await asyncio.gather(
         *(
-            _compute_one(plan, ticker_task_id=task_id, ticker=ticker)
+            _compute_one(
+                plan,
+                ticker_task_id=task_id,
+                ticker=ticker,
+                provider_semaphore=provider_semaphore,
+                cpu_semaphore=cpu_semaphore,
+            )
             for task_id, ticker in plan.tasks
         )
     )
@@ -115,8 +141,14 @@ async def process_next_historical_replay_batch() -> bool:
 
 
 async def run_historical_replay_scheduler() -> None:
-    """Resume account-bound replay jobs until every ticker is persisted."""
+    """Resume account-bound replay jobs on the isolated worker process group."""
 
+    settings = get_settings()
+    logger.info(
+        "Historical replay worker started provider_concurrency=%s cpu_concurrency=%s",
+        settings.historical_replay_provider_concurrency,
+        settings.historical_replay_cpu_concurrency,
+    )
     while True:
         try:
             worked = await process_next_historical_replay_batch()
@@ -125,4 +157,8 @@ async def run_historical_replay_scheduler() -> None:
         except Exception:
             logger.exception("Historical replay worker batch failed")
             worked = False
-        await asyncio.sleep(1.5 if worked else 8.0)
+        await asyncio.sleep(
+            settings.historical_replay_active_poll_seconds
+            if worked
+            else settings.historical_replay_idle_poll_seconds
+        )
