@@ -17,6 +17,7 @@ from app.models import MarketInstrumentCatalog
 logger = logging.getLogger(__name__)
 
 _TICKER_PATTERN = re.compile(r"^[A-Z0-9]{1,24}$")
+_SCANNER_MIN_AUTHORITATIVE_SYMBOLS = 100
 _refresh_lock = asyncio.Lock()
 _last_refresh_attempt_at: datetime | None = None
 
@@ -97,6 +98,77 @@ def _parse_scanner_rows(payload: object) -> list[MarketInstrumentCatalog]:
     return list(parsed.values())
 
 
+def _reconcile_scanner_rows(
+    db: Session,
+    rows: list[MarketInstrumentCatalog],
+    *,
+    authoritative: bool,
+) -> tuple[int, int]:
+    now = _utcnow()
+    seen = {row.ticker for row in rows}
+    existing_rows = {
+        item.ticker: item
+        for item in db.scalars(select(MarketInstrumentCatalog)).all()
+    }
+    for row in rows:
+        existing = existing_rows.get(row.ticker)
+        if existing is None:
+            db.add(row)
+            continue
+        existing.provider_symbol = row.provider_symbol
+        existing.exchange = row.exchange
+        existing.description = row.description
+        existing.source = row.source
+        existing.active = True
+        existing.last_seen_at = now
+
+    deactivated = 0
+    if authoritative:
+        for existing in existing_rows.values():
+            if (
+                existing.exchange == "EGX"
+                and existing.ticker not in seen
+                and existing.active
+            ):
+                existing.active = False
+                deactivated += 1
+    return len(rows), deactivated
+
+
+def _deactivate_unseen_legacy_seed_rows(db: Session) -> int:
+    scanner_count = int(
+        db.scalar(
+            select(func.count())
+            .select_from(MarketInstrumentCatalog)
+            .where(
+                MarketInstrumentCatalog.source == "tradingview_scanner",
+                MarketInstrumentCatalog.active.is_(True),
+            )
+        )
+        or 0
+    )
+    if scanner_count < _SCANNER_MIN_AUTHORITATIVE_SYMBOLS:
+        return 0
+
+    stale = list(
+        db.scalars(
+            select(MarketInstrumentCatalog).where(
+                MarketInstrumentCatalog.source == "legacy_seed",
+                MarketInstrumentCatalog.active.is_(True),
+            )
+        ).all()
+    )
+    for row in stale:
+        row.active = False
+    if stale:
+        db.commit()
+        logger.info(
+            "Deactivated %s legacy seed symbols after authoritative scanner coverage",
+            len(stale),
+        )
+    return len(stale)
+
+
 async def refresh_market_instrument_catalog(db: Session) -> int:
     settings = get_settings()
     payload = {
@@ -119,34 +191,19 @@ async def refresh_market_instrument_catalog(db: Session) -> int:
         response.raise_for_status()
         rows = _parse_scanner_rows(response.json())
 
-    if not rows:
-        raise RuntimeError("TradingView scanner returned no usable EGX stocks")
+    if len(rows) < _SCANNER_MIN_AUTHORITATIVE_SYMBOLS:
+        raise RuntimeError(
+            "TradingView scanner returned too few EGX stocks for authoritative reconciliation"
+        )
 
-    now = _utcnow()
-    seen = {row.ticker for row in rows}
-    existing_rows = {
-        item.ticker: item
-        for item in db.scalars(select(MarketInstrumentCatalog)).all()
-    }
-    for row in rows:
-        existing = existing_rows.get(row.ticker)
-        if existing is None:
-            db.add(row)
-            continue
-        existing.provider_symbol = row.provider_symbol
-        existing.exchange = row.exchange
-        existing.description = row.description
-        existing.source = row.source
-        existing.active = True
-        existing.last_seen_at = now
-
-    for existing in existing_rows.values():
-        if existing.source == "tradingview_scanner" and existing.ticker not in seen:
-            existing.active = False
-
+    count, deactivated = _reconcile_scanner_rows(db, rows, authoritative=True)
     db.commit()
-    logger.info("Refreshed %s EGX instruments from TradingView", len(rows))
-    return len(rows)
+    logger.info(
+        "Refreshed %s EGX instruments from TradingView and deactivated %s stale symbols",
+        count,
+        deactivated,
+    )
+    return count
 
 
 async def ensure_market_instrument_catalog(db: Session) -> str:
@@ -157,6 +214,7 @@ async def ensure_market_instrument_catalog(db: Session) -> str:
     if settings.app_env is Environment.TEST:
         return "legacy_seed_registry"
 
+    _deactivate_unseen_legacy_seed_rows(db)
     latest_seen = _as_utc(
         db.scalar(
             select(func.max(MarketInstrumentCatalog.last_seen_at)).where(
