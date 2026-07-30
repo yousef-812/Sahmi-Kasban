@@ -23,7 +23,7 @@ def _analysis(*, ready: bool, failed_checks: list[str] | None = None) -> dict:
     }
 
 
-def test_report_selection_keeps_legacy_elite_name_and_adds_v23_context(
+def test_report_selection_uses_production_safe_public_labels(
     db_session: Session,
 ) -> None:
     report = MarketReport(
@@ -43,7 +43,7 @@ def test_report_selection_keeps_legacy_elite_name_and_adds_v23_context(
         [
             MarketReportItem(
                 report_id=report.id,
-                ticker="ELITE",
+                ticker="READY",
                 rank=1,
                 score_bp=8400,
                 payload={
@@ -94,20 +94,20 @@ def test_report_selection_keeps_legacy_elite_name_and_adds_v23_context(
         .all()
     }
 
-    elite = rows["ELITE"].payload
-    assert elite["decision"] == "فرصة نخبوية"
-    assert elite["opportunity_tier"] == "elite"
-    assert elite["elite_profile"] == "legacy"
-    assert elite["elite_opportunity"] is True
-    assert elite["elite_score_threshold"] == ELITE_SCORE_THRESHOLD
-    assert elite["elite_quality_score"] == 100
-    assert elite["elite_gate_version"] == "elite-quality-v2.2"
-    assert elite["elite_failed_checks"] == []
-    assert elite["short_horizon"]["sessions"] == 5
-    assert elite["trade_plan_context"]["horizon"] == "five_sessions"
-    assert "التصنيف لا يضمن الربح" in elite["volatility_warning"]
-    assert "تفاصيل أصلية" in elite["explanation"]
-    assert elite["top_fraction_pct"] == 0.5
+    ready = rows["READY"].payload
+    assert ready["decision"] == "شراء مشروط بجودة أعلى"
+    assert ready["opportunity_tier"] == "conditional_buy_high_quality"
+    assert ready["elite_profile"] == "balanced_candidate"
+    assert ready["elite_opportunity"] is False
+    assert ready["elite_score_threshold"] == ELITE_SCORE_THRESHOLD
+    assert ready["elite_quality_score"] == 100
+    assert ready["elite_gate_version"] == "elite-quality-v2.2"
+    assert ready["elite_failed_checks"] == []
+    assert ready["short_horizon"]["sessions"] == 5
+    assert ready["trade_plan_context"]["horizon"] == "five_sessions"
+    assert "لا يضمن التفوق" in ready["volatility_warning"]
+    assert "تفاصيل أصلية" in ready["explanation"]
+    assert ready["top_fraction_pct"] == 0.5
 
     conditional = rows["OVEREXTENDED"].payload
     assert conditional["decision"] == "شراء مشروط"
@@ -121,14 +121,14 @@ def test_report_selection_keeps_legacy_elite_name_and_adds_v23_context(
 
     assert (
         enriched.market_summary["selection_model"]
-        == "cross-sectional-top10-v2.3-regime-two-profile"
+        == "cross-sectional-top10-v2.3-production-safe"
     )
     assert enriched.market_summary["opportunity_tiers"] == {
-        "elite": 1,
-        "elite_balanced": 0,
-        "elite_aggressive": 0,
+        "conditional_buy_high_quality": 1,
         "conditional_buy": 1,
         "watch": 1,
     }
-    assert "نصف حجم المركز" in enriched.market_summary["disclaimer"]
-    assert "قد لا يعرض التقرير" in enriched.market_summary["selection_notice"]
+    assert enriched.market_summary["public_elite_labels_enabled"] is False
+    assert enriched.market_summary["aggressive_profile_enabled"] is False
+    assert "ليس توصية" in enriched.market_summary["disclaimer"]
+    assert "متوقفة" in enriched.market_summary["selection_notice"]
