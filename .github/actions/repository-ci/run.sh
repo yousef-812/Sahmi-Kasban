@@ -73,7 +73,7 @@ if [[ "$RUN_MODE" == "lint" ]]; then
   run_check "Core compile" "core-compile.log" \
     python -m compileall -q src tests
   run_check "Core Ruff" "core-ruff.log" \
-    bash -lc 'python -m ruff check src tests --output-format concise || { echo "--- Ruff suggested import diff ---"; python -m ruff check src/sahmi_kasban/orchestrator.py --select I --fix --diff; exit 1; }'
+    python -m ruff check src tests --output-format concise
 
   run_check "Backend compile" "backend-compile.log" \
     python -m compileall -q \
