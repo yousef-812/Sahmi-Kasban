@@ -184,3 +184,46 @@ def test_replay_can_pause_resume_and_cancel_without_running_on_api(
     assert cancelled.json()["status"] == "failed"
     assert cancelled.json()["control_state"] == "cancelled"
     assert cancelled.json()["can_cancel"] is False
+
+
+def test_multi_window_batch_queues_sequential_jobs_with_shared_cache(
+    client: TestClient,
+    fake_email_service,
+    monkeypatch,
+) -> None:
+    headers = _register_admin(
+        client,
+        fake_email_service,
+        monkeypatch,
+        email="replay-batch-admin@example.com",
+    )
+    today = date.today()
+    response = client.post(
+        "/api/v1/admin/operations/historical-replays/batches",
+        headers=headers,
+        json={
+            "request_key_prefix": "core-v22-validation",
+            "windows": [
+                {
+                    "start_date": (today - timedelta(days=60)).isoformat(),
+                    "end_date": (today - timedelta(days=40)).isoformat(),
+                },
+                {
+                    "start_date": (today - timedelta(days=30)).isoformat(),
+                    "end_date": (today - timedelta(days=10)).isoformat(),
+                },
+            ],
+            "horizon_sessions": 5,
+        },
+    )
+
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["total"] == 2
+    assert payload["shared_history_cache"] is True
+    assert payload["execution_order"] == "sequential_windows_shared_ticker_cache"
+    assert [item["request_key"] for item in payload["items"]] == [
+        "core-v22-validation-01",
+        "core-v22-validation-02",
+    ]
+    assert all(item["worker_isolated"] is True for item in payload["items"])
