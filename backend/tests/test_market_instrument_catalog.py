@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.market_data.catalog import (
     _parse_scanner_rows,
+    _reconcile_scanner_rows,
     market_instrument_exists,
     search_market_instruments,
 )
@@ -37,6 +39,64 @@ def test_tradingview_scanner_rows_keep_only_egx_stocks() -> None:
     assert [row.ticker for row in rows] == ["COMI", "DSCW"]
     assert rows[0].provider_symbol == "EGX:COMI"
     assert rows[0].description == "Commercial International Bank"
+
+
+def test_authoritative_scanner_reconciliation_deactivates_stale_seed_symbols(
+    db_session: Session,
+) -> None:
+    now = datetime.now(UTC)
+    stale = MarketInstrumentCatalog(
+        ticker="OLDX",
+        provider_symbol="EGX:OLDX",
+        exchange="EGX",
+        description="Old inactive symbol",
+        source="legacy_seed",
+        active=True,
+        last_seen_at=now,
+    )
+    kept = MarketInstrumentCatalog(
+        ticker="KEEP",
+        provider_symbol="EGX:KEEP",
+        exchange="EGX",
+        description="Old description",
+        source="legacy_seed",
+        active=True,
+        last_seen_at=now,
+    )
+    db_session.add_all([stale, kept])
+    db_session.commit()
+
+    count, deactivated = _reconcile_scanner_rows(
+        db_session,
+        [
+            MarketInstrumentCatalog(
+                ticker="KEEP",
+                provider_symbol="EGX:KEEP",
+                exchange="EGX",
+                description="Current listed company",
+                source="tradingview_scanner",
+                active=True,
+                last_seen_at=now,
+            )
+        ],
+        authoritative=True,
+    )
+    db_session.commit()
+
+    rows = {
+        row.ticker: row
+        for row in db_session.scalars(
+            select(MarketInstrumentCatalog).where(
+                MarketInstrumentCatalog.ticker.in_(("OLDX", "KEEP"))
+            )
+        ).all()
+    }
+    assert count == 1
+    assert deactivated == 1
+    assert rows["OLDX"].active is False
+    assert rows["KEEP"].active is True
+    assert rows["KEEP"].source == "tradingview_scanner"
+    assert rows["KEEP"].description == "Current listed company"
 
 
 def test_dynamic_catalog_entries_are_searchable_and_analyzable(
