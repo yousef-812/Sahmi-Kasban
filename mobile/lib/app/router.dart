@@ -6,7 +6,7 @@ import '../core/observability/app_observability.dart';
 import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/admin/admin_wallet_credit_screen.dart';
-import '../features/admin/historical_replay_screen.dart';
+import '../features/admin/historical_replay_control_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
@@ -125,7 +125,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/historical-replays',
-        builder: (context, state) => const HistoricalReplayScreen(),
+        builder: (context, state) => const HistoricalReplayControlScreen(),
       ),
       GoRoute(
         path: '/community/new',
