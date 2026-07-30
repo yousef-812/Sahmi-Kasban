@@ -48,18 +48,41 @@ async def get_cached_or_fresh_history(
     *,
     force_refresh: bool = False,
     now: datetime | None = None,
+    period: str | None = None,
+    interval: str | None = None,
+    cache_minutes: int | None = None,
+    min_candles: int | None = None,
 ) -> tuple[CandleSeries, bool]:
+    """Return cached history or refresh it using an explicit replay-friendly identity.
+
+    Callers can override period, interval, TTL, and minimum history without creating
+    a second cache implementation. Historical replays use a long-lived 5-year
+    snapshot while interactive analysis keeps the shorter default TTL.
+    """
+
     settings = get_settings()
     current = now or datetime.now(UTC)
     normalized_ticker = normalize_egx_ticker(ticker)
+    requested_period = period or settings.market_data_period
+    requested_interval = interval or settings.market_data_interval
+    requested_cache_minutes = (
+        cache_minutes if cache_minutes is not None else settings.market_data_cache_minutes
+    )
+    requested_min_candles = (
+        min_candles if min_candles is not None else settings.market_data_min_candles
+    )
+    if requested_cache_minutes <= 0:
+        raise ValueError("cache_minutes must be positive")
+    if requested_min_candles < 1:
+        raise ValueError("min_candles must be positive")
 
     if not force_refresh:
         cached = db.scalar(
             select(MarketDataSnapshot)
             .where(
                 MarketDataSnapshot.ticker == normalized_ticker,
-                MarketDataSnapshot.interval == settings.market_data_interval,
-                MarketDataSnapshot.period == settings.market_data_period,
+                MarketDataSnapshot.interval == requested_interval,
+                MarketDataSnapshot.period == requested_period,
                 MarketDataSnapshot.expires_at > current,
             )
             .order_by(MarketDataSnapshot.fetched_at.desc())
@@ -70,16 +93,16 @@ async def get_cached_or_fresh_history(
 
     series = await provider.get_history(
         normalized_ticker,
-        period=settings.market_data_period,
-        interval=settings.market_data_interval,
+        period=requested_period,
+        interval=requested_interval,
     )
-    if series.candle_count < settings.market_data_min_candles:
+    if series.candle_count < requested_min_candles:
         raise MarketDataUnavailableError(
             f"Only {series.candle_count} candles were returned; "
-            f"at least {settings.market_data_min_candles} are required"
+            f"at least {requested_min_candles} are required"
         )
 
-    expires_at = current + timedelta(minutes=settings.market_data_cache_minutes)
+    expires_at = current + timedelta(minutes=requested_cache_minutes)
     snapshot = db.scalar(_snapshot_identity_query(series))
     if snapshot is None:
         snapshot = MarketDataSnapshot(
