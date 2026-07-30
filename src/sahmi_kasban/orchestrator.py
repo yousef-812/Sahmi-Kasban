@@ -8,6 +8,7 @@ import pandas as pd
 from sahmi_kasban.engines import (
     MarketEnvironmentEngine,
     MultiTimeframeEngine,
+    OpportunityQualityEngine,
     QuantitativeEngine,
     RiskEngine,
     ScenarioEngine,
@@ -113,6 +114,39 @@ class SahmiKasbanAnalyzer:
             signal = "WATCH"
             warnings.append("BUY downgraded because aggregate confidence is low")
 
+        context.update(
+            {
+                "signal": signal,
+                "qualified": qualified,
+                "final_score": final_score,
+                "aggregate_confidence": confidence,
+                "bullish_engine_count": len(diagnostics.bullish_engines),
+                "bearish_engine_count": len(diagnostics.bearish_engines),
+                "directional_conflict": diagnostics.conflict,
+                "risk_level": risk_level,
+                "total_risk_pct": risk_result.details.get("total_risk_pct", 0),
+                "zero_volume_ratio": qualification.details.get("zero_volume_ratio", 1),
+            }
+        )
+        opportunity_quality = OpportunityQualityEngine(self.config).analyze(prepared, context)
+        results[opportunity_quality.name] = opportunity_quality
+
+        analysis_quality = diagnostics.to_dict()
+        analysis_quality.update(
+            {
+                "engine_version": "core-v2.2",
+                "elite_assessment": dict(opportunity_quality.details),
+            }
+        )
+        if signal == "BUY" and final_score >= 80 and not bool(
+            opportunity_quality.details.get("engine_ready")
+        ):
+            failed_checks = opportunity_quality.details.get("failed_checks", [])
+            warnings.append(
+                "High score was not promoted to elite because quality gates failed: "
+                + ", ".join(str(item) for item in failed_checks)
+            )
+
         return AnalysisReport(
             ticker=symbol,
             signal=signal,
@@ -122,5 +156,5 @@ class SahmiKasbanAnalyzer:
             engines=results,
             trade_plan=trade_plan,
             warnings=warnings,
-            analysis_quality=diagnostics.to_dict(),
+            analysis_quality=analysis_quality,
         )
