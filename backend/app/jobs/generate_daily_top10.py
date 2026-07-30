@@ -5,14 +5,13 @@ import json
 import logging
 from datetime import UTC, datetime
 
-from sqlalchemy import select
-
 from app.db.session import SessionLocal
 from app.market_calendar import NonTradingSessionError, ScanNotDueError
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
-from app.models import MarketInstrumentCatalog, User
+from app.market_data.universe import tradable_market_universe
+from app.models import User
 from app.services.daily_reports import (
     DailyReportGenerationError,
     DailyScanAlreadyRunningError,
@@ -22,20 +21,22 @@ from app.services.notifications import create_notification
 from app.services.operations_settings import get_bool_setting
 from app.services.report_selection import enrich_daily_report_selection
 from app.services.stock_analysis import get_stock_ai_service
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
 
 async def _scan_universe(db) -> tuple[str, ...]:
     await ensure_market_instrument_catalog(db)
-    tickers = tuple(
-        db.scalars(
-            select(MarketInstrumentCatalog.ticker)
-            .where(MarketInstrumentCatalog.active.is_(True))
-            .order_by(MarketInstrumentCatalog.ticker)
-        ).all()
+    universe = tradable_market_universe(db)
+    logger.info(
+        "Daily universe health active=%s tradable=%s incompatible=%s quarantined=%s",
+        universe.active_catalog_count,
+        len(universe.tickers),
+        universe.incompatible_symbol_count,
+        universe.replay_failure_quarantine_count,
     )
-    return tickers or EGX_SEED_SYMBOLS
+    return universe.tickers or EGX_SEED_SYMBOLS
 
 
 def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int:
@@ -53,8 +54,8 @@ def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int
             user_id=user_id,
             title="تقرير أفضل الفرص اليومية جاهز",
             body=(
-                "تم ترتيب أفضل 10 فرص في البورصة المصرية مع تمييز الفرص "
-                "النخبوية وشراء الشروط والمخاطر."
+                "تم ترتيب أفضل 10 فرص مع تمييز النخبوية المتوازنة والهجومية "
+                "والشراء المشروط والمخاطر."
             ),
             category="market_report",
             data={
@@ -78,7 +79,7 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
                 moment=moment or datetime.now(UTC),
                 tickers=tickers,
             )
-            enrich_daily_report_selection(db, report_id=result.report.id)
+            enriched = enrich_daily_report_selection(db, report_id=result.report.id)
             notification_count = 0
             if result.created:
                 notification_count = _notify_report_ready(
@@ -113,7 +114,11 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
         ),
         "universe_size": len(tickers),
         "notifications_created": notification_count,
-        "selection_model": "cross-sectional-top10-v1",
+        "selection_model": enriched.market_summary.get(
+            "selection_model",
+            "cross-sectional-top10-v2.3-regime-two-profile",
+        ),
+        "selection_regime": enriched.market_summary.get("selection_regime"),
     }
     logger.info("Daily top-ten scan result: %s", payload)
     return payload
