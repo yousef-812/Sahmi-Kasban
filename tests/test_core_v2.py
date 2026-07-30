@@ -143,11 +143,13 @@ def _quality_context() -> dict[str, object]:
         "bearish_engine_count": 0,
         "directional_conflict": False,
         "market_regime": "bullish",
+        "market_regime_profile": "trend_bullish",
         "timeframe_alignment": "bullish",
         "atr_pct": 4.0,
         "total_risk_pct": 24.0,
         "risk_level": "low",
         "zero_volume_ratio": 0.0,
+        "average_turnover_egp": 10_000_000.0,
     }
 
 
@@ -157,8 +159,9 @@ def test_elite_quality_engine_keeps_name_for_robust_buy() -> None:
         _quality_context(),
     )
 
-    assert result.details["model_version"] == "elite-quality-v2.2"
+    assert result.details["model_version"] == "elite-quality-v2.3-regime-aware"
     assert result.details["engine_ready"] is True
+    assert result.details["selected_profile"] == "balanced"
     assert result.details["failed_checks"] == []
     assert result.score == 100
 

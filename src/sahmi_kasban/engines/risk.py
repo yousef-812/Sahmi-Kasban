@@ -6,6 +6,8 @@ from sahmi_kasban.engines.base import AnalysisEngine
 from sahmi_kasban.indicators import safe_float
 from sahmi_kasban.models import EngineResult, TradePlan
 
+SHORT_HORIZON_SESSIONS = 5
+
 
 class RiskEngine(AnalysisEngine):
     name = "risk"
@@ -18,6 +20,16 @@ class RiskEngine(AnalysisEngine):
         average_volume = safe_float(latest.get("avg_volume_20"))
         volume = safe_float(latest.get("volume"))
         volume_ratio = volume / average_volume if average_volume > 0 else 0.0
+        atr_pct = atr_value / price * 100.0 if price > 0 else 100.0
+
+        prior = candles.iloc[-21:-1] if len(candles) >= 21 else candles.iloc[:-1]
+        prior_high = safe_float(prior["high"].max()) if not prior.empty else price
+        breakout_pct = (price / prior_high - 1.0) * 100.0 if prior_high > 0 else 0.0
+        aggressive_breakout = (
+            0.5 <= breakout_pct <= 12.0
+            and volume_ratio >= 1.5
+            and atr_pct >= 3.0
+        )
 
         entry = price
         stop_loss = max(0.01, entry - atr_value * self.config.stop_atr_multiple)
@@ -27,12 +39,19 @@ class RiskEngine(AnalysisEngine):
         by_value = int(self.config.max_position_value / entry) if entry > 0 else 0
         position_size = max(0, min(by_risk, by_value))
         position_value = position_size * entry
-        target_1 = entry + risk_per_share * self.config.target_1_r
-        target_2 = entry + risk_per_share * self.config.target_2_r
+
+        target_1_r = self.config.target_1_r
+        target_2_r = self.config.target_2_r
+        plan_style = "balanced_5_session"
+        if aggressive_breakout:
+            target_1_r = max(target_1_r, 1.25)
+            target_2_r = max(target_2_r, 2.0)
+            plan_style = "aggressive_breakout_5_session"
+        target_1 = entry + risk_per_share * target_1_r
+        target_2 = entry + risk_per_share * target_2_r
 
         liquidity_risk = 35.0 if volume_ratio < 0.7 else 20.0 if volume_ratio < 1.0 else 10.0
         volatility_risk = min(60.0, volatility * 1000.0)
-        atr_pct = atr_value / price * 100.0 if price > 0 else 100.0
         atr_risk = min(40.0, atr_pct * 5.0)
         total_risk = min(
             100.0,
@@ -46,13 +65,14 @@ class RiskEngine(AnalysisEngine):
             target_1=round(target_1, 4),
             target_2=round(target_2, 4),
             risk_per_share=round(risk_per_share, 4),
-            reward_risk_1=round(self.config.target_1_r, 2),
-            reward_risk_2=round(self.config.target_2_r, 2),
+            reward_risk_1=round(target_1_r, 2),
+            reward_risk_2=round(target_2_r, 2),
             position_size=position_size,
             position_value=round(position_value, 2),
             risk_amount=round(min(position_size * risk_per_share, risk_amount), 2),
         )
         context["trade_plan"] = plan
+        context["trade_plan_style"] = plan_style
         context["risk_level"] = (
             "low" if total_risk < 35 else "medium" if total_risk < 60 else "high"
         )
@@ -67,10 +87,18 @@ class RiskEngine(AnalysisEngine):
             score=score,
             confidence=88.0,
             details={
+                "model_version": "risk-plan-v2.3-atr-5-session",
                 "risk_level": context["risk_level"],
                 "total_risk_pct": round(total_risk, 2),
                 "atr_pct": round(atr_pct, 2),
                 "volume_ratio": round(volume_ratio, 2),
+                "breakout_pct": round(breakout_pct, 2),
+                "plan_style": plan_style,
+                "horizon_sessions": SHORT_HORIZON_SESSIONS,
+                "target_model": "atr_reward_targets_for_5_sessions",
+                "recommended_position_multiplier": (
+                    0.5 if aggressive_breakout else 1.0
+                ),
                 "trade_plan": plan.to_dict(),
             },
             reasons=warnings,

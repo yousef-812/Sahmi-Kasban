@@ -17,8 +17,17 @@ class MarketEnvironmentEngine(AnalysisEngine):
         sma_50 = safe_float(latest.get("sma_50"), close)
         sma_200 = safe_float(latest.get("sma_200"), sma_50)
         volatility = safe_float(latest.get("volatility_20d")) * (252**0.5) * 100
+        atr_value = safe_float(latest.get("atr"))
+        atr_pct = atr_value / close * 100.0 if close > 0 else 0.0
         volume = safe_float(latest.get("volume"))
         avg_volume = safe_float(latest.get("avg_volume_20"), volume)
+        volume_ratio = volume / avg_volume if avg_volume > 0 else 0.0
+        return_20d_pct = safe_float(latest.get("return_20d")) * 100.0
+        return_5d_pct = 0.0
+        if len(candles) >= 6:
+            close_5d = safe_float(candles.iloc[-6].get("close"))
+            if close_5d > 0:
+                return_5d_pct = (close / close_5d - 1.0) * 100.0
 
         bullish_points = sum(
             [
@@ -47,6 +56,21 @@ class MarketEnvironmentEngine(AnalysisEngine):
             regime = "sideways"
             score = 50
 
+        if regime == "bullish" and volume_ratio >= 1.5 and return_5d_pct > 2:
+            profile = "breakout_bullish"
+        elif regime == "bullish" and volatility > 65:
+            profile = "speculative_bullish"
+        elif regime == "bullish":
+            profile = "trend_bullish"
+        elif regime == "bearish" and volatility > 65:
+            profile = "risk_off_volatile"
+        elif regime == "bearish":
+            profile = "trend_bearish"
+        elif abs(return_20d_pct) <= 8 and volatility <= 55:
+            profile = "sideways_rotation"
+        else:
+            profile = "mixed_volatile"
+
         if volatility > 65:
             score -= 8
         elif volatility < 35:
@@ -56,19 +80,26 @@ class MarketEnvironmentEngine(AnalysisEngine):
 
         score = self.clamp(score)
         context["market_regime"] = regime
+        context["market_regime_profile"] = profile
         context["annualized_volatility"] = volatility
+        context["market_volume_ratio"] = volume_ratio
         return EngineResult(
             name=self.name,
             score=score,
             confidence=min(95.0, 55.0 + abs(score - 50.0)),
             details={
+                "model_version": "market-regime-v2.3",
                 "regime": regime,
+                "regime_profile": profile,
                 "annualized_volatility_pct": round(volatility, 2),
+                "atr_pct": round(atr_pct, 2),
+                "return_5d_pct": round(return_5d_pct, 2),
+                "return_20d_pct": round(return_20d_pct, 2),
                 "bullish_checks": bullish_points,
                 "bearish_checks": bearish_points,
-                "volume_ratio": round(volume / avg_volume, 2) if avg_volume > 0 else 0,
+                "volume_ratio": round(volume_ratio, 2),
             },
-            reasons=[f"Market regime: {regime}"],
+            reasons=[f"Market regime: {regime} ({profile})"],
         )
 
 

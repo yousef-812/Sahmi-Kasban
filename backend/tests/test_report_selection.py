@@ -23,7 +23,7 @@ def _analysis(*, ready: bool, failed_checks: list[str] | None = None) -> dict:
     }
 
 
-def test_report_selection_keeps_elite_name_but_requires_quality_gates(
+def test_report_selection_keeps_legacy_elite_name_and_adds_v23_context(
     db_session: Session,
 ) -> None:
     report = MarketReport(
@@ -97,14 +97,15 @@ def test_report_selection_keeps_elite_name_but_requires_quality_gates(
     elite = rows["ELITE"].payload
     assert elite["decision"] == "فرصة نخبوية"
     assert elite["opportunity_tier"] == "elite"
+    assert elite["elite_profile"] == "legacy"
     assert elite["elite_opportunity"] is True
     assert elite["elite_score_threshold"] == ELITE_SCORE_THRESHOLD
     assert elite["elite_quality_score"] == 100
     assert elite["elite_gate_version"] == "elite-quality-v2.2"
     assert elite["elite_failed_checks"] == []
     assert elite["short_horizon"]["sessions"] == 5
-    assert elite["trade_plan_context"]["horizon"] == "extended"
-    assert "لا تعتبر التصنيف ضمانًا" in elite["volatility_warning"]
+    assert elite["trade_plan_context"]["horizon"] == "five_sessions"
+    assert "التصنيف لا يضمن الربح" in elite["volatility_warning"]
     assert "تفاصيل أصلية" in elite["explanation"]
     assert elite["top_fraction_pct"] == 0.5
 
@@ -120,12 +121,14 @@ def test_report_selection_keeps_elite_name_but_requires_quality_gates(
 
     assert (
         enriched.market_summary["selection_model"]
-        == "cross-sectional-top10-v2.2-quality-gated"
+        == "cross-sectional-top10-v2.3-regime-two-profile"
     )
     assert enriched.market_summary["opportunity_tiers"] == {
         "elite": 1,
+        "elite_balanced": 0,
+        "elite_aggressive": 0,
         "conditional_buy": 1,
         "watch": 1,
     }
-    assert "خمس جلسات" in enriched.market_summary["disclaimer"]
-    assert "لم يعد يعتمد على الدرجة وحدها" in enriched.market_summary["selection_notice"]
+    assert "نصف حجم المركز" in enriched.market_summary["disclaimer"]
+    assert "قد لا يعرض التقرير" in enriched.market_summary["selection_notice"]
