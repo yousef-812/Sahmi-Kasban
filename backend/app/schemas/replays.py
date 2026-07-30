@@ -46,6 +46,11 @@ class HistoricalReplayJobResponse(BaseModel):
     request_key: str
     engine_version: str
     status: str
+    control_state: str
+    worker_isolated: bool
+    can_pause: bool
+    can_resume: bool
+    can_cancel: bool
     start_date: date
     end_date: date
     horizon_sessions: int
@@ -60,6 +65,8 @@ class HistoricalReplayJobResponse(BaseModel):
     evaluated_rows: int = Field(ge=0)
     pending_rows: int = Field(ge=0)
     progress_pct: float = Field(ge=0, le=100)
+    throughput_tickers_per_minute: float | None = Field(default=None, ge=0)
+    estimated_seconds_remaining: int | None = Field(default=None, ge=0)
     started_at: datetime | None
     completed_at: datetime | None
     heartbeat_at: datetime | None
