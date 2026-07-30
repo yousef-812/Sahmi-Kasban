@@ -137,10 +137,64 @@ class AdminRepository {
     }
   }
 
+  Future<List<HistoricalReplayJob>> createHistoricalReplayBatch({
+    required List<HistoricalReplayWindow> windows,
+    required int horizonSessions,
+  }) async {
+    if (windows.length < 2) {
+      throw const FormatException('أضف فترتين على الأقل لتشغيل دفعة.');
+    }
+    try {
+      final requestKeyPrefix =
+          'replay_batch_${DateTime.now().microsecondsSinceEpoch}';
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/historical-replays/batches',
+        data: <String, dynamic>{
+          'request_key_prefix': requestKeyPrefix,
+          'windows': windows.map((window) => window.toJson()).toList(),
+          'horizon_sessions': horizonSessions,
+          'min_train_size': 200,
+          'neutral_band_pct': 1.0,
+        },
+      );
+      return _list(_required(response.data)['items'])
+          .map((item) => HistoricalReplayJob.fromJson(_map(item)))
+          .toList(growable: false);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<HistoricalReplayJob> historicalReplayJob(String jobId) async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
         '/admin/operations/historical-replays/jobs/$jobId',
+      );
+      return HistoricalReplayJob.fromJson(_required(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<HistoricalReplayJob> pauseHistoricalReplay(String jobId) {
+    return _controlHistoricalReplay(jobId, 'pause');
+  }
+
+  Future<HistoricalReplayJob> resumeHistoricalReplay(String jobId) {
+    return _controlHistoricalReplay(jobId, 'resume');
+  }
+
+  Future<HistoricalReplayJob> cancelHistoricalReplay(String jobId) {
+    return _controlHistoricalReplay(jobId, 'cancel');
+  }
+
+  Future<HistoricalReplayJob> _controlHistoricalReplay(
+    String jobId,
+    String action,
+  ) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/historical-replays/jobs/$jobId/$action',
       );
       return HistoricalReplayJob.fromJson(_required(response.data));
     } on Object catch (error) {
