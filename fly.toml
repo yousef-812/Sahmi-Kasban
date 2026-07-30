@@ -12,6 +12,10 @@ kill_timeout = "30s"
   strategy = "rolling"
   wait_timeout = "10m"
 
+[processes]
+  api = "uvicorn app.main:app --host 0.0.0.0 --port 8080"
+  replay = "python -m app.workers.historical_replay"
+
 [env]
   APP_ENV = "staging"
   DEBUG = "false"
@@ -19,13 +23,19 @@ kill_timeout = "30s"
   APP_PUBLIC_URL = "https://sahmi-kasban.fly.dev"
   LOG_LEVEL = "INFO"
   LOG_JSON = "true"
-  SENTRY_RELEASE = "sahmi-kasban-backend@0.10.2"
+  SENTRY_RELEASE = "sahmi-kasban-backend@0.10.3"
   SENTRY_TRACES_SAMPLE_RATE = "0.10"
   REQUEST_SLOW_THRESHOLD_MS = "1500"
   QUALITY_ERROR_RATE_ALERT_PERCENT = "5"
   QUALITY_P95_LATENCY_ALERT_MS = "1000"
   MARKET_TIMEZONE = "Africa/Cairo"
   ANALYSIS_ENGINE_VERSION = "core-v2.2"
+  HISTORICAL_REPLAY_PROVIDER_CONCURRENCY = "5"
+  HISTORICAL_REPLAY_CPU_CONCURRENCY = "2"
+  HISTORICAL_REPLAY_CACHE_HOURS = "24"
+  HISTORICAL_REPLAY_PREPARED_CACHE_ENTRIES = "320"
+  HISTORICAL_REPLAY_ACTIVE_POLL_SECONDS = "0.5"
+  HISTORICAL_REPLAY_IDLE_POLL_SECONDS = "5"
   DAILY_SCAN_SCHEDULER_ENABLED = "true"
   DAILY_SCAN_SCHEDULER_POLL_SECONDS = "60"
   WEEKLY_GRANT_SCHEDULER_ENABLED = "true"
@@ -40,6 +50,7 @@ kill_timeout = "30s"
   ADMOB_SSV_VERIFICATION_MODE = "disabled"
 
 [http_service]
+  processes = ["api"]
   internal_port = 8080
   force_https = true
   auto_stop_machines = "stop"
@@ -52,6 +63,7 @@ kill_timeout = "30s"
     hard_limit = 60
 
 [[http_service.checks]]
+  processes = ["api"]
   grace_period = "45s"
   interval = "30s"
   method = "GET"
@@ -60,7 +72,15 @@ kill_timeout = "30s"
   protocol = "http"
 
 [[vm]]
+  processes = ["api"]
   size = "shared-cpu-1x"
   memory = "1gb"
   cpus = 1
+  cpu_kind = "shared"
+
+[[vm]]
+  processes = ["replay"]
+  size = "shared-cpu-2x"
+  memory = "2gb"
+  cpus = 2
   cpu_kind = "shared"

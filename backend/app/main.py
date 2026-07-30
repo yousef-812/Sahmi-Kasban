@@ -10,7 +10,6 @@ from app.api.router import api_router
 from app.core.config import Environment, get_settings
 from app.core.observability import configure_observability
 from app.db.session import SessionLocal
-from app.jobs.historical_replays import run_historical_replay_scheduler
 from app.jobs.retry_pending_ai_reviews import (
     ai_provider_is_configured,
     retry_pending_ai_reviews,
@@ -52,12 +51,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     market_scheduler_task: asyncio.Task[None] | None = None
     weekly_grant_task: asyncio.Task[None] | None = None
     ai_retry_task: asyncio.Task[None] | None = None
-    replay_task: asyncio.Task[None] | None = None
     if settings.app_env is not Environment.TEST:
         warmup_task = asyncio.create_task(_warm_market_instrument_catalog())
         market_scheduler_task = asyncio.create_task(run_daily_scan_scheduler())
         weekly_grant_task = asyncio.create_task(run_weekly_grant_scheduler())
-        replay_task = asyncio.create_task(run_historical_replay_scheduler())
         if ai_provider_is_configured():
             ai_retry_task = asyncio.create_task(_community_ai_retry_scheduler())
     yield
@@ -66,7 +63,6 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         market_scheduler_task,
         weekly_grant_task,
         ai_retry_task,
-        replay_task,
     ):
         if task is not None and not task.done():
             task.cancel()
