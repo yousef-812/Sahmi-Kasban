@@ -20,6 +20,7 @@ from app.services.daily_reports import (
 )
 from app.services.notifications import create_notification
 from app.services.operations_settings import get_bool_setting
+from app.services.report_selection import enrich_daily_report_selection
 from app.services.stock_analysis import get_stock_ai_service
 
 logger = logging.getLogger(__name__)
@@ -50,8 +51,11 @@ def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int
         create_notification(
             db,
             user_id=user_id,
-            title="تقرير أفضل 10 أسهم جاهز",
-            body="تم تحليل أسهم البورصة المصرية وتجهيز تقرير الجلسة القادمة.",
+            title="تقرير أفضل الفرص اليومية جاهز",
+            body=(
+                "تم ترتيب أفضل 10 فرص في البورصة المصرية مع تمييز الفرص "
+                "النخبوية وشراء الشروط والمخاطر."
+            ),
             category="market_report",
             data={
                 "report_id": report_id,
@@ -74,6 +78,7 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
                 moment=moment or datetime.now(UTC),
                 tickers=tickers,
             )
+            enrich_daily_report_selection(db, report_id=result.report.id)
             notification_count = 0
             if result.created:
                 notification_count = _notify_report_ready(
@@ -108,6 +113,7 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
         ),
         "universe_size": len(tickers),
         "notifications_created": notification_count,
+        "selection_model": "cross-sectional-top10-v1",
     }
     logger.info("Daily top-ten scan result: %s", payload)
     return payload
