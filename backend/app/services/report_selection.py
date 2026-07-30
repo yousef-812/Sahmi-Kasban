@@ -53,7 +53,7 @@ def classify_report_item(
             elite=True,
             top_fraction_pct=top_fraction_pct,
             note=(
-                "اختيار نخبوى ضمن أعلى ترتيب يومي وبدرجة لا تقل عن 80. "
+                "اختيار نخبوِي ضمن أعلى ترتيب يومي وبدرجة لا تقل عن 80. "
                 "التقييم القصير يتابع خمس جلسات، وليس وعدًا بتحقيق أهداف السعر."
             ),
             volatility_warning=(
@@ -103,7 +103,8 @@ def enrich_daily_report_selection(
         ).all()
     )
     summary = dict(report.market_summary or {})
-    eligible_count = max(int(_number(summary.get("eligible_count"), len(items))), len(items))
+    reported_eligible = int(_number(summary.get("eligible_count"), len(items)))
+    eligible_count = max(reported_eligible, len(items))
     tier_counts = {"elite": 0, "conditional_buy": 0, "watch": 0}
 
     for item in items:
