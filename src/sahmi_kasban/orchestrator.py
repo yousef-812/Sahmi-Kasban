@@ -11,18 +11,13 @@ from sahmi_kasban.engines import (
     OpportunityQualityEngine,
     QuantitativeEngine,
     RiskEngine,
-    ScenarioEngine,
     SMCEngine,
+    ScenarioEngine,
     StockQualificationEngine,
     TechnicalEngine,
 )
 from sahmi_kasban.indicators import enrich_indicators, prepare_candles
-from sahmi_kasban.models import (
-    AnalysisConfig,
-    AnalysisReport,
-    EngineResult,
-    TradePlan,
-)
+from sahmi_kasban.models import AnalysisConfig, AnalysisReport, EngineResult, TradePlan
 from sahmi_kasban.scoring import calculate_score_diagnostics, score_to_signal
 
 
