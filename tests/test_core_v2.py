@@ -4,7 +4,9 @@ import pandas as pd
 
 from sahmi_kasban.backtesting import walk_forward_backtest
 from sahmi_kasban.engines.market import StockQualificationEngine
+from sahmi_kasban.engines.opportunity_quality import OpportunityQualityEngine
 from sahmi_kasban.engines.quantitative import QuantitativeEngine
+from sahmi_kasban.engines.technical import TechnicalEngine
 from sahmi_kasban.indicators import enrich_indicators
 from sahmi_kasban.models import AnalysisConfig, AnalysisReport, EngineResult
 from sahmi_kasban.scoring import calculate_score_diagnostics
@@ -92,9 +94,100 @@ def test_quantitative_probability_is_not_saturated_for_moderate_trend() -> None:
     result = QuantitativeEngine(AnalysisConfig()).analyze(candles, {})
     probability = float(result.details["bullish_probability_pct"])
 
-    assert result.details["model_version"] == "momentum-logit-v3-calibrated"
+    assert result.details["model_version"] == "momentum-logit-v4-overextension-aware"
+    assert result.details["overextension_penalty"] == 0
     assert 50 < probability < 90
     assert result.score == probability
+
+
+def test_quantitative_engine_penalizes_parabolic_extension() -> None:
+    closes = [100.0 + index * 0.05 for index in range(240)]
+    closes.extend(closes[-1] * (1.025**index) for index in range(1, 21))
+    candles = pd.DataFrame(
+        {
+            "close": closes,
+            "volume": [1_000_000 + (index % 7) * 10_000 for index in range(260)],
+        }
+    )
+
+    result = QuantitativeEngine(AnalysisConfig()).analyze(candles, {})
+
+    assert result.details["momentum_20d_pct"] > 30
+    assert result.details["overextension_penalty"] > 0
+    assert result.details["raw_edge"] < result.details["raw_edge_before_extension"]
+
+
+def _quality_candles(*, daily_growth: float) -> pd.DataFrame:
+    rows = []
+    for index in range(260):
+        close = 100.0 * ((1.0 + daily_growth) ** index)
+        rows.append(
+            {
+                "open": close * 0.995,
+                "high": close * 1.01,
+                "low": close * 0.99,
+                "close": close,
+                "volume": 1_000_000,
+            }
+        )
+    return enrich_indicators(pd.DataFrame(rows))
+
+
+def _quality_context() -> dict[str, object]:
+    return {
+        "signal": "BUY",
+        "qualified": True,
+        "final_score": 84,
+        "aggregate_confidence": 78,
+        "bullish_engine_count": 5,
+        "bearish_engine_count": 0,
+        "directional_conflict": False,
+        "market_regime": "bullish",
+        "timeframe_alignment": "bullish",
+        "atr_pct": 4.0,
+        "total_risk_pct": 24.0,
+        "risk_level": "low",
+        "zero_volume_ratio": 0.0,
+    }
+
+
+def test_elite_quality_engine_keeps_name_for_robust_buy() -> None:
+    result = OpportunityQualityEngine(AnalysisConfig()).analyze(
+        _quality_candles(daily_growth=0.008),
+        _quality_context(),
+    )
+
+    assert result.details["model_version"] == "elite-quality-v2.2"
+    assert result.details["engine_ready"] is True
+    assert result.details["failed_checks"] == []
+    assert result.score == 100
+
+
+def test_elite_quality_engine_rejects_high_score_when_move_is_overextended() -> None:
+    result = OpportunityQualityEngine(AnalysisConfig()).analyze(
+        _quality_candles(daily_growth=0.02),
+        _quality_context(),
+    )
+
+    assert result.details["metrics"]["return_20d_pct"] > 30
+    assert result.details["engine_ready"] is False
+    assert "momentum_not_overextended" in result.details["failed_checks"]
+    assert result.status == "rejected"
+
+
+def test_technical_engine_stops_rewarding_unlimited_momentum() -> None:
+    moderate = TechnicalEngine(AnalysisConfig()).analyze(
+        _quality_candles(daily_growth=0.008),
+        {},
+    )
+    extended = TechnicalEngine(AnalysisConfig()).analyze(
+        _quality_candles(daily_growth=0.02),
+        {},
+    )
+
+    assert extended.details["return_20d_pct"] > 30
+    assert extended.details["overextended"] is True
+    assert extended.score < moderate.score
 
 
 def test_qualification_uses_turnover_instead_of_raw_share_count() -> None:

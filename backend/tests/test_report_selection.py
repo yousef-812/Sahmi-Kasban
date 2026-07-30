@@ -9,7 +9,21 @@ from app.services.report_selection import (
 )
 
 
-def test_report_selection_separates_elite_conditional_and_watch(
+def _analysis(*, ready: bool, failed_checks: list[str] | None = None) -> dict:
+    return {
+        "analysis_quality": {
+            "engine_version": "core-v2.2",
+            "elite_assessment": {
+                "model_version": "elite-quality-v2.2",
+                "engine_ready": ready,
+                "readiness_score": 100 if ready else 86,
+                "failed_checks": failed_checks or [],
+            },
+        }
+    }
+
+
+def test_report_selection_keeps_elite_name_but_requires_quality_gates(
     db_session: Session,
 ) -> None:
     report = MarketReport(
@@ -37,21 +51,36 @@ def test_report_selection_separates_elite_conditional_and_watch(
                     "qualified": True,
                     "decision": "فرصة قوية",
                     "explanation": "تفاصيل أصلية",
+                    "analysis": _analysis(ready=True),
                 },
             ),
             MarketReportItem(
                 report_id=report.id,
-                ticker="CONDITIONAL",
+                ticker="OVEREXTENDED",
                 rank=2,
-                score_bp=7900,
-                payload={"signal": "BUY", "qualified": True},
+                score_bp=8500,
+                payload={
+                    "signal": "BUY",
+                    "qualified": True,
+                    "analysis": _analysis(
+                        ready=False,
+                        failed_checks=["momentum_not_overextended"],
+                    ),
+                },
             ),
             MarketReportItem(
                 report_id=report.id,
                 ticker="WATCH",
                 rank=3,
                 score_bp=7600,
-                payload={"signal": "WATCH", "qualified": True},
+                payload={
+                    "signal": "WATCH",
+                    "qualified": True,
+                    "analysis": _analysis(
+                        ready=False,
+                        failed_checks=["buy_signal", "directional_score"],
+                    ),
+                },
             ),
         ]
     )
@@ -70,25 +99,33 @@ def test_report_selection_separates_elite_conditional_and_watch(
     assert elite["opportunity_tier"] == "elite"
     assert elite["elite_opportunity"] is True
     assert elite["elite_score_threshold"] == ELITE_SCORE_THRESHOLD
+    assert elite["elite_quality_score"] == 100
+    assert elite["elite_gate_version"] == "elite-quality-v2.2"
+    assert elite["elite_failed_checks"] == []
     assert elite["short_horizon"]["sessions"] == 5
     assert elite["trade_plan_context"]["horizon"] == "extended"
-    assert "أعلى تذبذبًا" in elite["volatility_warning"]
+    assert "لا تعتبر التصنيف ضمانًا" in elite["volatility_warning"]
     assert "تفاصيل أصلية" in elite["explanation"]
     assert elite["top_fraction_pct"] == 0.5
 
-    conditional = rows["CONDITIONAL"].payload
+    conditional = rows["OVEREXTENDED"].payload
     assert conditional["decision"] == "شراء مشروط"
     assert conditional["opportunity_tier"] == "conditional_buy"
     assert conditional["elite_opportunity"] is False
+    assert conditional["elite_failed_checks"] == ["momentum_not_overextended"]
 
     watch = rows["WATCH"].payload
     assert watch["decision"] == "مراقبة"
     assert watch["opportunity_tier"] == "watch"
 
-    assert enriched.market_summary["selection_model"] == "cross-sectional-top10-v1"
+    assert (
+        enriched.market_summary["selection_model"]
+        == "cross-sectional-top10-v2.2-quality-gated"
+    )
     assert enriched.market_summary["opportunity_tiers"] == {
         "elite": 1,
         "conditional_buy": 1,
         "watch": 1,
     }
     assert "خمس جلسات" in enriched.market_summary["disclaimer"]
+    assert "لم يعد يعتمد على الدرجة وحدها" in enriched.market_summary["selection_notice"]

@@ -53,8 +53,8 @@ class TechnicalEngine(AnalysisEngine):
         elif 30 <= rsi < 45:
             score += 4
         elif rsi > 75:
-            score -= 12
-            reasons.append("RSI overbought")
+            score -= 18
+            reasons.append("RSI overbought and extension risk elevated")
         elif rsi < 25:
             score -= 5
 
@@ -68,19 +68,32 @@ class TechnicalEngine(AnalysisEngine):
         if volume_ratio >= 1.5:
             score += 8 if return_20d >= 0 else -5
             reasons.append("Volume expansion")
-        if return_20d > 8:
+
+        # Core v2.1 rewarded every move above 8% equally. The historical replay
+        # windows showed that extreme 20-day momentum often represented late
+        # entry and larger drawdown rather than additional directional quality.
+        if 8 < return_20d <= 20:
             score += 6
+            reasons.append("Constructive 20-day momentum")
+        elif 20 < return_20d <= 30:
+            reasons.append("20-day momentum is stretched")
+        elif return_20d > 30:
+            score -= 10
+            reasons.append("20-day move is overextended")
         elif return_20d < -8:
             score -= 8
 
         score = self.clamp(score)
         trend = "uptrend" if score >= 65 else "downtrend" if score <= 40 else "sideways"
         context["technical_trend"] = trend
+        context["rsi"] = rsi
+        context["return_20d_pct"] = return_20d
         return EngineResult(
             name=self.name,
             score=score,
             confidence=min(96.0, 60.0 + abs(score - 50.0) * 0.7),
             details={
+                "model_version": "technical-v2.2-overextension-aware",
                 "trend": trend,
                 "close": round(close, 4),
                 "sma_20": round(sma_20, 4),
@@ -91,6 +104,7 @@ class TechnicalEngine(AnalysisEngine):
                 "macd_signal": round(macd_signal, 4),
                 "volume_ratio": round(volume_ratio, 2),
                 "return_20d_pct": round(return_20d, 2),
+                "overextended": return_20d > 30 or rsi > 75,
             },
             reasons=reasons,
         )
