@@ -55,7 +55,6 @@ jobs:
             ADMOB_ANDROID_BANNER_ID
             ADMOB_ANDROID_NATIVE_ID
             ADMOB_ANDROID_INTERSTITIAL_ID
-            SENTRY_MOBILE_DSN
             ANDROID_KEYSTORE_BASE64
             ANDROID_KEYSTORE_PASSWORD
             ANDROID_KEY_ALIAS
@@ -132,10 +131,16 @@ jobs:
             "--dart-define=ADMOB_ANDROID_BANNER_ID=$ADMOB_ANDROID_BANNER_ID"
             "--dart-define=ADMOB_ANDROID_NATIVE_ID=$ADMOB_ANDROID_NATIVE_ID"
             "--dart-define=ADMOB_ANDROID_INTERSTITIAL_ID=$ADMOB_ANDROID_INTERSTITIAL_ID"
-            "--dart-define=SENTRY_DSN=$SENTRY_MOBILE_DSN"
-            "--dart-define=SENTRY_RELEASE=sahmi-kasban-mobile@$GITHUB_SHA"
-            "--dart-define=SENTRY_TRACES_SAMPLE_RATE=0.05"
           )
+          if [ -n "${SENTRY_MOBILE_DSN:-}" ]; then
+            defines+=(
+              "--dart-define=SENTRY_DSN=$SENTRY_MOBILE_DSN"
+              "--dart-define=SENTRY_RELEASE=sahmi-kasban-mobile@$GITHUB_SHA"
+              "--dart-define=SENTRY_TRACES_SAMPLE_RATE=0.05"
+            )
+          else
+            echo "SENTRY_MOBILE_DSN is not configured; mobile crash monitoring will be disabled."
+          fi
           "$FLUTTER_HOME/bin/flutter" build apk --release "${defines[@]}"
           "$FLUTTER_HOME/bin/flutter" build appbundle --release "${defines[@]}"
 
