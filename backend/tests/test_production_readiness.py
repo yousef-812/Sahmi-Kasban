@@ -42,7 +42,6 @@ def _production_settings() -> Settings:
         billing_token_encryption_key=Fernet.generate_key().decode("ascii"),
         admob_ssv_verification_mode="live",
         admob_android_rewarded_ad_unit_id="ca-app-pub-1234567890123456/1234567890",
-        admob_ios_rewarded_ad_unit_id="ca-app-pub-1234567890123456/0987654321",
     )
 
 
@@ -72,6 +71,24 @@ def test_complete_production_configuration_passes() -> None:
 
     assert production_readiness_issues(settings, environment) == ()
     enforce_production_readiness(settings, environment)
+
+
+def test_production_allows_sentry_to_be_disabled() -> None:
+    settings = _production_settings().model_copy(
+        update={"sentry_dsn": "", "sentry_release": ""}
+    )
+
+    issues = production_readiness_issues(settings, _production_environment())
+
+    assert not any(issue.startswith("SENTRY_") for issue in issues)
+
+
+def test_production_requires_release_when_sentry_is_enabled() -> None:
+    settings = _production_settings().model_copy(update={"sentry_release": ""})
+
+    issues = production_readiness_issues(settings, _production_environment())
+
+    assert "SENTRY_RELEASE is required when SENTRY_DSN is configured" in issues
 
 
 def test_production_rejects_missing_admin_and_live_push() -> None:

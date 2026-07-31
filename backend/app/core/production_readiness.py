@@ -134,8 +134,8 @@ def production_readiness_issues(
     except (UnicodeEncodeError, ValueError):
         issues.append("BILLING_TOKEN_ENCRYPTION_KEY must be a valid Fernet key")
 
-    if not settings.sentry_release.strip():
-        issues.append("SENTRY_RELEASE is required in production")
+    if settings.sentry_dsn.strip() and not settings.sentry_release.strip():
+        issues.append("SENTRY_RELEASE is required when SENTRY_DSN is configured")
 
     sender = settings.smtp_from_email.strip().casefold()
     if _EMAIL_PATTERN.fullmatch(sender) is None or sender.endswith(".local"):

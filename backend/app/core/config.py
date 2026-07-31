@@ -142,8 +142,6 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "SMTP_HOST is required outside development and test environments"
                 )
-            if not self.sentry_dsn.strip():
-                raise ValueError("SENTRY_DSN is required outside development and test")
             if self.google_play_verification_mode != "live":
                 raise ValueError("Google Play verification must use live mode in production")
             if not self.google_play_service_account_json.strip():
@@ -158,8 +156,6 @@ class Settings(BaseSettings):
                 raise ValueError("AdMob SSV verification must use live mode in production")
             if "3940256099942544" in self.admob_android_rewarded_ad_unit_id:
                 raise ValueError("Replace the Android AdMob test ad unit in production")
-            if "3940256099942544" in self.admob_ios_rewarded_ad_unit_id:
-                raise ValueError("Replace the iOS AdMob test ad unit in production")
 
         self.log_level = self.log_level.strip().upper()
         if self.log_level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:

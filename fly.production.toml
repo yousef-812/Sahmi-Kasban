@@ -1,10 +1,12 @@
-# Production configuration. Deploy with an explicit app name:
-# fly deploy -a <production-app> -c fly.production.toml
+# Production configuration for the existing Fly app.
+# Deploy from the repository root with:
+# fly deploy -c fly.production.toml
 #
 # All secrets required by backend/app/core/production_readiness.py must already
 # exist on the target Fly app. The release command fails safely before a rollout
 # when any production integration is missing or still in test mode.
 
+app = "sahmi-kasban"
 primary_region = "fra"
 kill_signal = "SIGTERM"
 kill_timeout = "30s"
@@ -26,8 +28,11 @@ kill_timeout = "30s"
   APP_ENV = "production"
   DEBUG = "false"
   PORT = "8080"
+  APP_PUBLIC_URL = "https://sahmi-kasban.fly.dev"
+  CORS_ORIGINS = "https://sahmi-kasban.fly.dev"
   LOG_LEVEL = "INFO"
   LOG_JSON = "true"
+  SENTRY_RELEASE = "sahmi-kasban-backend@0.10.3"
   SENTRY_TRACES_SAMPLE_RATE = "0.05"
   REQUEST_SLOW_THRESHOLD_MS = "1500"
   QUALITY_ERROR_RATE_ALERT_PERCENT = "5"
@@ -49,6 +54,7 @@ kill_timeout = "30s"
   AI_MAX_TOKENS = "1800"
   AI_TEMPERATURE = "0.2"
   FCM_DELIVERY_MODE = "live"
+  GOOGLE_PLAY_PACKAGE_NAME = "com.sahmikasban.sahmi_kasban_mobile"
   GOOGLE_PLAY_VERIFICATION_MODE = "live"
   ADMOB_SSV_VERIFICATION_MODE = "live"
 
