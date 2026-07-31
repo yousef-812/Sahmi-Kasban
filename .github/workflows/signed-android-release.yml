@@ -16,6 +16,10 @@ jobs:
       FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
       PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
       FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
+      ADMOB_ANDROID_APP_ID: ${{ secrets.ADMOB_ANDROID_APP_ID }}
+      ADMOB_ANDROID_BANNER_ID: ${{ secrets.ADMOB_ANDROID_BANNER_ID }}
+      ADMOB_ANDROID_NATIVE_ID: ${{ secrets.ADMOB_ANDROID_NATIVE_ID }}
+      ADMOB_ANDROID_INTERSTITIAL_ID: ${{ secrets.ADMOB_ANDROID_INTERSTITIAL_ID }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -76,14 +80,23 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          $FLUTTER_HOME/bin/flutter build apk --release \
-            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev \
-            --dart-define=DEMO_MODE=false \
-            --dart-define=APP_ENV=production
-          $FLUTTER_HOME/bin/flutter build appbundle --release \
-            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev \
-            --dart-define=DEMO_MODE=false \
-            --dart-define=APP_ENV=production
+          defines=(
+            "--dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev"
+            "--dart-define=DEMO_MODE=false"
+            "--dart-define=APP_ENV=production"
+            "--dart-define=RELEASE_PLATFORM=android"
+          )
+          if [ -n "${ADMOB_ANDROID_BANNER_ID:-}" ]; then
+            defines+=("--dart-define=ADMOB_ANDROID_BANNER_ID=$ADMOB_ANDROID_BANNER_ID")
+          fi
+          if [ -n "${ADMOB_ANDROID_NATIVE_ID:-}" ]; then
+            defines+=("--dart-define=ADMOB_ANDROID_NATIVE_ID=$ADMOB_ANDROID_NATIVE_ID")
+          fi
+          if [ -n "${ADMOB_ANDROID_INTERSTITIAL_ID:-}" ]; then
+            defines+=("--dart-define=ADMOB_ANDROID_INTERSTITIAL_ID=$ADMOB_ANDROID_INTERSTITIAL_ID")
+          fi
+          $FLUTTER_HOME/bin/flutter build apk --release "${defines[@]}"
+          $FLUTTER_HOME/bin/flutter build appbundle --release "${defines[@]}"
 
       - name: Verify release packages and signing certificate
         shell: bash

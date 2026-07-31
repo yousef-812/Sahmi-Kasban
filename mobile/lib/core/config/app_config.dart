@@ -37,6 +37,30 @@ class AppConfig {
         'Production builds require an absolute HTTPS API_BASE_URL.',
       );
     }
+
+    final normalizedPlatform = releasePlatform.trim().toLowerCase();
+    final adUnitIds = switch (normalizedPlatform) {
+      'android' => <String>[
+        admobAndroidBannerId,
+        admobAndroidNativeId,
+        admobAndroidInterstitialId,
+      ],
+      'ios' => <String>[
+        admobIosBannerId,
+        admobIosNativeId,
+        admobIosInterstitialId,
+      ],
+      _ => throw StateError(
+        'Production builds require RELEASE_PLATFORM=android or ios.',
+      ),
+    };
+    if (adUnitIds.any(
+      (id) => id.trim().isEmpty || id.contains(googleTestPublisherId),
+    )) {
+      throw StateError(
+        'Production builds require non-test AdMob banner, native, and interstitial IDs for the selected release platform.',
+      );
+    }
   }
 
   factory AppConfig.fromEnvironment() {
