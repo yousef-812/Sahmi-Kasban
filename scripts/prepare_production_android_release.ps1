@@ -80,8 +80,7 @@ $signingSecrets = @(
     "ANDROID_EXPECTED_CERT_SHA256"
 )
 $allRequiredSecrets = @(
-    "PRODUCTION_API_BASE_URL",
-    "SENTRY_MOBILE_DSN"
+    "PRODUCTION_API_BASE_URL"
 ) + $integrationSecrets + $signingSecrets
 
 $existing = Get-RepositorySecretNames -Repo $Repository
@@ -99,7 +98,10 @@ if ($missingIntegrations.Count -gt 0) {
 if ($CheckOnly) {
     $missing = @($allRequiredSecrets | Where-Object { $_ -notin $existing })
     if ($missing.Count -eq 0) {
-        Write-Host "All Production Android Release secrets are present." -ForegroundColor Green
+        Write-Host "All required Production Android Release secrets are present." -ForegroundColor Green
+        if ("SENTRY_MOBILE_DSN" -notin $existing) {
+            Write-Host "Optional SENTRY_MOBILE_DSN is not configured; crash monitoring will be disabled." -ForegroundColor Yellow
+        }
         exit 0
     }
     Write-Host "Missing Production Android Release secrets:" -ForegroundColor Yellow
@@ -183,9 +185,12 @@ Write-Host "Do not delete the JKS or backup file. Store another encrypted offlin
 if ($missingFinal.Count -gt 0) {
     Write-Host "The release is still missing:" -ForegroundColor Yellow
     $missingFinal | ForEach-Object { Write-Host "  - $_" }
-    Write-Host "Run this script again with -SentryMobileDsn after creating the Sentry mobile project."
     exit 2
 }
 
-Write-Host "All Production Android Release secrets are present." -ForegroundColor Green
+if ("SENTRY_MOBILE_DSN" -notin $finalNames) {
+    Write-Host "Optional SENTRY_MOBILE_DSN is not configured; crash monitoring will be disabled." -ForegroundColor Yellow
+}
+
+Write-Host "All required Production Android Release secrets are present." -ForegroundColor Green
 Write-Host "Run the GitHub Actions workflow 'Production Android Release' with confirmation RELEASE_PRODUCTION."
