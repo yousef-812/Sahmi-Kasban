@@ -35,3 +35,12 @@ def test_release_preparation_script_keeps_stable_signing_identity() -> None:
     assert "sahmi-kasban-upload.jks" in script
     assert "Do not delete the JKS" in script
     assert "-ForceRegenerate only before the first public release" in script
+
+
+def test_release_preparation_script_supports_windows_powershell_51() -> None:
+    script = PREP_SCRIPT.read_text(encoding="utf-8")
+
+    assert "RandomNumberGenerator]::Fill" not in script
+    assert "RandomNumberGenerator]::Create()" in script
+    assert "$generator.GetBytes($bytes)" in script
+    assert "$generator.Dispose()" in script
