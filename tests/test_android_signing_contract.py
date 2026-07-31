@@ -15,9 +15,24 @@ def test_ci_preview_cannot_impersonate_a_real_update() -> None:
 
     assert 'applicationIdSuffix = ".ci"' in gradle
     assert 'versionNameSuffix = "-ci"' in gradle
-    assert 'google-services.json").exists() && keystorePropertiesFile.exists()' in gradle
     assert "ci-preview-not-an-update" in ci
     assert "sahmi-kasban-staging-apk-" not in ci
+
+
+def test_firebase_is_not_coupled_to_release_signing() -> None:
+    gradle = GRADLE.read_text(encoding="utf-8")
+
+    assert 'if (googleServicesFile.exists())' in gradle
+    assert 'google-services.json").exists() && keystorePropertiesFile.exists()' not in gradle
+
+
+def test_production_android_build_rejects_test_integrations() -> None:
+    gradle = GRADLE.read_text(encoding="utf-8")
+
+    assert "SAHMI_PRODUCTION_BUILD" in gradle
+    assert "Production Android builds require google-services.json" in gradle
+    assert "Production Android builds require the protected release signing key" in gradle
+    assert "must not use the Google AdMob test app ID" in gradle
 
 
 def test_signed_workflow_guards_package_and_certificate() -> None:
