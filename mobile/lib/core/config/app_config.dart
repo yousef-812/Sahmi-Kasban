@@ -10,6 +10,7 @@ class AppConfig {
     required this.admobAndroidInterstitialId,
     required this.admobIosInterstitialId,
     this.appEnvironment = 'development',
+    this.releasePlatform = 'android',
   });
 
   static const String googleTestPublisherId = '3940256099942544';
@@ -22,6 +23,7 @@ class AppConfig {
   final String admobAndroidInterstitialId;
   final String admobIosInterstitialId;
   final String appEnvironment;
+  final String releasePlatform;
 
   bool get isProduction => appEnvironment.trim().toLowerCase() == 'production';
 
@@ -35,19 +37,28 @@ class AppConfig {
         'Production builds require an absolute HTTPS API_BASE_URL.',
       );
     }
-    final adUnitIds = <String>[
-      admobAndroidBannerId,
-      admobIosBannerId,
-      admobAndroidNativeId,
-      admobIosNativeId,
-      admobAndroidInterstitialId,
-      admobIosInterstitialId,
-    ];
+
+    final normalizedPlatform = releasePlatform.trim().toLowerCase();
+    final adUnitIds = switch (normalizedPlatform) {
+      'android' => <String>[
+        admobAndroidBannerId,
+        admobAndroidNativeId,
+        admobAndroidInterstitialId,
+      ],
+      'ios' => <String>[
+        admobIosBannerId,
+        admobIosNativeId,
+        admobIosInterstitialId,
+      ],
+      _ => throw StateError(
+        'Production builds require RELEASE_PLATFORM=android or ios.',
+      ),
+    };
     if (adUnitIds.any(
       (id) => id.trim().isEmpty || id.contains(googleTestPublisherId),
     )) {
       throw StateError(
-        'Production builds require non-test AdMob banner, native, and interstitial IDs.',
+        'Production builds require non-test AdMob banner, native, and interstitial IDs for the selected release platform.',
       );
     }
   }
@@ -60,6 +71,10 @@ class AppConfig {
     const environment = String.fromEnvironment(
       'APP_ENV',
       defaultValue: 'development',
+    );
+    const configuredReleasePlatform = String.fromEnvironment(
+      'RELEASE_PLATFORM',
+      defaultValue: 'android',
     );
     const androidBannerId = String.fromEnvironment(
       'ADMOB_ANDROID_BANNER_ID',
@@ -94,6 +109,7 @@ class AppConfig {
       admobAndroidInterstitialId: androidInterstitialId,
       admobIosInterstitialId: iosInterstitialId,
       appEnvironment: environment,
+      releasePlatform: configuredReleasePlatform,
     );
     config.validateForRuntime();
     return config;
