@@ -39,7 +39,11 @@ def _service_account_payload(
         else:
             payload = json.loads(value)
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
-        source = "valid service-account JSON or a readable JSON path" if allow_path else "valid service-account JSON"
+        source = (
+            "valid service-account JSON or a readable JSON path"
+            if allow_path
+            else "valid service-account JSON"
+        )
         return None, f"{label} must contain {source}"
     if not isinstance(payload, dict):
         return None, f"{label} must decode to a JSON object"
