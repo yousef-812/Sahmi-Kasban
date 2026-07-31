@@ -18,7 +18,7 @@ def _service_account(project_id: str) -> str:
             "type": "service_account",
             "project_id": project_id,
             "client_email": f"service-account@{project_id}.iam.gserviceaccount.com",
-            "private_key": "-----BEGIN PRIVATE KEY-----\nnot-a-real-key\n-----END PRIVATE KEY-----\n",
+            "private_key": "fixture-key-material",
         }
     )
 
