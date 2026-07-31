@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str = ""
     smtp_password: str = ""
-    smtp_from_email: str = "noreply@sahmi-kasban.local"
+    smtp_from_email: str = "bdaeyworkspace@gmail.com"
     smtp_use_tls: bool = True
 
     market_data_primary: str = "tradingview"
