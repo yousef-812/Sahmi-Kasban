@@ -1,0 +1,89 @@
+# Production configuration. Deploy with an explicit app name:
+# fly deploy -a <production-app> -c fly.production.toml
+#
+# All secrets required by backend/app/core/production_readiness.py must already
+# exist on the target Fly app. The release command fails safely before a rollout
+# when any production integration is missing or still in test mode.
+
+primary_region = "fra"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "backend/Dockerfile"
+
+[deploy]
+  release_command = "python -m app.core.production_readiness && python -m alembic upgrade head"
+  release_command_timeout = "10m"
+  strategy = "rolling"
+  wait_timeout = "10m"
+
+[processes]
+  api = "uvicorn app.main:app --host 0.0.0.0 --port 8080"
+  replay = "python -m app.workers.historical_replay"
+
+[env]
+  APP_ENV = "production"
+  DEBUG = "false"
+  PORT = "8080"
+  LOG_LEVEL = "INFO"
+  LOG_JSON = "true"
+  SENTRY_TRACES_SAMPLE_RATE = "0.05"
+  REQUEST_SLOW_THRESHOLD_MS = "1500"
+  QUALITY_ERROR_RATE_ALERT_PERCENT = "5"
+  QUALITY_P95_LATENCY_ALERT_MS = "1000"
+  MARKET_TIMEZONE = "Africa/Cairo"
+  ANALYSIS_ENGINE_VERSION = "core-v2.3"
+  HISTORICAL_REPLAY_PROVIDER_CONCURRENCY = "5"
+  HISTORICAL_REPLAY_CPU_CONCURRENCY = "2"
+  HISTORICAL_REPLAY_CACHE_HOURS = "24"
+  HISTORICAL_REPLAY_PREPARED_CACHE_ENTRIES = "320"
+  HISTORICAL_REPLAY_ACTIVE_POLL_SECONDS = "0.5"
+  HISTORICAL_REPLAY_IDLE_POLL_SECONDS = "5"
+  DAILY_SCAN_SCHEDULER_ENABLED = "true"
+  DAILY_SCAN_SCHEDULER_POLL_SECONDS = "60"
+  WEEKLY_GRANT_SCHEDULER_ENABLED = "true"
+  WEEKLY_GRANT_SCHEDULER_POLL_SECONDS = "3600"
+  AI_MODEL = "llama-3.3-70b-versatile"
+  AI_TIMEOUT_SECONDS = "45"
+  AI_MAX_TOKENS = "1800"
+  AI_TEMPERATURE = "0.2"
+  FCM_DELIVERY_MODE = "live"
+  GOOGLE_PLAY_VERIFICATION_MODE = "live"
+  ADMOB_SSV_VERIFICATION_MODE = "live"
+
+[http_service]
+  processes = ["api"]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 40
+    hard_limit = 60
+
+[[http_service.checks]]
+  processes = ["api"]
+  grace_period = "45s"
+  interval = "30s"
+  method = "GET"
+  timeout = "10s"
+  path = "/api/v1/health/ready"
+  protocol = "http"
+
+[[vm]]
+  processes = ["api"]
+  size = "shared-cpu-1x"
+  memory = "1gb"
+  cpus = 1
+  cpu_kind = "shared"
+
+[[vm]]
+  processes = ["replay"]
+  size = "shared-cpu-2x"
+  memory = "2gb"
+  cpus = 2
+  cpu_kind = "shared"
