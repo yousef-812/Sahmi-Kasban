@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import pytest
+from cryptography.fernet import Fernet
 
 from app.core.config import Environment, Settings
 from app.core.production_readiness import (
@@ -38,7 +39,7 @@ def _production_settings() -> Settings:
         sentry_release="sahmi-kasban-backend@test",
         google_play_verification_mode="live",
         google_play_service_account_json=_service_account("play-project"),
-        billing_token_encryption_key="b" * 32,
+        billing_token_encryption_key=Fernet.generate_key().decode("ascii"),
         admob_ssv_verification_mode="live",
         admob_android_rewarded_ad_unit_id="ca-app-pub-1234567890123456/1234567890",
         admob_ios_rewarded_ad_unit_id="ca-app-pub-1234567890123456/0987654321",
@@ -111,3 +112,13 @@ def test_production_rejects_insecure_public_urls() -> None:
         "CORS_ORIGINS may contain only explicit https:// origins in production"
         in issues
     )
+
+
+def test_production_rejects_invalid_billing_cipher_key() -> None:
+    settings = _production_settings().model_copy(
+        update={"billing_token_encryption_key": "not-a-fernet-key"}
+    )
+
+    issues = production_readiness_issues(settings, _production_environment())
+
+    assert "BILLING_TOKEN_ENCRYPTION_KEY must be a valid Fernet key" in issues
