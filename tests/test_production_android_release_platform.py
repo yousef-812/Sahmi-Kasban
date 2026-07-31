@@ -27,6 +27,17 @@ def test_production_workflow_declares_android_release_platform() -> None:
     assert "build appbundle --release" in workflow
 
 
+def test_production_workflow_allows_release_without_sentry() -> None:
+    workflow = PRODUCTION_WORKFLOW.read_text(encoding="utf-8")
+    required_block = workflow.split("required=(", maxsplit=1)[1].split(
+        ")", maxsplit=1
+    )[0]
+
+    assert "SENTRY_MOBILE_DSN" not in required_block
+    assert 'if [ -n "${SENTRY_MOBILE_DSN:-}" ]; then' in workflow
+    assert "mobile crash monitoring will be disabled" in workflow
+
+
 def test_release_preparation_script_keeps_stable_signing_identity() -> None:
     script = PREP_SCRIPT.read_text(encoding="utf-8")
 
@@ -44,3 +55,13 @@ def test_release_preparation_script_supports_windows_powershell_51() -> None:
     assert "RandomNumberGenerator]::Create()" in script
     assert "$generator.GetBytes($bytes)" in script
     assert "$generator.Dispose()" in script
+
+
+def test_release_preparation_script_treats_sentry_as_optional() -> None:
+    script = PREP_SCRIPT.read_text(encoding="utf-8")
+    required_block = script.split(
+        "$allRequiredSecrets = @(", maxsplit=1
+    )[1].split(")", maxsplit=1)[0]
+
+    assert "SENTRY_MOBILE_DSN" not in required_block
+    assert "Optional SENTRY_MOBILE_DSN is not configured" in script
