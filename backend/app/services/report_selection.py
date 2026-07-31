@@ -309,9 +309,6 @@ def enrich_daily_report_selection(
         payload.update(
             {
                 "base_explanation": base_explanation,
-
-        payload.update(
-            {
                 "decision": classification.decision,
                 "opportunity_tier": classification.tier,
                 "elite_profile": classification.profile,
