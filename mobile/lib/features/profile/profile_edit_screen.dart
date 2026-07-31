@@ -90,7 +90,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'سيتم إلغاء جلساتك وإخفاء البريد والاسم، ولن تتمكن من استعادة الحساب. أدخل كلمة المرور للتأكيد.',
+              'سيتم إلغاء جلساتك وإخفاء البريد والاسم، ولن تتمكن من استعادة الحساب. إذا كان لديك اشتراك مدفوع عبر Google Play، فحذف الحساب لا يلغي التجديد التلقائي؛ ألغِ الاشتراك من Google Play أولًا لتجنب أي تجديد لاحق. أدخل كلمة المرور للتأكيد.',
             ),
             const SizedBox(height: 16),
             TextField(
