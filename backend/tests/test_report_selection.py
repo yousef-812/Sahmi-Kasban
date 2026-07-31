@@ -132,3 +132,42 @@ def test_report_selection_uses_production_safe_public_labels(
     assert enriched.market_summary["aggressive_profile_enabled"] is False
     assert "ليس توصية" in enriched.market_summary["disclaimer"]
     assert "متوقفة" in enriched.market_summary["selection_notice"]
+
+
+def test_enrich_daily_report_selection_is_idempotent(
+    db_session: Session,
+) -> None:
+    report = MarketReport(
+        target_session_date=date(2026, 7, 31),
+        status="complete",
+        generated_at=datetime.now(UTC),
+        source_snapshot={"source_session_date": "2026-07-30"},
+        market_summary={"eligible_count": 50, "disclaimer": "test"},
+    )
+    db_session.add(report)
+    db_session.flush()
+    db_session.add(
+        MarketReportItem(
+            report_id=report.id,
+            ticker="TEST",
+            rank=1,
+            score_bp=9000,
+            payload={
+                "signal": "BUY",
+                "qualified": True,
+                "explanation": "شرح خاص بالسهم فقط.",
+                "analysis": _analysis(ready=True),
+            },
+        )
+    )
+    db_session.commit()
+
+    first = enrich_daily_report_selection(db_session, report_id=report.id)
+    first_explanation = first.items[0].payload["explanation"]
+
+    second = enrich_daily_report_selection(db_session, report_id=report.id)
+    second_explanation = second.items[0].payload["explanation"]
+
+    assert first_explanation == second_explanation
+    assert second_explanation.count("الخطة محسوبة لأفق خمس جلسات") == 1
+    assert second_explanation.count("شرح خاص بالسهم فقط.") == 1

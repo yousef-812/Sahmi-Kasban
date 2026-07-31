@@ -237,6 +237,26 @@ def _adjusted_trade_plan(payload: dict, multiplier: float) -> dict | None:
     return adjusted
 
 
+_REPETITIVE_SENTENCES = (
+    "فرصة نخبوية اجتازت بوابات الجودة السابقة.",
+    "التصنيف لا يضمن الربح؛ التزم بإدارة المخاطر.",
+    "الخطة محسوبة لأفق خمس جلسات وتستخدم أهدافًا مبنية على ATR.",
+    "الخطة محسوبة لأفق خمس جلسات وتستخدم أهدافًا أقرب مبنية على ATR.",
+    "السهم اجتاز فلاتر الجودة المتوازنة، لكن الاختبارات التاريخية لم تثبت تفوقًا مستقرًا يسمح بوصفه كفرصة نخبوية. راقب شروط الدخول والسيولة وحركة السوق قبل اتخاذ القرار.",
+    "إشارة شراء اتجاهية، لكنها لم تجتز فلاتر الجودة المتوازنة كاملة؛ تُعرض للمراقبة المشروطة وليست توصية دخول.",
+    "السهم ظهر ضمن الترتيب التحليلي، لكن شروط الشراء غير مكتملة؛ يعرض للمراقبة ولا يعامل كتوصية دخول.",
+    "التصنيف تحليلي تجريبي ولا يضمن التفوق على السوق أو تحقيق ربح.",
+)
+
+
+def _clean_base_explanation(explanation: str) -> str:
+    if not explanation.strip():
+        return ""
+    paragraphs = [p.strip() for p in explanation.split("\n\n") if p.strip()]
+    filtered = [p for p in paragraphs if p not in _REPETITIVE_SENTENCES]
+    return "\n\n".join(filtered)
+
+
 def enrich_daily_report_selection(
     db: Session,
     *,
@@ -272,15 +292,23 @@ def enrich_daily_report_selection(
         )
         tier_counts[classification.tier] += 1
 
-        original_explanation = str(payload.get("explanation", "")).strip()
+        raw_explanation = str(
+            payload.get("base_explanation") or payload.get("explanation", "")
+        ).strip()
+        base_explanation = _clean_base_explanation(raw_explanation)
+
         context_parts = [classification.note]
         if classification.volatility_warning:
             context_parts.append(classification.volatility_warning)
         context_parts.append(
             "الخطة محسوبة لأفق خمس جلسات وتستخدم أهدافًا مبنية على ATR."
         )
-        if original_explanation:
-            context_parts.append(original_explanation)
+        if base_explanation:
+            context_parts.append(base_explanation)
+
+        payload.update(
+            {
+                "base_explanation": base_explanation,
 
         payload.update(
             {
