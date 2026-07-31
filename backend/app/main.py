@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import Environment, get_settings
 from app.core.observability import configure_observability
+from app.core.production_readiness import enforce_production_readiness
 from app.db.session import SessionLocal
 from app.jobs.retry_pending_ai_reviews import (
     ai_provider_is_configured,
@@ -21,6 +22,7 @@ from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
 
 settings = get_settings()
+enforce_production_readiness(settings)
 configure_observability(settings)
 cors_origins = settings.cors_origin_list
 logger = logging.getLogger(__name__)
