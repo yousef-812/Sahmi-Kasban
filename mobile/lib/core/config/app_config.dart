@@ -9,7 +9,10 @@ class AppConfig {
     required this.admobIosNativeId,
     required this.admobAndroidInterstitialId,
     required this.admobIosInterstitialId,
+    this.appEnvironment = 'development',
   });
+
+  static const String googleTestPublisherId = '3940256099942544';
 
   final String apiBaseUrl;
   final String admobAndroidBannerId;
@@ -18,11 +21,45 @@ class AppConfig {
   final String admobIosNativeId;
   final String admobAndroidInterstitialId;
   final String admobIosInterstitialId;
+  final String appEnvironment;
+
+  bool get isProduction => appEnvironment.trim().toLowerCase() == 'production';
+
+  void validateForRuntime() {
+    if (!isProduction) {
+      return;
+    }
+    final uri = Uri.tryParse(apiBaseUrl);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      throw StateError(
+        'Production builds require an absolute HTTPS API_BASE_URL.',
+      );
+    }
+    final adUnitIds = <String>[
+      admobAndroidBannerId,
+      admobIosBannerId,
+      admobAndroidNativeId,
+      admobIosNativeId,
+      admobAndroidInterstitialId,
+      admobIosInterstitialId,
+    ];
+    if (adUnitIds.any(
+      (id) => id.trim().isEmpty || id.contains(googleTestPublisherId),
+    )) {
+      throw StateError(
+        'Production builds require non-test AdMob banner, native, and interstitial IDs.',
+      );
+    }
+  }
 
   factory AppConfig.fromEnvironment() {
     const configuredUrl = String.fromEnvironment(
       'API_BASE_URL',
       defaultValue: 'http://10.0.2.2:8000',
+    );
+    const environment = String.fromEnvironment(
+      'APP_ENV',
+      defaultValue: 'development',
     );
     const androidBannerId = String.fromEnvironment(
       'ADMOB_ANDROID_BANNER_ID',
@@ -48,7 +85,7 @@ class AppConfig {
       'ADMOB_IOS_INTERSTITIAL_ID',
       defaultValue: 'ca-app-pub-3940256099942544/4411468910',
     );
-    return const AppConfig(
+    const config = AppConfig(
       apiBaseUrl: configuredUrl,
       admobAndroidBannerId: androidBannerId,
       admobIosBannerId: iosBannerId,
@@ -56,7 +93,10 @@ class AppConfig {
       admobIosNativeId: iosNativeId,
       admobAndroidInterstitialId: androidInterstitialId,
       admobIosInterstitialId: iosInterstitialId,
+      appEnvironment: environment,
     );
+    config.validateForRuntime();
+    return config;
   }
 }
 
