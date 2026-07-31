@@ -128,6 +128,7 @@ jobs:
             "--dart-define=API_BASE_URL=$PRODUCTION_API_BASE_URL"
             "--dart-define=DEMO_MODE=false"
             "--dart-define=APP_ENV=production"
+            "--dart-define=RELEASE_PLATFORM=android"
             "--dart-define=ADMOB_ANDROID_BANNER_ID=$ADMOB_ANDROID_BANNER_ID"
             "--dart-define=ADMOB_ANDROID_NATIVE_ID=$ADMOB_ANDROID_NATIVE_ID"
             "--dart-define=ADMOB_ANDROID_INTERSTITIAL_ID=$ADMOB_ANDROID_INTERSTITIAL_ID"
