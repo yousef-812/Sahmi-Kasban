@@ -1,0 +1,37 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+APP_CONFIG = ROOT / "mobile" / "lib" / "core" / "config" / "app_config.dart"
+PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "production-android-release.yml"
+PREP_SCRIPT = ROOT / "scripts" / "prepare_production_android_release.ps1"
+
+
+def test_android_release_validates_only_android_ad_units() -> None:
+    config = APP_CONFIG.read_text(encoding="utf-8")
+
+    assert "RELEASE_PLATFORM" in config
+    assert "'android' => <String>[" in config
+    assert "admobAndroidBannerId" in config
+    assert "admobAndroidNativeId" in config
+    assert "admobAndroidInterstitialId" in config
+    assert "'ios' => <String>[" in config
+
+
+def test_production_workflow_declares_android_release_platform() -> None:
+    workflow = PRODUCTION_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "--dart-define=RELEASE_PLATFORM=android" in workflow
+    assert "build apk --release" in workflow
+    assert "build appbundle --release" in workflow
+
+
+def test_release_preparation_script_keeps_stable_signing_identity() -> None:
+    script = PREP_SCRIPT.read_text(encoding="utf-8")
+
+    assert "ANDROID_KEYSTORE_BASE64" in script
+    assert "ANDROID_EXPECTED_CERT_SHA256" in script
+    assert "sahmi-kasban-upload.jks" in script
+    assert "Do not delete the JKS" in script
+    assert "-ForceRegenerate only before the first public release" in script
