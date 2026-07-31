@@ -21,7 +21,7 @@ def main() -> None:
                 r.id,
                 r.target_session_date,
             )
-            enrich_daily_report_selection(db, r.id)
+            enrich_daily_report_selection(db, report_id=r.id)
         db.commit()
     logger.info("Completed successfully!")
 
