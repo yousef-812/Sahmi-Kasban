@@ -6,6 +6,9 @@ ROOT = Path(__file__).resolve().parents[1]
 GRADLE = ROOT / "mobile" / "android" / "app" / "build.gradle.kts"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 SIGNED_WORKFLOW = ROOT / ".github" / "workflows" / "signed-android-release.yml"
+PRODUCTION_WORKFLOW = (
+    ROOT / ".github" / "workflows" / "production-android-release.yml"
+)
 PACKAGE_ID = "com.sahmikasban.sahmi_kasban_mobile"
 
 
@@ -43,3 +46,21 @@ def test_signed_workflow_guards_package_and_certificate() -> None:
     assert "ANDROID_EXPECTED_CERT_SHA256" in workflow
     assert "release-metadata.txt" in workflow
     assert "sahmi-kasban-signed-update-" in workflow
+
+
+def test_production_workflow_requires_live_integrations_and_store_bundle() -> None:
+    workflow = PRODUCTION_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "RELEASE_PRODUCTION" in workflow
+    assert "SAHMI_PRODUCTION_BUILD" in workflow
+    assert "APP_ENV=production" in workflow
+    assert "PRODUCTION_API_BASE_URL" in workflow
+    assert "FIREBASE_ANDROID_GOOGLE_SERVICES_JSON" in workflow
+    assert "ADMOB_ANDROID_APP_ID" in workflow
+    assert "ADMOB_ANDROID_BANNER_ID" in workflow
+    assert "ADMOB_ANDROID_NATIVE_ID" in workflow
+    assert "ADMOB_ANDROID_INTERSTITIAL_ID" in workflow
+    assert "SENTRY_MOBILE_DSN" in workflow
+    assert "flutter build appbundle --release" in workflow
+    assert "production.aab" in workflow
+    assert PACKAGE_ID in workflow
