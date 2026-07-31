@@ -7,6 +7,8 @@ STAGING_FLY = ROOT / "fly.toml"
 PRODUCTION_FLY = ROOT / "fly.production.toml"
 DOCKERFILE = ROOT / "backend" / "Dockerfile"
 MAIN = ROOT / "backend" / "app" / "main.py"
+ANDROID_GRADLE = ROOT / "mobile" / "android" / "app" / "build.gradle.kts"
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 
 def test_staging_and_production_use_database_readiness_checks() -> None:
@@ -46,3 +48,15 @@ def test_api_enforces_production_readiness_before_startup() -> None:
     assert main.index("enforce_production_readiness(settings)") < main.index(
         "configure_observability(settings)"
     )
+
+
+def test_android_ci_preview_is_isolated_from_release_integrations() -> None:
+    gradle = ANDROID_GRADLE.read_text(encoding="utf-8")
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+
+    assert 'applicationIdSuffix = ".ci"' in gradle
+    assert 'versionNameSuffix = "-ci"' in gradle
+    assert "ciPreviewBuild" in gradle
+    assert 'SAHMI_CI_PREVIEW_BUILD: "true"' in workflow
+    assert "googleServicesFile.exists() && !ciPreviewBuild" in gradle
+    assert "ci-preview-not-an-update" in workflow
