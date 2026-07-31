@@ -7,6 +7,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from urllib.parse import urlparse
 
+from cryptography.fernet import Fernet
+
 from app.core.config import Environment, Settings, get_settings
 
 _EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -23,18 +25,22 @@ def _service_account_payload(
     raw: str,
     *,
     label: str,
+    allow_path: bool = True,
 ) -> tuple[dict[str, object] | None, str | None]:
     value = raw.strip()
     if not value:
         return None, f"{label} is required"
     try:
-        path = Path(value)
-        if not value.startswith("{") and path.exists():
+        if allow_path and not value.startswith("{"):
+            path = Path(value)
+            if not path.is_file():
+                return None, f"{label} must reference a readable JSON file"
             payload = json.loads(path.read_text(encoding="utf-8"))
         else:
             payload = json.loads(value)
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
-        return None, f"{label} must contain valid service-account JSON or a readable JSON path"
+        source = "valid service-account JSON or a readable JSON path" if allow_path else "valid service-account JSON"
+        return None, f"{label} must contain {source}"
     if not isinstance(payload, dict):
         return None, f"{label} must decode to a JSON object"
     missing = sorted(_REQUIRED_SERVICE_ACCOUNT_FIELDS.difference(payload))
@@ -113,12 +119,16 @@ def production_readiness_issues(
     _, play_issue = _service_account_payload(
         settings.google_play_service_account_json,
         label="GOOGLE_PLAY_SERVICE_ACCOUNT_JSON",
+        allow_path=False,
     )
     if play_issue:
         issues.append(play_issue)
 
-    if len(settings.billing_token_encryption_key.strip()) < 32:
-        issues.append("BILLING_TOKEN_ENCRYPTION_KEY must contain at least 32 characters")
+    billing_key = settings.billing_token_encryption_key.strip()
+    try:
+        Fernet(billing_key.encode("ascii"))
+    except (UnicodeEncodeError, ValueError):
+        issues.append("BILLING_TOKEN_ENCRYPTION_KEY must be a valid Fernet key")
 
     if not settings.sentry_release.strip():
         issues.append("SENTRY_RELEASE is required in production")
