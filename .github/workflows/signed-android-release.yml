@@ -106,9 +106,13 @@ jobs:
             exit 1
           fi
 
-          keytool -printcert -jarfile "$apk" \
-            | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
-          cert_sha256="$(sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' \
+          apksigner="$(find "$sdk_root/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -x "$apksigner" ]; then
+            "$apksigner" verify --print-certs "$apk" | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          else
+            keytool -printcert -jarfile "$apk" | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          fi
+          cert_sha256="$(sed -n 's/.*SHA-256 digest:[[:space:]]*//p; s/^[[:space:]]*SHA256:[[:space:]]*//p' \
             mobile/build/app/outputs/flutter-apk/signing-certificate.txt | head -n 1)"
           test -n "$cert_sha256"
 
