@@ -23,13 +23,14 @@ def test_verification_code_is_invalidated_after_repeated_failures(
         display_name="OTP Limit",
     )
     db_session.commit()
+    wrong_code = "000000" if correct_code != "000000" else "111111"
 
     for _ in range(EMAIL_VERIFICATION_MAX_ATTEMPTS):
         with pytest.raises(InvalidAccountCodeError):
             verify_user_email_code(
                 db_session,
                 email=user.email,
-                code="000000",
+                code=wrong_code,
             )
         db_session.commit()
 
