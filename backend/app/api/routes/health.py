@@ -23,6 +23,12 @@ class DatabaseHealthResponse(BaseModel):
     database: str
 
 
+class ReadinessHealthResponse(BaseModel):
+    status: str
+    database: str
+    environment: str
+
+
 @router.get("", response_model=HealthResponse)
 def health_check() -> HealthResponse:
     settings = get_settings()
@@ -33,8 +39,7 @@ def health_check() -> HealthResponse:
     )
 
 
-@router.get("/database", response_model=DatabaseHealthResponse)
-def database_health_check(db: DatabaseSession) -> DatabaseHealthResponse:
+def _require_database(db: Session) -> None:
     try:
         database_is_ready(db)
     except SQLAlchemyError as exc:
@@ -42,4 +47,20 @@ def database_health_check(db: DatabaseSession) -> DatabaseHealthResponse:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database is unavailable",
         ) from exc
+
+
+@router.get("/ready", response_model=ReadinessHealthResponse)
+def readiness_health_check(db: DatabaseSession) -> ReadinessHealthResponse:
+    settings = get_settings()
+    _require_database(db)
+    return ReadinessHealthResponse(
+        status="ready",
+        database="reachable",
+        environment=settings.app_env.value,
+    )
+
+
+@router.get("/database", response_model=DatabaseHealthResponse)
+def database_health_check(db: DatabaseSession) -> DatabaseHealthResponse:
+    _require_database(db)
     return DatabaseHealthResponse(status="ok", database="reachable")
