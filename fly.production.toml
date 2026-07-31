@@ -1,4 +1,10 @@
-app = "sahmi-kasban"
+# Production configuration. Deploy with an explicit app name:
+# fly deploy -a <production-app> -c fly.production.toml
+#
+# All secrets required by backend/app/core/production_readiness.py must already
+# exist on the target Fly app. The release command fails safely before a rollout
+# when any production integration is missing or still in test mode.
+
 primary_region = "fra"
 kill_signal = "SIGTERM"
 kill_timeout = "30s"
@@ -7,7 +13,7 @@ kill_timeout = "30s"
   dockerfile = "backend/Dockerfile"
 
 [deploy]
-  release_command = "python -m alembic upgrade head"
+  release_command = "python -m app.core.production_readiness && python -m alembic upgrade head"
   release_command_timeout = "10m"
   strategy = "rolling"
   wait_timeout = "10m"
@@ -17,14 +23,12 @@ kill_timeout = "30s"
   replay = "python -m app.workers.historical_replay"
 
 [env]
-  APP_ENV = "staging"
+  APP_ENV = "production"
   DEBUG = "false"
   PORT = "8080"
-  APP_PUBLIC_URL = "https://sahmi-kasban.fly.dev"
   LOG_LEVEL = "INFO"
   LOG_JSON = "true"
-  SENTRY_RELEASE = "sahmi-kasban-backend@0.10.3"
-  SENTRY_TRACES_SAMPLE_RATE = "0.10"
+  SENTRY_TRACES_SAMPLE_RATE = "0.05"
   REQUEST_SLOW_THRESHOLD_MS = "1500"
   QUALITY_ERROR_RATE_ALERT_PERCENT = "5"
   QUALITY_P95_LATENCY_ALERT_MS = "1000"
@@ -44,10 +48,9 @@ kill_timeout = "30s"
   AI_TIMEOUT_SECONDS = "45"
   AI_MAX_TOKENS = "1800"
   AI_TEMPERATURE = "0.2"
-  FCM_DELIVERY_MODE = "disabled"
-  FCM_PROJECT_ID = "project-f14e453c-deb8-4a94-b39"
-  GOOGLE_PLAY_VERIFICATION_MODE = "disabled"
-  ADMOB_SSV_VERIFICATION_MODE = "disabled"
+  FCM_DELIVERY_MODE = "live"
+  GOOGLE_PLAY_VERIFICATION_MODE = "live"
+  ADMOB_SSV_VERIFICATION_MODE = "live"
 
 [http_service]
   processes = ["api"]

@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import Environment, get_settings
 from app.core.observability import configure_observability
+from app.core.production_readiness import enforce_production_readiness
 from app.db.session import SessionLocal
 from app.jobs.retry_pending_ai_reviews import (
     ai_provider_is_configured,
@@ -19,8 +20,10 @@ from app.jobs.weekly_grants import run_weekly_grant_scheduler
 from app.legal_pages import router as legal_router
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 
 settings = get_settings()
+enforce_production_readiness(settings)
 configure_observability(settings)
 cors_origins = settings.cors_origin_list
 logger = logging.getLogger(__name__)
@@ -90,6 +93,7 @@ if cors_origins:
     )
 
 app.add_middleware(RequestContextMiddleware)
+app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.is_production)
 app.include_router(legal_router)
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 

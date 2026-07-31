@@ -10,7 +10,9 @@ from app.models import MarketReport, MarketReportItem
 
 ELITE_SCORE_THRESHOLD = 80.0
 SHORT_HORIZON_SESSIONS = 5
-_AGGRESSIVE_SELECTION_REGIMES = {"broad_bullish", "speculative_bullish"}
+SELECTION_MODEL = "cross-sectional-top10-v2.3-production-safe"
+AGGRESSIVE_PROFILE_ENABLED = False
+PUBLIC_ELITE_LABEL_ENABLED = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +120,7 @@ def classify_report_item(
     eligible_count: int,
     selection_regime: str = "unknown",
 ) -> OpportunityClassification:
+    del selection_regime
     payload = item.payload if isinstance(item.payload, dict) else {}
     signal = str(payload.get("signal", "WATCH")).upper()
     qualified = bool(payload.get("qualified", False))
@@ -127,88 +130,58 @@ def classify_report_item(
     gate_version = str(assessment.get("model_version", "elite-quality-unavailable"))
     quality_score = _number(assessment.get("readiness_score"))
     failed_checks = _failed_tuple(assessment.get("failed_checks"))
-    profile = "none"
-    position_multiplier = 1.0
+    balanced_ready = False
+    aggressive_ready = False
 
     if gate_version.startswith("elite-quality-v2.3"):
         balanced_ready = assessment.get("balanced_ready") is True
         aggressive_ready = assessment.get("aggressive_ready") is True
         if balanced_ready:
-            profile = "balanced"
             quality_score = _number(
-                assessment.get("balanced_readiness_score"),
-                quality_score,
+                assessment.get("balanced_readiness_score"), quality_score
             )
-        elif aggressive_ready and selection_regime in _AGGRESSIVE_SELECTION_REGIMES:
-            profile = "aggressive"
-            quality_score = _number(
-                assessment.get("aggressive_readiness_score"),
-                quality_score,
-            )
-            position_multiplier = min(
-                0.5,
-                _number(assessment.get("recommended_position_multiplier"), 0.5),
-            )
-        else:
-            failed_checks = tuple(
-                [
-                    f"balanced:{name}"
-                    for name in _failed_tuple(assessment.get("balanced_failed_checks"))
-                ]
-                + [
-                    f"aggressive:{name}"
-                    for name in _failed_tuple(assessment.get("aggressive_failed_checks"))
-                ]
-            )
-            if aggressive_ready and selection_regime not in _AGGRESSIVE_SELECTION_REGIMES:
-                failed_checks += ("aggressive:selection_regime_not_supportive",)
+        failed_checks = tuple(
+            [
+                f"balanced:{name}"
+                for name in _failed_tuple(assessment.get("balanced_failed_checks"))
+            ]
+            + [
+                f"aggressive:{name}"
+                for name in _failed_tuple(assessment.get("aggressive_failed_checks"))
+            ]
+        )
+        if aggressive_ready and not AGGRESSIVE_PROFILE_ENABLED:
+            failed_checks += ("aggressive:disabled_pending_validation",)
     elif assessment.get("engine_ready") is True:
-        profile = "legacy"
+        balanced_ready = True
 
-    elite = (
+    high_quality_buy = (
         item.rank <= 10
         and signal == "BUY"
         and qualified
         and score >= ELITE_SCORE_THRESHOLD
-        and profile != "none"
+        and balanced_ready
     )
-    if elite:
-        if profile == "aggressive":
-            decision = "فرصة نخبوية هجومية"
-            note = (
-                "اختراق قوي مؤكد بالحجم والسيولة اجتاز مسار Core v2.3 الهجومي. "
-                "التصنيف يسمح بتذبذب أعلى مقابل حجم مركز أصغر وإدارة أسرع."
-            )
-            warning = (
-                "فرصة هجومية عالية التذبذب؛ استخدم نصف حجم المركز المقترح، "
-                "ولا تطارد السعر بعد فجوة أو اندفاع جديد."
-            )
-        elif profile == "balanced":
-            decision = "فرصة نخبوية متوازنة"
-            note = (
-                "فرصة نخبوية اجتازت ترتيب اليوم ومسار Core v2.3 المتوازن "
-                "بحدود تذبذب ومخاطر متكيفة مع سيولة السهم."
-            )
-            warning = (
-                "الفرصة المتوازنة لا تضمن الربح؛ التزم بوقف الخسارة وحجم "
-                "المركز ولا تعتبر التصنيف بديلًا عن المتابعة."
-            )
-        else:
-            decision = "فرصة نخبوية"
-            note = "فرصة نخبوية اجتازت بوابات الجودة السابقة."
-            warning = "التصنيف لا يضمن الربح؛ التزم بإدارة المخاطر."
+
+    if high_quality_buy:
         return OpportunityClassification(
-            tier="elite",
-            decision=decision,
-            elite=True,
-            profile=profile,
+            tier="conditional_buy_high_quality",
+            decision="شراء مشروط بجودة أعلى",
+            elite=False,
+            profile="balanced_candidate",
             top_fraction_pct=top_fraction_pct,
             quality_score=quality_score,
             gate_version=gate_version,
             failed_checks=(),
-            note=note,
-            volatility_warning=warning,
-            position_multiplier=position_multiplier,
+            note=(
+                "السهم اجتاز فلاتر الجودة المتوازنة، لكن الاختبارات التاريخية "
+                "لم تثبت تفوقًا مستقرًا يسمح بوصفه كفرصة نخبوية. راقب شروط "
+                "الدخول والسيولة وحركة السوق قبل اتخاذ القرار."
+            ),
+            volatility_warning=(
+                "التصنيف تحليلي تجريبي ولا يضمن التفوق على السوق أو تحقيق ربح."
+            ),
+            position_multiplier=1.0,
         )
 
     if signal == "BUY":
@@ -222,12 +195,13 @@ def classify_report_item(
             gate_version=gate_version,
             failed_checks=failed_checks,
             note=(
-                "إشارة شراء جيدة، لكنها لم تجتز مسارًا كاملًا من مساري الفرصة "
-                "النخبوية؛ راقب الاختراق والتذبذب والسيولة وشروط الدخول."
+                "إشارة شراء اتجاهية، لكنها لم تجتز فلاتر الجودة المتوازنة كاملة؛ "
+                "تُعرض للمراقبة المشروطة وليست توصية دخول."
             ),
             volatility_warning=None,
             position_multiplier=1.0,
         )
+
     return OpportunityClassification(
         tier="watch",
         decision="مراقبة",
@@ -238,7 +212,7 @@ def classify_report_item(
         gate_version=gate_version,
         failed_checks=failed_checks,
         note=(
-            "السهم ظهر ضمن أعلى ترتيب اليوم، لكن شروط الشراء غير مكتملة؛ "
+            "السهم ظهر ضمن الترتيب التحليلي، لكن شروط الشراء غير مكتملة؛ "
             "يعرض للمراقبة ولا يعامل كتوصية دخول."
         ),
         volatility_warning=None,
@@ -254,10 +228,11 @@ def _adjusted_trade_plan(payload: dict, multiplier: float) -> dict | None:
     adjusted = dict(plan)
     adjusted["position_size"] = int(_number(plan.get("position_size")) * multiplier)
     adjusted["position_value"] = round(
-        _number(plan.get("position_value")) * multiplier,
-        2,
+        _number(plan.get("position_value")) * multiplier, 2
     )
-    adjusted["risk_amount"] = round(_number(plan.get("risk_amount")) * multiplier, 2)
+    adjusted["risk_amount"] = round(
+        _number(plan.get("risk_amount")) * multiplier, 2
+    )
     adjusted["position_multiplier"] = multiplier
     return adjusted
 
@@ -282,11 +257,8 @@ def enrich_daily_report_selection(
     reported_eligible = int(_number(summary.get("eligible_count"), len(items)))
     eligible_count = max(reported_eligible, len(items))
     regime = _selection_regime(items)
-    regime_profile = str(regime["profile"])
     tier_counts = {
-        "elite": 0,
-        "elite_balanced": 0,
-        "elite_aggressive": 0,
+        "conditional_buy_high_quality": 0,
         "conditional_buy": 0,
         "watch": 0,
     }
@@ -296,20 +268,16 @@ def enrich_daily_report_selection(
         classification = classify_report_item(
             item,
             eligible_count=eligible_count,
-            selection_regime=regime_profile,
+            selection_regime=str(regime["profile"]),
         )
         tier_counts[classification.tier] += 1
-        if classification.profile == "balanced":
-            tier_counts["elite_balanced"] += 1
-        elif classification.profile == "aggressive":
-            tier_counts["elite_aggressive"] += 1
 
         original_explanation = str(payload.get("explanation", "")).strip()
         context_parts = [classification.note]
         if classification.volatility_warning:
             context_parts.append(classification.volatility_warning)
         context_parts.append(
-            "الخطة محسوبة لأفق خمس جلسات وتستخدم أهدافًا أقرب مبنية على ATR."
+            "الخطة محسوبة لأفق خمس جلسات وتستخدم أهدافًا مبنية على ATR."
         )
         if original_explanation:
             context_parts.append(original_explanation)
@@ -319,7 +287,7 @@ def enrich_daily_report_selection(
                 "decision": classification.decision,
                 "opportunity_tier": classification.tier,
                 "elite_profile": classification.profile,
-                "elite_opportunity": classification.elite,
+                "elite_opportunity": False,
                 "elite_score_threshold": ELITE_SCORE_THRESHOLD,
                 "elite_quality_score": round(classification.quality_score, 2),
                 "elite_gate_version": classification.gate_version,
@@ -329,11 +297,8 @@ def enrich_daily_report_selection(
                 "eligible_universe_size": eligible_count,
                 "top_fraction_pct": classification.top_fraction_pct,
                 "selection_note": classification.note,
-                "recommended_position_multiplier": classification.position_multiplier,
-                "adjusted_trade_plan": _adjusted_trade_plan(
-                    payload,
-                    classification.position_multiplier,
-                ),
+                "recommended_position_multiplier": 1.0,
+                "adjusted_trade_plan": _adjusted_trade_plan(payload, 1.0),
                 "short_horizon": {
                     "sessions": SHORT_HORIZON_SESSIONS,
                     "label": "خطة ومتابعة بعد 5 جلسات تداول",
@@ -342,7 +307,7 @@ def enrich_daily_report_selection(
                 "trade_plan_context": {
                     "horizon": "five_sessions",
                     "label": "خطة ATR قصيرة الأفق",
-                    "note": "الأهداف 1R و1.75R؛ الهجومية قد تستخدم 1.25R و2R.",
+                    "note": "الأهداف تقديرية وتخضع لتغير السعر والسيولة.",
                 },
                 "volatility_warning": classification.volatility_warning,
                 "explanation": "\n\n".join(context_parts),
@@ -352,23 +317,25 @@ def enrich_daily_report_selection(
 
     summary.update(
         {
-            "title": "أفضل 10 فرص مرتبة للجلسة القادمة وفق Core v2.3",
+            "title": "10 أسهم للمتابعة التحليلية في الجلسة القادمة",
             "ranking_scope": (
-                "ترتيب يومي مع مسار نخبوية متوازن ومسار هجومي مشروط بحالة السوق"
+                "ترتيب اتجاهي تجريبي للمراقبة؛ لم يثبت كتوقع أداء أو تفوق على السوق"
             ),
-            "selection_model": "cross-sectional-top10-v2.3-regime-two-profile",
+            "selection_model": SELECTION_MODEL,
             "selection_regime": regime,
             "short_horizon_sessions": SHORT_HORIZON_SESSIONS,
             "elite_score_threshold": ELITE_SCORE_THRESHOLD,
-            "elite_gate_version": "elite-quality-v2.3-regime-aware",
+            "elite_gate_version": "elite-quality-v2.3-production-safe",
+            "public_elite_labels_enabled": PUBLIC_ELITE_LABEL_ENABLED,
+            "aggressive_profile_enabled": AGGRESSIVE_PROFILE_ENABLED,
             "opportunity_tiers": tier_counts,
             "selection_notice": (
-                "قد لا يعرض التقرير فرصة نخبوية. المسار الهجومي لا يتفعل إلا "
-                "مع حالة سوق داعمة واختراق وحجم وسيولة مؤكدة."
+                "التقرير أداة ترتيب ومراقبة فقط. التصنيف الهجومي وتسميات الفرص "
+                "النخبوية متوقفة لحين إثبات تفوق مستقر على بيانات مستقلة."
             ),
             "disclaimer": (
-                "هذا ترتيب تحليلي وليس توصية شراء أو بيع. الفرصة المتوازنة "
-                "تستهدف ضبط المخاطر، والهجومية أعلى تذبذبًا وتستخدم نصف حجم المركز."
+                "هذا تحليل آلي لدعم القرار وليس توصية شراء أو بيع، ولا يضمن "
+                "تحقيق أرباح أو التفوق على السوق."
             ),
         }
     )

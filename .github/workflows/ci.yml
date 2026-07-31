@@ -110,6 +110,7 @@ jobs:
       FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
       PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
       FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
+      SAHMI_CI_PREVIEW_BUILD: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

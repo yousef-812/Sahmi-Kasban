@@ -28,6 +28,7 @@ from app.services.wallet import grant_weekly_points_for_subscription
 EMAIL_VERIFICATION = "email_verification"
 PASSWORD_RESET = "password_reset"
 EMAIL_VERIFICATION_CODE_MINUTES = 10
+EMAIL_VERIFICATION_MAX_ATTEMPTS = 5
 
 
 class AuthenticationError(RuntimeError):
@@ -44,6 +45,10 @@ class DuplicateEmailError(RuntimeError):
 
 class InvalidAccountTokenError(RuntimeError):
     """Raised when an account action token is invalid or expired."""
+
+
+class InvalidAccountCodeError(InvalidAccountTokenError):
+    """Raised after recording an invalid verification-code attempt."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +126,7 @@ def issue_email_verification_code(db: Session, *, user_id: UUID) -> str:
             ),
             token_type=EMAIL_VERIFICATION,
             expires_at=now + timedelta(minutes=EMAIL_VERIFICATION_CODE_MINUTES),
+            failed_attempts=0,
         )
     )
     db.flush()
@@ -181,13 +187,21 @@ def consume_email_verification_code(
         .order_by(AccountToken.created_at.desc())
         .with_for_update()
     )
-    if token is None or not verify_account_code_hash(
+    if token is None:
+        raise InvalidAccountTokenError("Invalid or expired verification code")
+
+    valid_code = verify_account_code_hash(
         expected_hash=token.token_hash,
         user_id=user.id,
         token_type=EMAIL_VERIFICATION,
         code=code,
-    ):
-        raise InvalidAccountTokenError("Invalid or expired verification code")
+    )
+    if not valid_code:
+        token.failed_attempts += 1
+        if token.failed_attempts >= EMAIL_VERIFICATION_MAX_ATTEMPTS:
+            token.used_at = now
+        db.flush()
+        raise InvalidAccountCodeError("Invalid or expired verification code")
 
     token.used_at = now
     db.flush()

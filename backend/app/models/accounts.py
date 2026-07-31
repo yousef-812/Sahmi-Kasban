@@ -46,6 +46,10 @@ class AccountToken(TimestampMixin, Base):
     __tablename__ = "account_tokens"
     __table_args__ = (
         UniqueConstraint("token_hash", name="uq_account_tokens_token_hash"),
+        CheckConstraint(
+            "failed_attempts >= 0",
+            name="account_token_failed_attempts_non_negative",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -63,6 +67,28 @@ class AccountToken(TimestampMixin, Base):
         nullable=False,
     )
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
+class AuthRateLimit(TimestampMixin, Base):
+    __tablename__ = "auth_rate_limits"
+    __table_args__ = (
+        UniqueConstraint(
+            "action",
+            "key_hash",
+            name="uq_auth_rate_limits_action_key",
+        ),
+        CheckConstraint("attempts > 0", name="auth_rate_limit_attempts_positive"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    action: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    window_started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class WalletAccount(TimestampMixin, Base):

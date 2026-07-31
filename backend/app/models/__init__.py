@@ -1,4 +1,10 @@
-from app.models.accounts import AccountToken, AuthSession, WalletAccount, WeeklyGrant
+from app.models.accounts import (
+    AccountToken,
+    AuthRateLimit,
+    AuthSession,
+    WalletAccount,
+    WeeklyGrant,
+)
 from app.models.analysis_access import UserStockAnalysisAccess
 from app.models.backtests import (
     AnalysisBacktestObservation,
@@ -49,6 +55,7 @@ __all__ = [
     "AnalysisReplayRow",
     "AnalysisReplayTicker",
     "AppSetting",
+    "AuthRateLimit",
     "AuthSession",
     "BillingPurchase",
     "CommunityAdminEvent",

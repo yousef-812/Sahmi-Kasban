@@ -1,0 +1,203 @@
+name: Production Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type RELEASE_PRODUCTION to build store artifacts
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
+      SAHMI_PRODUCTION_BUILD: "true"
+      PRODUCTION_API_BASE_URL: ${{ secrets.PRODUCTION_API_BASE_URL }}
+      FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
+      ADMOB_ANDROID_APP_ID: ${{ secrets.ADMOB_ANDROID_APP_ID }}
+      ADMOB_ANDROID_BANNER_ID: ${{ secrets.ADMOB_ANDROID_BANNER_ID }}
+      ADMOB_ANDROID_NATIVE_ID: ${{ secrets.ADMOB_ANDROID_NATIVE_ID }}
+      ADMOB_ANDROID_INTERSTITIAL_ID: ${{ secrets.ADMOB_ANDROID_INTERSTITIAL_ID }}
+      SENTRY_MOBILE_DSN: ${{ secrets.SENTRY_MOBILE_DSN }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_EXPECTED_CERT_SHA256: ${{ secrets.ANDROID_EXPECTED_CERT_SHA256 }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Require explicit production confirmation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [ "${{ inputs.confirmation }}" != "RELEASE_PRODUCTION" ]; then
+            echo "Production release confirmation did not match RELEASE_PRODUCTION" >&2
+            exit 1
+          fi
+
+      - name: Require production integration secrets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          required=(
+            PRODUCTION_API_BASE_URL
+            FIREBASE_ANDROID_GOOGLE_SERVICES_JSON
+            ADMOB_ANDROID_APP_ID
+            ADMOB_ANDROID_BANNER_ID
+            ADMOB_ANDROID_NATIVE_ID
+            ADMOB_ANDROID_INTERSTITIAL_ID
+            SENTRY_MOBILE_DSN
+            ANDROID_KEYSTORE_BASE64
+            ANDROID_KEYSTORE_PASSWORD
+            ANDROID_KEY_ALIAS
+            ANDROID_KEY_PASSWORD
+            ANDROID_EXPECTED_CERT_SHA256
+          )
+          for name in "${required[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required GitHub secret: $name" >&2
+              exit 1
+            fi
+          done
+          case "$PRODUCTION_API_BASE_URL" in
+            https://*) ;;
+            *) echo "PRODUCTION_API_BASE_URL must use https://" >&2; exit 1 ;;
+          esac
+          for name in ADMOB_ANDROID_APP_ID ADMOB_ANDROID_BANNER_ID ADMOB_ANDROID_NATIVE_ID ADMOB_ANDROID_INTERSTITIAL_ID; do
+            if [[ "${!name}" == *3940256099942544* ]]; then
+              echo "$name still contains a Google test identifier" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure Firebase Android app
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON" > mobile/android/app/google-services.json
+          python -m json.tool mobile/android/app/google-services.json >/dev/null
+
+      - name: Configure stable Android signing
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > mobile/android/app/upload-keystore.jks
+          cat > mobile/android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+          keytool -list -keystore mobile/android/app/upload-keystore.jks \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+
+      - name: Install Flutter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          echo "$FLUTTER_HOME/bin" >> "$GITHUB_PATH"
+          "$FLUTTER_HOME/bin/flutter" config --no-analytics
+
+      - name: Fetch and validate Flutter application
+        working-directory: mobile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          "$FLUTTER_HOME/bin/flutter" pub get
+          "$FLUTTER_HOME/bin/dart" format --output=none --set-exit-if-changed lib test
+          "$FLUTTER_HOME/bin/flutter" analyze
+          "$FLUTTER_HOME/bin/flutter" test
+
+      - name: Build signed production APK and AAB
+        working-directory: mobile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          defines=(
+            "--dart-define=API_BASE_URL=$PRODUCTION_API_BASE_URL"
+            "--dart-define=DEMO_MODE=false"
+            "--dart-define=APP_ENV=production"
+            "--dart-define=ADMOB_ANDROID_BANNER_ID=$ADMOB_ANDROID_BANNER_ID"
+            "--dart-define=ADMOB_ANDROID_NATIVE_ID=$ADMOB_ANDROID_NATIVE_ID"
+            "--dart-define=ADMOB_ANDROID_INTERSTITIAL_ID=$ADMOB_ANDROID_INTERSTITIAL_ID"
+            "--dart-define=SENTRY_DSN=$SENTRY_MOBILE_DSN"
+            "--dart-define=SENTRY_RELEASE=sahmi-kasban-mobile@$GITHUB_SHA"
+            "--dart-define=SENTRY_TRACES_SAMPLE_RATE=0.05"
+          )
+          "$FLUTTER_HOME/bin/flutter" build apk --release "${defines[@]}"
+          "$FLUTTER_HOME/bin/flutter" build appbundle --release "${defines[@]}"
+
+      - name: Verify package, version, and signing certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apk="mobile/build/app/outputs/flutter-apk/app-release.apk"
+          aab="mobile/build/app/outputs/bundle/release/app-release.aab"
+          test -s "$apk"
+          test -s "$aab"
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          aapt="$(find "$sdk_root/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -x "$aapt"
+          badging="$($aapt dump badging "$apk" | head -n 1)"
+          package_id="$(printf '%s\n' "$badging" | sed -n "s/package: name='\([^']*\)'.*/\1/p")"
+          version_code="$(printf '%s\n' "$badging" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          version_name="$(printf '%s\n' "$badging" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          test "$package_id" = "com.sahmikasban.sahmi_kasban_mobile"
+          keytool -printcert -jarfile "$apk" \
+            | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          cert_sha256="$(sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' \
+            mobile/build/app/outputs/flutter-apk/signing-certificate.txt | head -n 1)"
+          normalize() {
+            printf '%s' "$1" | tr '[:lower:]' '[:upper:]' | tr -d ':[:space:]'
+          }
+          if [ "$(normalize "$cert_sha256")" != "$(normalize "$ANDROID_EXPECTED_CERT_SHA256")" ]; then
+            echo "Production signing certificate mismatch" >&2
+            exit 1
+          fi
+          safe_version="${version_name//+/-}"
+          apk_output="mobile/build/app/outputs/flutter-apk/sahmi-kasban-${safe_version}-${version_code}-production.apk"
+          aab_output="mobile/build/app/outputs/bundle/release/sahmi-kasban-${safe_version}-${version_code}-production.aab"
+          cp "$apk" "$apk_output"
+          cp "$aab" "$aab_output"
+          cat > mobile/build/production-release-metadata.txt <<EOF
+          package_id=$package_id
+          version_name=$version_name
+          version_code=$version_code
+          certificate_sha256=$cert_sha256
+          source_commit=$GITHUB_SHA
+          app_environment=production
+          api_base_url=$PRODUCTION_API_BASE_URL
+          EOF
+          echo "PRODUCTION_APK=$apk_output" >> "$GITHUB_ENV"
+          echo "PRODUCTION_AAB=$aab_output" >> "$GITHUB_ENV"
+
+      - name: Upload production store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sahmi-kasban-production-${{ github.run_id }}
+          path: |
+            ${{ env.PRODUCTION_APK }}
+            ${{ env.PRODUCTION_AAB }}
+            mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+            mobile/build/production-release-metadata.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove protected files
+        if: always()
+        shell: bash
+        run: |
+          rm -f mobile/android/app/upload-keystore.jks
+          rm -f mobile/android/key.properties
+          rm -f mobile/android/app/google-services.json

@@ -7,7 +7,10 @@ plugins {
 }
 
 val keystorePropertiesFile = rootProject.file("key.properties")
-if (file("google-services.json").exists() && keystorePropertiesFile.exists()) {
+val googleServicesFile = file("google-services.json")
+val ciPreviewBuild =
+    providers.environmentVariable("SAHMI_CI_PREVIEW_BUILD").orNull == "true"
+if (googleServicesFile.exists() && !ciPreviewBuild) {
     apply(plugin = "com.google.gms.google-services")
 }
 
@@ -18,8 +21,28 @@ val releaseSigningConfigured = keystorePropertiesFile.exists().also { exists ->
     }
 }
 val allowCiPreviewSigning =
-    providers.environmentVariable("SAHMI_ALLOW_CI_PREVIEW_SIGNING").orNull == "true" ||
-        providers.environmentVariable("GITHUB_ACTIONS").orNull == "true"
+    ciPreviewBuild ||
+        providers.environmentVariable("SAHMI_ALLOW_CI_PREVIEW_SIGNING").orNull == "true"
+val productionBuild =
+    providers.environmentVariable("SAHMI_PRODUCTION_BUILD").orNull == "true"
+val admobAndroidAppId =
+    providers.environmentVariable("ADMOB_ANDROID_APP_ID").orNull
+        ?: "ca-app-pub-3940256099942544~3347511713"
+
+if (productionBuild) {
+    if (!releaseSigningConfigured) {
+        throw GradleException("Production Android builds require the protected release signing key.")
+    }
+    if (!googleServicesFile.exists()) {
+        throw GradleException("Production Android builds require google-services.json.")
+    }
+    if (ciPreviewBuild) {
+        throw GradleException("Production Android builds cannot use the CI preview package.")
+    }
+    if (admobAndroidAppId.contains("3940256099942544")) {
+        throw GradleException("Production Android builds must not use the Google AdMob test app ID.")
+    }
+}
 
 android {
     namespace = "com.sahmikasban.sahmi_kasban_mobile"
@@ -37,9 +60,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders["admobAppId"] =
-            System.getenv("ADMOB_ANDROID_APP_ID")
-                ?: "ca-app-pub-3940256099942544~3347511713"
+        manifestPlaceholders["admobAppId"] = admobAndroidAppId
     }
 
     signingConfigs {
@@ -69,7 +90,7 @@ android {
                 else -> {
                     throw GradleException(
                         "Release signing is not configured. Use Signed Android Release, or set " +
-                            "SAHMI_ALLOW_CI_PREVIEW_SIGNING=true for a separate .ci preview package.",
+                            "SAHMI_CI_PREVIEW_BUILD=true for a separate .ci preview package.",
                     )
                 }
             }

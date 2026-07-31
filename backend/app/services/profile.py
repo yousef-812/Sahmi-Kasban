@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.avatars import validate_avatar_key
@@ -11,6 +11,7 @@ from app.core.security import hash_password, verify_password
 from app.models import (
     Discussion,
     PredictionVerification,
+    PushDevice,
     Subscription,
     User,
     WalletAccount,
@@ -74,6 +75,7 @@ def soft_delete_account(db: Session, user: User, *, password: str) -> None:
 
     now = datetime.now(UTC)
     revoke_all_user_sessions(db, user.id)
+    db.execute(delete(PushDevice).where(PushDevice.user_id == user.id))
     db.execute(
         update(Subscription)
         .where(

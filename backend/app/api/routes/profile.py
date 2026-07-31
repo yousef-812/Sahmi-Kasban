@@ -128,4 +128,9 @@ def delete_my_account(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password is incorrect",
         ) from exc
-    return MessageResponse(message="Account deleted successfully")
+    return MessageResponse(
+        message=(
+            "Account deleted successfully. Cancel any active Google Play subscription "
+            "separately to stop future renewals."
+        )
+    )
