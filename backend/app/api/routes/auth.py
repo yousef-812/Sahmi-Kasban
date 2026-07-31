@@ -26,6 +26,7 @@ from app.services.auth import (
     AuthenticationError,
     DuplicateEmailError,
     EmailVerificationRequiredError,
+    InvalidAccountCodeError,
     InvalidAccountTokenError,
     authenticate_user,
     create_email_verification_code,
@@ -173,6 +174,13 @@ def verify_email(payload: VerifyEmailRequest, db: DatabaseSession) -> MessageRes
             user = verify_user_email(db, payload.token or "")
         grant_welcome_bonus_if_eligible(db, user)
         db.commit()
+    except InvalidAccountCodeError as exc:
+        # The failed-attempt counter is a security record and must survive the 400 response.
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code",
+        ) from exc
     except InvalidAccountTokenError as exc:
         db.rollback()
         raise HTTPException(
