@@ -62,6 +62,8 @@ def record_auth_attempt(
             key_hash=key_hash,
             window_started_at=now,
             attempts=1,
+            created_at=now,
+            updated_at=now,
         )
         db.add(row)
         try:
@@ -86,6 +88,7 @@ def record_auth_attempt(
     if now >= window_end:
         row.window_started_at = now
         row.attempts = 1
+        row.updated_at = now
         db.flush()
         return
 
@@ -94,4 +97,5 @@ def record_auth_attempt(
         raise AuthRateLimitExceeded(retry_after)
 
     row.attempts += 1
+    row.updated_at = now
     db.flush()
