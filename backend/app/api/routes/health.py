@@ -23,10 +23,17 @@ class DatabaseHealthResponse(BaseModel):
     database: str
 
 
+class ReadinessCheckResponse(BaseModel):
+    name: str
+    status: str
+    detail: str
+
+
 class ReadinessHealthResponse(BaseModel):
     status: str
     database: str
     environment: str
+    checks: list[ReadinessCheckResponse]
 
 
 @router.get("", response_model=HealthResponse)
@@ -57,6 +64,13 @@ def readiness_health_check(db: DatabaseSession) -> ReadinessHealthResponse:
         status="ready",
         database="reachable",
         environment=settings.app_env.value,
+        checks=[
+            ReadinessCheckResponse(
+                name="database",
+                status="ready",
+                detail="reachable",
+            )
+        ],
     )
 
 
