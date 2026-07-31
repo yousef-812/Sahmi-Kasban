@@ -22,13 +22,14 @@ AppConfig buildConfig({
 }
 
 void main() {
-  test('production Android accepts live Android IDs with iOS test defaults', () {
-    final config = buildConfig(
-      iosPublisher: AppConfig.googleTestPublisherId,
-    );
+  test(
+    'production Android accepts live Android IDs with iOS test defaults',
+    () {
+      final config = buildConfig(iosPublisher: AppConfig.googleTestPublisherId);
 
-    expect(config.validateForRuntime, returnsNormally);
-  });
+      expect(config.validateForRuntime, returnsNormally);
+    },
+  );
 
   test('production iOS accepts live iOS IDs with Android test defaults', () {
     final config = buildConfig(
