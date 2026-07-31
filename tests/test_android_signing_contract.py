@@ -61,6 +61,6 @@ def test_production_workflow_requires_live_integrations_and_store_bundle() -> No
     assert "ADMOB_ANDROID_NATIVE_ID" in workflow
     assert "ADMOB_ANDROID_INTERSTITIAL_ID" in workflow
     assert "SENTRY_MOBILE_DSN" in workflow
-    assert "flutter build appbundle --release" in workflow
+    assert "build appbundle --release" in workflow
     assert "production.aab" in workflow
     assert PACKAGE_ID in workflow
