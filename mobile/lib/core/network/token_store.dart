@@ -17,13 +17,17 @@ class TokenStore {
   final FlutterSecureStorage _storage;
 
   Future<StoredTokens?> read() async {
-    final values = await _storage.readAll();
-    final accessToken = values[_accessKey];
-    final refreshToken = values[_refreshKey];
-    if (accessToken == null || refreshToken == null) {
+    try {
+      final values = await _storage.readAll();
+      final accessToken = values[_accessKey];
+      final refreshToken = values[_refreshKey];
+      if (accessToken == null || refreshToken == null) {
+        return null;
+      }
+      return StoredTokens(accessToken: accessToken, refreshToken: refreshToken);
+    } on Object {
       return null;
     }
-    return StoredTokens(accessToken: accessToken, refreshToken: refreshToken);
   }
 
   Future<String?> readAccessToken() => _storage.read(key: _accessKey);
