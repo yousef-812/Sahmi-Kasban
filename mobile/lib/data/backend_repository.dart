@@ -61,13 +61,15 @@ class BackendRepository {
   }
 
   Future<String> resetPassword({
-    required String token,
+    required String email,
+    required String code,
     required String newPassword,
   }) {
     return _anonymousMessage(
       path: '/auth/reset-password',
       data: <String, dynamic>{
-        'token': token.trim(),
+        'email': email.trim(),
+        'code': code.trim(),
         'new_password': newPassword,
       },
     );
