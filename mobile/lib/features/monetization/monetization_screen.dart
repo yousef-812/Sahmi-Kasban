@@ -63,7 +63,8 @@ class MonetizationScreen extends ConsumerWidget {
                             : state.products[plan.productId]?.price ??
                                   'غير متاح حاليًا',
                         storeAvailable: state.storeAvailable,
-                        busy: state.purchasingProductId == plan.productId,
+                        busy: plan.productId != null &&
+                            state.purchasingProductId == plan.productId,
                         onPurchase: plan.productId == null
                             ? null
                             : () => controller.purchaseProduct(plan.productId!),
