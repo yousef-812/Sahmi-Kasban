@@ -339,22 +339,49 @@ class _CoinPackCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: const CircleAvatar(child: Icon(Icons.monetization_on_rounded)),
-        title: Text(
-          pack.displayNameAr,
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-        subtitle: Text('$price — ${pack.points} نقطة'),
-        trailing: busy
-            ? const SizedBox.square(
-                dimension: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              )
-            : FilledButton(
-                onPressed: storeAvailable ? onPurchase : null,
-                child: const Text('شراء'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              child: Icon(Icons.monetization_on_rounded),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    pack.displayNameAr,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$price — ${pack.points} نقطة',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(width: 14),
+            busy
+                ? const SizedBox.square(
+                    dimension: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : FilledButton(
+                    onPressed: storeAvailable ? onPurchase : null,
+                    child: const Text('شراء'),
+                  ),
+          ],
+        ),
       ),
     );
   }
