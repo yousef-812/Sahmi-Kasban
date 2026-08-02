@@ -59,7 +59,7 @@ def export_jan_feb_2025_md():
                 bench_str = "✅ متفوق" if m and m.benchmark_correct is True else ("❌ متراجع" if m and m.benchmark_correct is False else "➖")
 
                 md_lines.append(
-                    f"| {r.analysis_date} | `{r.ticker}` | **{r.signal or 'N/A'}** | {r.entry_price or 'N/A'} | `{scope}` | {fwd_ret if fwd_ret is not None else 'N/A'}% | {max_up if max_up is not None else 'N/A'}% | {max_down if max_down is not None else 'N/A'}% | {correct_str} | {exc_ret if exc_ret is not None else 'N/A'}% | {bench_str} |"
+                    f"| {r.analysis_date} | `{r.ticker}` | **{r.signal or 'N/A'}** | {r.entry if r.entry is not None else 'N/A'} | `{scope}` | {fwd_ret if fwd_ret is not None else 'N/A'}% | {max_up if max_up is not None else 'N/A'}% | {max_down if max_down is not None else 'N/A'}% | {correct_str} | {exc_ret if exc_ret is not None else 'N/A'}% | {bench_str} |"
                 )
             md_lines.append("")
 
