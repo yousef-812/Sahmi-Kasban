@@ -21,6 +21,7 @@ from app.services.daily_reports import (
 )
 from app.services.notifications import create_notification
 from app.services.operations_settings import get_bool_setting
+from app.services.report_performance import evaluate_due_market_reports
 from app.services.report_selection import enrich_daily_report_selection
 from app.services.stock_analysis import get_stock_ai_service
 
@@ -81,6 +82,14 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
                 tickers=tickers,
             )
             enriched = enrich_daily_report_selection(db, report_id=result.report.id)
+            try:
+                await evaluate_due_market_reports(
+                    db,
+                    provider=get_market_data_provider(),
+                    moment=moment or datetime.now(UTC),
+                )
+            except Exception:
+                logger.exception("Failed to evaluate due market reports during daily scan")
             notification_count = 0
             if result.created:
                 notification_count = _notify_report_ready(
