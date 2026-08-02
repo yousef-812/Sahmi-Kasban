@@ -73,6 +73,15 @@ def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int
 async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, object]:
     with SessionLocal() as db:
         try:
+            await evaluate_due_market_reports(
+                db,
+                provider=get_market_data_provider(),
+                moment=moment or datetime.now(UTC),
+            )
+        except Exception:
+            logger.exception("Failed to evaluate due market reports during daily scan")
+
+        try:
             tickers = await _scan_universe(db)
             result = await generate_daily_top10_report(
                 db,
@@ -82,14 +91,6 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
                 tickers=tickers,
             )
             enriched = enrich_daily_report_selection(db, report_id=result.report.id)
-            try:
-                await evaluate_due_market_reports(
-                    db,
-                    provider=get_market_data_provider(),
-                    moment=moment or datetime.now(UTC),
-                )
-            except Exception:
-                logger.exception("Failed to evaluate due market reports during daily scan")
             notification_count = 0
             if result.created:
                 notification_count = _notify_report_ready(
