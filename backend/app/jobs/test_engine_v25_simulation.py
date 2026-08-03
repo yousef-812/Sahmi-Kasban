@@ -99,7 +99,8 @@ def run_v25_simulation_for_dates():
                         if out.direction_correct is True:
                             v25_wins += 1
 
-                entry_val = f"{float(item.entry_price):.2f}" if item.entry_price else "N/A"
+                price_val = p.get("price") or (out.price_at_analysis if out else None)
+                entry_val = f"{float(price_val):.2f}" if price_val else "N/A"
                 print(f"{item.rank:<4} | {item.ticker:<6} | {v24_signal:<10} | {v25_signal:<15} | {entry_val:<8} | {max_up:>6.2f}% | {v24_outcome:<15} | {v25_outcome:<18}")
 
             print("-" * 105)
