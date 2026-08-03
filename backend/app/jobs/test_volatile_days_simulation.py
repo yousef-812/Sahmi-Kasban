@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import select, func, Decimal
+from decimal import Decimal
+from sqlalchemy import select, func
 from app.db.session import SessionLocal
 from app.models import AnalysisReplayRow, AnalysisReplayJob
 
