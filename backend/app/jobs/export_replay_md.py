@@ -10,21 +10,21 @@ from app.db.session import SessionLocal
 from app.models import AnalysisReplayJob, AnalysisReplayRow
 from app.services.historical_replay_exports import calculate_replay_export_metrics, _pct, _evaluation_scope
 
-def export_jan_to_june_2025_md():
+def export_jan_to_oct_2025_md():
     db = SessionLocal()
     try:
         jobs = db.scalars(
             select(AnalysisReplayJob)
             .where(
                 AnalysisReplayJob.start_date >= date(2025, 1, 1),
-                AnalysisReplayJob.start_date <= date(2025, 6, 1),
+                AnalysisReplayJob.start_date <= date(2025, 10, 1),
                 AnalysisReplayJob.evaluated_rows > 0,
             )
             .order_by(AnalysisReplayJob.start_date)
         ).all()
 
         md_lines = []
-        md_lines.append(f"# تقرير نتائج اختبار المحرك التنافسي — من يناير إلى مايو 2025 (Core v2.4 Replay)")
+        md_lines.append(f"# تقرير نتائج اختبار المحرك التنافسي — من يناير إلى سبتمبر/أكتوبر 2025 (Core v2.4 Replay)")
         md_lines.append("")
 
         total_all_rows = 0
@@ -66,7 +66,7 @@ def export_jan_to_june_2025_md():
                 )
             md_lines.append("")
 
-        out_path = Path("/workspace/jan_to_may_2025_replay.md")
+        out_path = Path("/workspace/jan_to_oct_2025_replay.md")
         out_path.write_text("\n".join(md_lines), encoding="utf-8")
         print(f"Successfully exported {total_all_rows} rows across {len(jobs)} jobs to {out_path}")
 
@@ -74,4 +74,4 @@ def export_jan_to_june_2025_md():
         db.close()
 
 if __name__ == "__main__":
-    export_jan_to_june_2025_md()
+    export_jan_to_oct_2025_md()
