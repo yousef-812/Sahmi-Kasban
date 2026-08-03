@@ -10,9 +10,9 @@ from app.models import MarketReport, MarketReportItem
 
 ELITE_SCORE_THRESHOLD = 80.0
 SHORT_HORIZON_SESSIONS = 5
-SELECTION_MODEL = "cross-sectional-top10-v2.3-production-safe"
-AGGRESSIVE_PROFILE_ENABLED = False
-PUBLIC_ELITE_LABEL_ENABLED = False
+SELECTION_MODEL = "cross-sectional-top10-v2.5-regime-adaptive"
+AGGRESSIVE_PROFILE_ENABLED = True
+PUBLIC_ELITE_LABEL_ENABLED = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,7 +120,6 @@ def classify_report_item(
     eligible_count: int,
     selection_regime: str = "unknown",
 ) -> OpportunityClassification:
-    del selection_regime
     payload = item.payload if isinstance(item.payload, dict) else {}
     signal = str(payload.get("signal", "WATCH")).upper()
     qualified = bool(payload.get("qualified", False))
@@ -133,12 +132,16 @@ def classify_report_item(
     balanced_ready = False
     aggressive_ready = False
 
-    if gate_version.startswith("elite-quality-v2.3"):
+    if gate_version.startswith("elite-quality-v2.3") or gate_version.startswith("elite-quality-v2.4"):
         balanced_ready = assessment.get("balanced_ready") is True
         aggressive_ready = assessment.get("aggressive_ready") is True
         if balanced_ready:
             quality_score = _number(
                 assessment.get("balanced_readiness_score"), quality_score
+            )
+        elif aggressive_ready:
+            quality_score = _number(
+                assessment.get("aggressive_readiness_score"), quality_score
             )
         failed_checks = tuple(
             [
@@ -155,15 +158,57 @@ def classify_report_item(
     elif assessment.get("engine_ready") is True:
         balanced_ready = True
 
-    high_quality_buy = (
-        item.rank <= 10
-        and signal == "BUY"
-        and qualified
-        and score >= ELITE_SCORE_THRESHOLD
-        and balanced_ready
-    )
+    # Check for Elite classification
+    is_top_rank = item.rank <= 10
+    is_elite_candidate = is_top_rank and signal == "BUY" and qualified and score >= ELITE_SCORE_THRESHOLD
 
-    if high_quality_buy:
+    # Aggressive is only active in bullish market regimes
+    regime_allows_aggressive = selection_regime in ("speculative_bullish", "broad_bullish")
+
+    if is_elite_candidate and PUBLIC_ELITE_LABEL_ENABLED:
+        if balanced_ready:
+            return OpportunityClassification(
+                tier="elite",
+                decision="شراء نخبة متوازن",
+                elite=True,
+                profile="balanced",
+                top_fraction_pct=top_fraction_pct,
+                quality_score=quality_score,
+                gate_version=gate_version,
+                failed_checks=(),
+                note=(
+                    "فرصة نخبوية اجتازت ترتيب اليوم ودرجة الاتجاه وبوابات "
+                    "Core v2.4 للتمدد السعري والتذبذب والمخاطر وانتظام التداول."
+                ),
+                volatility_warning=(
+                    "حتى الفرص النخبوية قد تتعرض لتذبذب وهبوط مؤقت؛ التزم "
+                    "بوقف الخسارة وحجم المركز ولا تعتبر التصنيف ضمانًا للربح."
+                ),
+                position_multiplier=1.0,
+            )
+        elif aggressive_ready and AGGRESSIVE_PROFILE_ENABLED and regime_allows_aggressive:
+            return OpportunityClassification(
+                tier="elite",
+                decision="شراء نخبة هجومي",
+                elite=True,
+                profile="aggressive",
+                top_fraction_pct=top_fraction_pct,
+                quality_score=quality_score,
+                gate_version=gate_version,
+                failed_checks=(),
+                note=(
+                    "فرصة نخبوية هجومية اجتازت الترتيب ودرجة الاتجاه وأكدت "
+                    "شروط الاختراق والحجم وحالة السوق الداعمة وفق Core v2.4."
+                ),
+                volatility_warning=(
+                    "مسار هجومي عالي التذبذب. الخطة تستخدم أهدافًا أبعد "
+                    "ونصف حجم المركز المعتاد وضبط مخاطر صارم."
+                ),
+                position_multiplier=0.5,
+            )
+
+    # Fallback to high quality conditional buy if it passed balanced gates but not fully elite
+    if is_top_rank and signal == "BUY" and qualified and score >= ELITE_SCORE_THRESHOLD and balanced_ready:
         return OpportunityClassification(
             tier="conditional_buy_high_quality",
             decision="شراء مشروط بجودة أعلى",
@@ -287,6 +332,9 @@ def enrich_daily_report_selection(
     eligible_count = max(reported_eligible, len(items))
     regime = _selection_regime(items)
     tier_counts = {
+        "elite": 0,
+        "elite_balanced": 0,
+        "elite_aggressive": 0,
         "conditional_buy_high_quality": 0,
         "conditional_buy": 0,
         "watch": 0,
@@ -300,6 +348,10 @@ def enrich_daily_report_selection(
             selection_regime=str(regime["profile"]),
         )
         tier_counts[classification.tier] += 1
+        if classification.profile == "balanced" and classification.elite:
+            tier_counts["elite_balanced"] += 1
+        elif classification.profile == "aggressive" and classification.elite:
+            tier_counts["elite_aggressive"] += 1
 
         raw_explanation = str(
             payload.get("base_explanation") or payload.get("explanation", "")
@@ -321,7 +373,7 @@ def enrich_daily_report_selection(
                 "decision": classification.decision,
                 "opportunity_tier": classification.tier,
                 "elite_profile": classification.profile,
-                "elite_opportunity": False,
+                "elite_opportunity": classification.elite,
                 "elite_score_threshold": ELITE_SCORE_THRESHOLD,
                 "elite_quality_score": round(classification.quality_score, 2),
                 "elite_gate_version": classification.gate_version,
@@ -331,8 +383,8 @@ def enrich_daily_report_selection(
                 "eligible_universe_size": eligible_count,
                 "top_fraction_pct": classification.top_fraction_pct,
                 "selection_note": classification.note,
-                "recommended_position_multiplier": 1.0,
-                "adjusted_trade_plan": _adjusted_trade_plan(payload, 1.0),
+                "recommended_position_multiplier": classification.position_multiplier,
+                "adjusted_trade_plan": _adjusted_trade_plan(payload, classification.position_multiplier),
                 "short_horizon": {
                     "sessions": SHORT_HORIZON_SESSIONS,
                     "label": "خطة ومتابعة بعد 5 جلسات تداول",
@@ -351,25 +403,25 @@ def enrich_daily_report_selection(
 
     summary.update(
         {
-            "title": "10 أسهم للمتابعة التحليلية في الجلسة القادمة",
+            "title": "أفضل 10 فرص مرتبة للجلسة القادمة وفق Core v2.4",
             "ranking_scope": (
-                "ترتيب اتجاهي تجريبي للمراقبة؛ لم يثبت كتوقع أداء أو تفوق على السوق"
+                "ترتيب يومي مع مسار نخبوية متوازن ومسار هجومي مشروط بحالة السوق"
             ),
             "selection_model": SELECTION_MODEL,
             "selection_regime": regime,
             "short_horizon_sessions": SHORT_HORIZON_SESSIONS,
             "elite_score_threshold": ELITE_SCORE_THRESHOLD,
-            "elite_gate_version": "elite-quality-v2.3-production-safe",
+            "elite_gate_version": "elite-quality-v2.4-regime-adaptive",
             "public_elite_labels_enabled": PUBLIC_ELITE_LABEL_ENABLED,
             "aggressive_profile_enabled": AGGRESSIVE_PROFILE_ENABLED,
             "opportunity_tiers": tier_counts,
             "selection_notice": (
-                "التقرير أداة ترتيب ومراقبة فقط. التصنيف الهجومي وتسميات الفرص "
-                "النخبوية متوقفة لحين إثبات تفوق مستقر على بيانات مستقلة."
+                "قد لا يعرض التقرير فرصة نخبوية. المسار الهجومي لا يتفعل إلا "
+                "مع حالة سوق داعمة واختراق وحجم وسيولة مؤكدة."
             ),
             "disclaimer": (
-                "هذا تحليل آلي لدعم القرار وليس توصية شراء أو بيع، ولا يضمن "
-                "تحقيق أرباح أو التفوق على السوق."
+                "هذا ترتيب تحليلي وليس توصية شراء أو بيع. الفرصة المتوازنة "
+                "تستهدف ضبط المخاطر، والهجومية أعلى تذبذبًا وتستخدم نصف حجم المركز."
             ),
         }
     )
