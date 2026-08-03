@@ -77,26 +77,26 @@ def run_v25_simulation_for_dates():
 
                 if out and out.status == "complete":
                     evaluated_count += 1
-                    if out.correct is True:
+                    if out.direction_correct is True:
                         v24_outcome = f"✅ Pass ({ret:+.2f}%)"
                         v24_wins += 1
-                    elif out.correct is False:
+                    elif out.direction_correct is False:
                         v24_outcome = f"❌ Loss ({ret:+.2f}%)"
                     else:
                         v24_outcome = f"➖ Neut ({ret:+.2f}%)"
 
                     if v25_signal.startswith("BUY"):
-                        if max_up >= 3.5:
+                        if out.target_one_hit is True or max_up >= 3.5:
                             v25_outcome = f"🎯 Lock +{max_up:.2f}%"
                             v25_wins += 1
-                        elif out.correct is True:
+                        elif out.direction_correct is True:
                             v25_outcome = f"✅ Pass ({ret:+.2f}%)"
                             v25_wins += 1
                         else:
                             v25_outcome = f"❌ Loss ({ret:+.2f}%)"
                     else:
                         v25_outcome = v24_outcome
-                        if out.correct is True:
+                        if out.direction_correct is True:
                             v25_wins += 1
 
                 entry_val = f"{float(item.entry_price):.2f}" if item.entry_price else "N/A"
