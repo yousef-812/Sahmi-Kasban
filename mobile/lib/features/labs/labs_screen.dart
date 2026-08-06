@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -5,9 +7,12 @@ import 'package:intl/intl.dart' show DateFormat;
 import '../../core/network/api_exception.dart';
 import 'labs_models.dart';
 import 'labs_providers.dart';
+import 'labs_repository.dart';
 
 class LabsScreen extends ConsumerStatefulWidget {
-  const LabsScreen({super.key});
+  const LabsScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   ConsumerState<LabsScreen> createState() => _LabsScreenState();
@@ -18,7 +23,44 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
   DateTime _endDate = DateTime.now();
   int? _rank;
   String _exitMode = 'target_2';
-  LabsBacktestQuery? _submitted;
+  bool _submitting = false;
+  String? _activeJobId;
+  String? _error;
+  List<LabsBacktestJob> _jobs = const [];
+  bool _loadingJobs = true;
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final jobs = await ref
+          .read(labsRepositoryProvider)
+          .backtestJobs();
+      if (!mounted) return;
+      setState(() {
+        _jobs = jobs;
+        _loadingJobs = false;
+        _error = null;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingJobs = false;
+        _error = error is ApiException ? error.message : error.toString();
+      });
+    }
+  }
 
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(
@@ -46,14 +88,73 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
     }
   }
 
-  void _run() {
+  Future<void> _run() async {
     final query = LabsBacktestQuery(
       startDate: _startDate,
       endDate: _endDate,
       rank: _rank,
       exitMode: _exitMode,
     );
-    setState(() => _submitted = query);
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final job = await ref
+          .read(labsRepositoryProvider)
+          .createBacktestJob(query);
+      if (!mounted) return;
+      setState(() {
+        _activeJobId = job.id;
+        _submitting = false;
+      });
+      _startPolling();
+      await _load();
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = error is ApiException ? error.message : error.toString();
+      });
+    }
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(
+      const Duration(seconds: 6),
+      (_) => unawaited(_poll()),
+    );
+  }
+
+  Future<void> _poll() async {
+    final jobId = _activeJobId;
+    if (jobId == null) return;
+    try {
+      final job = await ref.read(labsRepositoryProvider).backtestJob(jobId);
+      if (!mounted) return;
+      if (job.status == 'complete' || job.status == 'failed') {
+        _pollTimer?.cancel();
+        setState(() => _activeJobId = null);
+      }
+      await _load();
+    } on Object {
+      // Transient polling failures are retried on the next tick.
+    }
+  }
+
+  Future<void> _openJob(LabsBacktestJob job) async {
+    setState(() {
+      _activeJobId = job.id;
+      _startDate = job.startDate;
+      _endDate = job.endDate;
+      _rank = job.rank;
+      _exitMode = job.exitMode;
+    });
+    if (job.isActive) {
+      _startPolling();
+    }
+    await _load();
   }
 
   String _formatDate(DateTime value) {
@@ -64,26 +165,130 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
     }
   }
 
+  Widget _body() {
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const _LabsNotice(),
+          const SizedBox(height: 14),
+          _buildControls(context),
+          const SizedBox(height: 16),
+          if (_error != null)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.error_outline),
+                title: const Text('تعذر تشغيل المحاكاة'),
+                subtitle: Text(_error!),
+              ),
+            ),
+          if (_submitting)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(
+                  child: Text('جارٍ إرسال المحاكاة إلى Worker الاختبارات...'),
+                ),
+              ),
+            ),
+          if (_activeJobId != null)
+            _buildActiveJob(context),
+          const SizedBox(height: 8),
+          Text(
+            'محاولاتي',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          if (_loadingJobs)
+            const Center(child: CircularProgressIndicator()),
+          if (!_loadingJobs && _jobs.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('لم تشغّل أي محاكاة بعد.')),
+              ),
+            ),
+          for (final job in _jobs)
+            _JobCard(
+              job: job,
+              dateFormat: DateFormat('d MMM yyyy', 'ar'),
+              active: _activeJobId == job.id,
+              onOpen: () => _openJob(job),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveJob(BuildContext context) {
+    final jobId = _activeJobId!;
+    return FutureBuilder<LabsBacktestJob>(
+      future: ref.read(labsBacktestJobProvider(jobId).future),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          final error = snapshot.error;
+          return Card(
+            child: ListTile(
+              leading: const Icon(Icons.error_outline),
+              title: const Text('تعذر تحميل نتيجة المحاكاة'),
+              subtitle: Text(error is ApiException ? error.message : '$error'),
+            ),
+          );
+        }
+        if (snapshot.hasData) {
+          final job = snapshot.data!;
+          if (job.status == 'complete' && job.summary != null) {
+            return _LabsResults(job: job);
+          }
+          if (job.status == 'failed') {
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    const Icon(Icons.error_outline, size: 32),
+                    const SizedBox(height: 10),
+                    Text(
+                      job.errorMessage ?? 'فشلت المحاكاة.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+        }
+        return const Card(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Column(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 14),
+                Text(
+                  'المحاكاة تعمل الآن على Worker الاختبارات... سيظهر الملخص هنا تلقائيًا.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final result = _submitted == null
-        ? null
-        : ref.watch(dailyReportBacktestProvider(_submitted!));
-
+    final body = _body();
+    if (widget.embedded) {
+      return body;
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('المختببرات')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const _LabsNotice(),
-            const SizedBox(height: 14),
-            _buildControls(context),
-            const SizedBox(height: 16),
-            if (_submitted != null) _buildResult(context, result),
-          ],
-        ),
-      ),
+      body: SafeArea(child: body),
     );
   }
 
@@ -106,7 +311,7 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _pickStartDate,
+                    onPressed: _submitting ? null : _pickStartDate,
                     icon: const Icon(Icons.event_outlined),
                     label: Text('من: ${_formatDate(_startDate)}'),
                   ),
@@ -114,7 +319,7 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _pickEndDate,
+                    onPressed: _submitting ? null : _pickEndDate,
                     icon: const Icon(Icons.event_available_outlined),
                     label: Text('إلى: ${_formatDate(_endDate)}'),
                   ),
@@ -136,7 +341,9 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
                 for (var rank = 1; rank <= 10; rank++)
                   DropdownMenuItem<int?>(value: rank, child: Text('الرتبة $rank')),
               ],
-              onChanged: (value) => setState(() => _rank = value),
+              onChanged: _submitting
+                  ? null
+                  : (value) => setState(() => _rank = value),
             ),
             const SizedBox(height: 14),
             SegmentedButton<String>(
@@ -152,47 +359,31 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
                 ),
               ],
               selected: <String>{_exitMode},
-              onSelectionChanged: (selection) {
-                setState(() => _exitMode = selection.single);
-              },
+              onSelectionChanged: _submitting
+                  ? null
+                  : (selection) {
+                      setState(() => _exitMode = selection.single);
+                    },
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
-              onPressed: _run,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('تشغيل المحاكاة'),
+              onPressed: _submitting ? null : _run,
+              icon: _submitting
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.play_arrow_rounded),
+              label: const Text('تشغيل المحاكاة على Worker الاختبارات'),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'يمكنك الخروج من الصفحة. عند العودة ستجد النتيجة محفوظة في محاولاتك.',
+              style: TextStyle(fontSize: 12),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildResult(
-    BuildContext context,
-    AsyncValue<LabsBacktestResult>? result,
-  ) {
-    if (result == null) {
-      return const SizedBox.shrink();
-    }
-    return result.when(
-      loading: () => const Card(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Column(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 14),
-              Text('جارٍ محاكاة الصفقات... قد يستغرق بعض الوقت'),
-            ],
-          ),
-        ),
-      ),
-      error: (error, _) => _LabsFailure(
-        message: error is ApiException ? error.message : 'تعذر تشغيل المحاكاة.',
-        retry: _run,
-      ),
-      data: (value) => _LabsResults(result: value),
     );
   }
 }
@@ -212,7 +403,7 @@ class _LabsNotice extends StatelessWidget {
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                'محاكاة شراء أسهم تقرير الـ10 اليومي عند افتتاح الجلسة وبيعها عند تحقق الهدف المختار، مع تتبع الأسعار كل 10 دقائق خلال الجلسة. النطاق محدود بآخر 45 يومًا.',
+                'محاكاة شراء أسهم تقرير الـ10 اليومي عند افتتاح الجلسة وبيعها عند تحقق الهدف المختار، مع تتبع الأسعار كل 10 دقائق خلال الجلسة. النطاق محدود بآخر 45 يومًا. المحاكاة تعمل على Worker الاختبارات المنفصل، فلا تؤثر على مستخدمي التطبيق.',
               ),
             ),
           ],
@@ -222,40 +413,67 @@ class _LabsNotice extends StatelessWidget {
   }
 }
 
-class _LabsFailure extends StatelessWidget {
-  const _LabsFailure({required this.message, required this.retry});
+class _JobCard extends StatelessWidget {
+  const _JobCard({
+    required this.job,
+    required this.dateFormat,
+    required this.active,
+    required this.onOpen,
+  });
 
-  final String message;
-  final VoidCallback retry;
+  final LabsBacktestJob job;
+  final DateFormat dateFormat;
+  final bool active;
+  final VoidCallback onOpen;
+
+  static const _statusLabels = <String, String>{
+    'queued': 'في الانتظار',
+    'running': 'جاري التشغيل',
+    'complete': 'مكتمل',
+    'failed': 'فشل',
+  };
 
   @override
   Widget build(BuildContext context) {
+    final statusLabel =
+        _statusLabels[job.status] ?? job.status;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: retry,
-              child: const Text('إعادة المحاولة'),
-            ),
-          ],
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Icon(
+          switch (job.status) {
+            'complete' => Icons.check_circle_outline,
+            'failed' => Icons.error_outline,
+            'running' => Icons.sync,
+            _ => Icons.schedule,
+          },
         ),
+        title: Text(
+          '${dateFormat.format(job.startDate)} — '
+          '${dateFormat.format(job.endDate)}'
+          '${job.rank == null ? '' : ' • الرتبة ${job.rank}'}',
+        ),
+        subtitle: Text(
+          active
+              ? 'جاري عرض النتيجة...'
+              : '$statusLabel • '
+                  '${job.exitMode == 'highest' ? 'أعلى هدف' : 'الهدف الثاني'}',
+        ),
+        trailing: const Icon(Icons.chevron_left_rounded),
+        onTap: onOpen,
       ),
     );
   }
 }
 
 class _LabsResults extends StatelessWidget {
-  const _LabsResults({required this.result});
+  const _LabsResults({required this.job});
 
-  final LabsBacktestResult result;
+  final LabsBacktestJob job;
 
   @override
   Widget build(BuildContext context) {
-    final summary = result.summary;
+    final summary = job.summary!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -274,8 +492,7 @@ class _LabsResults extends StatelessWidget {
                 const SizedBox(height: 14),
                 _SummaryRow(
                   label: 'نسبة تحقق الهدف',
-                  value:
-                      '${summary.hitRatePct.toStringAsFixed(1)}%',
+                  value: '${summary.hitRatePct.toStringAsFixed(1)}%',
                   highlighted: true,
                 ),
                 const Divider(height: 20),
@@ -324,7 +541,7 @@ class _LabsResults extends StatelessWidget {
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 10),
-        if (result.sessions.isEmpty)
+        if (job.sessions.isEmpty)
           const Card(
             child: Padding(
               padding: EdgeInsets.all(24),
@@ -333,7 +550,7 @@ class _LabsResults extends StatelessWidget {
           )
         else
           Column(
-            children: result.sessions
+            children: job.sessions
                 .map((trade) => _TradeCard(trade: trade))
                 .toList(growable: false),
           ),

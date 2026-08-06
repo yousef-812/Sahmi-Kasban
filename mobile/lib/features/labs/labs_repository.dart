@@ -9,21 +9,49 @@ class LabsRepository {
 
   final ApiClient _apiClient;
 
-  Future<LabsBacktestResult> dailyReportBacktest(
-    LabsBacktestQuery query,
-  ) async {
+  Future<LabsBacktestJob> createBacktestJob(LabsBacktestQuery query) async {
     try {
-      final response = await _apiClient.dio.get<Map<String, dynamic>>(
-        '/labs/daily-report-backtest',
-        queryParameters: <String, dynamic>{
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/labs/backtest-jobs',
+        data: <String, dynamic>{
           'start_date': _formatDate(query.startDate),
           'end_date': _formatDate(query.endDate),
           if (query.rank != null) 'rank': query.rank,
           'exit_mode': query.exitMode,
         },
-        options: Options(receiveTimeout: const Duration(seconds: 120)),
+        options: Options(receiveTimeout: const Duration(seconds: 30)),
       );
-      return LabsBacktestResult.fromJson(_required(response.data));
+      return LabsBacktestJob.fromJson(_required(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<LabsBacktestJob> backtestJob(String jobId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/labs/backtest-jobs/$jobId',
+      );
+      return LabsBacktestJob.fromJson(_required(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<List<LabsBacktestJob>> backtestJobs({int limit = 50}) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/labs/backtest-jobs',
+        queryParameters: <String, dynamic>{'limit': limit},
+      );
+      final rawItems = _required(response.data)['items'];
+      if (rawItems is! List) {
+        return const <LabsBacktestJob>[];
+      }
+      return rawItems
+          .whereType<Map<String, dynamic>>()
+          .map(LabsBacktestJob.fromJson)
+          .toList(growable: false);
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }

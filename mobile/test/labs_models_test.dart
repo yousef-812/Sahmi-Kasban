@@ -145,4 +145,102 @@ void main() {
       expect(a == c, isFalse);
     });
   });
+
+  group('LabsBacktestJob', () {
+    test('parses a queued job without a result', () {
+      final job = LabsBacktestJob.fromJson({
+        'id': 'job-1',
+        'status': 'queued',
+        'start_date': '2026-07-07',
+        'end_date': '2026-07-28',
+        'rank': null,
+        'exit_mode': 'target_2',
+        'created_at': '2026-08-01T10:00:00Z',
+      });
+
+      expect(job.id, 'job-1');
+      expect(job.status, 'queued');
+      expect(job.isActive, isTrue);
+      expect(job.summary, isNull);
+      expect(job.sessions, isEmpty);
+      expect(job.errorMessage, isNull);
+    });
+
+    test('parses a completed job with summary and sessions', () {
+      final job = LabsBacktestJob.fromJson({
+        'id': 'job-2',
+        'status': 'complete',
+        'start_date': '2026-07-07',
+        'end_date': '2026-07-28',
+        'rank': 2,
+        'exit_mode': 'highest',
+        'params': {
+          'start_date': '2026-07-07',
+          'end_date': '2026-07-28',
+          'rank': 2,
+          'exit_mode': 'highest',
+          'track_interval_minutes': 10,
+          'source_interval': '5m',
+        },
+        'summary': {
+          'reports_scanned': 1,
+          'trades': 1,
+          'hits': 1,
+          'misses': 0,
+          'skipped': 0,
+          'hit_rate_pct': 100.0,
+        },
+        'sessions': [
+          {
+            'target_session_date': '2026-07-28',
+            'report_id': 'r-1',
+            'rank': 2,
+            'ticker': 'COMI',
+            'score': 80.0,
+            'price_at_analysis': 12.4,
+            'targets': [13.0],
+            'stop_loss': 11.8,
+            'session_open': 12.5,
+            'exit_price': 13.0,
+            'exit_reason': 'target',
+            'hit': true,
+            'minutes_to_exit': 40,
+            'return_pct': 4.0,
+            'tracked': [],
+          },
+        ],
+        'error_message': null,
+        'started_at': '2026-08-01T10:00:00Z',
+        'completed_at': '2026-08-01T10:02:00Z',
+        'created_at': '2026-08-01T10:00:00Z',
+      });
+
+      expect(job.status, 'complete');
+      expect(job.isActive, isFalse);
+      expect(job.params?.exitMode, 'highest');
+      expect(job.summary?.trades, 1);
+      expect(job.summary?.hitRatePct, closeTo(100.0, 0.001));
+      expect(job.sessions, hasLength(1));
+      expect(job.sessions.first.ticker, 'COMI');
+      expect(job.sessions.first.hit, isTrue);
+      expect(job.completedAt, isNotNull);
+    });
+
+    test('parses a failed job with an error message', () {
+      final job = LabsBacktestJob.fromJson({
+        'id': 'job-3',
+        'status': 'failed',
+        'start_date': '2026-07-07',
+        'end_date': '2026-07-28',
+        'rank': null,
+        'exit_mode': 'target_2',
+        'error_message': 'نطاق أكبر من المسموح',
+        'created_at': '2026-08-01T10:00:00Z',
+      });
+
+      expect(job.status, 'failed');
+      expect(job.isActive, isFalse);
+      expect(job.errorMessage, 'نطاق أكبر من المسموح');
+    });
+  });
 }

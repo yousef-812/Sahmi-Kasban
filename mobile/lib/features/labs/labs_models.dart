@@ -213,6 +213,75 @@ class LabsBacktestQuery {
   int get hashCode => Object.hash(startDate, endDate, rank, exitMode);
 }
 
+class LabsBacktestJob {
+  const LabsBacktestJob({
+    required this.id,
+    required this.status,
+    required this.startDate,
+    required this.endDate,
+    required this.rank,
+    required this.exitMode,
+    required this.createdAt,
+    this.params,
+    this.summary,
+    this.sessions = const <LabsBacktestSession>[],
+    this.errorMessage,
+    this.startedAt,
+    this.completedAt,
+  });
+
+  factory LabsBacktestJob.fromJson(Map<String, dynamic> json) {
+    final rawParams = json['params'];
+    final rawSummary = json['summary'];
+    final rawSessions = json['sessions'];
+    return LabsBacktestJob(
+      id: json['id'] as String? ?? '',
+      status: json['status'] as String? ?? 'queued',
+      startDate: DateTime.parse(json['start_date'] as String),
+      endDate: DateTime.parse(json['end_date'] as String),
+      rank: json['rank'] as int?,
+      exitMode: json['exit_mode'] as String? ?? 'target_2',
+      params: rawParams is Map
+          ? LabsBacktestParams.fromJson(_map(rawParams))
+          : null,
+      summary: rawSummary is Map
+          ? LabsBacktestSummary.fromJson(_map(rawSummary))
+          : null,
+      sessions: rawSessions is List
+          ? rawSessions
+                .whereType<Map<String, dynamic>>()
+                .map(LabsBacktestSession.fromJson)
+                .toList(growable: false)
+          : const <LabsBacktestSession>[],
+      errorMessage: json['error_message'] as String?,
+      startedAt: _optionalDateTime(json['started_at']),
+      completedAt: _optionalDateTime(json['completed_at']),
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+
+  final String id;
+  final String status;
+  final DateTime startDate;
+  final DateTime endDate;
+  final int? rank;
+  final String exitMode;
+  final LabsBacktestParams? params;
+  final LabsBacktestSummary? summary;
+  final List<LabsBacktestSession> sessions;
+  final String? errorMessage;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final DateTime createdAt;
+
+  bool get isActive => status == 'queued' || status == 'running';
+}
+
+DateTime? _optionalDateTime(Object? value) {
+  if (value is! String || value.isEmpty) return null;
+  return DateTime.tryParse(value);
+}
+
 double? _doubleOrNull(Object? value) {
   if (value is num) {
     return value.toDouble();

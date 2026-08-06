@@ -199,17 +199,20 @@ class MarketInstrument {
     required this.ticker,
     required this.providerSymbol,
     required this.exchange,
+    this.description = '',
   });
 
   final String ticker;
   final String providerSymbol;
   final String exchange;
+  final String description;
 
   factory MarketInstrument.fromJson(Map<String, dynamic> json) {
     return MarketInstrument(
       ticker: json['ticker'] as String,
       providerSymbol: json['provider_symbol'] as String,
       exchange: json['exchange'] as String,
+      description: json['description'] as String? ?? '',
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/network/api_exception.dart';
+import '../labs/labs_screen.dart';
 import 'admin_repository.dart';
 import 'historical_replay_models.dart';
 
@@ -328,81 +329,99 @@ class _HistoricalReplayControlScreenState
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('d MMMM y', 'ar');
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('اختبار المحركات التاريخي'),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            tooltip: 'تحديث',
-            icon: const Icon(Icons.refresh),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('اختبار المحركات'),
+          actions: [
+            IconButton(
+              onPressed: _load,
+              tooltip: 'تحديث',
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'المحركات التاريخي'),
+              Tab(text: 'المختببرات'),
+            ],
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+        ),
+        body: TabBarView(
           children: [
-            _ReplaySetupCard(
-              dateFormat: dateFormat,
-              startDate: _startDate,
-              endDate: _endDate,
-              horizonSessions: _horizonSessions,
-              horizons: _horizons,
-              submitting: _submitting,
-              windows: _batchWindows,
-              onPreviousMonth: _previousMonth,
-              onCurrentMonth: _currentMonth,
-              onPickStart: () => _pickDate(start: true),
-              onPickEnd: () => _pickDate(start: false),
-              onHorizonChanged: (value) =>
-                  setState(() => _horizonSessions = value),
-              onStartSingle: _startSingle,
-              onAddWindow: _addWindow,
-              onRemoveWindow: (index) => setState(() {
-                _batchWindows = [
-                  for (var i = 0; i < _batchWindows.length; i++)
-                    if (i != index) _batchWindows[i],
-                ];
-              }),
-              onStartBatch: _startBatch,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'اختبارات حسابي',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            if (_loading) const Center(child: CircularProgressIndicator()),
-            if (_error != null)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.error_outline),
-                  title: const Text('تعذر تحميل الاختبارات'),
-                  subtitle: Text(_error!),
-                ),
-              ),
-            if (!_loading && _jobs.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: Text('لم تبدأ أي اختبارات بعد.')),
-                ),
-              ),
-            for (final job in _jobs)
-              _ReplayJobCard(
-                job: job,
-                dateFormat: dateFormat,
-                busy: _busyJobs.contains(job.id),
-                onDetails: () => _details(job),
-                onDownload: job.downloadReady ? () => _download(job) : null,
-                onPause: job.canPause ? () => _control(job, 'pause') : null,
-                onResume: job.canResume ? () => _control(job, 'resume') : null,
-                onCancel: job.canCancel ? () => _control(job, 'cancel') : null,
-              ),
+            _buildReplayTab(dateFormat),
+            const LabsScreen(embedded: true),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReplayTab(DateFormat dateFormat) {
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _ReplaySetupCard(
+            dateFormat: dateFormat,
+            startDate: _startDate,
+            endDate: _endDate,
+            horizonSessions: _horizonSessions,
+            horizons: _horizons,
+            submitting: _submitting,
+            windows: _batchWindows,
+            onPreviousMonth: _previousMonth,
+            onCurrentMonth: _currentMonth,
+            onPickStart: () => _pickDate(start: true),
+            onPickEnd: () => _pickDate(start: false),
+            onHorizonChanged: (value) =>
+                setState(() => _horizonSessions = value),
+            onStartSingle: _startSingle,
+            onAddWindow: _addWindow,
+            onRemoveWindow: (index) => setState(() {
+              _batchWindows = [
+                for (var i = 0; i < _batchWindows.length; i++)
+                  if (i != index) _batchWindows[i],
+              ];
+            }),
+            onStartBatch: _startBatch,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'اختبارات حسابي',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          if (_loading) const Center(child: CircularProgressIndicator()),
+          if (_error != null)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.error_outline),
+                title: const Text('تعذر تحميل الاختبارات'),
+                subtitle: Text(_error!),
+              ),
+            ),
+          if (!_loading && _jobs.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('لم تبدأ أي اختبارات بعد.')),
+              ),
+            ),
+          for (final job in _jobs)
+            _ReplayJobCard(
+              job: job,
+              dateFormat: dateFormat,
+              busy: _busyJobs.contains(job.id),
+              onDetails: () => _details(job),
+              onDownload: job.downloadReady ? () => _download(job) : null,
+              onPause: job.canPause ? () => _control(job, 'pause') : null,
+              onResume: job.canResume ? () => _control(job, 'resume') : null,
+              onCancel: job.canCancel ? () => _control(job, 'cancel') : null,
+            ),
+        ],
       ),
     );
   }

@@ -257,7 +257,14 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                             instrument.ticker,
                             textDirection: TextDirection.ltr,
                           ),
-                          subtitle: Text(instrument.exchange),
+                          subtitle: Text(
+                            instrument.description.isEmpty
+                                ? instrument.exchange
+                                : instrument.description,
+                            textDirection: instrument.description.isEmpty
+                                ? TextDirection.ltr
+                                : TextDirection.rtl,
+                          ),
                           trailing: const Icon(
                             Icons.add_circle_outline_rounded,
                           ),

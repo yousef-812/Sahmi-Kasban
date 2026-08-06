@@ -63,3 +63,33 @@ class LabsDailyBacktestResponse(BaseModel):
     summary: LabsBacktestSummary
     sessions: list[LabsBacktestSession]
     meta: dict[str, Any] = Field(default_factory=dict)
+
+
+class LabsBacktestJobCreate(BaseModel):
+    start_date: date
+    end_date: date
+    rank: int | None = Field(default=None, ge=1, le=10)
+    exit_mode: str = Field(default="target_2", pattern="^(target_2|highest)$")
+
+
+class LabsBacktestJobResponse(BaseModel):
+    id: UUID
+    status: str
+    start_date: date
+    end_date: date
+    rank: int | None
+    exit_mode: str
+    params: LabsBacktestParams | None = None
+    summary: LabsBacktestSummary | None = None
+    sessions: list[LabsBacktestSession] = Field(default_factory=list)
+    error_message: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    created_at: datetime
+
+
+class LabsBacktestJobListResponse(BaseModel):
+    items: list[LabsBacktestJobResponse]
+    total: int
+    limit: int
+    offset: int

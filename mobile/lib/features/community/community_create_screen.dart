@@ -344,8 +344,12 @@ class _TickerPickerSheetState extends ConsumerState<_TickerPickerSheet> {
                           return ListTile(
                             title: Text(item.ticker),
                             subtitle: Text(
-                              '${item.exchange} — ${item.providerSymbol}',
-                              textDirection: TextDirection.ltr,
+                              item.description.isEmpty
+                                  ? '${item.exchange} — ${item.providerSymbol}'
+                                  : item.description,
+                              textDirection: item.description.isEmpty
+                                  ? TextDirection.ltr
+                                  : TextDirection.rtl,
                             ),
                             trailing: const Icon(Icons.chevron_left_rounded),
                             onTap: () => Navigator.of(context).pop(item),

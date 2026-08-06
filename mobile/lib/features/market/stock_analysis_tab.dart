@@ -292,8 +292,12 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                               textDirection: TextDirection.ltr,
                             ),
                             subtitle: Text(
-                              '${instrument.exchange} — ${instrument.providerSymbol}',
-                              textDirection: TextDirection.ltr,
+                              instrument.description.isEmpty
+                                  ? '${instrument.exchange} — ${instrument.providerSymbol}'
+                                  : '${instrument.description} • ${instrument.exchange}',
+                              textDirection: instrument.description.isEmpty
+                                  ? TextDirection.ltr
+                                  : TextDirection.rtl,
                             ),
                           ),
                         );
