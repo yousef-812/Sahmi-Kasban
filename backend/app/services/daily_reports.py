@@ -10,6 +10,8 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -25,11 +27,10 @@ from app.models import (
     MarketScanRun,
     User,
 )
+from app.services.market_index import fetch_index_series, resolve_index_name
 from app.services.operations_settings import get_int_setting
 from app.services.stock_analysis import DISCLAIMER_AR
 from app.services.wallet import debit_points, get_wallet_account
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -306,6 +307,7 @@ def unlock_market_report(
 async def _analyze_ticker(
     ticker: str,
     *,
+    db: Session,
     source_session_date: date,
     provider: MarketDataProvider,
     semaphore: asyncio.Semaphore,
@@ -350,7 +352,25 @@ async def _analyze_ticker(
     )
     try:
         analyzer = SahmiKasbanAnalyzer(config)
-        report = await asyncio.to_thread(analyzer.analyze, series.ticker, frame)
+        index_series = None
+        try:
+            index_series = await fetch_index_series(
+                db,
+                provider,
+                resolve_index_name(ticker),
+            )
+        except Exception as exc:
+            logger.info("Daily scan index failure for %s: %s", ticker, exc)
+        report = await asyncio.to_thread(
+            analyzer.analyze,
+            series.ticker,
+            frame,
+            (
+                (index_series.ticker, pd.DataFrame(index_series.candles))
+                if index_series is not None
+                else None
+            ),
+        )
         raw_payload = _json_safe(report.to_dict())
     except Exception as exc:
         logger.info("Daily scan engine failure for %s: %s", ticker, exc)
@@ -505,6 +525,7 @@ async def generate_daily_top10_report(
         *(
             _analyze_ticker(
                 ticker,
+                db=db,
                 source_session_date=session.source_session_date,
                 provider=provider,
                 semaphore=semaphore,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -9,6 +10,12 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import (
+    AnalysisConfig,
+    BacktestSummary,
+    SahmiKasbanAnalyzer,
+    walk_forward_backtest,
+)
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -20,12 +27,9 @@ from app.models import (
     AnalysisBacktestResult,
     AnalysisBacktestRun,
 )
-from sahmi_kasban import (
-    AnalysisConfig,
-    BacktestSummary,
-    SahmiKasbanAnalyzer,
-    walk_forward_backtest,
-)
+from app.services.market_index import fetch_index_series, resolve_index_name
+
+logger = logging.getLogger(__name__)
 
 
 class AnalysisBacktestError(RuntimeError):
@@ -306,10 +310,29 @@ async def execute_analysis_backtest(
                 period=period,
                 interval=interval,
             )
+            index_series = None
+            try:
+                index_series = await fetch_index_series(
+                    db,
+                    provider,
+                    resolve_index_name(ticker),
+                    period=period,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Backtest index fetch failed for %s (index-free backtest): %s",
+                    ticker,
+                    exc,
+                )
             summary = walk_forward_backtest(
                 ticker,
                 pd.DataFrame(series.candles),
                 analyzer=analyzer,
+                index=(
+                    (index_series.ticker, index_series.candles)
+                    if index_series is not None
+                    else None
+                ),
                 min_train_size=min_train_size,
                 horizon_sessions=horizon_sessions,
                 step_sessions=step_sessions,

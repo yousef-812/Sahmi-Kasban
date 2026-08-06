@@ -80,7 +80,7 @@ def test_backtest_run_persists_observations_and_is_idempotent(
 
     assert first.idempotent is False
     assert first.run.status == "complete"
-    assert first.run.engine_version == "core-v2"
+    assert first.run.engine_version == "core-v2.5"
     assert first.run.completed_tickers == 1
     assert first.run.failed_tickers == 0
     assert len(first.results) == 1
@@ -110,7 +110,7 @@ def test_backtest_run_persists_observations_and_is_idempotent(
     )
     assert second.idempotent is True
     assert second.run.id == first.run.id
-    assert provider.calls == 1
+    assert provider.calls == 2
     assert len(db_session.scalars(select(AnalysisBacktestRun)).all()) == 1
     assert len(db_session.scalars(select(AnalysisBacktestResult)).all()) == 1
 

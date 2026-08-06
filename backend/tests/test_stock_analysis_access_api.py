@@ -145,7 +145,7 @@ def test_saved_analysis_is_server_persistent_and_account_scoped(
     assert second.status_code == 200
     assert second.json()["analysis_id"] == first.json()["analysis_id"]
     assert second.json()["charged_points"] == 50
-    assert provider.calls == 1
+    assert provider.calls == 2
 
     accesses = db_session.scalars(select(UserStockAnalysisAccess)).all()
     debits = db_session.scalars(

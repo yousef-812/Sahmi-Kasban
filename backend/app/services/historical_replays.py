@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -11,6 +12,8 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -24,8 +27,8 @@ from app.models import (
     AnalysisReplayTicker,
     MarketInstrumentCatalog,
 )
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.indicators import enrich_indicators, prepare_candles
+
+logger = logging.getLogger(__name__)
 
 REPLAY_PARALLELISM = 5
 REPLAY_MAX_RANGE_DAYS = 31
@@ -479,6 +482,7 @@ def compute_replay_rows(
     horizon_sessions: int,
     min_train_size: int,
     neutral_band_pct: float,
+    index_series: CandleSeries | None = None,
 ) -> ReplayTickerComputation:
     settings = get_settings()
     analyzer = SahmiKasbanAnalyzer(
@@ -522,8 +526,27 @@ def compute_replay_rows(
 
         data_as_of_value = history.iloc[-1]["timestamp"]
         data_as_of = data_as_of_value.to_pydatetime()
+        index = None
+        if index_series is not None:
+            try:
+                index_frame = pd.DataFrame(index_series.candles)
+                index_frame["timestamp"] = pd.to_datetime(
+                    index_frame["timestamp"], errors="coerce", utc=True
+                )
+                index_cutoff = index_frame.loc[
+                    index_frame["timestamp"] <= data_as_of
+                ]
+                if len(index_cutoff) >= settings.market_data_min_candles:
+                    index = (index_series.ticker, index_cutoff)
+            except Exception as exc:
+                logger.warning(
+                    "Replay index slicing failed for %s @ %s: %s",
+                    ticker,
+                    analysis_date,
+                    exc,
+                )
         try:
-            report = analyzer.analyze_prepared(ticker, history)
+            report = analyzer.analyze_prepared(ticker, history, index=index)
         except Exception as exc:
             rows.append(
                 {

@@ -16,6 +16,7 @@ from app.services.historical_replays import (
     persist_replay_batch,
     prepare_next_replay_batch,
 )
+from app.services.market_index import fetch_index_series, resolve_index_name
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,21 @@ async def _compute_one(
                     cache_minutes=settings.historical_replay_cache_hours * 60,
                     min_candles=plan.min_train_size,
                 )
+                index_series = None
+                try:
+                    index_series = await fetch_index_series(
+                        db,
+                        provider,
+                        resolve_index_name(ticker),
+                        period="5y",
+                        cache_minutes=settings.historical_replay_cache_hours * 60,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Replay index fetch failed for %s (index-free replay): %s",
+                        ticker,
+                        exc,
+                    )
                 db.commit()
 
         async with cpu_semaphore:
@@ -89,6 +105,7 @@ async def _compute_one(
                 ticker_task_id=ticker_task_id,
                 ticker=ticker,
                 series=series,
+                index_series=index_series,
                 engine_version=plan.engine_version,
                 start_date=plan.start_date,
                 end_date=plan.end_date,

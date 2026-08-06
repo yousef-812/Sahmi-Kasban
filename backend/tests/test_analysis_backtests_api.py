@@ -123,7 +123,7 @@ def test_backtest_admin_endpoints_are_protected_and_versioned(
     )
     assert created.status_code == 200
     payload = created.json()
-    assert payload["engine_version"] == "core-v2"
+    assert payload["engine_version"] == "core-v2.5"
     assert payload["status"] == "complete"
     assert payload["completed_tickers"] == 1
     assert payload["results"][0]["observations"] == 3
@@ -142,7 +142,7 @@ def test_backtest_admin_endpoints_are_protected_and_versioned(
     )
     assert repeated.status_code == 200
     assert repeated.json()["idempotent"] is True
-    assert provider.calls == 1
+    assert provider.calls == 2
 
     listed = client.get(
         "/api/v1/admin/operations/backtests/runs",
@@ -156,5 +156,5 @@ def test_backtest_admin_endpoints_are_protected_and_versioned(
         headers=admin_headers,
     )
     assert versions.status_code == 200
-    assert versions.json()["items"][0]["engine_version"] == "core-v2"
+    assert versions.json()["items"][0]["engine_version"] == "core-v2.5"
     assert versions.json()["items"][0]["observations"] == 3
