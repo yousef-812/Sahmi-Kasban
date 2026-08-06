@@ -15,6 +15,7 @@ import '../features/community/community_create_screen.dart';
 import '../features/community/community_detail_screen.dart';
 import '../features/community/my_discussions_screen.dart';
 import '../features/home/dashboard_screen.dart';
+import '../features/labs/labs_screen.dart';
 import '../features/market/stock_comparison_screen.dart';
 import '../features/monetization/monetization_page.dart';
 import '../features/notifications/notification_screen.dart';
@@ -103,6 +104,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/performance',
         builder: (context, state) => const PerformanceScreen(),
+      ),
+      GoRoute(
+        path: '/labs',
+        builder: (context, state) => const LabsScreen(),
       ),
       GoRoute(
         path: '/performance/reports/:reportId',

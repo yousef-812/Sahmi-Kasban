@@ -33,6 +33,32 @@ EGX_SEED_SYMBOLS: tuple[str, ...] = (
 EGX_SYMBOL_SET = frozenset(EGX_SEED_SYMBOLS)
 _TICKER_PATTERN = re.compile(r"^[A-Z0-9]{1,24}$")
 
+# Curated Arabic company names for the most-traded EGX blue chips. These are
+# used as a deterministic fallback so Arabic-name search works even when the
+# external scanner does not localize descriptions.
+EGX_ARABIC_NAMES: dict[str, str] = {
+    "COMI": "البنك التجاري الدولي",
+    "CCAP": "القلعة القابضة",
+    "TMGH": "طلعت مصطفى القابضة",
+    "EAST": "الشرقية للدخان",
+    "ORWE": "النساجون الشرقيون",
+    "JUFO": "جهينة للصناعات الغذائية",
+    "ETEL": "المصرية للاتصالات",
+    "ALCN": "العربية للصناعات الدوائية",
+    "BTFH": "بنك التعمير والإسكان",
+    "PHDC": "بالم هيلز للتعمير",
+    "HELI": "هيليوبوليس للإسكان والتعمير",
+    "SIDM": "سيدي كرير للبتروكيماويات",
+    "KIMA": "كيما",
+    "ADIB": "بنك أبوظبي الإسلامي مصر",
+    "WEGY": "وادي كوم أمبو لاستصلاح الأراضي",
+    "RAYA": "راية القابضة للاستثمارات المالية",
+}
+
+
+def has_arabic_text(value: str) -> bool:
+    return any("\u0600" <= character <= "\u06FF" for character in value)
+
 
 def normalize_egx_ticker(ticker: str) -> str:
     normalized = ticker.strip().upper().removesuffix(".CA")

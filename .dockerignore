@@ -11,3 +11,6 @@
 **/.env
 htmlcov
 .coverage
+*.zip
+docs/
+sahmi-engine/

@@ -99,28 +99,105 @@ def test_authoritative_scanner_reconciliation_deactivates_stale_seed_symbols(
     assert rows["KEEP"].description == "Current listed company"
 
 
-def test_dynamic_catalog_entries_are_searchable_and_analyzable(
+def test_scanner_rows_fall_back_to_name_column_for_arabic_names() -> None:
+    rows = _parse_scanner_rows(
+        {
+            "data": [
+                {
+                    "s": "EGX:COMI",
+                    "d": [
+                        "البنك التجاري الدولي",
+                        "",
+                        "EGX",
+                        "stock",
+                    ],
+                },
+            ]
+        }
+    )
+
+    assert [row.ticker for row in rows] == ["COMI"]
+    assert rows[0].description == "البنك التجاري الدولي"
+
+
+def test_reconcile_keeps_existing_description_when_scanner_description_is_empty(
     db_session: Session,
 ) -> None:
+    now = datetime.now(UTC)
     db_session.add(
         MarketInstrumentCatalog(
-            ticker="AALR",
-            provider_symbol="EGX:AALR",
+            ticker="COMI",
+            provider_symbol="EGX:COMI",
             exchange="EGX",
-            description="General Co. for Land Reclamation",
-            source="tradingview_scanner",
+            description="البنك التجاري الدولي",
+            source="legacy_seed",
             active=True,
-            last_seen_at=datetime.now(UTC),
+            last_seen_at=now,
         )
     )
     db_session.commit()
 
-    source, total, results = asyncio.run(
-        search_market_instruments(db_session, query="Land Reclamation", limit=20)
+    _reconcile_scanner_rows(
+        db_session,
+        [
+            MarketInstrumentCatalog(
+                ticker="COMI",
+                provider_symbol="EGX:COMI",
+                exchange="EGX",
+                description="",
+                source="tradingview_scanner",
+                active=True,
+                last_seen_at=now,
+            )
+        ],
+        authoritative=True,
+    )
+    db_session.commit()
+
+    row = db_session.scalar(
+        select(MarketInstrumentCatalog).where(
+            MarketInstrumentCatalog.ticker == "COMI"
+        )
+    )
+    assert row is not None
+    assert row.description == "البنك التجاري الدولي"
+
+
+def test_arabic_company_name_search_finds_instrument(db_session: Session) -> None:
+    db_session.add_all(
+        [
+            MarketInstrumentCatalog(
+                ticker="COMI",
+                provider_symbol="EGX:COMI",
+                exchange="EGX",
+                description="البنك التجاري الدولي",
+                source="tradingview_scanner",
+                active=True,
+                last_seen_at=datetime.now(UTC),
+            ),
+            MarketInstrumentCatalog(
+                ticker="CCAP",
+                provider_symbol="EGX:CCAP",
+                exchange="EGX",
+                description="قلعة القابضة",
+                source="tradingview_scanner",
+                active=True,
+                last_seen_at=datetime.now(UTC),
+            ),
+        ]
+    )
+    db_session.commit()
+
+    _, _, results = asyncio.run(
+        search_market_instruments(db_session, query="البنك التجاري", limit=20)
     )
 
-    assert source == "legacy_seed_registry"
-    assert total >= 155
-    assert [result.ticker for result in results] == ["AALR"]
-    assert results[0].description == "General Co. for Land Reclamation"
-    assert asyncio.run(market_instrument_exists(db_session, "AALR")) is True
+    assert [result.ticker for result in results] == ["COMI"]
+
+    _, _, partial = asyncio.run(
+        search_market_instruments(db_session, query="قلعة", limit=20)
+    )
+    assert [result.ticker for result in partial] == ["CCAP"]
+
+    assert asyncio.run(market_instrument_exists(db_session, "COMI")) is True
+

@@ -14,6 +14,7 @@ from app.api.routes.community_admin_appeals import router as community_admin_app
 from app.api.routes.community_appeals import router as community_appeals_router
 from app.api.routes.community_verification import router as community_verification_router
 from app.api.routes.health import router as health_router
+from app.api.routes.labs import router as labs_router
 from app.api.routes.market import router as market_router
 from app.api.routes.monetization import router as monetization_router
 from app.api.routes.notifications import router as notifications_router
@@ -32,6 +33,7 @@ api_router.include_router(profile_router)
 api_router.include_router(wallet_router)
 api_router.include_router(market_router)
 api_router.include_router(reports_router)
+api_router.include_router(labs_router)
 api_router.include_router(performance_router)
 api_router.include_router(monetization_router)
 api_router.include_router(notifications_router)

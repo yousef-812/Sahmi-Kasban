@@ -154,6 +154,21 @@ class _HomeTab extends ConsumerWidget {
           const SizedBox(height: 16),
           const FreePlanNativeAd(),
           const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: Icon(
+                Icons.science_outlined,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('المختببرات'),
+              subtitle: const Text(
+                'محاكاة صفقات تقرير الـ10 اليومي عند الافتتاح مع تتبع كل 10 دقائق',
+              ),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () => context.push('/labs'),
+            ),
+          ),
+          const SizedBox(height: 16),
           const _DisclaimerCard(),
         ],
       ),

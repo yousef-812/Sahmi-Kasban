@@ -15,10 +15,10 @@ BALANCED_BASE_MAX_ATR_PCT = 4.5
 BALANCED_BASE_MAX_TOTAL_RISK_PCT = 30.0
 AGGRESSIVE_MIN_RETURN_20D_PCT = 5.0
 AGGRESSIVE_MAX_RETURN_20D_PCT = 45.0
-AGGRESSIVE_MAX_RETURN_5D_PCT = 20.0
-AGGRESSIVE_MIN_BREAKOUT_PCT = 0.5
+AGGRESSIVE_MAX_RETURN_5D_PCT = 15.0
+AGGRESSIVE_MIN_BREAKOUT_PCT = 2.0
 AGGRESSIVE_MAX_BREAKOUT_PCT = 12.0
-AGGRESSIVE_MIN_VOLUME_RATIO = 1.5
+AGGRESSIVE_MIN_VOLUME_RATIO = 2.0
 AGGRESSIVE_MIN_TURNOVER_EGP = 5_000_000.0
 ELITE_MAX_ZERO_VOLUME_RATIO = 0.10
 AGGRESSIVE_MAX_ZERO_VOLUME_RATIO = 0.05
@@ -35,19 +35,19 @@ def _liquidity_tier(average_turnover_egp: float) -> str:
 def _adaptive_limits(*, liquidity_tier: str, market_regime: str) -> dict[str, float]:
     balanced_atr = BALANCED_BASE_MAX_ATR_PCT
     balanced_risk = BALANCED_BASE_MAX_TOTAL_RISK_PCT
-    aggressive_atr = 6.0
-    aggressive_risk = 40.0
+    aggressive_atr = 5.0
+    aggressive_risk = 35.0
 
     if liquidity_tier == "medium":
         balanced_atr += 0.5
         balanced_risk += 2.5
-        aggressive_atr = 7.0
-        aggressive_risk = 45.0
+        aggressive_atr = 5.5
+        aggressive_risk = 40.0
     elif liquidity_tier == "high":
         balanced_atr += 1.0
         balanced_risk += 5.0
-        aggressive_atr = 8.0
-        aggressive_risk = 50.0
+        aggressive_atr = 6.0
+        aggressive_risk = 42.5
 
     if market_regime == "bearish":
         balanced_atr -= 0.5
@@ -72,10 +72,7 @@ def _weighted_score(checks: Mapping[str, bool], weights: Mapping[str, float]) ->
 class OpportunityQualityEngine(AnalysisEngine):
     """Classify high-ranked BUY setups into balanced or aggressive elite profiles.
 
-    Core v2.3 keeps the directional score untouched. The balanced profile protects
-    capital with adaptive ATR/risk limits. The aggressive profile is separate and
-    requires a confirmed breakout, expanding volume, strong liquidity and a
-    smaller recommended position instead of weakening the balanced gates.
+    Core v2.4 adaptively limits risk and atr while securing breakout momentum.
     """
 
     name = "opportunity_quality"
@@ -156,6 +153,7 @@ class OpportunityQualityEngine(AnalysisEngine):
                 <= return_20d_pct
                 <= AGGRESSIVE_MAX_RETURN_20D_PCT
                 and 0 < return_5d_pct <= AGGRESSIVE_MAX_RETURN_5D_PCT
+                and return_20d_pct >= 1.3 * return_5d_pct
             ),
             "rsi_not_exhausted": 50 <= rsi <= 82,
             "atr_in_aggressive_band": 0 < atr_pct <= limits["aggressive_max_atr_pct"],
@@ -221,7 +219,7 @@ class OpportunityQualityEngine(AnalysisEngine):
             confidence=92.0 if engine_ready else 76.0,
             status="complete" if engine_ready else "rejected",
             details={
-                "model_version": "elite-quality-v2.3-regime-aware",
+                "model_version": "elite-quality-v2.4-regime-adaptive",
                 "engine_ready": engine_ready,
                 "selected_profile": selected_profile,
                 "balanced_ready": balanced_ready,
