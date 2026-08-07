@@ -70,6 +70,8 @@ android {
                 keyPassword = keystoreProperties.getProperty("keyPassword")
                 storeFile = file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }

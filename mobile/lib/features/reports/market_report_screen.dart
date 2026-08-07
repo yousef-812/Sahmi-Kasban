@@ -219,39 +219,180 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'الجلسة المستهدفة',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatArabicDate(report.targetSessionDate),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'الترتيب ناتج عن التحليل الآلي ولا يمثل ضمانًا للربح.',
-                ),
+    return _ReportTabs(report: report);
+  }
+}
+
+class _ReportTabGroup {
+  const _ReportTabGroup({
+    required this.label,
+    required this.icon,
+    required this.items,
+    required this.isExtended,
+  });
+
+  final String label;
+  final IconData icon;
+  final List<MarketReportItem> items;
+  final bool isExtended;
+}
+
+List<_ReportTabGroup> _buildReportTabGroups(MarketReport report) {
+  final topTen = report.items.where((item) => item.rank <= 10).toList();
+  final allItems = [...topTen, ...report.extendedItems];
+  final groups = <_ReportTabGroup>[
+    _ReportTabGroup(
+      label: 'أفضل 10',
+      icon: Icons.stars_rounded,
+      items: topTen,
+      isExtended: false,
+    ),
+    _ReportTabGroup(
+      label: 'نخبة متوازن',
+      icon: Icons.verified_rounded,
+      items: _byTier(allItems, 'elite', profile: 'balanced'),
+      isExtended: false,
+    ),
+    _ReportTabGroup(
+      label: 'نخبة هجومي',
+      icon: Icons.rocket_launch_rounded,
+      items: _byTier(allItems, 'elite', profile: 'aggressive'),
+      isExtended: false,
+    ),
+    _ReportTabGroup(
+      label: 'شراء بجودة أعلى',
+      icon: Icons.auto_awesome_rounded,
+      items: _byTier(allItems, 'conditional_buy_high_quality'),
+      isExtended: false,
+    ),
+    _ReportTabGroup(
+      label: 'شراء مشروط',
+      icon: Icons.shopping_bag_rounded,
+      items: _byTier(allItems, 'conditional_buy'),
+      isExtended: true,
+    ),
+    _ReportTabGroup(
+      label: 'مراقبة',
+      icon: Icons.visibility_rounded,
+      items: _byTier(allItems, 'watch'),
+      isExtended: true,
+    ),
+  ];
+  return groups.where((group) => group.items.isNotEmpty).toList();
+}
+
+List<MarketReportItem> _byTier(
+  List<MarketReportItem> items,
+  String tier, {
+  String? profile,
+}) {
+  return items
+      .where((item) {
+        final itemTier = _text(item.payload['opportunity_tier']);
+        if (itemTier != tier) {
+          return false;
+        }
+        if (profile != null &&
+            _text(item.payload['elite_profile']) != profile) {
+          return false;
+        }
+        return true;
+      })
+      .toList();
+}
+
+class _ReportTabs extends StatelessWidget {
+  const _ReportTabs({required this.report});
+
+  final MarketReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = _buildReportTabGroups(report);
+    return DefaultTabController(
+      length: groups.length,
+      child: Column(
+        children: [
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'الجلسة المستهدفة',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatArabicDate(report.targetSessionDate),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'الترتيب ناتج عن التحليل الآلي ولا يمثل ضمانًا للربح.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _MarketSummaryCard(summary: report.marketSummary),
+                  const FreePlanNativeAd(),
+                ],
+              ),
+            ),
+          ),
+          Material(
+            color: Theme.of(context).colorScheme.surface,
+            child: TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              tabs: [
+                for (final group in groups)
+                  Tab(
+                    text: group.label == 'أفضل 10'
+                        ? group.label
+                        : '${group.label} (${group.items.length})',
+                    icon: Icon(group.icon),
+                  ),
               ],
             ),
           ),
-        ),
-        _MarketSummaryCard(summary: report.marketSummary),
-        const FreePlanNativeAd(),
-        for (final item in report.items)
-          _SafeReportItemCard(key: ValueKey(item.ticker), item: item),
-      ],
+          Expanded(
+            child: TabBarView(
+              children: [
+                for (final group in groups)
+                  ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      for (final item in group.items)
+                        if (group.isExtended)
+                          _SafeExtendedItemCard(
+                            key: ValueKey('ext-${item.ticker}'),
+                            item: item,
+                          )
+                        else
+                          _SafeReportItemCard(
+                            key: ValueKey('top-${item.ticker}'),
+                            item: item,
+                          ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -467,6 +608,119 @@ class _ReportItemCard extends StatelessWidget {
   }
 }
 
+class _SafeExtendedItemCard extends StatelessWidget {
+  const _SafeExtendedItemCard({required this.item, super.key});
+
+  final MarketReportItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      return _ExtendedItemCard(item: item);
+    } on Object {
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          leading: CircleAvatar(child: Text('${item.rank}')),
+          title: Text(item.ticker, textDirection: TextDirection.ltr),
+          subtitle: const Text('تعذر عرض بعض تفاصيل هذا السهم.'),
+        ),
+      );
+    }
+  }
+}
+
+class _ExtendedItemCard extends StatelessWidget {
+  const _ExtendedItemCard({required this.item});
+
+  final MarketReportItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final payload = item.payload;
+    final tier = _text(payload['opportunity_tier']);
+    final decision = _text(payload['decision']).isNotEmpty
+        ? _text(payload['decision'])
+        : _signalLabel(_text(payload['signal']));
+    final price = _number(payload['price_at_analysis']);
+    final plan = _map(payload['trade_plan']);
+    final entry = _number(plan['entry']);
+    final stop = _number(plan['stop_loss']);
+    final target1 = _number(plan['target_1']);
+    final target2 = _number(plan['target_2']);
+    final rewardRisk = _number(plan['reward_risk_1']);
+    final explanation = _text(payload['explanation']);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(child: Text('${item.rank}')),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.ticker,
+                        textDirection: TextDirection.ltr,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(decision.isEmpty ? 'مراقبة' : decision),
+                    ],
+                  ),
+                ),
+                Chip(label: Text('${item.score.toStringAsFixed(1)} / 100')),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (tier.isNotEmpty)
+                  _MetricChip(label: 'الدرجة', value: _tierLabel(tier)),
+                _MetricChip(label: 'السعر', value: _price(price)),
+              ],
+            ),
+            if (entry > 0 || stop > 0 || target1 > 0) ...[
+              const SizedBox(height: 14),
+              Text(
+                'خطة التداول',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              _ValueRow(label: 'الدخول', value: _price(entry)),
+              _ValueRow(label: 'وقف الخسارة', value: _price(stop)),
+              _ValueRow(label: 'الهدف الأول', value: _price(target1)),
+              _ValueRow(label: 'الهدف الثاني', value: _price(target2)),
+              _ValueRow(
+                label: 'العائد مقابل المخاطرة',
+                value: rewardRisk > 0
+                    ? '${rewardRisk.toStringAsFixed(1)} : 1'
+                    : '—',
+              ),
+            ],
+            if (explanation.isNotEmpty) ...[
+              const Divider(height: 24),
+              Text(explanation),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MetricChip extends StatelessWidget {
   const _MetricChip({required this.label, required this.value});
 
@@ -587,6 +841,18 @@ String _signalLabel(String value) {
     'WATCH' => 'للمراقبة',
     'AVOID' => 'تجنب حاليًا',
     _ => value,
+  };
+}
+
+String _tierLabel(String tier) {
+  return switch (tier) {
+    'elite' => 'نخبة',
+    'elite_balanced' => 'نخبة متوازن',
+    'elite_aggressive' => 'نخبة هجومي',
+    'conditional_buy_high_quality' => 'شراء بجودة أعلى',
+    'conditional_buy' => 'شراء مشروط',
+    'watch' => 'مراقبة',
+    _ => tier,
   };
 }
 

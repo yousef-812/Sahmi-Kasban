@@ -30,25 +30,18 @@ class AccountEmailService:
             html_body=self._verification_html(safe_code),
         )
 
-    def send_password_reset(self, email: str, token: str) -> None:
-        reset_url = f"{self.settings.app_public_url.rstrip('/')}/reset-password?token={token}"
-        safe_url = html.escape(reset_url, quote=True)
+    def send_password_reset(self, email: str, code: str) -> None:
+        safe_code = html.escape(code)
         self._send(
             recipient=email,
-            subject="إعادة تعيين كلمة مرور سهمي كسبان",
+            subject="رمز إعادة تعيين كلمة مرور سهمي كسبان",
             body=(
                 "وصلنا طلب لإعادة تعيين كلمة المرور.\n\n"
-                "استخدم الرابط التالي لإكمال العملية:\n"
-                f"{reset_url}\n\n"
+                f"رمز إعادة التعيين هو: {code}\n\n"
+                "الرمز صالح لمدة 15 دقيقة. لا تشاركه مع أي شخص.\n"
                 "تجاهل الرسالة إذا لم تطلب تغيير كلمة المرور."
             ),
-            html_body=self._action_html(
-                title="إعادة تعيين كلمة المرور",
-                message="وصلنا طلب لتغيير كلمة مرور حسابك.",
-                button_label="إعادة تعيين كلمة المرور",
-                button_url=safe_url,
-                footnote="ينتهي رابط الاستعادة تلقائيًا بعد المدة المحددة.",
-            ),
+            html_body=self._reset_code_html(safe_code),
         )
 
     def _send(
@@ -113,6 +106,47 @@ class AccountEmailService:
               </div>
               <p style="margin:0 0 10px;color:#52675f;font-size:15px;line-height:1.8;">الرمز صالح لمدة <strong style="color:#173c30;">10 دقائق</strong>.</p>
               <p style="margin:0;color:#7a8b84;font-size:13px;line-height:1.8;">لا تشارك الرمز مع أي شخص. تجاهل الرسالة إذا لم تطلب إنشاء هذا الحساب.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 34px;background:#f7faf8;text-align:center;color:#829089;font-size:12px;line-height:1.7;">رسالة آلية من سهمي كسبان — لا يلزم الرد عليها.</td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>
+"""
+
+    def _reset_code_html(self, code: str) -> str:
+        return f"""\
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>إعادة تعيين كلمة المرور</title>
+  </head>
+  <body style="margin:0;background:#f4f7f5;font-family:Tahoma,Arial,sans-serif;color:#18332a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7f5;padding:28px 12px;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(20,76,57,.10);">
+          <tr>
+            <td style="background:#176f54;padding:30px 34px;text-align:center;color:#ffffff;">
+              <div style="font-size:27px;font-weight:800;letter-spacing:.2px;">سهمي كسبان</div>
+              <div style="margin-top:7px;font-size:14px;opacity:.88;">تحليلك أوضح وقراراتك أهدأ</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 34px;text-align:right;">
+              <h1 style="margin:0 0 14px;font-size:24px;line-height:1.5;color:#173c30;">إعادة تعيين كلمة المرور</h1>
+              <p style="margin:0;color:#52675f;font-size:16px;line-height:1.9;">وصلنا طلب لتغيير كلمة مرور حسابك. أدخل الرمز التالي في التطبيق:</p>
+              <div style="margin:28px 0;padding:22px;border:1px solid #cce2d9;border-radius:18px;background:#edf7f2;text-align:center;">
+                <div style="font-size:13px;color:#5c746a;margin-bottom:9px;">رمز إعادة التعيين</div>
+                <div dir="ltr" style="font-family:Arial,sans-serif;font-size:38px;font-weight:800;letter-spacing:11px;color:#176f54;">{code}</div>
+              </div>
+              <p style="margin:0 0 10px;color:#52675f;font-size:15px;line-height:1.8;">الرمز صالح لمدة <strong style="color:#173c30;">15 دقيقة</strong>.</p>
+              <p style="margin:0;color:#7a8b84;font-size:13px;line-height:1.8;">لا تشارك الرمز مع أي شخص. تجاهل الرسالة إذا لم تطلب تغيير كلمة المرور.</p>
             </td>
           </tr>
           <tr>

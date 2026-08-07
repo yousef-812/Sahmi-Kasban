@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.core.observability import configure_observability
 from app.db.session import SessionLocal
 from app.jobs.historical_replays import run_historical_replay_scheduler
+from app.jobs.labs_backtests import run_labs_backtest_scheduler
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.market_data.universe import apply_market_health_quarantine
 
@@ -24,7 +25,10 @@ async def _run_worker() -> None:
             universe.incompatible_symbol_count,
             universe.replay_failure_quarantine_count,
         )
-    await run_historical_replay_scheduler()
+    await asyncio.gather(
+        run_historical_replay_scheduler(),
+        run_labs_backtest_scheduler(),
+    )
 
 
 def main() -> None:

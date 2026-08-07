@@ -109,7 +109,20 @@ class _BrandMark extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
-        child: Image.asset('assets/branding/app_icon.png', fit: BoxFit.cover),
+        child: Image.asset(
+          'assets/branding/app_icon.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const ColoredBox(
+              color: Color(0xFF07543A),
+              child: Icon(
+                Icons.trending_up_rounded,
+                size: 56,
+                color: Color(0xFFD8B867),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

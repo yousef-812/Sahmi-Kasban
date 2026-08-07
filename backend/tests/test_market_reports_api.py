@@ -88,6 +88,7 @@ def test_preview_hides_items_until_report_is_unlocked(
     assert first_payload["charged_points"] == 100
     assert first_payload["balance_points"] == 200
     assert len(first_payload["report"]["items"]) == 10
+    assert first_payload["report"]["extended_items"] == []
 
     second_unlock = client.post(
         f"/api/v1/market/reports/{report.id}/unlock",
@@ -135,3 +136,58 @@ def test_incomplete_report_is_not_charged(
     assert account.balance_points == 300
     assert db_session.scalar(select(func.count(MarketReportUnlock.id))) == 0
     assert db_session.scalar(select(func.count(WalletEntry.id))) == 0
+
+
+def test_report_response_includes_extended_items(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    user, headers = _seed_user(db_session)
+    report = _seed_report(db_session)
+    report.extended_universe = {
+        "top_size": 10,
+        "stored_count": 1,
+        "entries": [
+            {
+                "ticker": "EXT1",
+                "rank": 11,
+                "score": 74.5,
+                "signal": "BUY",
+                "opportunity_tier": "conditional_buy",
+                "elite_profile": "none",
+                "elite": False,
+                "decision": "شراء مشروط",
+                "price_at_analysis": 22.5,
+                "confidence": 66.0,
+                "qualified": True,
+                "trade_plan": {
+                    "entry": 22.5,
+                    "stop_loss": 21.0,
+                    "target_1": 24.5,
+                    "target_2": 26.0,
+                    "reward_risk_1": 1.8,
+                },
+                "explanation": "فرصة قوية بشروط المخاطر.",
+                "explanation_source": "deterministic",
+                "selection_rank": 11,
+                "top_fraction_pct": 8.8,
+                "eligible_universe_size": 125,
+            }
+        ],
+    }
+    db_session.commit()
+
+    unlocked = client.post(
+        f"/api/v1/market/reports/{report.id}/unlock",
+        headers=headers,
+    )
+    assert unlocked.status_code == 200
+    body = unlocked.json()["report"]
+    assert len(body["items"]) == 10
+    assert len(body["extended_items"]) == 1
+    extended = body["extended_items"][0]
+    assert extended["ticker"] == "EXT1"
+    assert extended["rank"] == 11
+    assert extended["score"] == 74.5
+    assert extended["payload"]["opportunity_tier"] == "conditional_buy"
+    assert extended["payload"]["trade_plan"]["entry"] == 22.5

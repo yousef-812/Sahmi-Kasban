@@ -10,6 +10,8 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -18,14 +20,13 @@ from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
 from app.models import StockAnalysis, User, UserStockAnalysisAccess, WalletEntry
+from app.services.market_index import fetch_index_series, resolve_index_name
 from app.services.operations_settings import get_int_setting
 from app.services.wallet import (
     InsufficientBalanceError,
     debit_points,
     get_wallet_account,
 )
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,24 @@ class StockAnalysisExecutionError(RuntimeError):
     """Raised when a complete stock analysis cannot be produced."""
 
 
+async def _fetch_index_or_none(
+    db: Session,
+    provider: MarketDataProvider,
+    ticker: str,
+) -> CandleSeries | None:
+    """Fetch the ticker's market index, degrading gracefully on failure.
+
+    The index only feeds the market_index context engine and its BUY->WATCH
+    gate; when index data is unavailable the analysis still runs index-free.
+    """
+    try:
+        index_name = resolve_index_name(ticker)
+        return await fetch_index_series(db, provider, index_name)
+    except Exception as exc:
+        logger.warning("Index fetch failed for %s (index-free analysis): %s", ticker, exc)
+        return None
+
+
 def _json_default(value: Any) -> object:
     if isinstance(value, (datetime, date)):
         return value.isoformat()
@@ -64,7 +83,11 @@ def _json_safe(value: object) -> object:
     return json.loads(json.dumps(value, default=_json_default, ensure_ascii=False))
 
 
-def _analysis_cache_key(series: CandleSeries, language: str) -> str:
+def _analysis_cache_key(
+    series: CandleSeries,
+    language: str,
+    index_series: CandleSeries | None = None,
+) -> str:
     settings = get_settings()
     identity = {
         "ticker": series.ticker,
@@ -75,6 +98,8 @@ def _analysis_cache_key(series: CandleSeries, language: str) -> str:
         "risk_per_trade": settings.analysis_risk_per_trade,
         "max_position_value": settings.analysis_max_position_value,
         "min_history": settings.market_data_min_candles,
+        "index_ticker": index_series.ticker if index_series else None,
+        "index_fingerprint": index_series.fingerprint if index_series else None,
     }
     canonical = json.dumps(identity, sort_keys=True, separators=(",", ":"))
     return "stock-analysis:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -308,7 +333,8 @@ async def execute_stock_analysis(
         provider,
         ticker,
     )
-    cache_key = _analysis_cache_key(series, language)
+    index_series = await _fetch_index_or_none(db, provider, series.ticker)
+    cache_key = _analysis_cache_key(series, language, index_series)
     existing = db.scalar(
         select(StockAnalysis).where(
             StockAnalysis.cache_key == cache_key,
@@ -337,7 +363,15 @@ async def execute_stock_analysis(
     )
     analyzer = SahmiKasbanAnalyzer(config)
     try:
-        report = analyzer.analyze(series.ticker, pd.DataFrame(series.candles))
+        report = analyzer.analyze(
+            series.ticker,
+            pd.DataFrame(series.candles),
+            index=(
+                (index_series.ticker, pd.DataFrame(index_series.candles))
+                if index_series is not None
+                else None
+            ),
+        )
     except Exception as exc:
         db.rollback()
         raise StockAnalysisExecutionError(
@@ -371,6 +405,17 @@ async def execute_stock_analysis(
             "fingerprint": series.fingerprint,
             "candle_count": series.candle_count,
         },
+        "index": (
+            {
+                "name": index_series.ticker,
+                "provider": index_series.provider,
+                "interval": index_series.interval,
+                "data_as_of": index_series.data_as_of.isoformat(),
+                "fingerprint": index_series.fingerprint,
+            }
+            if index_series is not None
+            else None
+        ),
         "analysis": report_payload,
         "explanation": explanation,
         "explanation_source": explanation_source,

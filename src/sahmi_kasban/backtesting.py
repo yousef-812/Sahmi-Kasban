@@ -16,6 +16,7 @@ class AnalyzerProtocol(Protocol):
         self,
         ticker: str,
         candles: pd.DataFrame | Iterable[Mapping[str, Any]],
+        index: tuple[str, pd.DataFrame | Iterable[Mapping[str, Any]]] | None = None,
     ) -> AnalysisReport: ...
 
 
@@ -82,12 +83,18 @@ def walk_forward_backtest(
     candles: pd.DataFrame | Iterable[Mapping[str, Any]],
     *,
     analyzer: AnalyzerProtocol | None = None,
+    index: tuple[str, pd.DataFrame | Iterable[Mapping[str, Any]]] | None = None,
     min_train_size: int = 200,
     horizon_sessions: int = 5,
     step_sessions: int = 5,
     neutral_band_pct: float = 1.0,
 ) -> BacktestSummary:
-    """Evaluate frozen historical signals without exposing future candles to the analyzer."""
+    """Evaluate frozen historical signals without exposing future candles to the analyzer.
+
+    ``index`` is an optional ``(index_name, candles)`` pair for the market_index
+    context engine; the index history is sliced to each cutoff so no future
+    index data leaks into the evaluation.
+    """
 
     if min_train_size < 60:
         raise ValueError("min_train_size must be at least 60")
@@ -107,6 +114,14 @@ def walk_forward_backtest(
     if len(prepared) < min_train_size + horizon_sessions:
         raise ValueError("not enough candles for the requested walk-forward backtest")
 
+    prepared_index = None
+    if index is not None:
+        index_name, index_candles = index
+        index_name = (index_name or "").strip().upper()
+        if not index_name:
+            raise ValueError("index name cannot be empty")
+        prepared_index = prepare_candles(index_candles)
+
     observations: list[BacktestObservation] = []
     for cutoff in range(
         min_train_size,
@@ -115,7 +130,15 @@ def walk_forward_backtest(
     ):
         history = prepared.iloc[:cutoff].copy()
         future = prepared.iloc[cutoff : cutoff + horizon_sessions]
-        report = analyzer.analyze(ticker, history)
+        report_index = None
+        if prepared_index is not None:
+            cutoff_ts = history.iloc[-1]["timestamp"]
+            index_slice = prepared_index.loc[
+                prepared_index["timestamp"] <= cutoff_ts
+            ]
+            if len(index_slice) >= 60:
+                report_index = (index_name, index_slice)
+        report = analyzer.analyze(ticker, history, index=report_index)
 
         entry = float(history.iloc[-1]["close"])
         exit_price = float(future.iloc[-1]["close"])

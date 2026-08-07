@@ -132,7 +132,7 @@ def test_free_comparison_charges_once_and_reuses_owned_analyses(
     assert repeated.status_code == 200
     assert repeated.json()["idempotent"] is True
     assert repeated.json()["balance_points"] == 850
-    assert provider.calls == 2
+    assert provider.calls == 4
     assert len(db_session.scalars(select(StockComparison)).all()) == 1
 
 
@@ -170,7 +170,7 @@ def test_comparison_keeps_two_results_when_one_ticker_temporarily_fails(
     assert payload["analysis_charged_points"] == 100
     assert payload["comparison_charged_points"] == 50
     assert payload["balance_points"] == 850
-    assert provider.calls == 3
+    assert provider.calls == 5
     assert len(db_session.scalars(select(StockComparison)).all()) == 1
 
 

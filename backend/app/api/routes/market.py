@@ -14,6 +14,8 @@ from app.market_data.types import (
 from app.schemas.market import (
     MarketInstrumentListResponse,
     MarketInstrumentResponse,
+    MarketQuoteResponse,
+    MarketQuotesResponse,
     StockAnalysisRequest,
     StockAnalysisResponse,
     StockComparisonFailureResponse,
@@ -21,6 +23,7 @@ from app.schemas.market import (
     StockComparisonRequest,
     StockComparisonResponse,
 )
+from app.market_data.quotes import fetch_market_quotes, fetch_single_quote
 from app.services.stock_analysis import (
     StockAnalysisExecution,
     StockAnalysisExecutionError,
@@ -104,6 +107,42 @@ async def get_market_instruments(
         total_registry_size=total,
         items=[MarketInstrumentResponse(**instrument.to_dict()) for instrument in instruments],
     )
+
+
+def _quote_response(quote) -> MarketQuoteResponse:
+    return MarketQuoteResponse(**quote.to_dict())
+
+
+@router.get("/market/quotes", response_model=MarketQuotesResponse)
+async def get_market_quotes(
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> MarketQuotesResponse:
+    snapshot = await fetch_market_quotes(db)
+    return MarketQuotesResponse(
+        source=snapshot.source,
+        generated_at=snapshot.generated_at,
+        market_open=snapshot.market_open,
+        next_session_open=snapshot.next_session_open,
+        items=[_quote_response(item) for item in snapshot.items],
+    )
+
+
+@router.get("/market/quotes/{ticker}", response_model=MarketQuoteResponse)
+async def get_market_quote_for_ticker(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+    force_refresh: bool = Query(default=False),
+) -> MarketQuoteResponse:
+    normalized_ticker = normalize_egx_ticker(ticker)
+    quote = await fetch_single_quote(db, normalized_ticker, force_refresh=force_refresh)
+    if quote is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير موجود في سوق EGX المدعوم.",
+        )
+    return _quote_response(quote)
 
 
 @router.post("/market/comparisons", response_model=StockComparisonResponse)

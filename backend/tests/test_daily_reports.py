@@ -74,7 +74,12 @@ class FakeAnalyzer:
     def __init__(self, _config: object) -> None:
         pass
 
-    def analyze(self, ticker: str, _frame: object) -> SimpleNamespace:
+    def analyze(
+        self,
+        ticker: str,
+        _frame: object,
+        _index: object | None = None,
+    ) -> SimpleNamespace:
         score = 70 + int(ticker[-2:])
         return SimpleNamespace(
             to_dict=lambda: {
@@ -159,7 +164,19 @@ def test_daily_scan_creates_ranked_report_once(
     assert [item.rank for item in items] == list(range(1, 11))
     assert items[0].ticker == "T11"
     assert items[0].payload["explanation_source"] == "ai"
-    assert len(provider.calls) == 12
+    assert len(provider.calls) == 13
+
+    extended = first.report.extended_universe or {}
+    assert extended["top_size"] == 10
+    assert extended["stored_count"] == 2
+    entries = extended["entries"]
+    assert [entry["rank"] for entry in entries] == [11, 12]
+    assert [entry["ticker"] for entry in entries] == ["T01", "T00"]
+    assert all(
+        entry["explanation_source"] == "deterministic" for entry in entries
+    )
+    assert all(entry["opportunity_tier"] == "watch" for entry in entries)
+    assert all(entry["elite"] is False for entry in entries)
 
     second = asyncio.run(
         generate_daily_top10_report(
@@ -172,7 +189,7 @@ def test_daily_scan_creates_ranked_report_once(
     )
     assert second.created is False
     assert second.report.id == first.report.id
-    assert len(provider.calls) == 12
+    assert len(provider.calls) == 13
     assert db_session.scalar(select(func.count(MarketReport.id))) == 1
     assert db_session.scalar(select(func.count(MarketScanRun.id))) == 1
 

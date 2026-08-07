@@ -15,7 +15,10 @@ import '../features/community/community_create_screen.dart';
 import '../features/community/community_detail_screen.dart';
 import '../features/community/my_discussions_screen.dart';
 import '../features/home/dashboard_screen.dart';
+import '../features/market/stock_analysis_screen.dart';
 import '../features/market/stock_comparison_screen.dart';
+import '../features/market/stock_detail_screen.dart';
+import '../features/market/stocks_screen.dart';
 import '../features/monetization/monetization_page.dart';
 import '../features/notifications/notification_screen.dart';
 import '../features/onboarding/onboarding_controller.dart';
@@ -25,6 +28,7 @@ import '../features/performance/performance_report_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
 import '../features/reports/market_report_screen.dart';
+import '../features/reports/reports_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
 
 class _RouterRefreshNotifier extends ChangeNotifier {
@@ -73,7 +77,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reset-password',
         builder: (context, state) => ResetPasswordScreen(
-          initialToken: state.uri.queryParameters['token'],
           email: state.uri.queryParameters['email'],
         ),
       ),
@@ -82,8 +85,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DashboardScreen(),
       ),
       GoRoute(
+        path: '/stocks',
+        builder: (context, state) => const StocksScreen(),
+      ),
+      GoRoute(
+        path: '/stocks/:ticker',
+        builder: (context, state) => StockDetailScreen(
+          ticker: state.pathParameters['ticker']!,
+        ),
+      ),
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportsScreen(),
+      ),
+      GoRoute(
         path: '/market/compare',
         builder: (context, state) => const StockComparisonScreen(),
+      ),
+      GoRoute(
+        path: '/market/analyze/:ticker',
+        builder: (context, state) => StockAnalysisScreen(
+          ticker: state.pathParameters['ticker']!,
+        ),
       ),
       GoRoute(
         path: '/profile/edit',

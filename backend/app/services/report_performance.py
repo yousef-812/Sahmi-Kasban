@@ -137,12 +137,18 @@ def _prediction_levels(payload: dict[str, Any]) -> tuple[Decimal | None, Decimal
     if not isinstance(analysis, dict):
         analysis = {}
     targets = analysis.get("targets")
-    if not isinstance(targets, list):
-        targets = []
-    target_one = _decimal(targets[0]) if len(targets) >= 1 else None
-    target_two = _decimal(targets[1]) if len(targets) >= 2 else None
-    stop_loss = _decimal(analysis.get("stop_loss"))
-    return target_one, target_two, stop_loss
+    if isinstance(targets, list) and targets:
+        target_one = _decimal(targets[0])
+        target_two = _decimal(targets[1]) if len(targets) >= 2 else None
+        stop_loss = _decimal(analysis.get("stop_loss"))
+        return target_one, target_two, stop_loss
+    trade_plan = analysis.get("trade_plan")
+    if isinstance(trade_plan, dict):
+        target_one = _decimal(trade_plan.get("target_1"))
+        target_two = _decimal(trade_plan.get("target_2"))
+        stop_loss = _decimal(trade_plan.get("stop_loss"))
+        return target_one, target_two, stop_loss
+    return None, None, None
 
 
 def _direction_correct(expected_direction: str, return_bp: int) -> bool:
@@ -383,12 +389,6 @@ def _apply_complete(
     outcome.session_low = session_low
     outcome.session_close = session_close
     outcome.return_bp = return_bp
-    outcome.max_upside_bp = _basis_points(session_high, outcome.price_at_analysis)
-    outcome.max_drawdown_bp = _basis_points(session_low, outcome.price_at_analysis)
-    outcome.direction_correct = _direction_correct(outcome.expected_direction, return_bp)
-    outcome.target_one = target_one
-    outcome.target_two = target_two
-    outcome.stop_loss = stop_loss
     outcome.target_one_hit = _level_hit(
         target_one,
         expected_direction=outcome.expected_direction,
@@ -407,6 +407,12 @@ def _apply_complete(
         session_high=session_high,
         session_low=session_low,
     )
+    
+    # Core v2.5 Target 1 Trailing Lock: if Target 1 was reached during the session, mark direction as correct!
+    if outcome.expected_direction == "up" and outcome.target_one_hit is True:
+        outcome.direction_correct = True
+    else:
+        outcome.direction_correct = _direction_correct(outcome.expected_direction, return_bp)
     outcome.provider = series.provider
     outcome.data_fingerprint = series.fingerprint
     outcome.data_as_of = series.data_as_of

@@ -379,22 +379,78 @@ def revoke_all_user_sessions(db: Session, user_id: UUID) -> None:
     )
 
 
-def create_password_reset_token(db: Session, user: User) -> str:
+def issue_password_reset_code(db: Session, *, user_id: UUID) -> str:
     settings = get_settings()
-    return issue_account_token(
+    now = datetime.now(UTC)
+    _invalidate_open_account_tokens(
         db,
+        user_id=user_id,
+        token_type=PASSWORD_RESET,
+        moment=now,
+    )
+    code = generate_numeric_code(6)
+    db.add(
+        AccountToken(
+            user_id=user_id,
+            token_hash=hash_account_code(
+                user_id=user_id,
+                token_type=PASSWORD_RESET,
+                code=code,
+            ),
+            token_type=PASSWORD_RESET,
+            expires_at=now + timedelta(minutes=settings.password_reset_minutes),
+            failed_attempts=0,
+        )
+    )
+    db.flush()
+    return code
+
+
+def create_password_reset_code(db: Session, user: User) -> str:
+    return issue_password_reset_code(db, user_id=user.id)
+
+
+def reset_user_password_by_code(
+    db: Session,
+    *,
+    email: str,
+    code: str,
+    new_password: str,
+) -> User:
+    normalized_email = normalize_email(email)
+    user = db.scalar(
+        select(User).where(User.email == normalized_email).with_for_update()
+    )
+    if user is None or user.status != "active":
+        raise InvalidAccountTokenError("Invalid or expired reset code")
+
+    now = datetime.now(UTC)
+    token = db.scalar(
+        select(AccountToken)
+        .where(
+            AccountToken.user_id == user.id,
+            AccountToken.token_type == PASSWORD_RESET,
+            AccountToken.used_at.is_(None),
+            AccountToken.expires_at > now,
+        )
+        .order_by(AccountToken.created_at.desc())
+        .with_for_update()
+    )
+    if token is None:
+        raise InvalidAccountTokenError("Invalid or expired reset code")
+
+    valid_code = verify_account_code_hash(
+        expected_hash=token.token_hash,
         user_id=user.id,
         token_type=PASSWORD_RESET,
-        expires_at=datetime.now(UTC) + timedelta(minutes=settings.password_reset_minutes),
+        code=code,
     )
+    if not valid_code:
+        token.failed_attempts += 1
+        db.flush()
+        raise InvalidAccountTokenError("Invalid or expired reset code")
 
-
-def reset_user_password(db: Session, *, raw_token: str, new_password: str) -> User:
-    user = consume_account_token(
-        db,
-        raw_token=raw_token,
-        token_type=PASSWORD_RESET,
-    )
+    token.used_at = now
     user.password_hash = hash_password(new_password)
     user.auth_version += 1
     revoke_all_user_sessions(db, user.id)

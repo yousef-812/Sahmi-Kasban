@@ -16,6 +16,10 @@ jobs:
       FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
       PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
       FIREBASE_ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON }}
+      ADMOB_ANDROID_APP_ID: ${{ secrets.ADMOB_ANDROID_APP_ID }}
+      ADMOB_ANDROID_BANNER_ID: ${{ secrets.ADMOB_ANDROID_BANNER_ID }}
+      ADMOB_ANDROID_NATIVE_ID: ${{ secrets.ADMOB_ANDROID_NATIVE_ID }}
+      ADMOB_ANDROID_INTERSTITIAL_ID: ${{ secrets.ADMOB_ANDROID_INTERSTITIAL_ID }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -71,21 +75,37 @@ jobs:
         working-directory: mobile
         run: $FLUTTER_HOME/bin/flutter pub get
 
-      - name: Build signed update APK
+      - name: Build signed release APK and AAB
         working-directory: mobile
         shell: bash
         run: |
           set -Eeuo pipefail
-          $FLUTTER_HOME/bin/flutter build apk --release \
-            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev \
-            --dart-define=DEMO_MODE=false \
-            --dart-define=APP_ENV=staging
+          defines=(
+            "--dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev"
+            "--dart-define=DEMO_MODE=false"
+            "--dart-define=APP_ENV=production"
+            "--dart-define=RELEASE_PLATFORM=android"
+          )
+          if [ -n "${ADMOB_ANDROID_BANNER_ID:-}" ]; then
+            defines+=("--dart-define=ADMOB_ANDROID_BANNER_ID=$ADMOB_ANDROID_BANNER_ID")
+          fi
+          if [ -n "${ADMOB_ANDROID_NATIVE_ID:-}" ]; then
+            defines+=("--dart-define=ADMOB_ANDROID_NATIVE_ID=$ADMOB_ANDROID_NATIVE_ID")
+          fi
+          if [ -n "${ADMOB_ANDROID_INTERSTITIAL_ID:-}" ]; then
+            defines+=("--dart-define=ADMOB_ANDROID_INTERSTITIAL_ID=$ADMOB_ANDROID_INTERSTITIAL_ID")
+          fi
+          $FLUTTER_HOME/bin/flutter build apk --release "${defines[@]}"
+          $FLUTTER_HOME/bin/flutter build appbundle --release "${defines[@]}"
 
-      - name: Verify update package and signing certificate
+      - name: Verify release packages and signing certificate
         shell: bash
         run: |
           set -Eeuo pipefail
           apk="mobile/build/app/outputs/flutter-apk/app-release.apk"
+          aab="mobile/build/app/outputs/bundle/release/app-release.aab"
+          test -s "$apk"
+          test -s "$aab"
           sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
           aapt="$(find "$sdk_root/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           test -x "$aapt"
@@ -95,13 +115,17 @@ jobs:
           version_code="$(printf '%s\n' "$badging" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
           version_name="$(printf '%s\n' "$badging" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
           if [ "$package_id" != "com.sahmikasban.sahmi_kasban_mobile" ]; then
-            echo "Signed update has unexpected package ID: $package_id" >&2
+            echo "Signed release has unexpected package ID: $package_id" >&2
             exit 1
           fi
 
-          keytool -printcert -jarfile "$apk" \
-            | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
-          cert_sha256="$(sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' \
+          apksigner="$(find "$sdk_root/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -x "$apksigner" ]; then
+            "$apksigner" verify --print-certs "$apk" | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          else
+            keytool -printcert -jarfile "$apk" | tee mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          fi
+          cert_sha256="$(sed -n 's/.*SHA-256 digest:[[:space:]]*//p; s/^[[:space:]]*SHA256:[[:space:]]*//p' \
             mobile/build/app/outputs/flutter-apk/signing-certificate.txt | head -n 1)"
           test -n "$cert_sha256"
 
@@ -115,8 +139,10 @@ jobs:
           fi
 
           safe_version="${version_name//+/-}"
-          output="mobile/build/app/outputs/flutter-apk/sahmi-kasban-${safe_version}-${version_code}-signed-update.apk"
-          cp "$apk" "$output"
+          apk_output="mobile/build/app/outputs/flutter-apk/sahmi-kasban-${safe_version}-${version_code}-signed.apk"
+          aab_output="mobile/build/app/outputs/bundle/release/sahmi-kasban-${safe_version}-${version_code}-signed.aab"
+          cp "$apk" "$apk_output"
+          cp "$aab" "$aab_output"
           cat > mobile/build/app/outputs/flutter-apk/release-metadata.txt <<EOF
           package_id=$package_id
           version_name=$version_name
@@ -124,14 +150,16 @@ jobs:
           certificate_sha256=$cert_sha256
           source_commit=${GITHUB_SHA}
           EOF
-          echo "SIGNED_UPDATE_APK=$output" >> "$GITHUB_ENV"
+          echo "SIGNED_UPDATE_APK=$apk_output" >> "$GITHUB_ENV"
+          echo "SIGNED_UPDATE_AAB=$aab_output" >> "$GITHUB_ENV"
 
-      - name: Upload signed update APK
+      - name: Upload signed release APK and AAB
         uses: actions/upload-artifact@v4
         with:
-          name: sahmi-kasban-signed-update-${{ github.run_id }}
+          name: sahmi-kasban-signed-release-${{ github.run_id }}
           path: |
             ${{ env.SIGNED_UPDATE_APK }}
+            ${{ env.SIGNED_UPDATE_AAB }}
             mobile/build/app/outputs/flutter-apk/signing-certificate.txt
             mobile/build/app/outputs/flutter-apk/release-metadata.txt
           if-no-files-found: error

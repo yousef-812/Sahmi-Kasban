@@ -225,7 +225,12 @@ class FakeAnalyzer:
     def __init__(self) -> None:
         self.history_lengths: list[int] = []
 
-    def analyze(self, ticker: str, candles: pd.DataFrame) -> AnalysisReport:
+    def analyze(
+        self,
+        ticker: str,
+        candles: pd.DataFrame,
+        index: tuple[str, pd.DataFrame] | None = None,
+    ) -> AnalysisReport:
         self.history_lengths.append(len(candles))
         return AnalysisReport(
             ticker=ticker,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import time as datetime_time
 from enum import StrEnum
 from functools import lru_cache
 
@@ -56,7 +57,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str = ""
     smtp_password: str = ""
-    smtp_from_email: str = "noreply@sahmi-kasban.local"
+    smtp_from_email: str = "bdaeyworkspace@gmail.com"
     smtp_use_tls: bool = True
 
     market_data_primary: str = "tradingview"
@@ -83,11 +84,16 @@ class Settings(BaseSettings):
     market_instrument_catalog_timeout_seconds: float = 8.0
     market_instrument_catalog_max_symbols: int = 1_000
 
+    market_quotes_refresh_seconds: float = 5.0
+    egx_session_open_time: str = "10:00"
+    egx_session_close_time: str = "14:30"
+    egx_session_reset_before_minutes: int = 30
+
     analysis_cost_points: int = 50
     analysis_default_capital: float = 150_000.0
     analysis_risk_per_trade: float = 0.01
     analysis_max_position_value: float = 40_000.0
-    analysis_engine_version: str = "core-v2"
+    analysis_engine_version: str = "core-v2.5"
 
     historical_replay_provider_concurrency: int = 5
     historical_replay_cpu_concurrency: int = 2
@@ -194,6 +200,17 @@ class Settings(BaseSettings):
             raise ValueError("MARKET_INSTRUMENT_CATALOG_TIMEOUT_SECONDS must be 1..60")
         if not 100 <= self.market_instrument_catalog_max_symbols <= 5_000:
             raise ValueError("MARKET_INSTRUMENT_CATALOG_MAX_SYMBOLS must be 100..5000")
+        if not 5 <= self.market_quotes_refresh_seconds <= 600:
+            raise ValueError("MARKET_QUOTES_REFRESH_SECONDS must be 5..600")
+        if not 0 <= self.egx_session_reset_before_minutes <= 240:
+            raise ValueError("EGX_SESSION_RESET_BEFORE_MINUTES must be 0..240")
+        for session_time in (self.egx_session_open_time, self.egx_session_close_time):
+            try:
+                datetime_time.fromisoformat(session_time)
+            except ValueError:
+                raise ValueError(
+                    "EGX_SESSION_OPEN_TIME/EGX_SESSION_CLOSE_TIME must be HH:MM"
+                )
         if self.analysis_cost_points <= 0:
             raise ValueError("ANALYSIS_COST_POINTS must be positive")
         if self.analysis_default_capital <= 0:

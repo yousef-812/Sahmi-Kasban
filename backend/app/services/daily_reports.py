@@ -10,6 +10,8 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -25,11 +27,11 @@ from app.models import (
     MarketScanRun,
     User,
 )
+from app.services.market_index import fetch_index_series, resolve_index_name
 from app.services.operations_settings import get_int_setting
+from app.services.report_selection import classify_report_item
 from app.services.stock_analysis import DISCLAIMER_AR
 from app.services.wallet import debit_points, get_wallet_account
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +148,60 @@ def _deterministic_explanation(candidate: Candidate) -> str:
         f"{candidate.average_turnover_egp:,.0f} جنيه. راجع الدخول ووقف الخسارة "
         "والأهداف داخل تفاصيل التقرير."
     )
+
+
+def _build_extended_entry(
+    candidate: Candidate,
+    *,
+    rank: int,
+    eligible_count: int,
+) -> dict[str, Any]:
+    analysis = candidate.analysis if isinstance(candidate.analysis, dict) else {}
+    plan = (
+        analysis.get("trade_plan")
+        if isinstance(analysis.get("trade_plan"), dict)
+        else {}
+    )
+    classification = classify_report_item(
+        MarketReportItem(
+            ticker=candidate.ticker,
+            rank=rank,
+            score_bp=candidate.score_bp,
+            payload={
+                "signal": candidate.signal,
+                "qualified": candidate.qualified,
+                "analysis": analysis,
+            },
+        ),
+        eligible_count=eligible_count,
+        selection_regime="unknown",
+    )
+    return {
+        "ticker": candidate.ticker,
+        "rank": rank,
+        "score": round(candidate.final_score, 2),
+        "signal": candidate.signal,
+        "opportunity_tier": classification.tier,
+        "elite_profile": classification.profile,
+        "elite": classification.elite,
+        "decision": classification.decision,
+        "price_at_analysis": round(candidate.last_close, 6),
+        "confidence": round(candidate.confidence, 2),
+        "qualified": candidate.qualified,
+        "trade_plan": {
+            "entry": plan.get("entry"),
+            "stop_loss": plan.get("stop_loss"),
+            "target_1": plan.get("target_1"),
+            "target_2": plan.get("target_2"),
+            "reward_risk_1": plan.get("reward_risk_1"),
+        },
+        "explanation": _deterministic_explanation(candidate),
+        "explanation_source": "deterministic",
+        "selection_rank": rank,
+        "top_fraction_pct": round(rank / max(eligible_count, 1) * 100.0, 2),
+        "eligible_universe_size": eligible_count,
+        "selection_note": classification.note,
+    }
 
 
 def _report_items(db: Session, report_id: UUID) -> tuple[MarketReportItem, ...]:
@@ -306,6 +362,7 @@ def unlock_market_report(
 async def _analyze_ticker(
     ticker: str,
     *,
+    db: Session,
     source_session_date: date,
     provider: MarketDataProvider,
     semaphore: asyncio.Semaphore,
@@ -350,7 +407,25 @@ async def _analyze_ticker(
     )
     try:
         analyzer = SahmiKasbanAnalyzer(config)
-        report = await asyncio.to_thread(analyzer.analyze, series.ticker, frame)
+        index_series = None
+        try:
+            index_series = await fetch_index_series(
+                db,
+                provider,
+                resolve_index_name(ticker),
+            )
+        except Exception as exc:
+            logger.info("Daily scan index failure for %s: %s", ticker, exc)
+        report = await asyncio.to_thread(
+            analyzer.analyze,
+            series.ticker,
+            frame,
+            (
+                (index_series.ticker, pd.DataFrame(index_series.candles))
+                if index_series is not None
+                else None
+            ),
+        )
         raw_payload = _json_safe(report.to_dict())
     except Exception as exc:
         logger.info("Daily scan engine failure for %s: %s", ticker, exc)
@@ -505,6 +580,7 @@ async def generate_daily_top10_report(
         *(
             _analyze_ticker(
                 ticker,
+                db=db,
                 source_session_date=session.source_session_date,
                 provider=provider,
                 semaphore=semaphore,
@@ -634,6 +710,23 @@ async def generate_daily_top10_report(
                     },
                 )
             )
+        extended = [
+            _build_extended_entry(
+                candidate,
+                rank=rank,
+                eligible_count=len(candidates),
+            )
+            for rank, candidate in enumerate(
+                candidates[settings.daily_report_size :],
+                start=settings.daily_report_size + 1,
+            )
+        ]
+        if extended:
+            report.extended_universe = {
+                "top_size": settings.daily_report_size,
+                "stored_count": len(extended),
+                "entries": extended,
+            }
         locked_run = db.scalar(
             select(MarketScanRun)
             .where(MarketScanRun.id == run.id)

@@ -16,6 +16,7 @@ from app.schemas.replays import (
     HistoricalReplayJobListResponse,
     HistoricalReplayJobResponse,
     HistoricalReplayTickerResponse,
+    LabsReplayCreateRequest,
 )
 from app.services.historical_replay_exports import build_historical_replay_csv
 from app.services.historical_replays import (
@@ -24,6 +25,7 @@ from app.services.historical_replays import (
     HistoricalReplayNotFoundError,
     cancel_historical_replay_job,
     create_historical_replay_job,
+    delete_historical_replay_job,
     get_historical_replay_job,
     list_historical_replay_jobs,
     list_historical_replay_tickers,
@@ -163,6 +165,50 @@ def create_replay_job(
 
 
 @router.post(
+    "/jobs/labs-backtest",
+    response_model=HistoricalReplayJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def create_labs_replay_job(
+    payload: LabsReplayCreateRequest,
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+) -> HistoricalReplayJobResponse:
+    """Create a labs-style backtest as a replay job on the isolated worker."""
+    from app.services.historical_replays import create_historical_replay_job
+    from app.core.config import get_settings
+    
+    settings = get_settings()
+    # Map labs parameters to replay job parameters
+    request_key = f"labs_{payload.start_date.isoformat()}_{payload.end_date.isoformat()}_{payload.rank or 'all'}_{payload.exit_mode}_{admin.id.hex[:8]}"
+    
+    try:
+        job, _idempotent = create_historical_replay_job(
+            db,
+            actor_user_id=admin.id,
+            request_key=request_key,
+            start_date=payload.start_date,
+            end_date=payload.end_date,
+            horizon_sessions=payload.rank or 5,  # Use rank as horizon or default 5
+            min_train_size=200,
+            neutral_band_pct=1.0,
+        )
+        # Store labs-specific metadata in details
+        job.details = {
+            "type": "labs_backtest",
+            "rank": payload.rank,
+            "exit_mode": payload.exit_mode,
+        }
+        db.commit()
+    except HistoricalReplayConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    return _job_response(job)
+
+
+@router.post(
     "/batches",
     response_model=HistoricalReplayBatchCreateResponse,
     status_code=status.HTTP_202_ACCEPTED,
@@ -293,6 +339,25 @@ def cancel_replay_job(
     except (HistoricalReplayNotFoundError, HistoricalReplayControlError) as exc:
         _raise_control_error(exc)
     return _job_response(job)
+
+
+@router.delete(
+    "/jobs/{job_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_replay_job(
+    job_id: UUID,
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+) -> None:
+    try:
+        delete_historical_replay_job(
+            db,
+            job_id=job_id,
+            actor_user_id=admin.id,
+        )
+    except (HistoricalReplayNotFoundError, HistoricalReplayControlError) as exc:
+        _raise_control_error(exc)
 
 
 @router.get("/jobs/{job_id}/export.csv")

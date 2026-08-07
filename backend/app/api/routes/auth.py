@@ -39,11 +39,11 @@ from app.services.auth import (
     InvalidAccountTokenError,
     authenticate_user,
     create_email_verification_code,
-    create_password_reset_token,
+    create_password_reset_code,
     create_token_pair,
     normalize_email,
     register_user,
-    reset_user_password,
+    reset_user_password_by_code,
     revoke_refresh_token,
     rotate_refresh_token,
     verify_user_email,
@@ -141,11 +141,11 @@ def _deliver_verification_email(
 def _deliver_password_reset_email(
     email_service: AccountEmailService,
     email: str,
-    token: str,
+    code: str,
     user_id: str,
 ) -> None:
     try:
-        email_service.send_password_reset(email, token)
+        email_service.send_password_reset(email, code)
     except Exception:
         logger.exception("Password reset email failed for user %s", user_id)
 
@@ -381,13 +381,13 @@ def forgot_password(
     )
     user = db.scalar(select(User).where(User.email == normalized_email))
     if user is not None and user.status == "active":
-        token = create_password_reset_token(db, user)
+        code = create_password_reset_code(db, user)
         db.commit()
         background_tasks.add_task(
             _deliver_password_reset_email,
             email_service,
             user.email,
-            token,
+            code,
             str(user.id),
         )
     return MessageResponse(
@@ -401,16 +401,18 @@ def reset_password(
     request: Request,
     db: DatabaseSession,
 ) -> MessageResponse:
+    normalized_email = normalize_email(str(payload.email))
     _enforce_auth_limit(
         request,
         db,
         action="reset_password",
-        discriminator="token",
+        discriminator=normalized_email,
     )
     try:
-        reset_user_password(
+        reset_user_password_by_code(
             db,
-            raw_token=payload.token,
+            email=str(payload.email),
+            code=payload.code,
             new_password=payload.new_password,
         )
         db.commit()
@@ -418,7 +420,7 @@ def reset_password(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token",
+            detail="Invalid or expired reset code",
         ) from exc
     except ValueError as exc:
         db.rollback()

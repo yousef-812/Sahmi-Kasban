@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/network/api_exception.dart';
+import '../labs/labs_screen.dart';
 import 'admin_repository.dart';
 import 'historical_replay_models.dart';
 
@@ -246,6 +247,44 @@ class _HistoricalReplayControlScreenState
     }
   }
 
+  Future<void> _delete(HistoricalReplayJob job) async {
+    if (_busyJobs.contains(job.id)) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف نهائي؟'),
+        content: const Text(
+          'سيتم حذف هذا الاختبار وجميع نتائجه نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('رجوع'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف نهائي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busyJobs.add(job.id));
+    try {
+      await ref.read(adminRepositoryProvider).deleteHistoricalReplay(job.id);
+      if (mounted) _message('تم حذف الاختبار نهائيًا.');
+      await _load(silent: true);
+    } on Object catch (error) {
+      if (mounted) _message(_errorText(error));
+    } finally {
+      if (mounted) setState(() => _busyJobs.remove(job.id));
+    }
+  }
+
   Future<void> _download(HistoricalReplayJob job) async {
     try {
       final file = await ref
@@ -328,81 +367,100 @@ class _HistoricalReplayControlScreenState
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('d MMMM y', 'ar');
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('اختبار المحركات التاريخي'),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            tooltip: 'تحديث',
-            icon: const Icon(Icons.refresh),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('اختبار المحركات'),
+          actions: [
+            IconButton(
+              onPressed: _load,
+              tooltip: 'تحديث',
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'المحركات التاريخي'),
+              Tab(text: 'المختببرات'),
+            ],
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+        ),
+        body: TabBarView(
           children: [
-            _ReplaySetupCard(
-              dateFormat: dateFormat,
-              startDate: _startDate,
-              endDate: _endDate,
-              horizonSessions: _horizonSessions,
-              horizons: _horizons,
-              submitting: _submitting,
-              windows: _batchWindows,
-              onPreviousMonth: _previousMonth,
-              onCurrentMonth: _currentMonth,
-              onPickStart: () => _pickDate(start: true),
-              onPickEnd: () => _pickDate(start: false),
-              onHorizonChanged: (value) =>
-                  setState(() => _horizonSessions = value),
-              onStartSingle: _startSingle,
-              onAddWindow: _addWindow,
-              onRemoveWindow: (index) => setState(() {
-                _batchWindows = [
-                  for (var i = 0; i < _batchWindows.length; i++)
-                    if (i != index) _batchWindows[i],
-                ];
-              }),
-              onStartBatch: _startBatch,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'اختبارات حسابي',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            if (_loading) const Center(child: CircularProgressIndicator()),
-            if (_error != null)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.error_outline),
-                  title: const Text('تعذر تحميل الاختبارات'),
-                  subtitle: Text(_error!),
-                ),
-              ),
-            if (!_loading && _jobs.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: Text('لم تبدأ أي اختبارات بعد.')),
-                ),
-              ),
-            for (final job in _jobs)
-              _ReplayJobCard(
-                job: job,
-                dateFormat: dateFormat,
-                busy: _busyJobs.contains(job.id),
-                onDetails: () => _details(job),
-                onDownload: job.downloadReady ? () => _download(job) : null,
-                onPause: job.canPause ? () => _control(job, 'pause') : null,
-                onResume: job.canResume ? () => _control(job, 'resume') : null,
-                onCancel: job.canCancel ? () => _control(job, 'cancel') : null,
-              ),
+            _buildReplayTab(dateFormat),
+            const LabsScreen(embedded: true),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReplayTab(DateFormat dateFormat) {
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _ReplaySetupCard(
+            dateFormat: dateFormat,
+            startDate: _startDate,
+            endDate: _endDate,
+            horizonSessions: _horizonSessions,
+            horizons: _horizons,
+            submitting: _submitting,
+            windows: _batchWindows,
+            onPreviousMonth: _previousMonth,
+            onCurrentMonth: _currentMonth,
+            onPickStart: () => _pickDate(start: true),
+            onPickEnd: () => _pickDate(start: false),
+            onHorizonChanged: (value) =>
+                setState(() => _horizonSessions = value),
+            onStartSingle: _startSingle,
+            onAddWindow: _addWindow,
+            onRemoveWindow: (index) => setState(() {
+              _batchWindows = [
+                for (var i = 0; i < _batchWindows.length; i++)
+                  if (i != index) _batchWindows[i],
+              ];
+            }),
+            onStartBatch: _startBatch,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'اختبارات حسابي',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          if (_loading) const Center(child: CircularProgressIndicator()),
+          if (_error != null)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.error_outline),
+                title: const Text('تعذر تحميل الاختبارات'),
+                subtitle: Text(_error!),
+              ),
+            ),
+          if (!_loading && _jobs.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('لم تبدأ أي اختبارات بعد.')),
+              ),
+            ),
+          for (final job in _jobs)
+            _ReplayJobCard(
+              job: job,
+              dateFormat: dateFormat,
+              busy: _busyJobs.contains(job.id),
+              onDetails: () => _details(job),
+              onDownload: job.downloadReady ? () => _download(job) : null,
+              onPause: job.canPause ? () => _control(job, 'pause') : null,
+              onResume: job.canResume ? () => _control(job, 'resume') : null,
+              onCancel: job.canCancel ? () => _control(job, 'cancel') : null,
+              onDelete: () => _delete(job),
+            ),
+        ],
       ),
     );
   }
@@ -570,6 +628,7 @@ class _ReplayJobCard extends StatelessWidget {
     this.onPause,
     this.onResume,
     this.onCancel,
+    this.onDelete,
   });
 
   final HistoricalReplayJob job;
@@ -580,6 +639,7 @@ class _ReplayJobCard extends StatelessWidget {
   final VoidCallback? onPause;
   final VoidCallback? onResume;
   final VoidCallback? onCancel;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -650,6 +710,15 @@ class _ReplayJobCard extends StatelessWidget {
                     onPressed: busy ? null : onCancel,
                     icon: const Icon(Icons.cancel_outlined),
                     label: const Text('إلغاء'),
+                  ),
+                if (onDelete != null)
+                  TextButton.icon(
+                    onPressed: busy ? null : onDelete,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('حذف نهائي'),
                   ),
                 if (onDownload != null)
                   FilledButton.icon(

@@ -4,6 +4,8 @@ import asyncio
 from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 
+from sqlalchemy.orm import Session
+
 from app.api.routes.community_verification import _load_prediction_score
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
 from app.services.daily_reports import _analyze_ticker
@@ -118,6 +120,7 @@ def test_daily_scan_treats_short_history_as_exclusion_not_provider_failure() -> 
     outcome = asyncio.run(
         _analyze_ticker(
             "COMI",
+            db=Session(),  # type: ignore[arg-type]
             source_session_date=date(2026, 7, 29),
             provider=ShortHistoryProvider(),
             semaphore=asyncio.Semaphore(1),

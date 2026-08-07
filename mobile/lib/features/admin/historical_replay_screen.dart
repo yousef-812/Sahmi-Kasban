@@ -221,6 +221,41 @@ class _HistoricalReplayScreenState
     }
   }
 
+  Future<void> _delete(HistoricalReplayJob job) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف نهائي؟'),
+        content: const Text(
+          'سيتم حذف هذا الاختبار وجميع نتائجه نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('رجوع'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف نهائي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(adminRepositoryProvider).deleteHistoricalReplay(job.id);
+      if (!mounted) return;
+      _showMessage('تم حذف الاختبار نهائيًا.');
+      await _load(silent: true);
+    } on Object catch (error) {
+      if (!mounted) return;
+      _showMessage(error is ApiException ? error.message : error.toString());
+    }
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -370,6 +405,7 @@ class _HistoricalReplayScreenState
                 dateFormat: dateFormat,
                 onDownload: job.downloadReady ? () => _download(job) : null,
                 onDetails: () => _showDetails(job),
+                onDelete: () => _delete(job),
               ),
           ],
         ),
@@ -413,12 +449,14 @@ class _JobCard extends StatelessWidget {
     required this.dateFormat,
     required this.onDetails,
     this.onDownload,
+    this.onDelete,
   });
 
   final HistoricalReplayJob job;
   final DateFormat dateFormat;
   final VoidCallback onDetails;
   final VoidCallback? onDownload;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -482,6 +520,15 @@ class _JobCard extends StatelessWidget {
                     onPressed: onDownload,
                     icon: const Icon(Icons.download_outlined),
                     label: const Text('تنزيل CSV'),
+                  ),
+                if (onDelete != null)
+                  TextButton.icon(
+                    onPressed: onDelete,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('حذف نهائي'),
                   ),
               ],
             ),

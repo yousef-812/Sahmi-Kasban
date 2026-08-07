@@ -19,6 +19,7 @@ from app.models.community import (
     UserMute,
 )
 from app.models.comparisons import StockComparison
+from app.models.labs import LabsBacktestJob
 from app.models.entities import (
     Discussion,
     MarketReport,
@@ -63,6 +64,7 @@ __all__ = [
     "DiscussionAppeal",
     "DiscussionModerationEvent",
     "DiscussionReport",
+    "LabsBacktestJob",
     "MarketDataSnapshot",
     "MarketInstrumentCatalog",
     "MarketReport",

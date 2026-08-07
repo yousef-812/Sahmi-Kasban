@@ -10,7 +10,10 @@ from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Environment, get_settings
-from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
+from app.market_data.egx_symbols import (
+    EGX_ARABIC_NAMES,
+    EGX_SEED_SYMBOLS,
+)
 from app.market_data.types import MarketInstrument
 from app.models import MarketInstrumentCatalog
 
@@ -51,7 +54,7 @@ def seed_market_instrument_catalog(db: Session) -> None:
                 ticker=ticker,
                 provider_symbol=f"EGX:{ticker}",
                 exchange="EGX",
-                description="",
+                description=EGX_ARABIC_NAMES.get(ticker, ""),
                 source="legacy_seed",
                 active=True,
                 last_seen_at=now,
@@ -86,6 +89,8 @@ def _parse_scanner_rows(payload: object) -> list[MarketInstrumentCatalog]:
         description = ""
         if len(values) > 1 and isinstance(values[1], str):
             description = values[1].strip()[:255]
+        if not description and len(values) > 0 and isinstance(values[0], str):
+            description = values[0].strip()[:255]
         parsed[ticker] = MarketInstrumentCatalog(
             ticker=ticker,
             provider_symbol=f"EGX:{ticker}",
@@ -96,6 +101,21 @@ def _parse_scanner_rows(payload: object) -> list[MarketInstrumentCatalog]:
             last_seen_at=now,
         )
     return list(parsed.values())
+
+
+def _preferred_description(
+    existing: str,
+    incoming: str,
+    *,
+    ticker: str,
+) -> str:
+    """Prefer Arabic descriptions, keeping curated blue-chip names authoritative."""
+    curated = EGX_ARABIC_NAMES.get(ticker, "")
+    if curated:
+        return curated[:255]
+    if incoming.strip():
+        return incoming.strip()[:255]
+    return existing[:255]
 
 
 def _reconcile_scanner_rows(
@@ -117,7 +137,11 @@ def _reconcile_scanner_rows(
             continue
         existing.provider_symbol = row.provider_symbol
         existing.exchange = row.exchange
-        existing.description = row.description
+        existing.description = _preferred_description(
+            existing.description,
+            row.description,
+            ticker=row.ticker,
+        )
         existing.source = row.source
         existing.active = True
         existing.last_seen_at = now
@@ -173,7 +197,7 @@ async def refresh_market_instrument_catalog(db: Session) -> int:
     settings = get_settings()
     payload = {
         "filter": [{"left": "type", "operation": "equal", "right": "stock"}],
-        "options": {"lang": "en"},
+        "options": {"lang": "ar"},
         "markets": ["egypt"],
         "symbols": {"query": {"types": []}, "tickers": []},
         "columns": ["name", "description", "exchange", "type", "subtype"],

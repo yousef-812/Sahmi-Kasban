@@ -124,3 +124,16 @@ class HistoricalReplayJobListResponse(BaseModel):
     total: int = Field(ge=0)
     limit: int = Field(gt=0)
     offset: int = Field(ge=0)
+
+
+class LabsReplayCreateRequest(BaseModel):
+    """Schema for creating a labs-style backtest as a replay job."""
+    start_date: date
+    end_date: date
+    rank: int | None = Field(default=None, ge=1, le=10)
+    exit_mode: str = Field(default="target_2", pattern=r"^(target_2|highest)$")
+
+    @model_validator(mode="after")
+    def validate_range(self) -> LabsReplayCreateRequest:
+        _validate_window(self.start_date, self.end_date)
+        return self

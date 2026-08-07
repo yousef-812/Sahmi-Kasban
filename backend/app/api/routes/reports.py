@@ -42,6 +42,7 @@ def _source_session_date(report: MarketReport) -> date:
 
 def _report_response(access: MarketReportAccess) -> MarketReportResponse:
     report = access.report
+    extended_entries = (report.extended_universe or {}).get("entries", []) or []
     return MarketReportResponse(
         report_id=report.id,
         source_session_date=_source_session_date(report),
@@ -56,6 +57,16 @@ def _report_response(access: MarketReportAccess) -> MarketReportResponse:
                 payload=item.payload,
             )
             for item in access.items
+        ],
+        extended_items=[
+            MarketReportItemResponse(
+                ticker=entry["ticker"],
+                rank=entry["rank"],
+                score=entry["score"],
+                payload=entry,
+            )
+            for entry in extended_entries
+            if isinstance(entry, dict) and entry.get("ticker") and entry.get("rank")
         ],
     )
 

@@ -160,7 +160,7 @@ def test_shared_analysis_cache_charges_once_per_account(
     assert second.json()["cached"] is True
     assert second.json()["charged_points"] == 50
     assert second.json()["balance_points"] == 950
-    assert provider.calls == 1
+    assert provider.calls == 2
 
     debits = db_session.scalars(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")

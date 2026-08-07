@@ -7,6 +7,7 @@ import pandas as pd
 
 from sahmi_kasban.engines import (
     MarketEnvironmentEngine,
+    MarketIndexEngine,
     MultiTimeframeEngine,
     OpportunityQualityEngine,
     QuantitativeEngine,
@@ -16,7 +17,7 @@ from sahmi_kasban.engines import (
     StockQualificationEngine,
     TechnicalEngine,
 )
-from sahmi_kasban.indicators import enrich_indicators, prepare_candles
+from sahmi_kasban.indicators import enrich_indicators, prepare_candles, safe_float
 from sahmi_kasban.models import AnalysisConfig, AnalysisReport, EngineResult, TradePlan
 from sahmi_kasban.scoring import calculate_score_diagnostics, score_to_signal
 
@@ -42,6 +43,18 @@ _REQUIRED_PREPARED_COLUMNS = frozenset(
 )
 
 
+def _prepare_index(
+    index: tuple[str, pd.DataFrame | Iterable[Mapping[str, Any]]] | None,
+) -> tuple[str, pd.DataFrame] | None:
+    if index is None:
+        return None
+    index_name, index_candles = index
+    index_name = (index_name or "").strip().upper()
+    if not index_name:
+        raise ValueError("index name cannot be empty")
+    return index_name, prepare_candles(index_candles)
+
+
 class SahmiKasbanAnalyzer:
     """Run the core analysis engines in a deterministic pipeline."""
 
@@ -59,20 +72,34 @@ class SahmiKasbanAnalyzer:
         self,
         ticker: str,
         candles: pd.DataFrame | Iterable[Mapping[str, Any]],
+        index: tuple[str, pd.DataFrame | Iterable[Mapping[str, Any]]] | None = None,
     ) -> AnalysisReport:
-        """Prepare raw candles and run the full analysis pipeline."""
+        """Prepare raw candles and run the full analysis pipeline.
+
+        ``index`` is an optional ``(index_name, candles)`` pair for the
+        market_index context engine; when omitted the engine and its
+        BUY->WATCH gate are skipped.
+        """
 
         symbol = self._symbol(ticker)
         prepared = enrich_indicators(prepare_candles(candles))
-        return self._analyze_enriched(symbol, prepared)
+        return self._analyze_enriched(symbol, prepared, _prepare_index(index))
 
-    def analyze_prepared(self, ticker: str, candles: pd.DataFrame) -> AnalysisReport:
+    def analyze_prepared(
+        self,
+        ticker: str,
+        candles: pd.DataFrame,
+        index: tuple[str, pd.DataFrame] | None = None,
+    ) -> AnalysisReport:
         """Analyze a causal indicator frame that was prepared once by a replay.
 
         Replay callers pass strict prefixes of a frame produced by
         ``enrich_indicators``. Every indicator is trailing-only, so this is
         equivalent to enriching each prefix separately without repeating the
         rolling calculations thousands of times.
+
+        ``index`` is an optional ``(index_name, candles)`` pair for the
+        market_index context engine.
         """
 
         symbol = self._symbol(ticker)
@@ -83,9 +110,14 @@ class SahmiKasbanAnalyzer:
             raise ValueError(
                 "prepared candles are missing indicator columns: " + ", ".join(missing)
             )
-        return self._analyze_enriched(symbol, candles)
+        return self._analyze_enriched(symbol, candles, _prepare_index(index))
 
-    def _analyze_enriched(self, symbol: str, prepared: pd.DataFrame) -> AnalysisReport:
+    def _analyze_enriched(
+        self,
+        symbol: str,
+        prepared: pd.DataFrame,
+        index: tuple[str, pd.DataFrame] | None = None,
+    ) -> AnalysisReport:
         context: dict[str, object] = {"ticker": symbol}
         results: dict[str, EngineResult] = {}
         warnings: list[str] = []
@@ -133,6 +165,36 @@ class SahmiKasbanAnalyzer:
             warnings.append(f"Engine scenario failed: {exc}")
         results[scenario.name] = scenario
 
+        if index is not None:
+            index_name, index_candles = index
+            context["market_index_name"] = index_name
+            stock_return_20d = safe_float(
+                results.get(
+                    "market_environment",
+                    EngineResult("market_environment", 0, 0),
+                )
+                .details.get("return_20d_pct"),
+                None,
+            )
+            try:
+                market_index = MarketIndexEngine(self.config).analyze(
+                    index_candles,
+                    context,
+                    index_name=index_name,
+                    stock_return_20d_pct=stock_return_20d,
+                )
+            except Exception as exc:
+                market_index = EngineResult(
+                    name="market_index",
+                    score=0,
+                    confidence=0,
+                    status="error",
+                    details={"error": str(exc)},
+                    reasons=["market_index failed"],
+                )
+                warnings.append(f"Engine market_index failed: {exc}")
+            results[market_index.name] = market_index
+
         diagnostics = calculate_score_diagnostics(results)
         final_score = diagnostics.final_score
         confidence = diagnostics.confidence
@@ -163,6 +225,12 @@ class SahmiKasbanAnalyzer:
             signal = "WATCH"
             warnings.append("BUY downgraded because aggregate confidence is low")
 
+        if signal == "BUY" and index is not None:
+            index_trend = str(context.get("market_index_trend", ""))
+            if index_trend == "bearish":
+                signal = "WATCH"
+                warnings.append("BUY downgraded because the market index trend is bearish")
+
         context.update(
             {
                 "signal": signal,
@@ -186,7 +254,7 @@ class SahmiKasbanAnalyzer:
         analysis_quality = diagnostics.to_dict()
         analysis_quality.update(
             {
-                "engine_version": "core-v2.3",
+                "engine_version": "core-v2.5",
                 "elite_assessment": dict(opportunity_quality.details),
             }
         )

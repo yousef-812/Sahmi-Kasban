@@ -197,7 +197,7 @@ def test_replay_worker_processes_five_tickers_and_exports_engine_details(
 
     worked = asyncio.run(replay_worker.process_next_historical_replay_batch())
     assert worked is True
-    assert provider.calls == 5
+    assert provider.calls == 7
 
     db_session.expire_all()
     job = db_session.get(AnalysisReplayJob, UUID(job_id))
@@ -217,7 +217,7 @@ def test_replay_worker_processes_five_tickers_and_exports_engine_details(
         if row.data_as_of
     )
     assert "quantitative" in analyzed[0].engines
-    assert analyzed[0].engine_version == "core-v2"
+    assert analyzed[0].engine_version == "core-v2.5"
 
     exported = client.get(
         f"/api/v1/admin/operations/historical-replays/jobs/{job_id}/export.csv",
@@ -228,7 +228,7 @@ def test_replay_worker_processes_five_tickers_and_exports_engine_details(
     text = exported.content.decode("utf-8-sig")
     assert "engines_json" in text
     assert "quantitative" in text
-    assert "core-v2" in text
+    assert "core-v2.5" in text
 
     owner = db_session.scalar(select(User).where(User.email == admin_email))
     assert owner is not None

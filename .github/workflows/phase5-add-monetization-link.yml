@@ -30,14 +30,14 @@ jobs:
                       icon: const Icon(Icons.receipt_long_outlined),
                       label: const Text('عرض سجل العمليات'),
                     ),
-'''
+          '''
           replacement = needle + '''                    const SizedBox(height: 10),
                     FilledButton.icon(
                       onPressed: () => context.push('/monetization'),
                       icon: const Icon(Icons.workspace_premium_outlined),
                       label: const Text('الخطط وشراء العملات'),
                     ),
-'''
+          '''
           if needle not in text:
               raise SystemExit('Wallet history button block was not found')
           path.write_text(text.replace(needle, replacement, 1))

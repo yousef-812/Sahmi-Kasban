@@ -63,6 +63,7 @@ void main() {
           },
         ),
       ],
+      extendedItems: <MarketReportItem>[],
     );
     when(
       () => repository.getMarketReport('report-1'),
@@ -86,6 +87,79 @@ void main() {
     expect(find.text('خطة التداول'), findsOneWidget);
     expect(find.textContaining('السعر أعلى من متوسط 20 جلسة'), findsOneWidget);
     expect(find.textContaining('{'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Grade tabs render extended stocks beyond top 10', (
+    tester,
+  ) async {
+    final repository = _MockBackendRepository();
+    final report = MarketReport(
+      reportId: 'report-2',
+      sourceSessionDate: DateTime.utc(2026, 7, 28),
+      targetSessionDate: DateTime.utc(2026, 7, 29),
+      generatedAt: DateTime.utc(2026, 7, 28, 17),
+      marketSummary: const <String, dynamic>{'eligible_count': 3},
+      items: <MarketReportItem>[
+        MarketReportItem(
+          ticker: 'COMI',
+          rank: 1,
+          score: 88.4,
+          payload: const <String, dynamic>{
+            'decision': 'فرصة قوية',
+            'signal': 'BUY',
+            'opportunity_tier': 'conditional_buy',
+            'elite_profile': 'none',
+          },
+        ),
+      ],
+      extendedItems: <MarketReportItem>[
+        MarketReportItem(
+          ticker: 'EXT1',
+          rank: 11,
+          score: 74.5,
+          payload: const <String, dynamic>{
+            'decision': 'شراء مشروط',
+            'signal': 'BUY',
+            'opportunity_tier': 'conditional_buy',
+            'elite_profile': 'none',
+            'price_at_analysis': 22.5,
+            'trade_plan': <String, dynamic>{
+              'entry': 22.5,
+              'stop_loss': 21.0,
+              'target_1': 24.5,
+              'target_2': 26.0,
+              'reward_risk_1': 1.8,
+            },
+            'explanation': 'فرصة قوية بشروط المخاطر.',
+          },
+        ),
+      ],
+    );
+    when(
+      () => repository.getMarketReport('report-2'),
+    ).thenAnswer((_) async => report);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          backendRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(
+          home: MarketReportScreen(reportId: 'report-2'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('شراء مشروط (2)'), findsOneWidget);
+    expect(find.text('EXT1'), findsNothing);
+
+    await tester.tap(find.text('شراء مشروط (2)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('EXT1'), findsOneWidget);
+    expect(find.text('الهدف الأول'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

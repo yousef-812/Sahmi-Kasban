@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/monetization/free_plan_ads.dart';
+import '../features/notifications/notification_messaging_shell.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -19,9 +20,12 @@ class SahmiKasbanApp extends ConsumerWidget {
       builder: (context, child) {
         return Directionality(
           textDirection: TextDirection.rtl,
-          child: FreePlanAdShell(child: child ?? const SizedBox.shrink()),
+          child: NotificationMessagingShell(
+            child: FreePlanAdShell(child: child ?? const SizedBox.shrink()),
+          ),
         );
       },
     );
   }
 }
+

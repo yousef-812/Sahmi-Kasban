@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
+from sahmi_kasban.ai import AIProviderError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,6 @@ from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
 from app.models import MarketDataSnapshot, StockAnalysis, WalletAccount, WalletEntry
 from app.services.stock_analysis import get_stock_ai_service
-from sahmi_kasban.ai import AIProviderError
 
 PASSWORD = "StrongPass123"
 
@@ -171,7 +171,7 @@ def test_analysis_charges_after_success_then_reuses_cache_for_free(
     assert second_payload["market_snapshot_cached"] is True
     assert second_payload["charged_points"] == 0
     assert second_payload["balance_points"] == 950
-    assert provider.calls == 1
+    assert provider.calls == 2
 
     analyses = db_session.scalars(select(StockAnalysis)).all()
     snapshots = db_session.scalars(select(MarketDataSnapshot)).all()
@@ -179,7 +179,7 @@ def test_analysis_charges_after_success_then_reuses_cache_for_free(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")
     ).all()
     assert len(analyses) == 1
-    assert len(snapshots) == 1
+    assert len(snapshots) == 2
     assert len(debits) == 1
     assert debits[0].amount_points == -50
 

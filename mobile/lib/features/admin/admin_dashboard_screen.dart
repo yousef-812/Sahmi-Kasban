@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/network/api_exception.dart';
 import 'admin_models.dart';
 import 'admin_providers.dart';
 import 'admin_repository.dart';
+import 'historical_replay_models.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -13,7 +17,7 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 6,
+      length: 7,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الإدارة'),
@@ -33,6 +37,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Tab(text: 'الإعدادات'),
               Tab(text: 'الإشعارات'),
               Tab(text: 'التدقيق'),
+              Tab(text: 'وظائف إعادة اللعب'),
             ],
           ),
         ),
@@ -44,6 +49,7 @@ class AdminDashboardScreen extends StatelessWidget {
             _SettingsTab(),
             _BroadcastTab(),
             _AuditTab(),
+            _ReplayJobsTab(),
           ],
         ),
       ),
@@ -540,5 +546,350 @@ Future<void> _run(BuildContext context, Future<void> Function() action) async {
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
     }
+  }
+}
+
+class _ReplayJobsTab extends ConsumerStatefulWidget {
+  const _ReplayJobsTab();
+
+  @override
+  ConsumerState<_ReplayJobsTab> createState() => _ReplayJobsTabState();
+}
+
+class _ReplayJobsTabState extends ConsumerState<_ReplayJobsTab> {
+  late DateTime _startDate;
+  late DateTime _endDate;
+  int? _rank;
+  String _exitMode = 'target_2';
+  bool _loading = true;
+  bool _submitting = false;
+  String? _error;
+  List<HistoricalReplayJob> _jobs = const [];
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _previousMonth(notify: false);
+    unawaited(_load());
+    _pollTimer = Timer.periodic(
+      const Duration(seconds: 8),
+      (_) => unawaited(_load(silent: true)),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false}) async {
+    if (!silent && mounted) setState(() => _loading = true);
+    try {
+      final jobs = await ref
+          .read(adminRepositoryProvider)
+          .historicalReplayJobs();
+      if (!mounted) return;
+      setState(() {
+        _jobs = jobs;
+        _loading = false;
+        _error = null;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = error is ApiException ? error.message : error.toString();
+      });
+    }
+  }
+
+  void _previousMonth({bool notify = true}) {
+    final firstCurrent = DateTime(DateTime.now().year, DateTime.now().month);
+    final end = firstCurrent.subtract(const Duration(days: 1));
+    final start = DateTime(end.year, end.month);
+    if (notify) {
+      setState(() {
+        _startDate = start;
+        _endDate = end;
+      });
+    } else {
+      _startDate = start;
+      _endDate = end;
+    }
+  }
+
+  void _currentMonth() {
+    final now = DateTime.now();
+    setState(() {
+      _startDate = DateTime(now.year, now.month);
+      _endDate = DateTime(now.year, now.month, now.day);
+    });
+  }
+
+  Future<void> _pickDate({required bool start}) async {
+    final today = DateTime.now();
+    final latestEnd = _startDate.add(const Duration(days: 45));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: start
+          ? _startDate
+          : (_endDate.isAfter(latestEnd) ? latestEnd : _endDate),
+      firstDate: start
+          ? today.subtract(const Duration(days: 365 * 5))
+          : _startDate,
+      lastDate: start ? today : (latestEnd.isBefore(today) ? latestEnd : today),
+      helpText: start ? 'اختر تاريخ البداية' : 'اختر تاريخ النهاية',
+    );
+    if (picked == null) return;
+    setState(() {
+      if (start) {
+        _startDate = picked;
+        if (_endDate.isBefore(picked)) _endDate = picked;
+        if (_endDate.difference(picked).inDays > 45) {
+          _endDate = picked.add(const Duration(days: 45));
+        }
+      } else {
+        _endDate = picked;
+      }
+    });
+  }
+
+  bool _validateWindow() {
+    final days = _endDate.difference(_startDate).inDays + 1;
+    if (days < 1 || days > 45) {
+      _message('الحد الأقصى لكل فترة هو 45 يومًا.');
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _startLabsBacktest() async {
+    if (!_validateWindow()) return;
+    await _submit(() async {
+      await ref
+          .read(adminRepositoryProvider)
+          .createLabsReplayJob(
+            startDate: _startDate,
+            endDate: _endDate,
+            rank: _rank,
+            exitMode: _exitMode,
+          );
+      _message('تم تشغيل محاكاة المختببرات على Worker منفصل.');
+    });
+  }
+
+  Future<void> _submit(Future<void> Function() operation) async {
+    setState(() => _submitting = true);
+    try {
+      await operation();
+      await _load(silent: true);
+    } on Object catch (error) {
+      if (mounted) _message(error is ApiException ? error.message : error.toString());
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _control(HistoricalReplayJob job, String action) async {
+    try {
+      final repository = ref.read(adminRepositoryProvider);
+      switch (action) {
+        case 'pause':
+          await repository.pauseHistoricalReplay(job.id);
+        case 'resume':
+          await repository.resumeHistoricalReplay(job.id);
+        case 'cancel':
+          await repository.cancelHistoricalReplay(job.id);
+      }
+      await _load(silent: true);
+    } on Object catch (error) {
+      if (mounted) _message(error is ApiException ? error.message : error.toString());
+    }
+  }
+
+  void _message(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('d MMMM y', 'ar');
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'تشغيل محاكاة المختببرات (Worker منفصل)',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'محاكاة تقرير الـ10 اليومي على Worker الاختبارات المنفصل دون إبطاء مستخدمي التطبيق.',
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      OutlinedButton(
+                        onPressed: _previousMonth,
+                        child: const Text('الشهر السابق'),
+                      ),
+                      OutlinedButton(
+                        onPressed: _currentMonth,
+                        child: const Text('الشهر الحالي'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _pickDate(start: true),
+                          child: Text('من\n${dateFormat.format(_startDate)}'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _pickDate(start: false),
+                          child: Text('إلى\n${dateFormat.format(_endDate)}'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int?>(
+                    initialValue: _rank,
+                    decoration: const InputDecoration(
+                      labelText: 'رتبة السهم في التقرير (اختياري)',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('كل الرتب (1-10)'),
+                      ),
+                      for (var r = 1; r <= 10; r++)
+                        DropdownMenuItem<int?>(value: r, child: Text('الرتبة $r')),
+                    ],
+                    onChanged: _submitting ? null : (value) => setState(() => _rank = value),
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<String>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: 'target_2', label: Text('الهدف الثاني')),
+                      ButtonSegment(value: 'highest', label: Text('أعلى هدف')),
+                    ],
+                    selected: <String>{_exitMode},
+                    onSelectionChanged: _submitting
+                        ? null
+                        : (selection) => setState(() => _exitMode = selection.single),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _submitting ? null : _startLabsBacktest,
+                    icon: _submitting
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.play_arrow),
+                    label: const Text('بدء المحاكاة'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'قائمة مهام Worker',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          if (_loading) const Center(child: CircularProgressIndicator()),
+          if (_error != null)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.error_outline),
+                title: const Text('تعذر تحميل الوظائف'),
+                subtitle: Text(_error!),
+              ),
+            ),
+          if (!_loading && _jobs.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('لا توجد مهام مسجلة.')),
+              ),
+            ),
+          for (final job in _jobs)
+            Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${dateFormat.format(job.startDate)} — ${dateFormat.format(job.endDate)}',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        Chip(label: Text(job.status)),
+                      ],
+                    ),
+                    LinearProgressIndicator(
+                      value: job.totalTickers == 0 ? null : job.progressPct / 100,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${job.progressPct.toStringAsFixed(1)}% • ${job.processedTickers}/${job.totalTickers} سهم',
+                    ),
+                    if (job.errorMessage != null) Text(job.errorMessage!),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        if (job.canPause)
+                          OutlinedButton(
+                            onPressed: () => _control(job, 'pause'),
+                            child: const Text('إيقاف مؤقت'),
+                          ),
+                        if (job.canResume)
+                          FilledButton.tonal(
+                            onPressed: () => _control(job, 'resume'),
+                            child: const Text('استكمال'),
+                          ),
+                        if (job.canCancel)
+                          TextButton(
+                            onPressed: () => _control(job, 'cancel'),
+                            child: const Text('إلغاء'),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
