@@ -6,6 +6,7 @@ from app.api.dependencies import CurrentUser, DatabaseSession
 from app.market_data.catalog import market_instrument_exists, search_market_instruments
 from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.provider import get_market_data_provider
+from app.market_data.quotes import fetch_market_quotes, fetch_single_quote
 from app.market_data.types import (
     MarketDataProvider,
     MarketDataUnavailableError,
@@ -23,7 +24,6 @@ from app.schemas.market import (
     StockComparisonRequest,
     StockComparisonResponse,
 )
-from app.market_data.quotes import fetch_market_quotes, fetch_single_quote
 from app.services.stock_analysis import (
     StockAnalysisExecution,
     StockAnalysisExecutionError,

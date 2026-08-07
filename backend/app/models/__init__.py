@@ -19,7 +19,6 @@ from app.models.community import (
     UserMute,
 )
 from app.models.comparisons import StockComparison
-from app.models.labs import LabsBacktestJob
 from app.models.entities import (
     Discussion,
     MarketReport,
@@ -30,6 +29,7 @@ from app.models.entities import (
     User,
     WalletEntry,
 )
+from app.models.labs import LabsBacktestJob
 from app.models.market_data import MarketDataSnapshot, MarketInstrumentCatalog
 from app.models.market_reports import MarketReportUnlock, MarketScanRun
 from app.models.monetization import BillingPurchase, RewardedAdClaim, RewardedAdSession

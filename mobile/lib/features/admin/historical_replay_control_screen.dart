@@ -427,10 +427,7 @@ class _HistoricalReplayControlScreenState
             onStartBatch: _startBatch,
           ),
           const SizedBox(height: 16),
-          Text(
-            'اختبارات حسابي',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('اختبارات حسابي', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           if (_loading) const Center(child: CircularProgressIndicator()),
           if (_error != null)

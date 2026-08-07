@@ -1,21 +1,21 @@
 import asyncio
-import json
 import logging
 from datetime import UTC, date, datetime, time, timedelta
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
-from app.market_calendar import EGXTradingCalendar, NonTradingSessionError
+from app.market_calendar import EGXTradingCalendar
+from app.market_data.catalog import ensure_market_instrument_catalog
+from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
+from app.market_data.universe import apply_market_health_quarantine
 from app.models import Discussion, MarketReport, MarketScanRun
 from app.services.daily_reports import generate_daily_top10_report
-from app.services.report_selection import enrich_daily_report_selection
 from app.services.report_performance import evaluate_market_report
-from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
-from app.market_data.universe import apply_market_health_quarantine
-from app.market_data.catalog import ensure_market_instrument_catalog
+from app.services.report_selection import enrich_daily_report_selection
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,14 @@ class MockAIService:
         from sahmi_kasban.ai import AIProviderError
         raise AIProviderError("Skipping AI explanation for historical backfill")
 
-async def backfill_one_day(db: Session, day: date, calendar: EGXTradingCalendar, tickers: list[str], truncating_provider, original_provider):
+async def backfill_one_day(
+    db: Session,
+    day: date,
+    calendar: EGXTradingCalendar,
+    tickers: list[str],
+    truncating_provider,
+    original_provider,
+):
     target_date = calendar.next_trading_session(day)
     
     # Check if report already exists
@@ -124,7 +131,11 @@ async def run_backfill():
 
     # 2. Reset any stale running scans
     try:
-        deleted_runs = db.query(MarketScanRun).filter(MarketScanRun.status == "running").update({"status": "failed"})
+        deleted_runs = (
+            db.query(MarketScanRun)
+            .filter(MarketScanRun.status == "running")
+            .update({"status": "failed"})
+        )
         db.commit()
         print(f"Reset {deleted_runs} stale running scan records.")
     except Exception as e:

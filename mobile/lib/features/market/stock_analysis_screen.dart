@@ -134,9 +134,7 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
                   children: [
                     Text(
                       'تحليل ${widget.ticker}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -150,7 +148,9 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
                       icon: _analyzing
                           ? const SizedBox.square(
                               dimension: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                              ),
                             )
                           : const Icon(Icons.auto_graph_rounded),
                       label: const Text('تحليل بالبيانات الجديدة — 0.5 عملة'),

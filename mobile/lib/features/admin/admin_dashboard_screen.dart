@@ -686,7 +686,9 @@ class _ReplayJobsTabState extends ConsumerState<_ReplayJobsTab> {
       await operation();
       await _load(silent: true);
     } on Object catch (error) {
-      if (mounted) _message(error is ApiException ? error.message : error.toString());
+      if (mounted) {
+        _message(error is ApiException ? error.message : error.toString());
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -705,7 +707,9 @@ class _ReplayJobsTabState extends ConsumerState<_ReplayJobsTab> {
       }
       await _load(silent: true);
     } on Object catch (error) {
-      if (mounted) _message(error is ApiException ? error.message : error.toString());
+      if (mounted) {
+        _message(error is ApiException ? error.message : error.toString());
+      }
     }
   }
 
@@ -783,21 +787,30 @@ class _ReplayJobsTabState extends ConsumerState<_ReplayJobsTab> {
                         child: Text('كل الرتب (1-10)'),
                       ),
                       for (var r = 1; r <= 10; r++)
-                        DropdownMenuItem<int?>(value: r, child: Text('الرتبة $r')),
+                        DropdownMenuItem<int?>(
+                          value: r,
+                          child: Text('الرتبة $r'),
+                        ),
                     ],
-                    onChanged: _submitting ? null : (value) => setState(() => _rank = value),
+                    onChanged: _submitting
+                        ? null
+                        : (value) => setState(() => _rank = value),
                   ),
                   const SizedBox(height: 12),
                   SegmentedButton<String>(
                     showSelectedIcon: false,
                     segments: const [
-                      ButtonSegment(value: 'target_2', label: Text('الهدف الثاني')),
+                      ButtonSegment(
+                        value: 'target_2',
+                        label: Text('الهدف الثاني'),
+                      ),
                       ButtonSegment(value: 'highest', label: Text('أعلى هدف')),
                     ],
                     selected: <String>{_exitMode},
                     onSelectionChanged: _submitting
                         ? null
-                        : (selection) => setState(() => _exitMode = selection.single),
+                        : (selection) =>
+                              setState(() => _exitMode = selection.single),
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
@@ -856,7 +869,9 @@ class _ReplayJobsTabState extends ConsumerState<_ReplayJobsTab> {
                       ],
                     ),
                     LinearProgressIndicator(
-                      value: job.totalTickers == 0 ? null : job.progressPct / 100,
+                      value: job.totalTickers == 0
+                          ? null
+                          : job.progressPct / 100,
                     ),
                     const SizedBox(height: 6),
                     Text(

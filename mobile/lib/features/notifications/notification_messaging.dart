@@ -8,7 +8,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // minimal; the inbox is refreshed when the user opens the app.
 }
 
-final initialNotificationMessageProvider = FutureProvider<RemoteMessage?>((ref) {
+final initialNotificationMessageProvider = FutureProvider<RemoteMessage?>((
+  ref,
+) {
   return FirebaseMessaging.instance.getInitialMessage();
 });
 
@@ -16,6 +18,8 @@ final openedNotificationMessageProvider = StreamProvider<RemoteMessage>((ref) {
   return FirebaseMessaging.onMessageOpenedApp;
 });
 
-final foregroundNotificationMessageProvider = StreamProvider<RemoteMessage>((ref) {
+final foregroundNotificationMessageProvider = StreamProvider<RemoteMessage>((
+  ref,
+) {
   return FirebaseMessaging.onMessage;
 });

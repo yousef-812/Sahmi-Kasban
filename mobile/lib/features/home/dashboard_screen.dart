@@ -53,8 +53,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           IconButton(
             onPressed: () => context.push('/notifications'),
             icon: Badge(
-              isLabelVisible: ref.watch(notificationInboxProvider).valueOrNull?.unreadCount != 0,
-              label: Text('${ref.watch(notificationInboxProvider).valueOrNull?.unreadCount ?? 0}'),
+              isLabelVisible:
+                  ref
+                      .watch(notificationInboxProvider)
+                      .valueOrNull
+                      ?.unreadCount !=
+                  0,
+              label: Text(
+                '${ref.watch(notificationInboxProvider).valueOrNull?.unreadCount ?? 0}',
+              ),
               child: const Icon(Icons.notifications_outlined),
             ),
             tooltip: 'الإشعارات',
@@ -156,7 +163,8 @@ class WalletTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   wallet.when(
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (error, stackTrace) => Text('تعذر تحميل المحفظة.'),
                     data: (summary) => Text(
                       '${summary.balanceCoins} عملة',
@@ -175,7 +183,11 @@ class WalletTab extends ConsumerWidget {
                       children: [
                         Text('الخطة: ${summary.planCode}'),
                         Text('التوزيع الأسبوعي: ${summary.weeklyCoins} عملة'),
-                        Text(summary.adsEnabled ? 'الإعلانات مفعلة' : 'الخطة بدون إعلانات'),
+                        Text(
+                          summary.adsEnabled
+                              ? 'الإعلانات مفعلة'
+                              : 'الخطة بدون إعلانات',
+                        ),
                       ],
                     ),
                   ),
@@ -224,7 +236,9 @@ class ProfileTab extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(
                   profile?.displayName ?? '',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -243,7 +257,8 @@ class ProfileTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
-                  onPressed: () => ref.read(sessionControllerProvider.notifier).logout(),
+                  onPressed: () =>
+                      ref.read(sessionControllerProvider.notifier).logout(),
                   icon: const Icon(Icons.logout_rounded),
                   label: const Text('تسجيل الخروج'),
                 ),

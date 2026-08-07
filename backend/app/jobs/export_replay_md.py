@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from datetime import date
 from pathlib import Path
 
@@ -8,7 +7,8 @@ from sqlalchemy import select
 
 from app.db.session import SessionLocal
 from app.models import AnalysisReplayJob, AnalysisReplayRow
-from app.services.historical_replay_exports import calculate_replay_export_metrics, _pct, _evaluation_scope
+from app.services.historical_replay_exports import _evaluation_scope, _pct, calculate_replay_export_metrics
+
 
 def export_full_2025_md():
     db = SessionLocal()
@@ -24,7 +24,7 @@ def export_full_2025_md():
         ).all()
 
         md_lines = []
-        md_lines.append(f"# تقرير نتائج اختبار المحرك التنافسي — عام 2025 بالكامل (Core v2.4 Full Replay)")
+        md_lines.append("# تقرير نتائج اختبار المحرك التنافسي — عام 2025 بالكامل (Core v2.4 Full Replay)")
         md_lines.append("")
 
         total_all_rows = 0
@@ -41,15 +41,23 @@ def export_full_2025_md():
             )
 
             total_all_rows += len(rows)
-            md_lines.append(f"## شهر: {job.start_date.strftime('%B %Y')} (من {job.start_date} إلى {job.end_date})")
+            md_lines.append(
+                f"## شهر: {job.start_date.strftime('%B %Y')} "
+                f"(من {job.start_date} إلى {job.end_date})"
+            )
             md_lines.append(f"- **معرف البناء (Job ID)**: `{job.id}`")
             md_lines.append(f"- **إصدار المحرك**: `{job.engine_version}`")
             md_lines.append(f"- **حالة البناء**: `{job.status}`")
             md_lines.append(f"- **إجمالي التقييمات/الصفحات**: {len(rows)}")
             md_lines.append("")
-            md_lines.append("| التاريخ | السهم | الإشارة | السعر | التقييم/Scope | العائد % | أقصى صعود % | أقصى هبوط % | النتيجة | العائد الزائد % | النتيجة مقابل المؤشر |")
-            md_lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
-
+            md_lines.append(
+                "| التاريخ | السهم | الإشارة | السعر | التقييم/Scope | العائد % | "
+                "أقصى صعود % | أقصى هبوط % | النتيجة | العائد الزائد % | النتيجة مقابل المؤشر |"
+            )
+            md_lines.append(
+                "| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | "
+                ":---: | :---: | :---: |"
+            )
             for r in rows:
                 m = metrics.get(r.id)
                 scope = m.evaluation_scope if m else _evaluation_scope(r)
@@ -58,12 +66,24 @@ def export_full_2025_md():
                 max_down = _pct(r.max_drawdown_bp)
                 exc_ret = _pct(m.excess_return_bp) if m else None
                 
-                correct_str = "✅ ناجحة" if r.correct is True else ("❌ خاسرة" if r.correct is False else "➖")
-                bench_str = "✅ متفوق" if m and m.benchmark_correct is True else ("❌ متراجع" if m and m.benchmark_correct is False else "➖")
-
-                md_lines.append(
-                    f"| {r.analysis_date} | `{r.ticker}` | **{r.signal or 'N/A'}** | {r.entry if r.entry is not None else 'N/A'} | `{scope}` | {fwd_ret if fwd_ret is not None else 'N/A'}% | {max_up if max_up is not None else 'N/A'}% | {max_down if max_down is not None else 'N/A'}% | {correct_str} | {exc_ret if exc_ret is not None else 'N/A'}% | {bench_str} |"
+                correct_str = (
+                    "✅ ناجحة" if r.correct is True else ("❌ خاسرة" if r.correct is False else "➖")
                 )
+                bench_str = (
+                    "✅ متفوق"
+                    if m and m.benchmark_correct is True
+                    else ("❌ متراجع" if m and m.benchmark_correct is False else "➖")
+                )
+
+                row_parts = [
+                    f"| {r.analysis_date} | `{r.ticker}` | **{r.signal or 'N/A'}** |",
+                    f" {r.entry if r.entry is not None else 'N/A'} | `{scope}` |",
+                    f" {fwd_ret if fwd_ret is not None else 'N/A'}% |",
+                    f" {max_up if max_up is not None else 'N/A'}% |",
+                    f" {max_down if max_down is not None else 'N/A'}% | {correct_str} |",
+                    f" {exc_ret if exc_ret is not None else 'N/A'}% | {bench_str} |",
+                ]
+                md_lines.append("".join(row_parts))
             md_lines.append("")
 
         out_path = Path("/workspace/full_2025_replay.md")

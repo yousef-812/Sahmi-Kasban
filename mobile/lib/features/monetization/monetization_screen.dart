@@ -63,7 +63,8 @@ class MonetizationScreen extends ConsumerWidget {
                             : state.products[plan.productId]?.price ??
                                   'غير متاح حاليًا',
                         storeAvailable: state.storeAvailable,
-                        busy: plan.productId != null &&
+                        busy:
+                            plan.productId != null &&
                             state.purchasingProductId == plan.productId,
                         onPurchase: plan.productId == null
                             ? null
@@ -344,9 +345,7 @@ class _CoinPackCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            const CircleAvatar(
-              child: Icon(Icons.monetization_on_rounded),
-            ),
+            const CircleAvatar(child: Icon(Icons.monetization_on_rounded)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -356,15 +355,15 @@ class _CoinPackCard extends StatelessWidget {
                   Text(
                     pack.displayNameAr,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '$price — ${pack.points} نقطة',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

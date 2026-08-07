@@ -12,8 +12,6 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -27,6 +25,8 @@ from app.models import (
     AnalysisReplayTicker,
     MarketInstrumentCatalog,
 )
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 
 logger = logging.getLogger(__name__)
 

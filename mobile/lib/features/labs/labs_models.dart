@@ -155,9 +155,9 @@ class LabsBacktestSession {
       hit: json['hit'] as bool? ?? false,
       minutesToExit: json['minutes_to_exit'] as int?,
       returnPct: _doubleOrNull(json['return_pct']),
-      tracked: _mapList(json['tracked'])
-          .map(LabsTrackedPoint.fromJson)
-          .toList(growable: false),
+      tracked: _mapList(
+        json['tracked'],
+      ).map(LabsTrackedPoint.fromJson).toList(growable: false),
     );
   }
 }
@@ -179,9 +179,9 @@ class LabsBacktestResult {
     return LabsBacktestResult(
       params: LabsBacktestParams.fromJson(_map(json['params'])),
       summary: LabsBacktestSummary.fromJson(_map(json['summary'])),
-      sessions: _mapList(json['sessions'])
-          .map(LabsBacktestSession.fromJson)
-          .toList(growable: false),
+      sessions: _mapList(
+        json['sessions'],
+      ).map(LabsBacktestSession.fromJson).toList(growable: false),
       meta: _map(json['meta']),
     );
   }

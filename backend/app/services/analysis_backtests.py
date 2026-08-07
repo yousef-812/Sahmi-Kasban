@@ -10,12 +10,6 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
-from sahmi_kasban import (
-    AnalysisConfig,
-    BacktestSummary,
-    SahmiKasbanAnalyzer,
-    walk_forward_backtest,
-)
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -28,6 +22,12 @@ from app.models import (
     AnalysisBacktestRun,
 )
 from app.services.market_index import fetch_index_series, resolve_index_name
+from sahmi_kasban import (
+    AnalysisConfig,
+    BacktestSummary,
+    SahmiKasbanAnalyzer,
+    walk_forward_backtest,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -75,22 +75,22 @@ class _NotificationMessagingShellState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<RemoteMessage?>>(
-      initialNotificationMessageProvider,
-      (previous, next) {
-        if (next.valueOrNull != null) {
-          _openInbox();
-        }
-      },
-    );
-    ref.listen<AsyncValue<RemoteMessage>>(
-      openedNotificationMessageProvider,
-      (previous, next) {
-        if (next.valueOrNull != null) {
-          _openInbox();
-        }
-      },
-    );
+    ref.listen<AsyncValue<RemoteMessage?>>(initialNotificationMessageProvider, (
+      previous,
+      next,
+    ) {
+      if (next.valueOrNull != null) {
+        _openInbox();
+      }
+    });
+    ref.listen<AsyncValue<RemoteMessage>>(openedNotificationMessageProvider, (
+      previous,
+      next,
+    ) {
+      if (next.valueOrNull != null) {
+        _openInbox();
+      }
+    });
     ref.listen<AsyncValue<RemoteMessage>>(
       foregroundNotificationMessageProvider,
       (previous, next) {

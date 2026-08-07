@@ -210,7 +210,7 @@ class Settings(BaseSettings):
             except ValueError:
                 raise ValueError(
                     "EGX_SESSION_OPEN_TIME/EGX_SESSION_CLOSE_TIME must be HH:MM"
-                )
+                ) from None
         if self.analysis_cost_points <= 0:
             raise ValueError("ANALYSIS_COST_POINTS must be positive")
         if self.analysis_default_capital <= 0:

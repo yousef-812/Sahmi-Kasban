@@ -33,11 +33,7 @@ Color changeColor(BuildContext context, double? value) {
 }
 
 class StockQuoteCard extends StatelessWidget {
-  const StockQuoteCard({
-    super.key,
-    required this.quote,
-    required this.onTap,
-  });
+  const StockQuoteCard({super.key, required this.quote, required this.onTap});
 
   final MarketQuote quote;
   final VoidCallback onTap;
@@ -69,7 +65,9 @@ class StockQuoteCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

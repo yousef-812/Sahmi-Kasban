@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from decimal import Decimal
-from sqlalchemy import select, func
+from sqlalchemy import func, select
+
 from app.db.session import SessionLocal
-from app.models import AnalysisReplayRow, AnalysisReplayJob
+from app.models import AnalysisReplayRow
+
 
 def run_volatile_days_simulation():
     db = SessionLocal()
@@ -26,7 +27,7 @@ def run_volatile_days_simulation():
             return
 
         print("=========================================================")
-        print(f"   Volatile Sessions Simulation (v2.4 vs v2.5 Target 1 Lock)")
+        print("   Volatile Sessions Simulation (v2.4 vs v2.5 Target 1 Lock)")
         print("=========================================================\n")
 
         for s_date in dates_query:
@@ -39,10 +40,14 @@ def run_volatile_days_simulation():
                 .order_by(AnalysisReplayRow.ticker)
             ).all()
 
-            print(f"---------------------------------------------------------")
+            print("---------------------------------------------------------")
             print(f"📊 Volatile Session Date: {s_date}")
-            print(f"---------------------------------------------------------")
-            print(f"{'Ticker':<8} | {'Entry':<8} | {'MaxUp %':<8} | {'Close Ret %':<12} | {'v2.4 Outcome':<15} | {'v2.5 Lock Outcome':<18}")
+            print("---------------------------------------------------------")
+            header = (
+                f"{'Ticker':<8} | {'Entry':<8} | {'MaxUp %':<8} | {'Close Ret %':<12} | "
+                f"{'v2.4 Outcome':<15} | {'v2.5 Lock Outcome':<18}"
+            )
+            print(header)
             print("-" * 90)
 
             v24_wins = 0
@@ -74,7 +79,10 @@ def run_volatile_days_simulation():
                 if v25_pass:
                     v25_wins += 1
 
-                print(f"{r.ticker:<8} | {entry:<8} | {max_up:>6.2f}% | {ret:>10.2f}% | {v24_str:<15} | {v25_str:<18}")
+                print(
+                    f"{r.ticker:<8} | {entry:<8} | {max_up:>6.2f}% | {ret:>10.2f}% | "
+                    f"{v24_str:<15} | {v25_str:<18}"
+                )
 
             print("-" * 90)
             if count > 0:

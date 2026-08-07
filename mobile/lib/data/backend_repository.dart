@@ -278,7 +278,10 @@ class BackendRepository {
     }
   }
 
-  Future<MarketQuote> getMarketQuote(String ticker, {bool forceRefresh = false}) async {
+  Future<MarketQuote> getMarketQuote(
+    String ticker, {
+    bool forceRefresh = false,
+  }) async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
         '/market/quotes/${ticker.trim().toUpperCase()}',

@@ -76,9 +76,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/reset-password',
-        builder: (context, state) => ResetPasswordScreen(
-          email: state.uri.queryParameters['email'],
-        ),
+        builder: (context, state) =>
+            ResetPasswordScreen(email: state.uri.queryParameters['email']),
       ),
       GoRoute(
         path: '/home',
@@ -90,9 +89,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/stocks/:ticker',
-        builder: (context, state) => StockDetailScreen(
-          ticker: state.pathParameters['ticker']!,
-        ),
+        builder: (context, state) =>
+            StockDetailScreen(ticker: state.pathParameters['ticker']!),
       ),
       GoRoute(
         path: '/reports',
@@ -104,9 +102,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/market/analyze/:ticker',
-        builder: (context, state) => StockAnalysisScreen(
-          ticker: state.pathParameters['ticker']!,
-        ),
+        builder: (context, state) =>
+            StockAnalysisScreen(ticker: state.pathParameters['ticker']!),
       ),
       GoRoute(
         path: '/profile/edit',

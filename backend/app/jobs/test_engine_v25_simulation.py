@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import sys
 from datetime import date
-from decimal import Decimal
 
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
 from app.models import MarketReport, MarketReportItem, MarketReportItemOutcome
+
 
 def run_v25_simulation_for_dates():
     db = SessionLocal()
@@ -43,12 +42,16 @@ def run_v25_simulation_for_dates():
                 ).all()
             }
 
-            print(f"---------------------------------------------------------")
+            print("---------------------------------------------------------")
             print(f"📊 Session Date: {s_date.strftime('%d/%m/%Y')} (Report ID: {report.id})")
             print(f"Title: {report.market_summary.get('title')}")
             print(f"v2.4 Model: {report.market_summary.get('selection_model')}")
-            print(f"---------------------------------------------------------")
-            print(f"{'Rank':<4} | {'Ticker':<6} | {'v2.4 Signal':<10} | {'v2.5 Signal':<15} | {'Entry':<8} | {'MaxUp %':<8} | {'v2.4 Outcome':<15} | {'v2.5 Lock Outcome':<18}")
+            print("---------------------------------------------------------")
+            header = (
+                f"{'Rank':<4} | {'Ticker':<6} | {'v2.4 Signal':<10} | {'v2.5 Signal':<15} | "
+                f"{'Entry':<8} | {'MaxUp %':<8} | {'v2.4 Outcome':<15} | {'v2.5 Lock Outcome':<18}"
+            )
+            print(header)
             print("-" * 105)
 
             v24_wins = 0
@@ -57,8 +60,14 @@ def run_v25_simulation_for_dates():
 
             for item in items:
                 p = item.payload if isinstance(item.payload, dict) else {}
-                analysis = p.get("analysis") if isinstance(p.get("analysis"), dict) else {}
-                indicators = analysis.get("indicators") if isinstance(analysis.get("indicators"), dict) else {}
+                analysis = (
+                    p.get("analysis") if isinstance(p.get("analysis"), dict) else {}
+                )
+                indicators = (
+                    analysis.get("indicators")
+                    if isinstance(analysis.get("indicators"), dict)
+                    else {}
+                )
                 
                 volume_ratio = float(indicators.get("volume_ratio") or 1.0)
                 v24_signal = str(p.get("signal", "WATCH")).upper()
@@ -101,12 +110,22 @@ def run_v25_simulation_for_dates():
 
                 price_val = p.get("price") or (out.price_at_analysis if out else None)
                 entry_val = f"{float(price_val):.2f}" if price_val else "N/A"
-                print(f"{item.rank:<4} | {item.ticker:<6} | {v24_signal:<10} | {v25_signal:<15} | {entry_val:<8} | {max_up:>6.2f}% | {v24_outcome:<15} | {v25_outcome:<18}")
+                print(
+                    f"{item.rank:<4} | {item.ticker:<6} | {v24_signal:<10} | "
+                    f"{v25_signal:<15} | {entry_val:<8} | {max_up:>6.2f}% | "
+                    f"{v24_outcome:<15} | {v25_outcome:<18}"
+                )
 
             print("-" * 105)
             if evaluated_count > 0:
-                print(f"📈 v2.4 Win Rate: {v24_wins}/{evaluated_count} ({v24_wins/evaluated_count*100:.1f}%)")
-                print(f"🚀 v2.5 Simulated Win Rate: {v25_wins}/{evaluated_count} ({v25_wins/evaluated_count*100:.1f}%)\n")
+                print(
+                    f"📈 v2.4 Win Rate: {v24_wins}/{evaluated_count} "
+                    f"({v24_wins/evaluated_count*100:.1f}%)"
+                )
+                print(
+                    f"🚀 v2.5 Simulated Win Rate: {v25_wins}/{evaluated_count} "
+                    f"({v25_wins/evaluated_count*100:.1f}%)\n"
+                )
             else:
                 print("ℹ️ Session evaluation is pending close.\n")
 

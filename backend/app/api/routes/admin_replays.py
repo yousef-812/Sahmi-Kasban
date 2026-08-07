@@ -176,11 +176,12 @@ def create_labs_replay_job(
 ) -> HistoricalReplayJobResponse:
     """Create a labs-style backtest as a replay job on the isolated worker."""
     from app.services.historical_replays import create_historical_replay_job
-    from app.core.config import get_settings
-    
-    settings = get_settings()
+
     # Map labs parameters to replay job parameters
-    request_key = f"labs_{payload.start_date.isoformat()}_{payload.end_date.isoformat()}_{payload.rank or 'all'}_{payload.exit_mode}_{admin.id.hex[:8]}"
+    request_key = (
+        f"labs_{payload.start_date.isoformat()}_{payload.end_date.isoformat()}_"
+        f"{payload.rank or 'all'}_{payload.exit_mode}_{admin.id.hex[:8]}"
+    )
     
     try:
         job, _idempotent = create_historical_replay_job(

@@ -75,10 +75,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     final quoteState = ref.watch(stockQuoteProvider(widget.ticker));
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.ticker,
-          textDirection: TextDirection.ltr,
-        ),
+        title: Text(widget.ticker, textDirection: TextDirection.ltr),
         actions: [
           IconButton(
             tooltip: 'تحديث',
@@ -195,7 +192,9 @@ class _Header extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    quote.description.isEmpty ? quote.ticker : quote.description,
+                    quote.description.isEmpty
+                        ? quote.ticker
+                        : quote.description,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -204,9 +203,7 @@ class _Header extends StatelessWidget {
                 if (quote.sector != null)
                   Chip(
                     label: Text(quote.sector!),
-                    labelStyle: Theme.of(
-                      context,
-                    ).textTheme.labelSmall,
+                    labelStyle: Theme.of(context).textTheme.labelSmall,
                     visualDensity: VisualDensity.compact,
                   ),
               ],
@@ -244,18 +241,18 @@ class _Header extends StatelessWidget {
                       children: [
                         Text(
                           'الحجم',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                         Text(
                           _formatVolume(quote.volume),
                           textDirection: TextDirection.ltr,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
@@ -327,9 +324,9 @@ class _AnnualRange extends StatelessWidget {
           children: [
             Text(
               'النطاق السنوي (52 أسبوع)',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
             Row(
@@ -354,11 +351,7 @@ class _AnnualRange extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _Stat({required this.label, required this.value, required this.color});
 
   final String label;
   final String value;
@@ -522,9 +515,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
           children: [
             const Positioned.fill(
               child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Color(0xFFF7F7F7),
-                ),
+                decoration: BoxDecoration(color: Color(0xFFF7F7F7)),
                 child: Center(child: CircularProgressIndicator()),
               ),
             ),

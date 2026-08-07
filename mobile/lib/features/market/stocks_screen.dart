@@ -49,7 +49,8 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
                   borderRadius: BorderRadius.all(Radius.circular(14)),
                 ),
               ),
-              onChanged: (value) => setState(() => _query = value.trim().toUpperCase()),
+              onChanged: (value) =>
+                  setState(() => _query = value.trim().toUpperCase()),
             ),
           ),
           Padding(
@@ -62,8 +63,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
                 FilterChip(
                   label: const Text('الأكثر هبوطًا'),
                   selected: _showFallers,
-                  onSelected: (value) =>
-                      setState(() => _showFallers = value),
+                  onSelected: (value) => setState(() => _showFallers = value),
                 ),
                 FilterChip(
                   label: const Text('المتداولة فقط'),
@@ -75,14 +75,17 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
             ),
           ),
           Expanded(
-            child: ref.watch(marketQuotesProvider).when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => _ErrorView(
-                error: error,
-                onRetry: () => ref.invalidate(marketQuotesProvider),
-              ),
-              data: (_) => _buildGrid(context, items),
-            ),
+            child: ref
+                .watch(marketQuotesProvider)
+                .when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => _ErrorView(
+                    error: error,
+                    onRetry: () => ref.invalidate(marketQuotesProvider),
+                  ),
+                  data: (_) => _buildGrid(context, items),
+                ),
           ),
         ],
       ),
@@ -93,19 +96,22 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
     if (snapshot == null) {
       return const [];
     }
-    final items = snapshot.items.where((quote) {
-      if (_query.isNotEmpty) {
-        final match = quote.ticker.contains(_query) ||
-            quote.description.contains(_query);
-        if (!match) {
-          return false;
-        }
-      }
-      if (_showOnlyActive && quote.currentPrice == null) {
-        return false;
-      }
-      return true;
-    }).toList(growable: false);
+    final items = snapshot.items
+        .where((quote) {
+          if (_query.isNotEmpty) {
+            final match =
+                quote.ticker.contains(_query) ||
+                quote.description.contains(_query);
+            if (!match) {
+              return false;
+            }
+          }
+          if (_showOnlyActive && quote.currentPrice == null) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
 
     items.sort((a, b) {
       if (_showFallers) {
@@ -181,9 +187,13 @@ class QuoteSessionHeader extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            open ? Icons.show_chart_rounded : Icons.pause_circle_outline_rounded,
+            open
+                ? Icons.show_chart_rounded
+                : Icons.pause_circle_outline_rounded,
             size: 34,
-            color: open ? Colors.green : Theme.of(context).colorScheme.onSurface,
+            color: open
+                ? Colors.green
+                : Theme.of(context).colorScheme.onSurface,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -212,9 +222,9 @@ class QuoteSessionHeader extends StatelessWidget {
               children: [
                 Text(
                   '${snapshot.items.length} سهم',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(

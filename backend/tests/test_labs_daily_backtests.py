@@ -1,7 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import asyncio
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -84,7 +84,9 @@ def _candle(
     }
 
 
-def _session_candles(day: int, prices: list[tuple[float, float, float, float]]) -> tuple[dict[str, object], ...]:
+def _session_candles(
+    day: int, prices: list[tuple[float, float, float, float]]
+) -> tuple[dict[str, object], ...]:
     candles = []
     for index, (open_price, high, low, close) in enumerate(prices):
         candles.append(
@@ -140,7 +142,7 @@ def _create_report(
 
 
 def test_target_two_hit_and_miss_are_aggregated(db_session: Session) -> None:
-    report = _create_report(
+    _create_report(
         db_session,
         target_session_date=date(2026, 7, 27),
         tickers=[
@@ -190,7 +192,7 @@ def test_target_two_hit_and_miss_are_aggregated(db_session: Session) -> None:
 
 
 def test_stop_loss_exits_before_target(db_session: Session) -> None:
-    report = _create_report(
+    _create_report(
         db_session,
         target_session_date=date(2026, 7, 27),
         tickers=[("STOP", [105.0, 110.0])],
@@ -218,7 +220,7 @@ def test_stop_loss_exits_before_target(db_session: Session) -> None:
 
 
 def test_highest_target_mode_uses_last_target(db_session: Session) -> None:
-    report = _create_report(
+    _create_report(
         db_session,
         target_session_date=date(2026, 7, 27),
         tickers=[("HIGH", [105.0, 110.0, 115.0])],
@@ -256,7 +258,7 @@ def test_highest_target_mode_uses_last_target(db_session: Session) -> None:
 
 
 def test_rank_filter_selects_single_item(db_session: Session) -> None:
-    report = _create_report(
+    _create_report(
         db_session,
         target_session_date=date(2026, 7, 27),
         tickers=[

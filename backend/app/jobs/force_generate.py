@@ -1,8 +1,10 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from app.jobs.generate_daily_top10 import run_daily_top10_scan
+
 
 def main():
     logging.basicConfig(level=logging.INFO)

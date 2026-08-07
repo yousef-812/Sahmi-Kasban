@@ -104,9 +104,7 @@ void main() {
           'rank': null,
           'exit_mode': 'highest',
         },
-        'summary': {
-          'trades': 0,
-        },
+        'summary': {'trades': 0},
         'sessions': null,
         'meta': <Object>{},
       });

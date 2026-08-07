@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time as datetime_time, timedelta
+from datetime import UTC, date, datetime, timedelta
+from datetime import time as datetime_time
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -11,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.market_data.egx_symbols import EGX_ARABIC_NAMES, _TICKER_PATTERN, normalize_egx_ticker
+from app.market_data.egx_symbols import _TICKER_PATTERN, EGX_ARABIC_NAMES, normalize_egx_ticker
 from app.models import MarketDataSnapshot, MarketInstrumentCatalog
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ _IDX_SECTOR = 9
 
 _quotes_cache_lock = asyncio.Lock()
 _quotes_cache_at: datetime | None = None
-_quotes_cache: "MarketQuotesSnapshot | None" = None
+_quotes_cache: MarketQuotesSnapshot | None = None
 
 
 @dataclass(frozen=True)
@@ -185,8 +186,8 @@ def _parse_scanner_quotes(payload: object) -> dict[str, MarketQuote]:
         ticker = ticker.strip().upper()
         values = values if isinstance(values, list) else []
 
-        def column(index: int) -> object:
-            return values[index] if index < len(values) else None
+        def column(index: int, _values: list = values) -> object:
+            return _values[index] if index < len(_values) else None
 
         name = column(_IDX_NAME)
         description = column(_IDX_DESCRIPTION)

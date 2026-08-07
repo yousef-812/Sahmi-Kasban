@@ -307,9 +307,9 @@ class MarketQuotesSnapshot {
       nextSessionOpen: json['next_session_open'] == null
           ? null
           : DateTime.tryParse(json['next_session_open'] as String),
-      items: _list(json['items'])
-          .map((item) => MarketQuote.fromJson(_map(item)))
-          .toList(growable: false),
+      items: _list(
+        json['items'],
+      ).map((item) => MarketQuote.fromJson(_map(item))).toList(growable: false),
     );
   }
 }

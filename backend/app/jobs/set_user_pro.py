@@ -1,9 +1,12 @@
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from sqlalchemy import select
-from app.db.session import SessionLocal
-from app.models import User, Subscription, WalletAccount
+
 from app.core.admin import configured_admin_emails
+from app.db.session import SessionLocal
+from app.models import Subscription, User, WalletAccount
+
 
 def main():
     logging.basicConfig(level=logging.INFO)

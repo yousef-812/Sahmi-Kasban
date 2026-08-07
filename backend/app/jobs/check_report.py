@@ -1,6 +1,7 @@
 from app.db.session import SessionLocal
 from app.models import MarketReport
 
+
 def main():
     db = SessionLocal()
     r = db.query(MarketReport).order_by(MarketReport.target_session_date.desc()).first()

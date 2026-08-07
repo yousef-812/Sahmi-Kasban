@@ -1,7 +1,8 @@
 import logging
+
 from app.db.session import SessionLocal
-from app.services.report_selection import enrich_daily_report_selection
 from app.models import MarketReport
+from app.services.report_selection import enrich_daily_report_selection
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

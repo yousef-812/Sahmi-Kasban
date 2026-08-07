@@ -13,9 +13,7 @@ class ReportsScreen extends ConsumerWidget {
     final preview = ref.watch(latestReportPreviewProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('تقارير السوق'),
-      ),
+      appBar: AppBar(title: const Text('تقارير السوق')),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(latestReportPreviewProvider);
@@ -25,9 +23,9 @@ class ReportsScreen extends ConsumerWidget {
           children: [
             Text(
               'أحدث التقارير التحليلية للبورصة المصرية',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 16),
             preview.when(

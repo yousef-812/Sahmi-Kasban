@@ -395,7 +395,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       return;
     }
     if (!RegExp(r'^\d{6}$').hasMatch(code)) {
-      _showMessage('أدخل رمز التحقق المكوّن من 6 أرقام.', AppNoticeTone.warning);
+      _showMessage(
+        'أدخل رمز التحقق المكوّن من 6 أرقام.',
+        AppNoticeTone.warning,
+      );
       return;
     }
     final passwordError = _passwordError(password);
@@ -410,11 +413,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
-      await ref.read(backendRepositoryProvider).resetPassword(
-        email: email,
-        code: code,
-        newPassword: password,
-      );
+      await ref
+          .read(backendRepositoryProvider)
+          .resetPassword(email: email, code: code, newPassword: password);
       if (!mounted) return;
       _showMessage(
         'تم تغيير كلمة المرور. سجّل الدخول بالكلمة الجديدة.',
@@ -498,7 +499,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           icon: _submitting
               ? const _ButtonLoader()
               : const Icon(Icons.check_circle_rounded),
-          label: Text(_submitting ? 'جارٍ الحفظ...' : 'حفظ كلمة المرور الجديدة'),
+          label: Text(
+            _submitting ? 'جارٍ الحفظ...' : 'حفظ كلمة المرور الجديدة',
+          ),
         ),
         const SizedBox(height: 14),
         OutlinedButton.icon(
@@ -582,7 +585,9 @@ class _OtpBoxFieldState extends State<_OtpBoxField> {
                 height: 56,
                 decoration: BoxDecoration(
                   color: isFilled
-                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.5,
+                        )
                       : theme.colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
@@ -639,7 +644,6 @@ class _OtpBoxFieldState extends State<_OtpBoxField> {
     );
   }
 }
-
 
 class _AccountActionScaffold extends StatelessWidget {
   const _AccountActionScaffold({

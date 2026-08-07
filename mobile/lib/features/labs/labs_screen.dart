@@ -44,9 +44,7 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
 
   Future<void> _load() async {
     try {
-      final jobs = await ref
-          .read(labsRepositoryProvider)
-          .backtestJobs();
+      final jobs = await ref.read(labsRepositoryProvider).backtestJobs();
       if (!mounted) return;
       setState(() {
         _jobs = jobs;
@@ -238,8 +236,7 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
                 ),
               ),
             ),
-          if (_activeJobId != null)
-            _buildActiveJob(context),
+          if (_activeJobId != null) _buildActiveJob(context),
           const SizedBox(height: 8),
           Text(
             'محاولاتي',
@@ -248,8 +245,7 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
-          if (_loadingJobs)
-            const Center(child: CircularProgressIndicator()),
+          if (_loadingJobs) const Center(child: CircularProgressIndicator()),
           if (!_loadingJobs && _jobs.isEmpty)
             const Card(
               child: Padding(
@@ -386,7 +382,10 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
                   child: Text('كل الرتب (1-10)'),
                 ),
                 for (var rank = 1; rank <= 10; rank++)
-                  DropdownMenuItem<int?>(value: rank, child: Text('الرتبة $rank')),
+                  DropdownMenuItem<int?>(
+                    value: rank,
+                    child: Text('الرتبة $rank'),
+                  ),
               ],
               onChanged: _submitting
                   ? null
@@ -396,14 +395,8 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
             SegmentedButton<String>(
               showSelectedIcon: false,
               segments: const [
-                ButtonSegment(
-                  value: 'target_2',
-                  label: Text('الهدف الثاني'),
-                ),
-                ButtonSegment(
-                  value: 'highest',
-                  label: Text('أعلى هدف'),
-                ),
+                ButtonSegment(value: 'target_2', label: Text('الهدف الثاني')),
+                ButtonSegment(value: 'highest', label: Text('أعلى هدف')),
               ],
               selected: <String>{_exitMode},
               onSelectionChanged: _submitting
@@ -484,19 +477,16 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel =
-        _statusLabels[job.status] ?? job.status;
+    final statusLabel = _statusLabels[job.status] ?? job.status;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        leading: Icon(
-          switch (job.status) {
-            'complete' => Icons.check_circle_outline,
-            'failed' => Icons.error_outline,
-            'running' => Icons.sync,
-            _ => Icons.schedule,
-          },
-        ),
+        leading: Icon(switch (job.status) {
+          'complete' => Icons.check_circle_outline,
+          'failed' => Icons.error_outline,
+          'running' => Icons.sync,
+          _ => Icons.schedule,
+        }),
         title: Text(
           '${dateFormat.format(job.startDate)} — '
           '${dateFormat.format(job.endDate)}'
@@ -506,7 +496,7 @@ class _JobCard extends StatelessWidget {
           active
               ? 'جاري عرض النتيجة...'
               : '$statusLabel • '
-                  '${job.exitMode == 'highest' ? 'أعلى هدف' : 'الهدف الثاني'}',
+                    '${job.exitMode == 'highest' ? 'أعلى هدف' : 'الهدف الثاني'}',
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -606,7 +596,10 @@ class _LabsResults extends StatelessWidget {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(24),
-              child: Text('لا توجد صفقات ضمن هذا النطاق.', textAlign: TextAlign.center),
+              child: Text(
+                'لا توجد صفقات ضمن هذا النطاق.',
+                textAlign: TextAlign.center,
+              ),
             ),
           )
         else
@@ -644,9 +637,9 @@ class _SummaryRow extends StatelessWidget {
             fontWeight: FontWeight.w900,
             color: Theme.of(context).colorScheme.primary,
           )
-        : Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-          );
+        : Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -720,12 +713,10 @@ class _TradeCard extends StatelessWidget {
               ? '-'
               : '${(trade.returnPct! > 0 ? '+' : '')}${trade.returnPct!.toStringAsFixed(2)}%',
           textDirection: TextDirection.ltr,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: returnColor,
-              ),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: returnColor,
+          ),
         ),
         children: [
           Padding(
@@ -837,7 +828,8 @@ class _TrackedChart extends StatelessWidget {
         final line = <Offset>[];
         for (var index = 0; index < points.length; index++) {
           final dx = index * step;
-          final dy = height -
+          final dy =
+              height -
               ((points[index].price - minPrice) / range) * (height - 20) -
               10;
           line.add(Offset(dx, dy.toDouble()));
@@ -903,12 +895,7 @@ class _TrackedPainter extends CustomPainter {
     final textStyle = TextStyle(color: labelPaint.color, fontSize: 10);
     _drawText(canvas, '$minPrice', const Offset(4, 2), textStyle);
     _drawText(canvas, '$maxPrice', Offset(4, size.height - 16), textStyle);
-    _drawText(
-      canvas,
-      firstTime,
-      Offset(size.width - 30, 2),
-      textStyle,
-    );
+    _drawText(canvas, firstTime, Offset(size.width - 30, 2), textStyle);
   }
 
   void _drawText(Canvas canvas, String text, Offset offset, TextStyle style) {

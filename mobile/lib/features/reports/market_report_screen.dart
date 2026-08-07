@@ -286,19 +286,16 @@ List<MarketReportItem> _byTier(
   String tier, {
   String? profile,
 }) {
-  return items
-      .where((item) {
-        final itemTier = _text(item.payload['opportunity_tier']);
-        if (itemTier != tier) {
-          return false;
-        }
-        if (profile != null &&
-            _text(item.payload['elite_profile']) != profile) {
-          return false;
-        }
-        return true;
-      })
-      .toList();
+  return items.where((item) {
+    final itemTier = _text(item.payload['opportunity_tier']);
+    if (itemTier != tier) {
+      return false;
+    }
+    if (profile != null && _text(item.payload['elite_profile']) != profile) {
+      return false;
+    }
+    return true;
+  }).toList();
 }
 
 class _ReportTabs extends StatelessWidget {
@@ -332,11 +329,8 @@ class _ReportTabs extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             _formatArabicDate(report.targetSessionDate),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(height: 8),
                           const Text(
