@@ -304,3 +304,76 @@ def test_range_too_wide_is_rejected(db_session: Session) -> None:
         assert str(MAX_RANGE_DAYS) in str(exc)
     else:
         raise AssertionError("expected LabsBacktestRangeError")
+
+
+def _create_report_with_trade_plan(
+    db: Session,
+    *,
+    target_session_date: date,
+    tickers: list[tuple[str, dict[str, object]]],
+) -> MarketReport:
+    report = MarketReport(
+        target_session_date=target_session_date,
+        status="complete",
+        generated_at=datetime(2026, 7, 30, 15, 5, tzinfo=UTC),
+        source_snapshot={"source_session_date": "2026-07-30"},
+        market_summary={"title": "Daily Top 10"},
+    )
+    db.add(report)
+    db.flush()
+    for rank, (ticker, plan) in enumerate(tickers, start=1):
+        db.add(
+            MarketReportItem(
+                report_id=report.id,
+                ticker=ticker,
+                rank=rank,
+                score_bp=9000 - rank,
+                payload={
+                    "ticker": ticker,
+                    "rank": rank,
+                    "expected_direction": "up",
+                    "analysis": {
+                        "trade_plan": {
+                            "entry": 100.0,
+                            "stop_loss": 95.0,
+                            "target_1": 105.0,
+                            "target_2": 110.0,
+                            **plan,
+                        },
+                    },
+                },
+            )
+        )
+    db.commit()
+    return report
+
+
+def test_trade_plan_format_is_used_for_targets(db_session: Session) -> None:
+    _create_report_with_trade_plan(
+        db_session,
+        target_session_date=date(2026, 7, 27),
+        tickers=[("PLAN", {})],
+    )
+    # Price reaches 111 -> target two (110) from trade_plan should trigger.
+    prices = [(100, 101, 99, 100.5), (100.5, 111, 100, 110.5)]
+    provider = FakeIntradayProvider({"PLAN": _session_candles(27, prices)})
+
+    result = asyncio.run(
+        execute_daily_report_backtest(
+            db_session,
+            provider,
+            start_date=date(2026, 7, 27),
+            end_date=date(2026, 7, 27),
+            rank=None,
+            exit_mode="target_2",
+            calendar=_calendar(),
+        )
+    )
+
+    assert len(result.sessions) == 1
+    trade = result.sessions[0]
+    assert trade.exit_reason == "target"
+    assert trade.exit_price == Decimal("110")
+    assert trade.hit is True
+    assert result.summary["trades"] == 1
+    assert result.summary["skipped"] == 0

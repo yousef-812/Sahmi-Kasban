@@ -116,15 +116,25 @@ def _prediction_levels(
     analysis = payload.get("analysis")
     if not isinstance(analysis, dict):
         analysis = {}
-    raw_targets = analysis.get("targets")
     targets: list[Decimal] = []
+    stop_loss: Decimal | None = None
+    raw_targets = analysis.get("targets")
     if isinstance(raw_targets, list):
         for item in raw_targets:
             level = _decimal(item)
             if level is not None:
                 targets.append(level)
-    stop_loss = _decimal(analysis.get("stop_loss"))
+        stop_loss = _decimal(analysis.get("stop_loss"))
+    trade_plan = analysis.get("trade_plan")
+    if isinstance(trade_plan, dict):
+        for key in ("target_1", "target_2"):
+            level = _decimal(trade_plan.get(key))
+            if level is not None:
+                targets.append(level)
+        stop_loss = _decimal(trade_plan.get("stop_loss"))
     price_at_analysis = _decimal(payload.get("price_at_analysis"))
+    if price_at_analysis is None and isinstance(trade_plan, dict):
+        price_at_analysis = _decimal(trade_plan.get("entry"))
     return tuple(targets), stop_loss, price_at_analysis
 
 

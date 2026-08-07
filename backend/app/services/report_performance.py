@@ -137,12 +137,18 @@ def _prediction_levels(payload: dict[str, Any]) -> tuple[Decimal | None, Decimal
     if not isinstance(analysis, dict):
         analysis = {}
     targets = analysis.get("targets")
-    if not isinstance(targets, list):
-        targets = []
-    target_one = _decimal(targets[0]) if len(targets) >= 1 else None
-    target_two = _decimal(targets[1]) if len(targets) >= 2 else None
-    stop_loss = _decimal(analysis.get("stop_loss"))
-    return target_one, target_two, stop_loss
+    if isinstance(targets, list) and targets:
+        target_one = _decimal(targets[0])
+        target_two = _decimal(targets[1]) if len(targets) >= 2 else None
+        stop_loss = _decimal(analysis.get("stop_loss"))
+        return target_one, target_two, stop_loss
+    trade_plan = analysis.get("trade_plan")
+    if isinstance(trade_plan, dict):
+        target_one = _decimal(trade_plan.get("target_1"))
+        target_two = _decimal(trade_plan.get("target_2"))
+        stop_loss = _decimal(trade_plan.get("stop_loss"))
+        return target_one, target_two, stop_loss
+    return None, None, None
 
 
 def _direction_correct(expected_direction: str, return_bp: int) -> bool:
