@@ -392,6 +392,31 @@ async def fetch_market_quotes(db: Session, *, force_refresh: bool = False) -> Ma
         return snapshot
 
 
+def _sorted_daily_candles(series: object) -> list[dict[str, object]]:
+    candles: list[tuple[datetime, dict[str, object]]] = []
+    for candle in getattr(series, "candles", ()):
+        if not isinstance(candle, dict):
+            continue
+        timestamp = candle.get("timestamp")
+        if isinstance(timestamp, str):
+            try:
+                parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+        elif isinstance(timestamp, datetime):
+            parsed = timestamp
+        else:
+            continue
+        parsed = _as_utc(parsed)
+        if all(
+            _as_float(candle.get(key)) is not None
+            for key in ("open", "high", "low", "close")
+        ):
+            candles.append((parsed, candle))
+    candles.sort(key=lambda item: item[0])
+    return [candle for _, candle in candles]
+
+
 async def fetch_single_quote(db: Session, ticker: str, *, force_refresh: bool = False) -> MarketQuote | None:
     normalized = normalize_egx_ticker(ticker)
     snapshot = await fetch_market_quotes(db, force_refresh=False)
@@ -425,7 +450,7 @@ async def fetch_single_quote(db: Session, ticker: str, *, force_refresh: bool = 
 
     high = None
     low = None
-    for candle in series.candles:
+    for candle in _sorted_daily_candles(series):
         candle_high = _as_float(candle.get("high"))
         candle_low = _as_float(candle.get("low"))
         if candle_high is not None:
@@ -433,18 +458,48 @@ async def fetch_single_quote(db: Session, ticker: str, *, force_refresh: bool = 
         if candle_low is not None:
             low = candle_low if low is None else min(low, candle_low)
 
+    open_price = quote.open_price
+    previous_close = quote.previous_close
+    session_high = quote.session_high
+    session_low = quote.session_low
+    change = quote.change
+    change_percent = quote.change_percent
+
+    daily = _sorted_daily_candles(series)
+    if not quote.market_open and daily:
+        last = daily[-1]
+        candle_open = _as_float(last.get("open"))
+        candle_high = _as_float(last.get("high"))
+        candle_low = _as_float(last.get("low"))
+        if candle_open is not None:
+            open_price = candle_open
+        if candle_high is not None:
+            session_high = candle_high
+        if candle_low is not None:
+            session_low = candle_low
+        if len(daily) >= 2:
+            prev_close = _as_float(daily[-2].get("close"))
+            if prev_close is not None:
+                previous_close = prev_close
+        if quote.current_price is not None and previous_close not in (None, 0):
+            change = round(quote.current_price - previous_close, 4)
+            change_percent = round(
+                (quote.current_price / previous_close - 1) * 100,
+                2,
+            )
+
     return MarketQuote(
         ticker=quote.ticker,
         description=quote.description,
         exchange=quote.exchange,
         sector=quote.sector,
         current_price=quote.current_price,
-        open_price=quote.open_price,
-        previous_close=quote.previous_close,
-        session_high=quote.session_high,
-        session_low=quote.session_low,
-        change=quote.change,
-        change_percent=quote.change_percent,
+        open_price=open_price,
+        previous_close=previous_close,
+        session_high=session_high,
+        session_low=session_low,
+        change=change,
+        change_percent=change_percent,
         volume=quote.volume,
         week52_high=high,
         week52_low=low,

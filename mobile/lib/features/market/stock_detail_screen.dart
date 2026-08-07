@@ -67,8 +67,9 @@ class _DetailContent extends ConsumerWidget {
           child: _Header(quote: quote),
         ),
         const SizedBox(height: 12),
-        const SizedBox(height: 8),
         _StatsRow(quote: quote),
+        const SizedBox(height: 8),
+        _AnnualRange(quote: quote),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -77,17 +78,55 @@ class _DetailContent extends ConsumerWidget {
         const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'الرسم البياني اللحظي',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'الرسم البياني اللحظي',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'ملء الشاشة',
+                onPressed: () => _openFullscreenChart(context),
+                icon: const Icon(Icons.fullscreen_rounded),
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),
         TradingViewWidget(symbol: ticker),
         const SizedBox(height: 8),
       ],
+    );
+  }
+
+  void _openFullscreenChart(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => Scaffold(
+          backgroundColor: const Color(0xFFF7F7F7),
+          appBar: AppBar(
+            title: Text(
+              ticker,
+              textDirection: TextDirection.ltr,
+            ),
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: TradingViewWidget(
+                symbol: ticker,
+                height: screenHeight - kToolbarHeight - 16,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -213,19 +252,62 @@ class _StatsRow extends StatelessWidget {
           ),
           _Stat(
             label: 'الأعلى',
-            value: quote.marketOpen
-                ? formatPrice(quote.sessionHigh)
-                : formatPrice(quote.week52High),
+            value: formatPrice(quote.sessionHigh ?? quote.week52High),
             color: Colors.green,
           ),
           _Stat(
             label: 'الأدنى',
-            value: quote.marketOpen
-                ? formatPrice(quote.sessionLow)
-                : formatPrice(quote.week52Low),
+            value: formatPrice(quote.sessionLow ?? quote.week52Low),
             color: Colors.redAccent,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AnnualRange extends StatelessWidget {
+  const _AnnualRange({required this.quote});
+
+  final MarketQuote quote;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasHigh = quote.week52High != null;
+    final hasLow = quote.week52Low != null;
+    if (!hasHigh && !hasLow) {
+      return const SizedBox.shrink();
+    }
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'النطاق السنوي (52 أسبوع)',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _Stat(
+                  label: 'أعلى سعر سنوي',
+                  value: formatPrice(quote.week52High),
+                  color: Colors.green,
+                ),
+                _Stat(
+                  label: 'أدنى سعر سنوي',
+                  value: formatPrice(quote.week52Low),
+                  color: Colors.redAccent,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -300,9 +382,10 @@ class _QuickActions extends ConsumerWidget {
 }
 
 class TradingViewWidget extends StatefulWidget {
-  const TradingViewWidget({super.key, required this.symbol});
+  const TradingViewWidget({super.key, required this.symbol, this.height = 420});
 
   final String symbol;
+  final double height;
   final bool dark = false;
 
   @override
@@ -392,7 +475,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 420,
+      height: widget.height,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
