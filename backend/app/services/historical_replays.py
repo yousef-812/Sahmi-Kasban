@@ -239,6 +239,25 @@ def list_historical_replay_jobs(
     return list(items), total
 
 
+def delete_historical_replay_job(
+    db: Session,
+    *,
+    job_id: UUID,
+    actor_user_id: UUID,
+) -> None:
+    job = get_historical_replay_job(
+        db,
+        job_id=job_id,
+        actor_user_id=actor_user_id,
+    )
+    if job.status in {"pending", "running"}:
+        raise HistoricalReplayControlError(
+            "لا يمكن حذف اختبار جارٍ التشغيل. ألغِه أولًا ثم احذفه."
+        )
+    db.delete(job)
+    db.commit()
+
+
 def list_historical_replay_tickers(
     db: Session,
     *,

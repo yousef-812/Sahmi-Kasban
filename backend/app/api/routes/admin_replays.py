@@ -25,6 +25,7 @@ from app.services.historical_replays import (
     HistoricalReplayNotFoundError,
     cancel_historical_replay_job,
     create_historical_replay_job,
+    delete_historical_replay_job,
     get_historical_replay_job,
     list_historical_replay_jobs,
     list_historical_replay_tickers,
@@ -338,6 +339,25 @@ def cancel_replay_job(
     except (HistoricalReplayNotFoundError, HistoricalReplayControlError) as exc:
         _raise_control_error(exc)
     return _job_response(job)
+
+
+@router.delete(
+    "/jobs/{job_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_replay_job(
+    job_id: UUID,
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+) -> None:
+    try:
+        delete_historical_replay_job(
+            db,
+            job_id=job_id,
+            actor_user_id=admin.id,
+        )
+    except (HistoricalReplayNotFoundError, HistoricalReplayControlError) as exc:
+        _raise_control_error(exc)
 
 
 @router.get("/jobs/{job_id}/export.csv")

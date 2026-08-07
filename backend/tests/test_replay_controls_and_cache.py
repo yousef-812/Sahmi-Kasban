@@ -186,6 +186,57 @@ def test_replay_can_pause_resume_and_cancel_without_running_on_api(
     assert cancelled.json()["can_cancel"] is False
 
 
+def test_replay_job_can_be_deleted_after_completion_and_blocks_while_active(
+    client: TestClient,
+    db_session: Session,
+    fake_email_service,
+    monkeypatch,
+) -> None:
+    headers = _register_admin(
+        client,
+        fake_email_service,
+        monkeypatch,
+        email="isolated-replay-delete-admin@example.com",
+    )
+    today = date.today()
+    created = client.post(
+        "/api/v1/admin/operations/historical-replays/jobs",
+        headers=headers,
+        json={
+            "request_key": "isolated-replay-delete-0001",
+            "start_date": (today - timedelta(days=10)).isoformat(),
+            "end_date": (today - timedelta(days=1)).isoformat(),
+            "horizon_sessions": 5,
+        },
+    )
+    assert created.status_code == 202
+    job_id = created.json()["id"]
+
+    active_delete = client.delete(
+        f"/api/v1/admin/operations/historical-replays/jobs/{job_id}",
+        headers=headers,
+    )
+    assert active_delete.status_code == 409
+
+    cancelled = client.post(
+        f"/api/v1/admin/operations/historical-replays/jobs/{job_id}/cancel",
+        headers=headers,
+    )
+    assert cancelled.status_code == 200
+
+    deleted = client.delete(
+        f"/api/v1/admin/operations/historical-replays/jobs/{job_id}",
+        headers=headers,
+    )
+    assert deleted.status_code == 204
+
+    missing = client.get(
+        f"/api/v1/admin/operations/historical-replays/jobs/{job_id}",
+        headers=headers,
+    )
+    assert missing.status_code == 404
+
+
 def test_multi_window_batch_queues_sequential_jobs_with_shared_cache(
     client: TestClient,
     fake_email_service,

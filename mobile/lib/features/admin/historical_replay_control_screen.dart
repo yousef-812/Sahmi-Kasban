@@ -247,6 +247,44 @@ class _HistoricalReplayControlScreenState
     }
   }
 
+  Future<void> _delete(HistoricalReplayJob job) async {
+    if (_busyJobs.contains(job.id)) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف نهائي؟'),
+        content: const Text(
+          'سيتم حذف هذا الاختبار وجميع نتائجه نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('رجوع'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف نهائي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busyJobs.add(job.id));
+    try {
+      await ref.read(adminRepositoryProvider).deleteHistoricalReplay(job.id);
+      if (mounted) _message('تم حذف الاختبار نهائيًا.');
+      await _load(silent: true);
+    } on Object catch (error) {
+      if (mounted) _message(_errorText(error));
+    } finally {
+      if (mounted) setState(() => _busyJobs.remove(job.id));
+    }
+  }
+
   Future<void> _download(HistoricalReplayJob job) async {
     try {
       final file = await ref
@@ -420,6 +458,7 @@ class _HistoricalReplayControlScreenState
               onPause: job.canPause ? () => _control(job, 'pause') : null,
               onResume: job.canResume ? () => _control(job, 'resume') : null,
               onCancel: job.canCancel ? () => _control(job, 'cancel') : null,
+              onDelete: () => _delete(job),
             ),
         ],
       ),
@@ -589,6 +628,7 @@ class _ReplayJobCard extends StatelessWidget {
     this.onPause,
     this.onResume,
     this.onCancel,
+    this.onDelete,
   });
 
   final HistoricalReplayJob job;
@@ -599,6 +639,7 @@ class _ReplayJobCard extends StatelessWidget {
   final VoidCallback? onPause;
   final VoidCallback? onResume;
   final VoidCallback? onCancel;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -669,6 +710,15 @@ class _ReplayJobCard extends StatelessWidget {
                     onPressed: busy ? null : onCancel,
                     icon: const Icon(Icons.cancel_outlined),
                     label: const Text('إلغاء'),
+                  ),
+                if (onDelete != null)
+                  TextButton.icon(
+                    onPressed: busy ? null : onDelete,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('حذف نهائي'),
                   ),
                 if (onDownload != null)
                   FilledButton.icon(

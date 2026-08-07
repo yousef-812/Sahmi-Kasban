@@ -210,6 +210,16 @@ class AdminRepository {
     return _controlHistoricalReplay(jobId, 'cancel');
   }
 
+  Future<void> deleteHistoricalReplay(String jobId) async {
+    try {
+      await _apiClient.dio.delete<void>(
+        '/admin/operations/historical-replays/jobs/$jobId',
+      );
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<HistoricalReplayJob> _controlHistoricalReplay(
     String jobId,
     String action,
