@@ -137,6 +137,28 @@ class AdminRepository {
     }
   }
 
+  Future<HistoricalReplayJob> createLabsReplayJob({
+    required DateTime startDate,
+    required DateTime endDate,
+    int? rank,
+    String exitMode = 'target_2',
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/historical-replays/jobs/labs-backtest',
+        data: <String, dynamic>{
+          'start_date': _dateOnly(startDate),
+          'end_date': _dateOnly(endDate),
+          'rank': rank,
+          'exit_mode': exitMode,
+        },
+      );
+      return HistoricalReplayJob.fromJson(_required(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<List<HistoricalReplayJob>> createHistoricalReplayBatch({
     required List<HistoricalReplayWindow> windows,
     required int horizonSessions,

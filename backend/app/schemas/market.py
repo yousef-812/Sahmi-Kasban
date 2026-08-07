@@ -98,3 +98,32 @@ class StockComparisonResponse(BaseModel):
     balance_points: int = Field(ge=0)
     balance_coins: str
     disclaimer: str
+
+
+class MarketQuoteResponse(BaseModel):
+    ticker: str
+    description: str = ""
+    exchange: str = "EGX"
+    sector: str | None = None
+    current_price: float | None = None
+    open_price: float | None = None
+    previous_close: float | None = None
+    session_high: float | None = None
+    session_low: float | None = None
+    change: float | None = None
+    change_percent: float | None = None
+    volume: float | None = None
+    week52_high: float | None = None
+    week52_low: float | None = None
+    market_open: bool = False
+    session_change_percent: float | None = None
+    session_date: str | None = None
+    next_session_open: datetime | None = None
+
+
+class MarketQuotesResponse(BaseModel):
+    source: str
+    generated_at: datetime
+    market_open: bool
+    next_session_open: datetime | None = None
+    items: list[MarketQuoteResponse]

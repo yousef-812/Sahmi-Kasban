@@ -57,7 +57,7 @@ void main() {
             'ticker': 'HRHO',
             'score': 81.5,
             'price_at_analysis': null,
-            'targets': [],
+            'targets': <Object>[],
             'stop_loss': null,
             'session_open': null,
             'exit_price': null,
@@ -65,7 +65,7 @@ void main() {
             'hit': false,
             'minutes_to_exit': null,
             'return_pct': null,
-            'tracked': [],
+            'tracked': <Object>[],
           },
         ],
         'meta': {'requested_by': 'user-1'},
@@ -108,7 +108,7 @@ void main() {
           'trades': 0,
         },
         'sessions': null,
-        'meta': {},
+        'meta': <Object>{},
       });
 
       expect(result.params.rank, isNull);
@@ -206,7 +206,7 @@ void main() {
             'hit': true,
             'minutes_to_exit': 40,
             'return_pct': 4.0,
-            'tracked': [],
+            'tracked': <Object>[],
           },
         ],
         'error_message': null,

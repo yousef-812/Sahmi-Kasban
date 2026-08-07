@@ -217,6 +217,103 @@ class MarketInstrument {
   }
 }
 
+class MarketQuote {
+  const MarketQuote({
+    required this.ticker,
+    required this.description,
+    required this.exchange,
+    this.sector,
+    this.currentPrice,
+    this.openPrice,
+    this.previousClose,
+    this.sessionHigh,
+    this.sessionLow,
+    this.change,
+    this.changePercent,
+    this.volume,
+    this.week52High,
+    this.week52Low,
+    this.marketOpen = false,
+    this.sessionChangePercent,
+    this.sessionDate,
+    this.nextSessionOpen,
+  });
+
+  final String ticker;
+  final String description;
+  final String exchange;
+  final String? sector;
+  final double? currentPrice;
+  final double? openPrice;
+  final double? previousClose;
+  final double? sessionHigh;
+  final double? sessionLow;
+  final double? change;
+  final double? changePercent;
+  final double? volume;
+  final double? week52High;
+  final double? week52Low;
+  final bool marketOpen;
+  final double? sessionChangePercent;
+  final String? sessionDate;
+  final DateTime? nextSessionOpen;
+
+  factory MarketQuote.fromJson(Map<String, dynamic> json) {
+    return MarketQuote(
+      ticker: json['ticker'] as String,
+      description: json['description'] as String? ?? '',
+      exchange: json['exchange'] as String? ?? 'EGX',
+      sector: json['sector'] as String?,
+      currentPrice: _asDouble(json['current_price']),
+      openPrice: _asDouble(json['open_price']),
+      previousClose: _asDouble(json['previous_close']),
+      sessionHigh: _asDouble(json['session_high']),
+      sessionLow: _asDouble(json['session_low']),
+      change: _asDouble(json['change']),
+      changePercent: _asDouble(json['change_percent']),
+      volume: _asDouble(json['volume']),
+      week52High: _asDouble(json['week52_high']),
+      week52Low: _asDouble(json['week52_low']),
+      marketOpen: json['market_open'] as bool? ?? false,
+      sessionChangePercent: _asDouble(json['session_change_percent']),
+      sessionDate: json['session_date'] as String?,
+      nextSessionOpen: json['next_session_open'] == null
+          ? null
+          : DateTime.tryParse(json['next_session_open'] as String),
+    );
+  }
+}
+
+class MarketQuotesSnapshot {
+  const MarketQuotesSnapshot({
+    required this.source,
+    required this.generatedAt,
+    required this.marketOpen,
+    required this.items,
+    this.nextSessionOpen,
+  });
+
+  final String source;
+  final DateTime generatedAt;
+  final bool marketOpen;
+  final DateTime? nextSessionOpen;
+  final List<MarketQuote> items;
+
+  factory MarketQuotesSnapshot.fromJson(Map<String, dynamic> json) {
+    return MarketQuotesSnapshot(
+      source: json['source'] as String,
+      generatedAt: DateTime.parse(json['generated_at'] as String),
+      marketOpen: json['market_open'] as bool? ?? false,
+      nextSessionOpen: json['next_session_open'] == null
+          ? null
+          : DateTime.tryParse(json['next_session_open'] as String),
+      items: _list(json['items'])
+          .map((item) => MarketQuote.fromJson(_map(item)))
+          .toList(growable: false),
+    );
+  }
+}
+
 class StockAnalysisResult {
   const StockAnalysisResult({
     required this.analysisId,
@@ -377,6 +474,16 @@ class MarketReportUnlockResult {
       report: MarketReport.fromJson(_map(json['report'])),
     );
   }
+}
+
+double? _asDouble(Object? value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value);
+  }
+  return null;
 }
 
 Map<String, dynamic> _map(Object? value) {

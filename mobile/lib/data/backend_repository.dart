@@ -267,6 +267,31 @@ class BackendRepository {
     }
   }
 
+  Future<MarketQuotesSnapshot> getMarketQuotes() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/quotes',
+      );
+      return MarketQuotesSnapshot.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<MarketQuote> getMarketQuote(String ticker, {bool forceRefresh = false}) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/quotes/${ticker.trim().toUpperCase()}',
+        queryParameters: <String, dynamic>{
+          if (forceRefresh) 'force_refresh': 'true',
+        },
+      );
+      return MarketQuote.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReportUnlockResult> unlockMarketReport(String reportId) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(

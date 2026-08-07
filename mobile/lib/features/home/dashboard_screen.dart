@@ -7,9 +7,9 @@ import '../../domain/models.dart';
 import '../auth/session_controller.dart';
 import '../community/community_feed_tab.dart';
 import '../market/stock_analysis_tab.dart';
-import '../monetization/free_plan_ads.dart';
+import '../market/stocks_screen.dart';
 import '../notifications/notification_providers.dart';
-import '../reports/report_providers.dart';
+import '../reports/reports_screen.dart';
 import '../wallet/wallet_providers.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -20,24 +20,26 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int _index = 0;
+  int _selectedIndex = 0;
 
-  static const _titles = <String>[
-    'الرئيسية',
-    'تحليل سهم',
-    'المجتمع',
-    'المحفظة',
-    'حسابي',
+  static const _navItems = <(String, IconData, String)>[
+    ('stocks', Icons.home_rounded, 'الرئيسية'),
+    ('reports', Icons.assessment_outlined, 'التقارير'),
+    ('analyze', Icons.query_stats_outlined, 'تحليل سهم'),
+    ('community', Icons.forum_outlined, 'المجتمع'),
+    ('wallet', Icons.account_balance_wallet_outlined, 'المحفظة'),
+    ('profile', Icons.person_outline_rounded, 'حسابي'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(pushRegistrationProvider);
+    final profile = ref.watch(sessionControllerProvider).profile;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_index]),
+        title: Text(_navItems[_selectedIndex].$3),
         actions: [
-          if (ref.watch(sessionControllerProvider).profile?.isAdmin == true)
+          if (profile?.isAdmin == true)
             IconButton(
               onPressed: () => context.push('/admin'),
               icon: const Icon(Icons.admin_panel_settings_outlined),
@@ -51,184 +53,88 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           IconButton(
             onPressed: () => context.push('/notifications'),
             icon: Badge(
-              isLabelVisible:
-                  ref
-                      .watch(notificationInboxProvider)
-                      .valueOrNull
-                      ?.unreadCount !=
-                  0,
-              label: Text(
-                '${ref.watch(notificationInboxProvider).valueOrNull?.unreadCount ?? 0}',
-              ),
+              isLabelVisible: ref.watch(notificationInboxProvider).valueOrNull?.unreadCount != 0,
+              label: Text('${ref.watch(notificationInboxProvider).valueOrNull?.unreadCount ?? 0}'),
               child: const Icon(Icons.notifications_outlined),
             ),
             tooltip: 'الإشعارات',
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _index,
-        children: const [
-          _HomeTab(),
-          StockAnalysisTab(),
-          CommunityFeedTab(),
-          _WalletTab(),
-          _ProfileTab(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'الرئيسية',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.query_stats_outlined),
-            selectedIcon: Icon(Icons.query_stats_rounded),
-            label: 'تحليل',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.forum_outlined),
-            selectedIcon: Icon(Icons.forum_rounded),
-            label: 'المجتمع',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: 'المحفظة',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'حسابي',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HomeTab extends ConsumerWidget {
-  const _HomeTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(sessionControllerProvider);
-    final preview = ref.watch(latestReportPreviewProvider);
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(latestReportPreviewProvider);
-        ref.invalidate(walletSummaryProvider);
-        await ref.read(sessionControllerProvider.notifier).refreshProfile();
-      },
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text(
-            'أهلًا ${session.profile?.displayName ?? ''}',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'الأسهم الأعلى تقييمًا وفق التحليل الآلي للجلسة القادمة',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 22),
-          preview.when(
-            loading: () => const _LoadingCard(),
-            error: (error, stackTrace) => _ErrorCard(
-              message: 'تعذر تحميل تقرير السوق.',
-              onRetry: () => ref.invalidate(latestReportPreviewProvider),
-            ),
-            data: (report) => report == null
-                ? const _EmptyReportCard()
-                : _ReportPreviewCard(report: report),
-          ),
-          const SizedBox(height: 16),
-          const FreePlanNativeAd(),
-          const SizedBox(height: 16),
-          const _DisclaimerCard(),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReportPreviewCard extends StatelessWidget {
-  const _ReportPreviewCard({required this.report});
-
-  final MarketReportPreview report;
-
-  @override
-  Widget build(BuildContext context) {
-    final target = report.targetSessionDate;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.auto_graph_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'تقرير جلسة ${target.day}/${target.month}/${target.year}',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                Chip(label: Text('${report.itemCount} فرص مؤهلة')),
-                Chip(
-                  label: Text(
-                    report.unlocked
-                        ? 'مفتوح بالفعل'
-                        : '${report.unlockCostCoins} عملة للفتح',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text('المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.'),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: () =>
-                  context.push('/reports/${report.reportId}', extra: report),
-              icon: Icon(
-                report.unlocked
-                    ? Icons.visibility_rounded
-                    : Icons.lock_open_rounded,
+            _DrawerHeader(profile: profile),
+            const Divider(),
+            for (var item in _navItems)
+              ListTile(
+                leading: Icon(item.$2),
+                title: Text(item.$3),
+                selected: _selectedIndex == _navItems.indexOf(item),
+                onTap: () {
+                  setState(() => _selectedIndex = _navItems.indexOf(item));
+                  Navigator.pop(context);
+                },
               ),
-              label: Text(report.unlocked ? 'عرض التقرير' : 'فتح التقرير'),
-            ),
+            if (profile?.isAdmin == true) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings_outlined),
+                title: const Text('لوحة الإدارة'),
+                onTap: () {
+                  context.push('/admin');
+                  Navigator.pop(context);
+                },
+              ),
+            ],
           ],
         ),
       ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return const StocksScreen();
+      case 1:
+        return const ReportsScreen();
+      case 2:
+        return const StockAnalysisTab();
+      case 3:
+        return const CommunityFeedTab();
+      case 4:
+        return const WalletTab();
+      case 5:
+        return const ProfileTab();
+      default:
+        return const StocksScreen();
+    }
+  }
+}
+
+class _DrawerHeader extends StatelessWidget {
+  const _DrawerHeader({required this.profile});
+  final UserProfile? profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return UserAccountsDrawerHeader(
+      currentAccountPicture: CircleAvatar(
+        backgroundImage: AssetImage(
+          avatarAssetPath(profile?.avatarKey ?? avatarKeys.first),
+        ),
+      ),
+      accountName: Text(profile?.displayName ?? 'مستخدم'),
+      accountEmail: Text(profile?.email ?? ''),
     );
   }
 }
 
-class _WalletTab extends ConsumerWidget {
-  const _WalletTab();
+class WalletTab extends ConsumerWidget {
+  const WalletTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -238,54 +144,54 @@ class _WalletTab extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const FreePlanNativeAd(),
-          const SizedBox(height: 12),
-          wallet.when(
-            loading: () => const _LoadingCard(),
-            error: (error, stackTrace) => _ErrorCard(
-              message: 'تعذر تحميل المحفظة.',
-              onRetry: () => ref.invalidate(walletSummaryProvider),
-            ),
-            data: (summary) => Card(
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'الرصيد الحالي',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'الرصيد الحالي',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  wallet.when(
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Text('تعذر تحميل المحفظة.'),
+                    data: (summary) => Text(
                       '${summary.balanceCoins} عملة',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Text('الخطة: ${summary.planCode}'),
-                    Text('التوزيع الأسبوعي: ${summary.weeklyCoins} عملة'),
-                    Text(
-                      summary.adsEnabled
-                          ? 'الإعلانات مفعلة'
-                          : 'الخطة بدون إعلانات',
+                  ),
+                  const SizedBox(height: 14),
+                  wallet.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data: (summary) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('الخطة: ${summary.planCode}'),
+                        Text('التوزيع الأسبوعي: ${summary.weeklyCoins} عملة'),
+                        Text(summary.adsEnabled ? 'الإعلانات مفعلة' : 'الخطة بدون إعلانات'),
+                      ],
                     ),
-                    const SizedBox(height: 18),
-                    OutlinedButton.icon(
-                      onPressed: () => context.push('/wallet/history'),
-                      icon: const Icon(Icons.receipt_long_outlined),
-                      label: const Text('عرض سجل العمليات'),
-                    ),
-                    const SizedBox(height: 10),
-                    FilledButton.icon(
-                      onPressed: () => context.push('/monetization'),
-                      icon: const Icon(Icons.workspace_premium_outlined),
-                      label: const Text('الخطط وشراء العملات'),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 18),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/wallet/history'),
+                    icon: const Icon(Icons.receipt_long_outlined),
+                    label: const Text('عرض سجل العمليات'),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton.icon(
+                    onPressed: () => context.push('/monetization'),
+                    icon: const Icon(Icons.workspace_premium_outlined),
+                    label: const Text('الخطط وشراء العملات'),
+                  ),
+                ],
               ),
             ),
           ),
@@ -295,8 +201,8 @@ class _WalletTab extends ConsumerWidget {
   }
 }
 
-class _ProfileTab extends ConsumerWidget {
-  const _ProfileTab();
+class ProfileTab extends ConsumerWidget {
+  const ProfileTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -304,8 +210,6 @@ class _ProfileTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const FreePlanNativeAd(),
-        const SizedBox(height: 12),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(22),
@@ -320,9 +224,7 @@ class _ProfileTab extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(
                   profile?.displayName ?? '',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -341,8 +243,7 @@ class _ProfileTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
-                  onPressed: () =>
-                      ref.read(sessionControllerProvider.notifier).logout(),
+                  onPressed: () => ref.read(sessionControllerProvider.notifier).logout(),
                   icon: const Icon(Icons.logout_rounded),
                   label: const Text('تسجيل الخروج'),
                 ),
@@ -351,97 +252,6 @@ class _ProfileTab extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _EmptyReportCard extends StatelessWidget {
-  const _EmptyReportCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(Icons.event_busy_rounded, size: 42),
-            SizedBox(height: 14),
-            Text(
-              'لا يوجد تقرير جاهز حاليًا. سيظهر التقرير بعد اكتمال مسح جلسة التداول.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(child: CircularProgressIndicator()),
-      ),
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 14),
-            OutlinedButton(
-              onPressed: onRetry,
-              child: const Text('إعادة المحاولة'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DisclaimerCard extends StatelessWidget {
-  const _DisclaimerCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'التحليلات آلية وأداة لدعم القرار وليست ضمانًا للربح أو توصية شخصية بالشراء والبيع.',
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

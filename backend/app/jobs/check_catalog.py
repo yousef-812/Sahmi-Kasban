@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import asyncio
-
 from app.db.session import SessionLocal
 from app.services.monetization import catalog_payload
 from app.services.operations_settings import runtime_monetization_settings
@@ -18,4 +16,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
