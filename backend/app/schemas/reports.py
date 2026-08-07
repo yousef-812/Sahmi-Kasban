@@ -21,7 +21,7 @@ class MarketReportPreviewResponse(BaseModel):
 
 class MarketReportItemResponse(BaseModel):
     ticker: str
-    rank: int = Field(ge=1, le=10)
+    rank: int = Field(ge=1)
     score: float = Field(ge=0, le=100)
     payload: dict
 
@@ -33,6 +33,7 @@ class MarketReportResponse(BaseModel):
     generated_at: datetime
     market_summary: dict
     items: list[MarketReportItemResponse]
+    extended_items: list[MarketReportItemResponse] = Field(default_factory=list)
 
 
 class MarketReportUnlockResponse(BaseModel):

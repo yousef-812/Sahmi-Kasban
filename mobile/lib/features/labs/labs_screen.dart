@@ -157,6 +157,52 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
     await _load();
   }
 
+  Future<void> _deleteJob(LabsBacktestJob job) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف المحاكاة'),
+        content: const Text(
+          'سيتم حذف هذه المحاكاة نهائيًا من قاعدة البيانات. لا يمكن التراجع عن هذا الإجراء.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف نهائي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    try {
+      await ref.read(labsRepositoryProvider).deleteBacktestJob(job.id);
+      if (!mounted) {
+        return;
+      }
+      if (_activeJobId == job.id) {
+        _pollTimer?.cancel();
+        setState(() => _activeJobId = null);
+      }
+      await _load();
+    } on Object catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error is ApiException ? error.message : error.toString();
+      });
+    }
+  }
+
   String _formatDate(DateTime value) {
     try {
       return DateFormat('d MMMM yyyy', 'ar').format(value.toLocal());
@@ -217,6 +263,7 @@ class _LabsScreenState extends ConsumerState<LabsScreen> {
               dateFormat: DateFormat('d MMM yyyy', 'ar'),
               active: _activeJobId == job.id,
               onOpen: () => _openJob(job),
+              onDelete: () => _deleteJob(job),
             ),
         ],
       ),
@@ -419,12 +466,14 @@ class _JobCard extends StatelessWidget {
     required this.dateFormat,
     required this.active,
     required this.onOpen,
+    required this.onDelete,
   });
 
   final LabsBacktestJob job;
   final DateFormat dateFormat;
   final bool active;
   final VoidCallback onOpen;
+  final VoidCallback onDelete;
 
   static const _statusLabels = <String, String>{
     'queued': 'في الانتظار',
@@ -459,7 +508,19 @@ class _JobCard extends StatelessWidget {
               : '$statusLabel • '
                   '${job.exitMode == 'highest' ? 'أعلى هدف' : 'الهدف الثاني'}',
         ),
-        trailing: const Icon(Icons.chevron_left_rounded),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'حذف نهائي',
+              visualDensity: VisualDensity.compact,
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline_rounded),
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const Icon(Icons.chevron_left_rounded),
+          ],
+        ),
         onTap: onOpen,
       ),
     );

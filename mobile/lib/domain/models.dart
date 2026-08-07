@@ -427,6 +427,7 @@ class MarketReport {
     required this.generatedAt,
     required this.marketSummary,
     required this.items,
+    required this.extendedItems,
   });
 
   final String reportId;
@@ -435,6 +436,7 @@ class MarketReport {
   final DateTime generatedAt;
   final Map<String, dynamic> marketSummary;
   final List<MarketReportItem> items;
+  final List<MarketReportItem> extendedItems;
 
   factory MarketReport.fromJson(Map<String, dynamic> json) {
     return MarketReport(
@@ -444,6 +446,9 @@ class MarketReport {
       generatedAt: DateTime.parse(json['generated_at'] as String),
       marketSummary: _map(json['market_summary']),
       items: _list(json['items'])
+          .map((item) => MarketReportItem.fromJson(_map(item)))
+          .toList(growable: false),
+      extendedItems: _list(json['extended_items'])
           .map((item) => MarketReportItem.fromJson(_map(item)))
           .toList(growable: false),
     );

@@ -20,6 +20,7 @@ from app.services.labs_backtest_jobs import (
     LabsBacktestJobNotFoundError,
     LabsBacktestJobRangeError,
     create_labs_backtest_job,
+    delete_labs_backtest_job,
     get_labs_backtest_job,
     list_labs_backtest_jobs,
 )
@@ -133,3 +134,22 @@ def get_backtest_job(
     except LabsBacktestJobError as exc:
         _raise_job_error(exc)
     return _job_response(job)
+
+
+@router.delete(
+    "/backtest-jobs/{job_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_backtest_job(
+    job_id: UUID,
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+) -> None:
+    try:
+        delete_labs_backtest_job(
+            db,
+            job_id=job_id,
+            actor_user_id=admin.id,
+        )
+    except LabsBacktestJobError as exc:
+        _raise_job_error(exc)

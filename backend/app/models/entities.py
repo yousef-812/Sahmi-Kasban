@@ -86,6 +86,7 @@ class MarketReport(TimestampMixin, Base):
     generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     source_snapshot: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     market_summary: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    extended_universe: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class MarketReportItem(TimestampMixin, Base):

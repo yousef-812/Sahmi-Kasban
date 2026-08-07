@@ -239,3 +239,56 @@ def test_labs_backtest_job_api_roundtrip(
         headers=admin_headers,
     )
     assert missing.status_code == 404
+
+
+def test_labs_backtest_job_delete(
+    client: TestClient,
+    db_session: Session,
+    fake_email_service,
+    monkeypatch,
+) -> None:
+    admin_email = "labs-delete-admin@example.com"
+    monkeypatch.setenv("ADMIN_EMAILS", admin_email)
+    admin_headers = _register_and_login(
+        client,
+        fake_email_service,
+        email=admin_email,
+    )
+
+    created = client.post(
+        "/api/v1/labs/backtest-jobs",
+        headers=admin_headers,
+        json={
+            "start_date": "2026-07-27",
+            "end_date": "2026-07-27",
+            "exit_mode": "target_2",
+        },
+    )
+    assert created.status_code == 202
+    job_id = created.json()["id"]
+
+    listed = client.get("/api/v1/labs/backtest-jobs", headers=admin_headers)
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 1
+
+    deleted = client.delete(
+        f"/api/v1/labs/backtest-jobs/{job_id}",
+        headers=admin_headers,
+    )
+    assert deleted.status_code == 204
+
+    missing = client.get(
+        f"/api/v1/labs/backtest-jobs/{job_id}",
+        headers=admin_headers,
+    )
+    assert missing.status_code == 404
+
+    listed = client.get("/api/v1/labs/backtest-jobs", headers=admin_headers)
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 0
+
+    unknown = client.delete(
+        "/api/v1/labs/backtest-jobs/00000000-0000-0000-0000-000000000000",
+        headers=admin_headers,
+    )
+    assert unknown.status_code == 404

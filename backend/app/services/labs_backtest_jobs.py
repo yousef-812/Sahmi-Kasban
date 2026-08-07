@@ -73,6 +73,21 @@ def get_labs_backtest_job(
     return job
 
 
+def delete_labs_backtest_job(
+    db: Session,
+    *,
+    job_id: UUID,
+    actor_user_id: UUID,
+) -> None:
+    job = get_labs_backtest_job(
+        db,
+        job_id=job_id,
+        actor_user_id=actor_user_id,
+    )
+    db.delete(job)
+    db.commit()
+
+
 def list_labs_backtest_jobs(
     db: Session,
     *,

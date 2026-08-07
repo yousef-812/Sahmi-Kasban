@@ -8,18 +8,75 @@ import '../../domain/models.dart';
 import 'market_quotes_providers.dart';
 import 'stock_quote_card.dart';
 
-class StockDetailScreen extends ConsumerWidget {
+class StockDetailScreen extends ConsumerStatefulWidget {
   const StockDetailScreen({super.key, required this.ticker});
 
   final String ticker;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final quoteState = ref.watch(stockQuoteProvider(ticker));
+  ConsumerState<StockDetailScreen> createState() => _StockDetailScreenState();
+}
+
+class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
+  bool _fullscreenOpen = false;
+  bool _autoFullscreen = false;
+  bool _rotationCheckScheduled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_rotationCheckScheduled) {
+      return;
+    }
+    _rotationCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _rotationCheckScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      final orientation = MediaQuery.orientationOf(context);
+      if (orientation == Orientation.landscape && !_fullscreenOpen) {
+        _openFullscreenChart(auto: true);
+      } else if (orientation == Orientation.portrait && _autoFullscreen) {
+        _autoFullscreen = false;
+        Navigator.of(context).pop();
+        _fullscreenOpen = false;
+      }
+    });
+  }
+
+  Future<void> _openFullscreenChart({bool auto = false}) async {
+    if (_fullscreenOpen) {
+      return;
+    }
+    _fullscreenOpen = true;
+    _autoFullscreen = auto;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => Scaffold(
+          backgroundColor: const Color(0xFFF7F7F7),
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) => TradingViewWidget(
+                symbol: widget.ticker,
+                height: constraints.maxHeight,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    _fullscreenOpen = false;
+    _autoFullscreen = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quoteState = ref.watch(stockQuoteProvider(widget.ticker));
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          ticker,
+          widget.ticker,
           textDirection: TextDirection.ltr,
         ),
         actions: [
@@ -28,7 +85,7 @@ class StockDetailScreen extends ConsumerWidget {
             onPressed: quoteState.isLoading
                 ? null
                 : () => ref
-                      .read(stockQuoteProvider(ticker).notifier)
+                      .read(stockQuoteProvider(widget.ticker).notifier)
                       .refresh(),
             icon: quoteState.isLoading
                 ? const SizedBox.square(
@@ -43,19 +100,28 @@ class StockDetailScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _ErrorView(
           error: error,
-          onRetry: () => ref.invalidate(stockQuoteProvider(ticker)),
+          onRetry: () => ref.invalidate(stockQuoteProvider(widget.ticker)),
         ),
-        data: (quote) => _DetailContent(quote: quote, ticker: ticker),
+        data: (quote) => _DetailContent(
+          quote: quote,
+          ticker: widget.ticker,
+          onOpenFullscreen: _openFullscreenChart,
+        ),
       ),
     );
   }
 }
 
 class _DetailContent extends ConsumerWidget {
-  const _DetailContent({required this.quote, required this.ticker});
+  const _DetailContent({
+    required this.quote,
+    required this.ticker,
+    required this.onOpenFullscreen,
+  });
 
   final MarketQuote quote;
   final String ticker;
+  final VoidCallback onOpenFullscreen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,7 +156,7 @@ class _DetailContent extends ConsumerWidget {
               ),
               IconButton(
                 tooltip: 'ملء الشاشة',
-                onPressed: () => _openFullscreenChart(context),
+                onPressed: onOpenFullscreen,
                 icon: const Icon(Icons.fullscreen_rounded),
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -101,32 +167,6 @@ class _DetailContent extends ConsumerWidget {
         TradingViewWidget(symbol: ticker),
         const SizedBox(height: 8),
       ],
-    );
-  }
-
-  void _openFullscreenChart(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => Scaffold(
-          backgroundColor: const Color(0xFFF7F7F7),
-          appBar: AppBar(
-            title: Text(
-              ticker,
-              textDirection: TextDirection.ltr,
-            ),
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: TradingViewWidget(
-                symbol: ticker,
-                height: screenHeight - kToolbarHeight - 16,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -247,7 +287,7 @@ class _StatsRow extends StatelessWidget {
           ),
           _Stat(
             label: 'سعر الإغلاق',
-            value: formatPrice(quote.previousClose),
+            value: formatPrice(quote.currentPrice),
             color: Theme.of(context).colorScheme.onSurface,
           ),
           _Stat(

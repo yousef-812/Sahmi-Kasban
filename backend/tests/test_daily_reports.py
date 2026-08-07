@@ -166,6 +166,18 @@ def test_daily_scan_creates_ranked_report_once(
     assert items[0].payload["explanation_source"] == "ai"
     assert len(provider.calls) == 13
 
+    extended = first.report.extended_universe or {}
+    assert extended["top_size"] == 10
+    assert extended["stored_count"] == 2
+    entries = extended["entries"]
+    assert [entry["rank"] for entry in entries] == [11, 12]
+    assert [entry["ticker"] for entry in entries] == ["T01", "T00"]
+    assert all(
+        entry["explanation_source"] == "deterministic" for entry in entries
+    )
+    assert all(entry["opportunity_tier"] == "watch" for entry in entries)
+    assert all(entry["elite"] is False for entry in entries)
+
     second = asyncio.run(
         generate_daily_top10_report(
             db_session,

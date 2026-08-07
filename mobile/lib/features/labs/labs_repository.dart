@@ -38,6 +38,14 @@ class LabsRepository {
     }
   }
 
+  Future<void> deleteBacktestJob(String jobId) async {
+    try {
+      await _apiClient.dio.delete<void>('/labs/backtest-jobs/$jobId');
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<List<LabsBacktestJob>> backtestJobs({int limit = 50}) async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
