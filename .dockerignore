@@ -16,3 +16,10 @@ htmlcov
 *.aab
 docs/
 sahmi-engine/
+mobile/
+backtest_2025/
+full_2025_replay*.md
+jan_*.md
+IMPLEMENTATION_LOG*.md
+
+
