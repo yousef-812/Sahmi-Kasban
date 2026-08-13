@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     historical_replay_idle_poll_seconds: float = 5.0
 
     egx_holidays: str = ""
-    daily_scan_hour: int = 17
+    daily_scan_hour: int = 15
     daily_scan_minute: int = 0
     daily_scan_max_concurrency: int = 4
     daily_scan_min_average_turnover_egp: float = 1_000_000.0

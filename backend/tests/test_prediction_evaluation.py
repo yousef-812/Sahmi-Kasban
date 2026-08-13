@@ -31,7 +31,7 @@ def calendar() -> EGXTradingCalendar:
     return EGXTradingCalendar(
         timezone_name="Africa/Cairo",
         holidays=frozenset(),
-        scan_hour=17,
+        scan_hour=15,
         scan_minute=0,
     )
 
@@ -117,7 +117,7 @@ def test_prediction_window_uses_future_cairo_sessions(db_session: Session) -> No
         "2026-01-15",
     ]
     assert window.eligible_at.astimezone(calendar().timezone).isoformat() == (
-        "2026-01-15T17:00:00+02:00"
+        "2026-01-15T15:00:00+02:00"
     )
 
 

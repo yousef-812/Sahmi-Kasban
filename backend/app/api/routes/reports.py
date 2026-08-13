@@ -71,6 +71,39 @@ def _report_response(access: MarketReportAccess) -> MarketReportResponse:
     )
 
 
+@router.get("/latest/top10", response_model=MarketReportResponse)
+def get_latest_report_top10(db: DatabaseSession) -> MarketReportResponse:
+    """Serve the latest completed top-ten report to the on-device trading bot.
+
+    No authentication or unlock is required: this is an internal endpoint for
+    the device that executes trades (same owner). It returns the full payload
+    of every ranked item, including the engine analysis and trade plan.
+    """
+    try:
+        report = latest_complete_report(db)
+    except MarketReportNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No completed market report is available",
+        ) from exc
+    except DailyReportGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="The stored market report is invalid",
+        ) from exc
+
+    items = tuple(
+        db.scalars(
+            select(MarketReportItem)
+            .where(MarketReportItem.report_id == report.id)
+            .order_by(MarketReportItem.rank)
+        ).all()
+    )
+    return _report_response(
+        MarketReportAccess(report=report, items=items, unlocked=True)
+    )
+
+
 @router.get("/latest/preview", response_model=MarketReportPreviewResponse)
 def get_latest_report_preview(
     db: DatabaseSession,

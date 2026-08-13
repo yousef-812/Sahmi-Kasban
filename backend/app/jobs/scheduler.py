@@ -28,7 +28,7 @@ def _poll_seconds() -> int:
 
 
 async def run_daily_scan_scheduler() -> None:
-    """Poll the idempotent daily scan so restarts do not miss the 17:00 run."""
+    """Poll the idempotent daily scan so restarts do not miss the 15:00 run."""
     if not _enabled():
         logger.info("Daily EGX scan scheduler is disabled")
         return

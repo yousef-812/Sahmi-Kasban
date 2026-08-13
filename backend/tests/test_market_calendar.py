@@ -14,7 +14,7 @@ def _calendar(*, holidays: frozenset[date] = frozenset()) -> EGXTradingCalendar:
     return EGXTradingCalendar(
         timezone_name="Africa/Cairo",
         holidays=holidays,
-        scan_hour=17,
+        scan_hour=15,
         scan_minute=0,
     )
 
@@ -30,19 +30,19 @@ def test_calendar_skips_friday_saturday_and_configured_holiday() -> None:
     assert calendar.next_trading_session(date(2026, 7, 26)) == date(2026, 7, 28)
 
 
-def test_scan_requires_five_pm_cairo_on_a_trading_day() -> None:
+def test_scan_requires_three_pm_cairo_on_a_trading_day() -> None:
     calendar = _calendar()
     zone = ZoneInfo("Africa/Cairo")
 
     with pytest.raises(ScanNotDueError):
-        calendar.resolve_scan_session(datetime(2026, 7, 26, 16, 59, tzinfo=zone))
+        calendar.resolve_scan_session(datetime(2026, 7, 26, 14, 59, tzinfo=zone))
 
     session = calendar.resolve_scan_session(
-        datetime(2026, 7, 26, 17, 0, tzinfo=zone)
+        datetime(2026, 7, 26, 15, 0, tzinfo=zone)
     )
     assert session.source_session_date == date(2026, 7, 26)
     assert session.target_session_date == date(2026, 7, 27)
-    assert session.scheduled_for.hour == 17
+    assert session.scheduled_for.hour == 15
 
 
 def test_scan_does_not_run_on_weekend() -> None:

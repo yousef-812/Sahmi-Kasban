@@ -12,5 +12,7 @@
 htmlcov
 .coverage
 *.zip
+*.apk
+*.aab
 docs/
 sahmi-engine/
