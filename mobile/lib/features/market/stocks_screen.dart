@@ -169,6 +169,133 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     }
   }
 
+  void _removeStockFromWatchlist(String watchlistName, String ticker) {
+    if (_userWatchlists.containsKey(watchlistName)) {
+      setState(() {
+        _userWatchlists[watchlistName]?.remove(ticker);
+      });
+      _saveState();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم حذف السهم $ticker من قائمة "$watchlistName"'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _confirmDeleteWatchlist(String watchlistName) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('حذف قائمة "$watchlistName"'),
+        content: Text(
+          'هل أنت تأكد من حذف قائمة المتابعة "$watchlistName" والأسهم الموجودة بها؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _deleteWatchlist(watchlistName);
+            },
+            child: const Text('حذف القائمة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteWatchlist(String watchlistName) {
+    if (_userWatchlists.containsKey(watchlistName)) {
+      setState(() {
+        _userWatchlists.remove(watchlistName);
+      });
+      _saveState();
+      _initTabController(initialIndex: 0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم حذف قائمة المتابعة "$watchlistName"'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _showCustomWatchlistStockOptions(
+    MarketQuote quote,
+    String watchlistName,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'خيارات السهم ${quote.ticker}',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                ),
+                title: Text(
+                  'حذف السهم من قائمة "$watchlistName"',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _removeStockFromWatchlist(watchlistName, quote.ticker);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.bookmark_add_outlined,
+                  color: Theme.of(ctx).colorScheme.primary,
+                ),
+                title: const Text('إضافة إلى قائمة متابعة أخرى'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _showLongPressBottomSheet(quote);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showAddStockPicker(String watchlistName, List<MarketQuote> allQuotes) {
     String search = '';
     showModalBottomSheet<void>(
@@ -365,7 +492,18 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
                     tabs: [
                       const Tab(text: 'كل الأسهم'),
                       const Tab(text: 'القطاعات'),
-                      ..._userWatchlists.keys.map((name) => Tab(text: name)),
+                      ..._userWatchlists.keys.map(
+                        (name) => Tab(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onLongPress: () => _confirmDeleteWatchlist(name),
+                            child: Align(
+                              alignment: Alignment.center,
+                              child: Text(name),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -466,7 +604,9 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
               ],
             ),
           ),
-          Expanded(child: _buildGrid(filtered)),
+          Expanded(
+            child: _buildGrid(filtered, currentWatchlistName: currentListName),
+          ),
         ],
       );
     }
@@ -941,7 +1081,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     }).toList();
   }
 
-  Widget _buildGrid(List<MarketQuote> items) {
+  Widget _buildGrid(List<MarketQuote> items, {String? currentWatchlistName}) {
     if (items.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(24),
@@ -966,7 +1106,13 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
         return StockQuoteCard(
           quote: quote,
           onTap: () => context.push('/stocks/${quote.ticker}'),
-          onLongPress: () => _showLongPressBottomSheet(quote),
+          onLongPress: () {
+            if (currentWatchlistName != null) {
+              _showCustomWatchlistStockOptions(quote, currentWatchlistName);
+            } else {
+              _showLongPressBottomSheet(quote);
+            }
+          },
         );
       },
     );
