@@ -35,7 +35,7 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
   Future<void> _addToWatchlist(BuildContext context) async {
     try {
       await ref.read(watchlistProvider.notifier).add(widget.ticker);
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('تمت إضافة ${widget.ticker} لـ قائمة المراقبة'),
@@ -44,7 +44,7 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
