@@ -1,0 +1,608 @@
+[
+  {
+    "filename": "sahmi-engine-replay-2025-08-01-2025-08-31-2bdff98d.csv",
+    "total_rows": 4860,
+    "date_min": "2025-08-03",
+    "date_max": "2025-08-31",
+    "versions": [
+      "core-v2.3"
+    ],
+    "signals": {
+      "BUY": 1743,
+      "AVOID": 1562,
+      "WATCH": 1415
+    },
+    "categories": {
+      "other": 3117,
+      "regular_buy": 1687,
+      "balanced_elite": 50,
+      "aggressive_elite": 6
+    },
+    "group_metrics": {
+      "aggressive_elite": {
+        "count": 6,
+        "forward_return_pct_mean": 18.456666666666667,
+        "forward_return_pct_median": 9.31,
+        "excess_return_pct_mean": 16.096666666666668,
+        "excess_return_pct_median": 7.38,
+        "max_upside_pct_mean": 27.833333333333332,
+        "max_upside_pct_median": 22.59,
+        "max_drawdown_pct_mean": -1.6199999999999999,
+        "max_drawdown_pct_median": -0.7150000000000001,
+        "win_rate": 1.0,
+        "correct_rate": 1.0
+      },
+      "balanced_elite": {
+        "count": 50,
+        "forward_return_pct_mean": 2.6626,
+        "forward_return_pct_median": 1.075,
+        "excess_return_pct_mean": 0.4469999999999999,
+        "excess_return_pct_median": -1.355,
+        "max_upside_pct_mean": 8.6766,
+        "max_upside_pct_median": 5.01,
+        "max_drawdown_pct_mean": -3.1896000000000004,
+        "max_drawdown_pct_median": -2.46,
+        "win_rate": 0.6,
+        "correct_rate": 0.5
+      },
+      "regular_buy": {
+        "count": 1687,
+        "forward_return_pct_mean": 3.0113989330171904,
+        "forward_return_pct_median": 0.38,
+        "excess_return_pct_mean": 0.6338885595732068,
+        "excess_return_pct_median": -2.04,
+        "max_upside_pct_mean": 9.10347362181387,
+        "max_upside_pct_median": 4.51,
+        "max_drawdown_pct_mean": -3.710231179608773,
+        "max_drawdown_pct_median": -2.73,
+        "win_rate": 0.5210432720806165,
+        "correct_rate": 0.44931831653823356
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2025-09-01-2025-09-30-7c1981c7.csv",
+    "total_rows": 4896,
+    "date_min": "2025-09-01",
+    "date_max": "2025-09-30",
+    "versions": [
+      "core-v2.3"
+    ],
+    "signals": {
+      "AVOID": 1870,
+      "WATCH": 1547,
+      "BUY": 1336
+    },
+    "categories": {
+      "other": 3560,
+      "regular_buy": 1295,
+      "balanced_elite": 38,
+      "aggressive_elite": 3
+    },
+    "group_metrics": {
+      "aggressive_elite": {
+        "count": 3,
+        "forward_return_pct_mean": -8.719999999999999,
+        "forward_return_pct_median": -7.72,
+        "excess_return_pct_mean": -8.006666666666666,
+        "excess_return_pct_median": -8.94,
+        "max_upside_pct_mean": 5.84,
+        "max_upside_pct_median": 6.92,
+        "max_drawdown_pct_mean": -9.876666666666667,
+        "max_drawdown_pct_median": -9.23,
+        "win_rate": 0.0,
+        "correct_rate": 0.0
+      },
+      "balanced_elite": {
+        "count": 38,
+        "forward_return_pct_mean": 2.2286842105263154,
+        "forward_return_pct_median": 1.8250000000000002,
+        "excess_return_pct_mean": 1.8084210526315794,
+        "excess_return_pct_median": 0.135,
+        "max_upside_pct_mean": 7.997105263157894,
+        "max_upside_pct_median": 4.88,
+        "max_drawdown_pct_mean": -5.309473684210528,
+        "max_drawdown_pct_median": -4.46,
+        "win_rate": 0.5789473684210527,
+        "correct_rate": 0.5263157894736842
+      },
+      "regular_buy": {
+        "count": 1295,
+        "forward_return_pct_mean": 0.5293204633204633,
+        "forward_return_pct_median": -0.7,
+        "excess_return_pct_mean": 0.3107413127413127,
+        "excess_return_pct_median": -0.95,
+        "max_upside_pct_mean": 7.083783783783784,
+        "max_upside_pct_median": 4.53,
+        "max_drawdown_pct_mean": -4.369335907335907,
+        "max_drawdown_pct_median": -3.48,
+        "win_rate": 0.43706563706563706,
+        "correct_rate": 0.38146718146718145
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2025-10-01-2025-10-30-d8e0dae6.csv",
+    "total_rows": 4896,
+    "date_min": "2025-10-01",
+    "date_max": "2025-10-30",
+    "versions": [
+      "core-v2.3"
+    ],
+    "signals": {
+      "BUY": 2012,
+      "WATCH": 1549,
+      "AVOID": 1208
+    },
+    "categories": {
+      "other": 2884,
+      "regular_buy": 1919,
+      "balanced_elite": 91,
+      "aggressive_elite": 2
+    },
+    "group_metrics": {
+      "aggressive_elite": {
+        "count": 2,
+        "forward_return_pct_mean": 6.96,
+        "forward_return_pct_median": 6.96,
+        "excess_return_pct_mean": 5.755,
+        "excess_return_pct_median": 5.755,
+        "max_upside_pct_mean": 15.545,
+        "max_upside_pct_median": 15.545,
+        "max_drawdown_pct_mean": -0.855,
+        "max_drawdown_pct_median": -0.855,
+        "win_rate": 1.0,
+        "correct_rate": 1.0
+      },
+      "balanced_elite": {
+        "count": 91,
+        "forward_return_pct_mean": 2.6646153846153844,
+        "forward_return_pct_median": 1.04,
+        "excess_return_pct_mean": 0.7260439560439563,
+        "excess_return_pct_median": -0.71,
+        "max_upside_pct_mean": 6.898131868131868,
+        "max_upside_pct_median": 4.17,
+        "max_drawdown_pct_mean": -3.121758241758241,
+        "max_drawdown_pct_median": -3.07,
+        "win_rate": 0.5714285714285714,
+        "correct_rate": 0.5054945054945055
+      },
+      "regular_buy": {
+        "count": 1919,
+        "forward_return_pct_mean": 2.561974986972382,
+        "forward_return_pct_median": 0.83,
+        "excess_return_pct_mean": 0.60558624283481,
+        "excess_return_pct_median": -1.04,
+        "max_upside_pct_mean": 7.412027097446587,
+        "max_upside_pct_median": 4.7,
+        "max_drawdown_pct_mean": -2.9475039082855656,
+        "max_drawdown_pct_median": -2.12,
+        "win_rate": 0.5747785304846275,
+        "correct_rate": 0.48410630536737886
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2025-11-01-2025-11-30-ab0f5cad.csv",
+    "total_rows": 4870,
+    "date_min": "2025-11-02",
+    "date_max": "2025-11-30",
+    "versions": [
+      "core-v2.3"
+    ],
+    "signals": {
+      "WATCH": 1685,
+      "BUY": 1648,
+      "AVOID": 1439
+    },
+    "categories": {
+      "other": 3222,
+      "regular_buy": 1596,
+      "balanced_elite": 48,
+      "aggressive_elite": 4
+    },
+    "group_metrics": {
+      "aggressive_elite": {
+        "count": 4,
+        "forward_return_pct_mean": -6.975,
+        "forward_return_pct_median": -5.84,
+        "excess_return_pct_mean": -7.682499999999999,
+        "excess_return_pct_median": -6.88,
+        "max_upside_pct_mean": 5.9375,
+        "max_upside_pct_median": 4.875,
+        "max_drawdown_pct_mean": -9.855,
+        "max_drawdown_pct_median": -8.295,
+        "win_rate": 0.0,
+        "correct_rate": 0.0
+      },
+      "balanced_elite": {
+        "count": 48,
+        "forward_return_pct_mean": 2.1318750000000004,
+        "forward_return_pct_median": -0.085,
+        "excess_return_pct_mean": 1.868125,
+        "excess_return_pct_median": -0.325,
+        "max_upside_pct_mean": 9.559375000000001,
+        "max_upside_pct_median": 5.86,
+        "max_drawdown_pct_mean": -4.295208333333334,
+        "max_drawdown_pct_median": -3.035,
+        "win_rate": 0.4791666666666667,
+        "correct_rate": 0.3958333333333333
+      },
+      "regular_buy": {
+        "count": 1596,
+        "forward_return_pct_mean": 0.7072869674185464,
+        "forward_return_pct_median": -0.745,
+        "excess_return_pct_mean": 0.3617293233082706,
+        "excess_return_pct_median": -1.065,
+        "max_upside_pct_mean": 6.577775689223058,
+        "max_upside_pct_median": 4.215,
+        "max_drawdown_pct_mean": -4.068057644110276,
+        "max_drawdown_pct_median": -3.505,
+        "win_rate": 0.4298245614035088,
+        "correct_rate": 0.35776942355889724
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2025-12-01-2025-12-31-3b22cecc.csv",
+    "total_rows": 5470,
+    "date_min": "2025-12-01",
+    "date_max": "2025-12-31",
+    "versions": [
+      "core-v2.2"
+    ],
+    "signals": {
+      "WATCH": 2075,
+      "BUY": 1876,
+      "AVOID": 1336
+    },
+    "categories": {
+      "other": 3594,
+      "regular_buy": 1810,
+      "balanced_elite": 66
+    },
+    "group_metrics": {
+      "balanced_elite": {
+        "count": 66,
+        "forward_return_pct_mean": 1.4086363636363635,
+        "forward_return_pct_median": 0.985,
+        "excess_return_pct_mean": -0.013636363636363615,
+        "excess_return_pct_median": -0.575,
+        "max_upside_pct_mean": 6.340757575757576,
+        "max_upside_pct_median": 5.365,
+        "max_drawdown_pct_mean": -3.4107575757575765,
+        "max_drawdown_pct_median": -2.5549999999999997,
+        "win_rate": 0.5757575757575758,
+        "correct_rate": 0.5
+      },
+      "regular_buy": {
+        "count": 1810,
+        "forward_return_pct_mean": 1.3660773480662982,
+        "forward_return_pct_median": 0.0,
+        "excess_return_pct_mean": 0.06840331491712708,
+        "excess_return_pct_median": -1.4,
+        "max_upside_pct_mean": 6.599436464088398,
+        "max_upside_pct_median": 4.23,
+        "max_drawdown_pct_mean": -3.463022099447514,
+        "max_drawdown_pct_median": -2.67,
+        "win_rate": 0.49171270718232046,
+        "correct_rate": 0.41104972375690607
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2026-01-01-2026-01-31-2296224d.csv",
+    "total_rows": 4274,
+    "date_min": "2026-01-04",
+    "date_max": "2026-01-28",
+    "versions": [
+      "core-v2.2"
+    ],
+    "signals": {
+      "WATCH": 1619,
+      "AVOID": 1542,
+      "BUY": 976
+    },
+    "categories": {
+      "other": 3298,
+      "regular_buy": 935,
+      "balanced_elite": 41
+    },
+    "group_metrics": {
+      "balanced_elite": {
+        "count": 41,
+        "forward_return_pct_mean": 1.8585365853658538,
+        "forward_return_pct_median": 2.14,
+        "excess_return_pct_mean": 2.6399999999999997,
+        "excess_return_pct_median": 2.38,
+        "max_upside_pct_mean": 6.183902439024391,
+        "max_upside_pct_median": 5.54,
+        "max_drawdown_pct_mean": -4.175609756097561,
+        "max_drawdown_pct_median": -3.76,
+        "win_rate": 0.6585365853658537,
+        "correct_rate": 0.5365853658536586
+      },
+      "regular_buy": {
+        "count": 935,
+        "forward_return_pct_mean": -0.5367058823529411,
+        "forward_return_pct_median": -1.2,
+        "excess_return_pct_mean": 0.3897005347593583,
+        "excess_return_pct_median": -0.35,
+        "max_upside_pct_mean": 5.488973262032086,
+        "max_upside_pct_median": 3.76,
+        "max_drawdown_pct_mean": -5.3683957219251335,
+        "max_drawdown_pct_median": -4.4,
+        "win_rate": 0.40641711229946526,
+        "correct_rate": 0.34545454545454546
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2026-02-01-2026-02-28-e621c499.csv",
+    "total_rows": 4753,
+    "date_min": "2026-02-01",
+    "date_max": "2026-02-26",
+    "versions": [
+      "core-v2.2"
+    ],
+    "signals": {
+      "AVOID": 1763,
+      "WATCH": 1611,
+      "BUY": 1232
+    },
+    "categories": {
+      "other": 3521,
+      "regular_buy": 1177,
+      "balanced_elite": 55
+    },
+    "group_metrics": {
+      "balanced_elite": {
+        "count": 55,
+        "forward_return_pct_mean": 2.427636363636364,
+        "forward_return_pct_median": 0.18,
+        "excess_return_pct_mean": 1.8934545454545455,
+        "excess_return_pct_median": 0.18,
+        "max_upside_pct_mean": 7.561999999999999,
+        "max_upside_pct_median": 4.88,
+        "max_drawdown_pct_mean": -4.508545454545454,
+        "max_drawdown_pct_median": -4.16,
+        "win_rate": 0.5272727272727272,
+        "correct_rate": 0.4727272727272727
+      },
+      "regular_buy": {
+        "count": 1177,
+        "forward_return_pct_mean": 0.014638912489379794,
+        "forward_return_pct_median": -1.0,
+        "excess_return_pct_mean": 0.31311809685641456,
+        "excess_return_pct_median": -0.81,
+        "max_upside_pct_mean": 6.028895497026339,
+        "max_upside_pct_median": 3.99,
+        "max_drawdown_pct_mean": -4.962446898895498,
+        "max_drawdown_pct_median": -3.99,
+        "win_rate": 0.42480883602378927,
+        "correct_rate": 0.36618521665250636
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2026-03-01-2026-03-31-64b5048d.csv",
+    "total_rows": 4751,
+    "date_min": "2026-03-01",
+    "date_max": "2026-03-31",
+    "versions": [
+      "core-v2.2"
+    ],
+    "signals": {
+      "AVOID": 2284,
+      "WATCH": 1549,
+      "BUY": 762
+    },
+    "categories": {
+      "other": 3989,
+      "regular_buy": 748,
+      "balanced_elite": 14
+    },
+    "group_metrics": {
+      "balanced_elite": {
+        "count": 14,
+        "forward_return_pct_mean": 6.545714285714285,
+        "forward_return_pct_median": 5.525,
+        "excess_return_pct_mean": 4.8,
+        "excess_return_pct_median": 3.3,
+        "max_upside_pct_mean": 13.012857142857143,
+        "max_upside_pct_median": 10.72,
+        "max_drawdown_pct_mean": -2.047857142857143,
+        "max_drawdown_pct_median": -1.92,
+        "win_rate": 0.8571428571428571,
+        "correct_rate": 0.8571428571428571
+      },
+      "regular_buy": {
+        "count": 748,
+        "forward_return_pct_mean": 0.6140508021390374,
+        "forward_return_pct_median": -0.21000000000000002,
+        "excess_return_pct_mean": -0.25014705882352944,
+        "excess_return_pct_median": -1.0550000000000002,
+        "max_upside_pct_mean": 6.0137566844919785,
+        "max_upside_pct_median": 4.11,
+        "max_drawdown_pct_mean": -4.456991978609626,
+        "max_drawdown_pct_median": -3.645,
+        "win_rate": 0.47459893048128343,
+        "correct_rate": 0.3997326203208556
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2026-03-01-2026-03-31-792b0c38.csv",
+    "total_rows": 4780,
+    "date_min": "2026-03-01",
+    "date_max": "2026-03-31",
+    "versions": [
+      "core-v2.1"
+    ],
+    "signals": {
+      "AVOID": 2284,
+      "WATCH": 1541,
+      "BUY": 770
+    },
+    "categories": {
+      "other": 4010,
+      "regular_buy": 770
+    },
+    "group_metrics": {
+      "regular_buy": {
+        "count": 770,
+        "forward_return_pct_mean": 0.7585324675324677,
+        "forward_return_pct_median": -0.11,
+        "excess_return_pct_mean": -0.128,
+        "excess_return_pct_median": -0.945,
+        "max_upside_pct_mean": 6.187012987012987,
+        "max_upside_pct_median": 4.23,
+        "max_drawdown_pct_mean": -4.401779220779221,
+        "max_drawdown_pct_median": -3.545,
+        "win_rate": 0.4844155844155844,
+        "correct_rate": 0.4116883116883117
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2026-04-01-2026-04-30-8dc769b9.csv",
+    "total_rows": 4744,
+    "date_min": "2026-04-01",
+    "date_max": "2026-04-30",
+    "versions": [
+      "core-v2.2"
+    ],
+    "signals": {
+      "BUY": 1823,
+      "WATCH": 1728,
+      "AVOID": 1057
+    },
+    "categories": {
+      "other": 2921,
+      "regular_buy": 1739,
+      "balanced_elite": 84
+    },
+    "group_metrics": {
+      "balanced_elite": {
+        "count": 84,
+        "forward_return_pct_mean": 2.191190476190476,
+        "forward_return_pct_median": 1.385,
+        "excess_return_pct_mean": -1.3744047619047617,
+        "excess_return_pct_median": -2.325,
+        "max_upside_pct_mean": 6.317261904761905,
+        "max_upside_pct_median": 5.1,
+        "max_drawdown_pct_mean": -2.4958333333333336,
+        "max_drawdown_pct_median": -2.0549999999999997,
+        "win_rate": 0.6071428571428571,
+        "correct_rate": 0.5119047619047619
+      },
+      "regular_buy": {
+        "count": 1739,
+        "forward_return_pct_mean": 3.9090166762507192,
+        "forward_return_pct_median": 1.77,
+        "excess_return_pct_mean": 0.4482978723404256,
+        "excess_return_pct_median": -1.74,
+        "max_upside_pct_mean": 8.642587694077056,
+        "max_upside_pct_median": 5.42,
+        "max_drawdown_pct_mean": -2.5186313973548016,
+        "max_drawdown_pct_median": -1.78,
+        "win_rate": 0.6584243818286372,
+        "correct_rate": 0.5612420931569868
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2026-05-29-2026-06-28-a0c49f94.csv",
+    "total_rows": 4542,
+    "date_min": "2026-06-01",
+    "date_max": "2026-06-28",
+    "versions": [
+      "core-v2.2"
+    ],
+    "signals": {
+      "BUY": 1803,
+      "WATCH": 1713,
+      "AVOID": 926
+    },
+    "categories": {
+      "other": 2739,
+      "regular_buy": 1725,
+      "balanced_elite": 78
+    },
+    "group_metrics": {
+      "balanced_elite": {
+        "count": 78,
+        "forward_return_pct_mean": 2.4825641025641025,
+        "forward_return_pct_median": 0.5549999999999999,
+        "excess_return_pct_mean": 2.385641025641026,
+        "excess_return_pct_median": -0.14,
+        "max_upside_pct_mean": 10.420897435897436,
+        "max_upside_pct_median": 6.824999999999999,
+        "max_drawdown_pct_mean": -4.733717948717948,
+        "max_drawdown_pct_median": -3.9399999999999995,
+        "win_rate": 0.5512820512820513,
+        "correct_rate": 0.48717948717948717
+      },
+      "regular_buy": {
+        "count": 1725,
+        "forward_return_pct_mean": 0.5714567614625653,
+        "forward_return_pct_median": -1.0,
+        "excess_return_pct_mean": 0.13278003482298317,
+        "excess_return_pct_median": -1.48,
+        "max_upside_pct_mean": 6.839471851421939,
+        "max_upside_pct_median": 4.08,
+        "max_drawdown_pct_mean": -4.6881195589088795,
+        "max_drawdown_pct_median": -4.02,
+        "win_rate": 0.416134648868253,
+        "correct_rate": 0.3639001741149158
+      }
+    }
+  },
+  {
+    "filename": "sahmi-engine-replay-2026-06-29-2026-07-29-31b3131a.csv",
+    "total_rows": 5029,
+    "date_min": "2026-06-29",
+    "date_max": "2026-07-29",
+    "versions": [
+      "core-v2.2"
+    ],
+    "signals": {
+      "BUY": 2385,
+      "WATCH": 1592,
+      "AVOID": 960
+    },
+    "categories": {
+      "other": 2644,
+      "regular_buy": 2268,
+      "balanced_elite": 117
+    },
+    "group_metrics": {
+      "balanced_elite": {
+        "count": 117,
+        "forward_return_pct_mean": 3.854897959183673,
+        "forward_return_pct_median": 1.8900000000000001,
+        "excess_return_pct_mean": 0.8127551020408164,
+        "excess_return_pct_median": -1.42,
+        "max_upside_pct_mean": 8.049183673469388,
+        "max_upside_pct_median": 5.965,
+        "max_drawdown_pct_mean": -3.1831632653061224,
+        "max_drawdown_pct_median": -2.7350000000000003,
+        "win_rate": 0.6326530612244898,
+        "correct_rate": 0.5408163265306123
+      },
+      "regular_buy": {
+        "count": 2268,
+        "forward_return_pct_mean": 4.011200850159405,
+        "forward_return_pct_median": 1.62,
+        "excess_return_pct_mean": 0.7873591923485653,
+        "excess_return_pct_median": -1.53,
+        "max_upside_pct_mean": 9.09750265674814,
+        "max_upside_pct_median": 5.76,
+        "max_drawdown_pct_mean": -2.6718384697130717,
+        "max_drawdown_pct_median": -1.95,
+        "win_rate": 0.6370882040382572,
+        "correct_rate": 0.5499468650371945
+      }
+    }
+  }
+]

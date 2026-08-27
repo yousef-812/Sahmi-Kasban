@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
@@ -14,19 +16,285 @@ class StocksScreen extends ConsumerStatefulWidget {
   ConsumerState<StocksScreen> createState() => _StocksScreenState();
 }
 
-class _StocksScreenState extends ConsumerState<StocksScreen> {
+class _StocksScreenState extends ConsumerState<StocksScreen>
+    with SingleTickerProviderStateMixin {
   String _query = '';
-  bool _showFallers = false;
-  bool _showOnlyActive = false;
+  String _selectedSector = 'الجميع';
+  TabController? _tabController;
+  int _currentTabIndex = 0;
+
+  // Custom User Watchlists stored locally: { watchlistName: [ticker1, ticker2] }
+  Map<String, List<String>> _userWatchlists = {
+    'متابعة 1': [],
+  };
+
+  final List<String> _sectors = const [
+    'الجميع',
+    'العقارات',
+    'البنوك',
+    'الخدمات المالية',
+    'الأغذية والمشروبات',
+    'الكيماويات',
+    'موارد أساسية',
+    'الرعاية الصحية',
+    'الاتصالات والتكنولوجيا',
+    'مغاسل وغزل ونسيج',
+    'مواد البناء',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTab = prefs.getInt('last_home_tab_index') ?? 0;
+    final rawWatchlists = prefs.getString('user_watchlists_data');
+
+    if (rawWatchlists != null) {
+      try {
+        final decoded = Map<String, dynamic>.from(jsonDecode(rawWatchlists) as Map);
+        _userWatchlists = decoded.map(
+          (k, v) => MapEntry(k, (v as List).map((e) => e.toString()).toList()),
+        );
+        if (_userWatchlists.isEmpty) {
+          _userWatchlists = {'متابعة 1': []};
+        }
+      } catch (_) {}
+    }
+
+    _initTabController(initialIndex: savedTab);
+  }
+
+  void _initTabController({int initialIndex = 0}) {
+    final totalTabs = 2 + _userWatchlists.length; // 0: All, 1: Sectors, 2+: Custom Watchlists
+    final targetIndex = initialIndex < totalTabs ? initialIndex : 0;
+    
+    _tabController?.dispose();
+    _tabController = TabController(
+      length: totalTabs,
+      vsync: this,
+      initialIndex: targetIndex,
+    );
+    _currentTabIndex = targetIndex;
+
+    _tabController!.addListener(() {
+      if (_tabController!.indexIsChanging || _tabController!.index != _currentTabIndex) {
+        setState(() {
+          _currentTabIndex = _tabController!.index;
+        });
+        _saveTabPreference(_tabController!.index);
+      }
+    });
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _saveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_watchlists_data', jsonEncode(_userWatchlists));
+  }
+
+  Future<void> _saveTabPreference(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_home_tab_index', index);
+  }
+
+  void _createWatchlist() {
+    final textController = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إنشاء قائمة متابعة جديدة'),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'مثال: قائمة التداول اليومي',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = textController.text.trim();
+              if (name.isNotEmpty && !_userWatchlists.containsKey(name)) {
+                setState(() {
+                  _userWatchlists[name] = [];
+                });
+                _saveState();
+                _initTabController(initialIndex: 1 + _userWatchlists.length);
+              }
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('إنشاء'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addStockToWatchlist(String watchlistName, String ticker) {
+    if (_userWatchlists.containsKey(watchlistName)) {
+      if (!_userWatchlists[watchlistName]!.contains(ticker)) {
+        setState(() {
+          _userWatchlists[watchlistName]!.add(ticker);
+        });
+        _saveState();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم إضافة $ticker إلى قائمة "$watchlistName"'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('السهم $ticker موجود بالفعل في قائمة "$watchlistName"'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAddStockPicker(String watchlistName, List<MarketQuote> allQuotes) {
+    String search = '';
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final filtered = allQuotes.where((q) {
+            if (search.isEmpty) return true;
+            return q.ticker.contains(search.toUpperCase()) ||
+                q.description.contains(search);
+          }).toList();
+
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.7,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  'إضافة سهم لقائمة "$watchlistName"',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'بحث برمز السهم أو الاسم...',
+                    isDense: true,
+                  ),
+                  onChanged: (val) => setModalState(() => search = val.trim()),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (ctx, index) {
+                      final item = filtered[index];
+                      final isAdded = _userWatchlists[watchlistName]?.contains(item.ticker) ?? false;
+                      return ListTile(
+                        title: Text(item.ticker, textDirection: TextDirection.ltr),
+                        subtitle: Text(item.description),
+                        trailing: Icon(
+                          isAdded ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                          color: isAdded ? Colors.green : Theme.of(ctx).colorScheme.primary,
+                        ),
+                        onTap: () {
+                          _addStockToWatchlist(watchlistName, item.ticker);
+                          setModalState(() {});
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showLongPressBottomSheet(MarketQuote quote) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'إضافة ${quote.ticker} إلى قوائم المتابعة',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              if (_userWatchlists.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text('لا توجد قوائم متابعة حالية. اضغط + لإضافة قائمة.'),
+                )
+              else
+                ..._userWatchlists.keys.map((name) {
+                  final inList = _userWatchlists[name]?.contains(quote.ticker) ?? false;
+                  return ListTile(
+                    leading: Icon(
+                      inList ? Icons.bookmark_added_rounded : Icons.bookmark_add_outlined,
+                      color: inList ? Colors.green : Theme.of(ctx).colorScheme.primary,
+                    ),
+                    title: Text(name),
+                    trailing: inList
+                        ? const Text('مضاف', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
+                        : const Text('+ إضافة', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      _addStockToWatchlist(name, quote.ticker);
+                    },
+                  );
+                }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(marketQuotesProvider).valueOrNull;
-    final items = _visibleItems(snapshot);
-
-    final header = snapshot == null
-        ? null
-        : QuoteSessionHeader(snapshot: snapshot);
+    final allQuotes = snapshot?.items ?? [];
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -35,9 +303,9 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
       },
       child: Column(
         children: [
-          if (header != null) header,
+          // Search bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               textDirection: TextDirection.ltr,
               textCapitalization: TextCapitalization.characters,
@@ -53,38 +321,40 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
                   setState(() => _query = value.trim().toUpperCase()),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
+
+          // Tab Bar with Add List Button
+          if (_tabController != null)
+            Row(
               children: [
-                FilterChip(
-                  label: const Text('الأكثر هبوطًا'),
-                  selected: _showFallers,
-                  onSelected: (value) => setState(() => _showFallers = value),
+                Expanded(
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    tabs: [
+                      const Tab(text: 'كل الأسهم'),
+                      const Tab(text: 'القطاعات'),
+                      ..._userWatchlists.keys.map((name) => Tab(text: name)),
+                    ],
+                  ),
                 ),
-                FilterChip(
-                  label: const Text('المتداولة فقط'),
-                  selected: _showOnlyActive,
-                  onSelected: (value) =>
-                      setState(() => _showOnlyActive = value),
+                IconButton(
+                  icon: const Icon(Icons.add_rounded),
+                  tooltip: 'إضافة قائمة متابعة',
+                  onPressed: _createWatchlist,
                 ),
               ],
             ),
-          ),
+
           Expanded(
-            child: ref
-                .watch(marketQuotesProvider)
-                .when(
+            child: ref.watch(marketQuotesProvider).when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
                   error: (error, stack) => _ErrorView(
                     error: error,
                     onRetry: () => ref.invalidate(marketQuotesProvider),
                   ),
-                  data: (_) => _buildGrid(context, items),
+                  data: (_) => _buildActiveTabContent(allQuotes),
                 ),
           ),
         ],
@@ -92,39 +362,99 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
     );
   }
 
-  List<MarketQuote> _visibleItems(MarketQuotesSnapshot? snapshot) {
-    if (snapshot == null) {
-      return const [];
-    }
-    final items = snapshot.items
-        .where((quote) {
-          if (_query.isNotEmpty) {
-            final match =
-                quote.ticker.contains(_query) ||
-                quote.description.contains(_query);
-            if (!match) {
-              return false;
-            }
-          }
-          if (_showOnlyActive && quote.currentPrice == null) {
-            return false;
-          }
-          return true;
-        })
-        .toList(growable: false);
-
-    items.sort((a, b) {
-      if (_showFallers) {
-        final aChange = a.changePercent ?? 0;
-        final bChange = b.changePercent ?? 0;
-        return aChange.compareTo(bChange);
+  Widget _buildActiveTabContent(List<MarketQuote> allQuotes) {
+    if (_currentTabIndex == 0) {
+      // Tab 0: All stocks
+      final items = _filterQuotes(allQuotes);
+      return _buildGrid(items);
+    } else if (_currentTabIndex == 1) {
+      // Tab 1: Sectors filter
+      final items = _filterQuotes(allQuotes);
+      return Column(
+        children: [
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _sectors.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (ctx, idx) {
+                final sec = _sectors[idx];
+                final isSelected = sec == _selectedSector;
+                return ChoiceChip(
+                  label: Text(sec),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) setState(() => _selectedSector = sec);
+                  },
+                );
+              },
+            ),
+          ),
+          Expanded(child: _buildGrid(items)),
+        ],
+      );
+    } else {
+      // Tab 2+: User custom watchlists
+      final listIndex = _currentTabIndex - 2;
+      final watchlistNames = _userWatchlists.keys.toList();
+      if (listIndex < 0 || listIndex >= watchlistNames.length) {
+        return _buildGrid([]);
       }
-      return a.ticker.compareTo(b.ticker);
-    });
-    return items;
+
+      final currentListName = watchlistNames[listIndex];
+      final targetTickers = _userWatchlists[currentListName] ?? [];
+      final listQuotes = allQuotes
+          .where((q) => targetTickers.contains(q.ticker))
+          .toList();
+
+      final filtered = _filterQuotes(listQuotes);
+
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  'عدد الأسهم: ${filtered.length}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddStockPicker(currentListName, allQuotes),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('إضافة سهم'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: _buildGrid(filtered)),
+        ],
+      );
+    }
   }
 
-  Widget _buildGrid(BuildContext context, List<MarketQuote> items) {
+  List<MarketQuote> _filterQuotes(List<MarketQuote> quotes) {
+    return quotes.where((quote) {
+      if (_query.isNotEmpty) {
+        final match = quote.ticker.contains(_query) ||
+            quote.description.contains(_query);
+        if (!match) return false;
+      }
+      if (_currentTabIndex == 1 && _selectedSector != 'الجميع') {
+        // Match sector if available or description keyword
+        final matchSector = quote.description.contains(_selectedSector);
+        if (!matchSector) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  Widget _buildGrid(List<MarketQuote> items) {
     if (items.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(24),
@@ -132,7 +462,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
           Icon(Icons.search_off_rounded, size: 48),
           SizedBox(height: 12),
           Text(
-            'لا توجد أسهم مطابقة للبحث الحالي.',
+            'لا توجد أسهم في هذه القائمة.',
             textAlign: TextAlign.center,
           ),
         ],
@@ -152,123 +482,10 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
         return StockQuoteCard(
           quote: quote,
           onTap: () => context.push('/stocks/${quote.ticker}'),
+          onLongPress: () => _showLongPressBottomSheet(quote),
         );
       },
     );
-  }
-}
-
-class QuoteSessionHeader extends StatelessWidget {
-  const QuoteSessionHeader({super.key, required this.snapshot});
-
-  final MarketQuotesSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final open = snapshot.marketOpen;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: open
-              ? [
-                  Theme.of(context).colorScheme.primaryContainer,
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
-                ]
-              : [
-                  Theme.of(context).colorScheme.surfaceContainerHigh,
-                  Theme.of(context).colorScheme.surfaceContainerLow,
-                ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            open
-                ? Icons.show_chart_rounded
-                : Icons.pause_circle_outline_rounded,
-            size: 34,
-            color: open
-                ? Colors.green
-                : Theme.of(context).colorScheme.onSurface,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  open ? 'السوق مفتوح الآن' : 'السوق مغلق',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _subtitle(context, open),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (snapshot.items.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${snapshot.items.length} سهم',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'تحديث كل ${marketQuotesPollInterval.inSeconds} ث',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _subtitle(BuildContext context, bool open) {
-    final next = snapshot.nextSessionOpen;
-    if (next == null) {
-      return open ? 'التداول جارٍ' : 'سيُفتح السوق قريبًا';
-    }
-    if (open) {
-      final now = DateTime.now();
-      final diff = next.difference(now);
-      if (diff.isNegative) {
-        return 'سيغلق السوق في نهاية الجلسة.';
-      }
-      final minutes = diff.inMinutes.remainder(60);
-      final hours = diff.inHours;
-      return 'باقي على إغلاق السوق '
-          '${hours > 0 ? '$hours س ' : ''}$minutes د';
-    }
-    return 'باقي على فتح السوق '
-        '${_untilOpen(next)}';
-  }
-
-  String _untilOpen(DateTime next) {
-    final now = DateTime.now();
-    final diff = next.difference(now);
-    if (diff.isNegative) {
-      return 'قريبًا';
-    }
-    final minutes = diff.inMinutes.remainder(60);
-    final hours = diff.inHours;
-    return '${hours > 0 ? '$hours س ' : ''}$minutes د';
   }
 }
 

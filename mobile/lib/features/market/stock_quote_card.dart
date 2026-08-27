@@ -33,10 +33,16 @@ Color changeColor(BuildContext context, double? value) {
 }
 
 class StockQuoteCard extends StatelessWidget {
-  const StockQuoteCard({super.key, required this.quote, required this.onTap});
+  const StockQuoteCard({
+    super.key,
+    required this.quote,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final MarketQuote quote;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +58,7 @@ class StockQuoteCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(

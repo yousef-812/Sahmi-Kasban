@@ -109,7 +109,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
   }
 }
 
-class _DetailContent extends ConsumerWidget {
+class _DetailContent extends StatefulWidget {
   const _DetailContent({
     required this.quote,
     required this.ticker,
@@ -121,22 +121,29 @@ class _DetailContent extends ConsumerWidget {
   final VoidCallback onOpenFullscreen;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  State<_DetailContent> createState() => _DetailContentState();
+}
+
+class _DetailContentState extends State<_DetailContent> {
+  bool _hideSideToolbar = true;
+
+  @override
+  Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 12),
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _Header(quote: quote),
+          child: _Header(quote: widget.quote),
         ),
         const SizedBox(height: 12),
-        _StatsRow(quote: quote),
+        _StatsRow(quote: widget.quote),
         const SizedBox(height: 8),
-        _AnnualRange(quote: quote),
+        _AnnualRange(quote: widget.quote),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _QuickActions(ticker: ticker, quote: quote),
+          child: _QuickActions(ticker: widget.ticker, quote: widget.quote),
         ),
         const SizedBox(height: 16),
         Padding(
@@ -152,8 +159,16 @@ class _DetailContent extends ConsumerWidget {
                 ),
               ),
               IconButton(
+                tooltip: _hideSideToolbar ? 'إظهار أدوات الرسم' : 'إخفاء أدوات الرسم',
+                onPressed: () => setState(() => _hideSideToolbar = !_hideSideToolbar),
+                icon: Icon(
+                  _hideSideToolbar ? Icons.edit_note_rounded : Icons.edit_off_rounded,
+                ),
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              IconButton(
                 tooltip: 'ملء الشاشة',
-                onPressed: onOpenFullscreen,
+                onPressed: widget.onOpenFullscreen,
                 icon: const Icon(Icons.fullscreen_rounded),
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -161,7 +176,10 @@ class _DetailContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TradingViewWidget(symbol: ticker),
+        TradingViewWidget(
+          symbol: widget.ticker,
+          hideSideToolbar: _hideSideToolbar,
+        ),
         const SizedBox(height: 8),
       ],
     );
@@ -415,11 +433,16 @@ class _QuickActions extends ConsumerWidget {
 }
 
 class TradingViewWidget extends StatefulWidget {
-  const TradingViewWidget({super.key, required this.symbol, this.height = 420});
+  const TradingViewWidget({
+    super.key,
+    required this.symbol,
+    this.height = 420,
+    this.hideSideToolbar = true,
+  });
 
   final String symbol;
   final double height;
-  final bool dark = false;
+  final bool hideSideToolbar;
 
   @override
   State<TradingViewWidget> createState() => _TradingViewWidgetState();
@@ -427,7 +450,7 @@ class TradingViewWidget extends StatefulWidget {
 
 class _TradingViewWidgetState extends State<TradingViewWidget> {
   late final WebViewController _controller;
-  late final String _html;
+  late String _html;
 
   @override
   void initState() {
@@ -440,6 +463,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
 
   String _buildHtml() {
     final symbol = widget.symbol.toUpperCase();
+    final hideTools = widget.hideSideToolbar ? 'true' : 'false';
     return '''
 <!DOCTYPE html>
 <html>
@@ -475,10 +499,11 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     "locale": "ar_AE",
     "toolbar_bg": "#f1f3f6",
     "enable_publishing": false,
-    "hide_side_toolbar": false,
+    "hide_side_toolbar": $hideTools,
     "allow_symbol_change": true,
     "hide_top_toolbar": false,
-    "studies": ["Volume@tv-basicstudies"],
+    "studies": [],
+    "disabled_features": ["create_volume_indicator_by_default"],
     "details": true,
     "hotlist": true,
     "calendar": false,
@@ -497,7 +522,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   @override
   void didUpdateWidget(covariant TradingViewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.symbol != widget.symbol) {
+    if (oldWidget.symbol != widget.symbol || oldWidget.hideSideToolbar != widget.hideSideToolbar) {
       _html = _buildHtml();
       _controller
         ..loadHtmlString(_html)

@@ -40,6 +40,12 @@ class StockAnalysisReport extends StatelessWidget {
           balanceCoins: analysis.balanceCoins,
         ),
         const SizedBox(height: 12),
+        _EngineUpgradesExplanationCard(
+          sector: _text(marketData['sector']) .isNotEmpty 
+              ? _text(marketData['sector']) 
+              : _text(payload['sector']),
+        ),
+        const SizedBox(height: 12),
         _TradePlanCard(tradePlan: tradePlan, risk: risk),
         const SizedBox(height: 12),
         _TechnicalOverviewCard(
@@ -791,4 +797,119 @@ String _formatArabicDate(DateTime value) {
 
 bool _containsLatinOrNumber(String value) {
   return RegExp(r'[A-Za-z0-9]').hasMatch(value);
+}
+
+class _EngineUpgradesExplanationCard extends StatelessWidget {
+  const _EngineUpgradesExplanationCard({required this.sector});
+
+  final String sector;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.stars_rounded, color: Colors.amber, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  'مواصفات المحرك ومؤشرات المؤسسات',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                if (sector.isNotEmpty)
+                  Chip(
+                    avatar: const Icon(Icons.category_outlined, size: 14),
+                    label: Text('القطاع: $sector'),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _FeatureRow(
+              icon: Icons.show_chart_rounded,
+              title: 'مؤشر VWAP المؤسسي',
+              desc: 'حساب متوسط السعر المرجح بحجم التداول لكشف دخول وصانع السوق.',
+            ),
+            const SizedBox(height: 8),
+            _FeatureRow(
+              icon: Icons.shield_rounded,
+              title: 'محرك زخم القطاع (Sector Engine)',
+              desc: 'حماية إشارات الشراء وضمان عدم الدخول في سهم جيد داخل قطاع هابط.',
+            ),
+            const SizedBox(height: 8),
+            _FeatureRow(
+              icon: Icons.auto_graph_rounded,
+              title: 'وقف الخسارة التكيفي (Adaptive ATR)',
+              desc: 'متابعة الأرباح ووقف الخسارة ديناميكياً بحسب نسبة تذبذب السهم.',
+            ),
+            const SizedBox(height: 8),
+            _FeatureRow(
+              icon: Icons.account_balance_wallet_rounded,
+              title: 'حماية التكاليف والانزلاق (0.3% Guard)',
+              desc: 'خصم تلقائي 0.3% لعمولات البورصة والانزلاق السعري لنتائج واقعية 100%.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({
+    required this.icon,
+    required this.title,
+    required this.desc,
+  });
+
+  final IconData icon;
+  final String title;
+  final String desc;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                desc,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

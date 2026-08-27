@@ -463,3 +463,36 @@ def broadcast_admin_notification(
         push_failed=result.push_failed,
         push_skipped=result.push_skipped,
     )
+
+
+@router.post(
+    "/reports/regenerate",
+)
+async def regenerate_daily_report(
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+    provider: AdminMarketProvider,
+    ai_service: AdminAIService,
+):
+    from app.services.daily_reports import generate_daily_top10_report
+
+    try:
+        report = await generate_daily_top10_report(
+            db,
+            provider=provider,
+            ai_service=ai_service,
+            force_regenerate=True,
+        )
+        return {
+            "status": "success",
+            "report_id": str(report.id),
+            "target_session_date": report.target_session_date.isoformat(),
+            "message": "تم إعادة إنشاء تقرير السوق اليومي بنجاح.",
+        }
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"فشل إعادة إنشاء التقرير: {str(exc)}",
+        ) from exc
+

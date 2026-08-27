@@ -1,0 +1,30 @@
+{
+ "2022": {
+  "year": 2022,
+  "market": "+25.17%",
+  "sessions": 287,
+  "winners": 137,
+  "median": "+7.5%"
+ },
+ "2023": {
+  "year": 2023,
+  "market": "+104.87%",
+  "sessions": 287,
+  "winners": 195,
+  "median": "+38.2%"
+ },
+ "2024": {
+  "year": 2024,
+  "market": "+47.33%",
+  "sessions": 287,
+  "winners": 173,
+  "median": "+20.0%"
+ },
+ "2025": {
+  "year": 2025,
+  "market": "+67.64%",
+  "sessions": 287,
+  "winners": 219,
+  "median": "+45.4%"
+ }
+}

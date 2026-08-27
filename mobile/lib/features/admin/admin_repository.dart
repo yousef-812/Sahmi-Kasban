@@ -344,6 +344,17 @@ class AdminRepository {
     }
   }
 
+  Future<Map<String, dynamic>> regenerateDailyReport() async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/reports/regenerate',
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   String _dateOnly(DateTime value) {
     return '${value.year.toString().padLeft(4, '0')}-'
         '${value.month.toString().padLeft(2, '0')}-'

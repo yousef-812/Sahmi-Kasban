@@ -17,7 +17,7 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 7,
+      length: 8,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الإدارة'),
@@ -38,6 +38,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Tab(text: 'الإشعارات'),
               Tab(text: 'التدقيق'),
               Tab(text: 'وظائف إعادة اللعب'),
+              Tab(text: 'إعادة التقرير'),
             ],
           ),
         ),
@@ -50,6 +51,7 @@ class AdminDashboardScreen extends StatelessWidget {
             _BroadcastTab(),
             _AuditTab(),
             _ReplayJobsTab(),
+            _RegenerateReportTab(),
           ],
         ),
       ),
@@ -903,6 +905,105 @@ class _ReplayJobsTabState extends ConsumerState<_ReplayJobsTab> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegenerateReportTab extends ConsumerStatefulWidget {
+  const _RegenerateReportTab();
+
+  @override
+  ConsumerState<_RegenerateReportTab> createState() => _RegenerateReportTabState();
+}
+
+class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
+  bool _loading = false;
+  String? _statusMessage;
+  bool _isSuccess = false;
+
+  Future<void> _regenerate() async {
+    setState(() {
+      _loading = true;
+      _statusMessage = null;
+    });
+
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      final result = await repo.regenerateDailyReport();
+      setState(() {
+        _loading = false;
+        _isSuccess = true;
+        _statusMessage = result['message']?.toString() ?? 'تم إعادة التقرير بنجاح.';
+      });
+    } catch (error) {
+      setState(() {
+        _loading = false;
+        _isSuccess = false;
+        _statusMessage = error is ApiException ? error.message : 'حدث خطأ أثناء تنفيذ الطلب.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            Icons.published_with_changes_rounded,
+            size: 64,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'إعادة إنشاء تقرير اليوم الحقيقي',
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'استخدم هذا الخيار لإعادة تشغيل محرك التقارير فور إدخال تحديثات جديدة على خوارزميات المحرك (VWAP, Sector Momentum, Adaptive ATR).',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          if (_statusMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _isSuccess ? Colors.green.withValues(alpha: 0.1) : theme.colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _statusMessage!,
+                style: TextStyle(
+                  color: _isSuccess ? Colors.green : theme.colorScheme.onErrorContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+          FilledButton.icon(
+            onPressed: _loading ? null : _regenerate,
+            icon: _loading
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.refresh_rounded),
+            label: Text(_loading ? 'جاري إعادة إنشاء التقرير...' : 'تشغيل إعادة التقرير الآن'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
         ],
       ),
     );
