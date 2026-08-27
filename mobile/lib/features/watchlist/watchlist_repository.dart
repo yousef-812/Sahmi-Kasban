@@ -9,30 +9,55 @@ class WatchlistRepository {
   final ApiClient _api;
 
   Future<WatchlistResponse> list() async {
-    final response = await _api.get('/watchlist');
-    return WatchlistResponse.fromJson(response);
+    try {
+      final response = await _api.dio.get<Map<String, dynamic>>('/watchlist');
+      return WatchlistResponse.fromJson(response.data ?? <String, dynamic>{});
+    } on Object catch (e) {
+      throw _api.mapError(e);
+    }
   }
 
   Future<WatchlistItem> add(String ticker) async {
-    final response = await _api.post('/watchlist', body: {'ticker': ticker});
-    return WatchlistItem.fromJson(response);
+    try {
+      final response = await _api.dio.post<Map<String, dynamic>>(
+        '/watchlist',
+        data: {'ticker': ticker},
+      );
+      return WatchlistItem.fromJson(response.data ?? <String, dynamic>{});
+    } on Object catch (e) {
+      throw _api.mapError(e);
+    }
   }
 
   Future<WatchlistResponse> bulkAdd(List<String> tickers) async {
-    final response = await _api.post(
-      '/watchlist/bulk',
-      body: {'tickers': tickers},
-    );
-    return WatchlistResponse.fromJson(response);
+    try {
+      final response = await _api.dio.post<Map<String, dynamic>>(
+        '/watchlist/bulk',
+        data: {'tickers': tickers},
+      );
+      return WatchlistResponse.fromJson(response.data ?? <String, dynamic>{});
+    } on Object catch (e) {
+      throw _api.mapError(e);
+    }
   }
 
   Future<void> remove(String ticker) async {
-    await _api.delete('/watchlist/$ticker');
+    try {
+      await _api.dio.delete<void>('/watchlist/$ticker');
+    } on Object catch (e) {
+      throw _api.mapError(e);
+    }
   }
 
   Future<WatchlistItem> refreshSignal(String ticker) async {
-    final response = await _api.post('/watchlist/$ticker/refresh');
-    return WatchlistItem.fromJson(response);
+    try {
+      final response = await _api.dio.post<Map<String, dynamic>>(
+        '/watchlist/$ticker/refresh',
+      );
+      return WatchlistItem.fromJson(response.data ?? <String, dynamic>{});
+    } on Object catch (e) {
+      throw _api.mapError(e);
+    }
   }
 }
 

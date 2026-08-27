@@ -108,7 +108,7 @@ class WatchlistScreen extends ConsumerWidget {
   }
 
   void _showAddDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => const _AddToWatchlistDialog(),
     );

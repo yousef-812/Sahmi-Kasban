@@ -137,7 +137,7 @@ def test_password_reset_revokes_existing_access_tokens(
 
     reset = client.post(
         "/api/v1/auth/reset-password",
-        json={"token": reset_token, "new_password": NEW_PASSWORD},
+        json={"email": EMAIL, "code": reset_token, "new_password": NEW_PASSWORD},
     )
     assert reset.status_code == 200
 

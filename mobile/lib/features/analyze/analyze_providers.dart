@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
-import '../market/report_providers.dart';
 
 /// Provider للتحليلات الأخيرة — يُستخدم في شاشة التحليل السريع.
 final analysisHistoryProvider =

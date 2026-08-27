@@ -125,4 +125,7 @@ def test_v23_report_disables_unvalidated_public_elite_profiles(
         "conditional_buy_high_quality": 1,
         "conditional_buy": 2,
         "watch": 0,
+        "elite": 0,
+        "elite_balanced": 0,
+        "elite_aggressive": 0,
     }

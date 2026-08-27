@@ -15,7 +15,6 @@ import '../features/bootstrap/splash_screen.dart';
 import '../features/community/community_create_screen.dart';
 import '../features/community/community_detail_screen.dart';
 import '../features/community/my_discussions_screen.dart';
-import '../features/home/dashboard_screen.dart';
 import '../features/market/stock_analysis_screen.dart';
 import '../features/market/stock_comparison_screen.dart';
 import '../features/market/stock_detail_screen.dart';

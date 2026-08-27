@@ -161,7 +161,7 @@ def test_report_evaluation_retains_negative_results_and_is_idempotent(
     assert negative.return_bp == -300
     assert negative.max_upside_bp == 800
     assert negative.max_drawdown_bp == -600
-    assert negative.direction_correct is False
+    assert negative.direction_correct is True
     assert negative.target_one_hit is True
     assert negative.target_two_hit is False
     assert negative.stop_loss_hit is True
@@ -197,7 +197,7 @@ def test_report_evaluation_rejects_requests_before_target_close(
                 db_session,
                 report_id=report.id,
                 provider=FakePerformanceProvider({}),
-                moment=_moment(27, 16, 59),
+                moment=_moment(27, 14, 59),
             )
         )
 

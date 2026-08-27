@@ -389,6 +389,8 @@ def _apply_complete(
     outcome.session_low = session_low
     outcome.session_close = session_close
     outcome.return_bp = return_bp
+    outcome.max_upside_bp = _basis_points(session_high, outcome.price_at_analysis)
+    outcome.max_drawdown_bp = _basis_points(session_low, outcome.price_at_analysis)
     outcome.target_one_hit = _level_hit(
         target_one,
         expected_direction=outcome.expected_direction,

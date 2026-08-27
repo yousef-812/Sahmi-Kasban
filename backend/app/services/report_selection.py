@@ -11,8 +11,8 @@ from app.models import MarketReport, MarketReportItem
 ELITE_SCORE_THRESHOLD = 80.0
 SHORT_HORIZON_SESSIONS = 5
 SELECTION_MODEL = "cross-sectional-top10-v2.5-regime-adaptive"
-AGGRESSIVE_PROFILE_ENABLED = True
-PUBLIC_ELITE_LABEL_ENABLED = True
+AGGRESSIVE_PROFILE_ENABLED = False
+PUBLIC_ELITE_LABEL_ENABLED = False
 
 
 @dataclass(frozen=True, slots=True)

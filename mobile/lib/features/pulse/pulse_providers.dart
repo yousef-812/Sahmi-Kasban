@@ -74,7 +74,7 @@ final top10PreviewProvider = FutureProvider.autoDispose<List<MarketReportItem>>(
     }
     try {
       final report = await repo.getMarketReport(preview.reportId);
-      return report?.items ?? const [];
+      return report.items;
     } catch (_) {
       return const [];
     }

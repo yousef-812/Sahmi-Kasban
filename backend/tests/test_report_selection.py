@@ -121,17 +121,20 @@ def test_report_selection_uses_production_safe_public_labels(
 
     assert (
         enriched.market_summary["selection_model"]
-        == "cross-sectional-top10-v2.3-production-safe"
+        == "cross-sectional-top10-v2.5-regime-adaptive"
     )
     assert enriched.market_summary["opportunity_tiers"] == {
         "conditional_buy_high_quality": 1,
         "conditional_buy": 1,
         "watch": 1,
+        "elite": 0,
+        "elite_balanced": 0,
+        "elite_aggressive": 0,
     }
     assert enriched.market_summary["public_elite_labels_enabled"] is False
     assert enriched.market_summary["aggressive_profile_enabled"] is False
     assert "ليس توصية" in enriched.market_summary["disclaimer"]
-    assert "متوقفة" in enriched.market_summary["selection_notice"]
+    assert "قد لا يعرض التقرير فرصة نخبوية" in enriched.market_summary["selection_notice"]
 
 
 def test_enrich_daily_report_selection_is_idempotent(
@@ -162,11 +165,21 @@ def test_enrich_daily_report_selection_is_idempotent(
     )
     db_session.commit()
 
-    first = enrich_daily_report_selection(db_session, report_id=report.id)
-    first_explanation = first.items[0].payload["explanation"]
+    enrich_daily_report_selection(db_session, report_id=report.id)
+    first_item = (
+        db_session.query(MarketReportItem)
+        .filter(MarketReportItem.report_id == report.id)
+        .first()
+    )
+    first_explanation = first_item.payload["explanation"]
 
-    second = enrich_daily_report_selection(db_session, report_id=report.id)
-    second_explanation = second.items[0].payload["explanation"]
+    enrich_daily_report_selection(db_session, report_id=report.id)
+    second_item = (
+        db_session.query(MarketReportItem)
+        .filter(MarketReportItem.report_id == report.id)
+        .first()
+    )
+    second_explanation = second_item.payload["explanation"]
 
     assert first_explanation == second_explanation
     assert second_explanation.count("الخطة محسوبة لأفق خمس جلسات") == 1

@@ -27,9 +27,10 @@ class BiometricService {
       final canCheck = await _localAuth.canCheckBiometrics;
       if (!canCheck) return BiometricAvailability.noBiometrics;
 
-      final availableBiometrics = await _localAuth.availableBiometrics;
-      if (availableBiometrics.isEmpty)
+      final availableBiometrics = await _localAuth.getAvailableBiometrics();
+      if (availableBiometrics.isEmpty) {
         return BiometricAvailability.noBiometrics;
+      }
 
       return BiometricAvailability.available;
     } on PlatformException catch (e) {
@@ -64,7 +65,7 @@ class BiometricService {
         value: '$accessToken|$refreshToken',
         aOptions: const AndroidOptions(encryptedSharedPreferences: true),
         iOptions: const IOSOptions(
-          accessibility: KeychainAccessibility.firstUnlockThisDevice,
+          accessibility: KeychainAccessibility.first_unlock,
         ),
       );
       await _storage.write(key: _enabledKey, value: 'true');

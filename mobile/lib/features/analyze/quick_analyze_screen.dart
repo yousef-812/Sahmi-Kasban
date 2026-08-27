@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/haptics.dart';
 import '../../core/theme/terminal_theme.dart';
+import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
-import '../market/report_providers.dart';
 import 'analyze_providers.dart';
 
 /// شاشة التحليل السريع — قلب تجربة المتداول.
@@ -638,6 +638,30 @@ class _HistorySkeleton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ErrorMessage extends StatelessWidget {
+  const _ErrorMessage({required this.message, required this.theme});
+
+  final String message;
+  final TerminalThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.bearRed.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.bearRed.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        message,
+        style: theme.monoSmall.copyWith(color: theme.bearRed),
       ),
     );
   }
