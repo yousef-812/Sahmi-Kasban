@@ -69,7 +69,7 @@ class AppObservability {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: ColoredBox(
-        color: const Color(0xFFF7F2EA),
+        color: const Color(0xFF0A0E1A),
         child: Center(
           child: Semantics(
             liveRegion: true,
@@ -79,7 +79,11 @@ class AppObservability {
               child: Text(
                 'حدث خطأ غير متوقع\nحاول فتح الشاشة مرة أخرى.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, height: 1.5),
+                style: TextStyle(
+                  fontSize: 18,
+                  height: 1.5,
+                  color: Color(0xFFE8ECF4),
+                ),
               ),
             ),
           ),

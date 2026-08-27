@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// نظام الألوان والطباعة لهوية "Trading Terminal"
+import '../../app/theme.dart';
+
+/// نظام الألوان والطباعة لهوية "سهمي كسبان" — Trading Terminal.
 /// Dark-first، كثافة معلومات عالية، ألوان نيون للإشارات.
 class TerminalThemeData {
   TerminalThemeData({
@@ -13,6 +15,7 @@ class TerminalThemeData {
     required this.bullGreen,
     required this.bearRed,
     required this.signalGold,
+    required this.signal,
     required this.border,
     required this.titleSmall,
     required this.monoHuge,
@@ -36,6 +39,7 @@ class TerminalThemeData {
   final Color bullGreen; // #00E676
   final Color bearRed; // #FF3D57
   final Color signalGold; // #FFB800
+  final Color signal; // اللون الناصع الافتراضي للعناوين المميزة
 
   // Borders
   final Color border; // #2A3040
@@ -56,28 +60,30 @@ class TerminalTheme extends InheritedWidget {
 
   static TerminalThemeData of(BuildContext context) {
     final widget = context.dependOnInheritedWidgetOfExactType<TerminalTheme>();
-    return widget?.data ?? _defaultTerminalTheme();
+    return widget?.data ?? defaultDark();
   }
 
   @override
   bool updateShouldNotify(TerminalTheme oldWidget) => data != oldWidget.data;
 }
 
-TerminalThemeData _defaultTerminalTheme() {
-  const monoFamily = 'JetBrains Mono';
+/// نسخة "Deep Space" الداكنة (الافتراضية).
+TerminalThemeData defaultDark() {
+  const monoFamily = 'JetBrainsMono';
   const titleFamily = 'Cairo';
 
   return TerminalThemeData(
-    bgBase: const Color(0xFF0A0E1A),
-    bgSurface: const Color(0xFF1C2130),
-    bgElevated: const Color(0xFF252A3A),
-    textPrimary: const Color(0xFFE8ECF4),
-    textSecondary: const Color(0xFF8892A6),
-    textTertiary: const Color(0xFF5A6478),
-    bullGreen: const Color(0xFF00E676),
-    bearRed: const Color(0xFFFF3D57),
-    signalGold: const Color(0xFFFFB800),
-    border: const Color(0xFF2A3040),
+    bgBase: SahmiBrand.deepSpace,
+    bgSurface: SahmiBrand.graphite,
+    bgElevated: SahmiBrand.graphiteHigh,
+    textPrimary: SahmiBrand.iceWhite,
+    textSecondary: SahmiBrand.textSecondary,
+    textTertiary: SahmiBrand.textTertiary,
+    bullGreen: SahmiBrand.neonBull,
+    bearRed: SahmiBrand.alertRed,
+    signalGold: SahmiBrand.signalGold,
+    signal: SahmiBrand.signalGold,
+    border: SahmiBrand.glassBorder,
     titleSmall: const TextStyle(
       fontFamily: titleFamily,
       fontSize: 15,
@@ -114,6 +120,69 @@ TerminalThemeData _defaultTerminalTheme() {
       fontWeight: FontWeight.w500,
       letterSpacing: 0.5,
       fontFeatures: [FontFeature.tabularFigures()],
+    ),
+  );
+}
+
+/// نسخة فاتحة مشتقة من نفس الهوية.
+TerminalThemeData defaultLight() {
+  const monoFamily = 'JetBrainsMono';
+  const titleFamily = 'Cairo';
+
+  return TerminalThemeData(
+    bgBase: SahmiBrand.lightScaffold,
+    bgSurface: SahmiBrand.lightSurface,
+    bgElevated: const Color(0xFFF0F2F6),
+    textPrimary: SahmiBrand.lightText,
+    textSecondary: const Color(0xFF4A5160),
+    textTertiary: const Color(0xFF8892A6),
+    bullGreen: SahmiBrand.lightPrimary,
+    bearRed: SahmiBrand.alertRed,
+    signalGold: const Color(0xFFB8860B),
+    signal: const Color(0xFFB8860B),
+    border: const Color(0xFFDDE1E9),
+    titleSmall: const TextStyle(
+      fontFamily: titleFamily,
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.3,
+      color: SahmiBrand.lightText,
+    ),
+    monoHuge: const TextStyle(
+      fontFamily: monoFamily,
+      fontSize: 32,
+      fontWeight: FontWeight.w900,
+      fontFeatures: [FontFeature.tabularFigures()],
+      color: SahmiBrand.lightText,
+    ),
+    monoLarge: const TextStyle(
+      fontFamily: monoFamily,
+      fontSize: 24,
+      fontWeight: FontWeight.w800,
+      fontFeatures: [FontFeature.tabularFigures()],
+      color: SahmiBrand.lightText,
+    ),
+    monoMedium: const TextStyle(
+      fontFamily: monoFamily,
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      fontFeatures: [FontFeature.tabularFigures()],
+      color: SahmiBrand.lightText,
+    ),
+    monoSmall: const TextStyle(
+      fontFamily: monoFamily,
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      fontFeatures: [FontFeature.tabularFigures()],
+      color: SahmiBrand.lightText,
+    ),
+    monoTiny: const TextStyle(
+      fontFamily: monoFamily,
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.5,
+      fontFeatures: [FontFeature.tabularFigures()],
+      color: SahmiBrand.lightText,
     ),
   );
 }

@@ -71,23 +71,23 @@ class TerminalShell extends StatelessWidget {
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.bolt_rounded),
-              label: 'PULSE',
+              label: 'النبض',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.analytics_rounded),
-              label: 'ANALYZE',
+              label: 'تحليل',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.remove_red_eye_rounded),
-              label: 'WATCH',
+              label: 'متابعة',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.insert_chart_outlined_rounded),
-              label: 'REPORTS',
+              label: 'التقارير',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),
-              label: 'ME',
+              label: 'أنا',
             ),
           ],
         ),

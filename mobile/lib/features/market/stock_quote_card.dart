@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
 import '../../domain/models.dart';
 
 String formatPrice(double? value) {
@@ -24,10 +25,10 @@ Color changeColor(BuildContext context, double? value) {
     return Theme.of(context).colorScheme.onSurfaceVariant;
   }
   if (value > 0) {
-    return Colors.green;
+    return SahmiBrand.neonBull;
   }
   if (value < 0) {
-    return Colors.redAccent;
+    return SahmiBrand.alertRed;
   }
   return Theme.of(context).colorScheme.onSurfaceVariant;
 }
@@ -43,9 +44,9 @@ class StockQuoteCard extends StatelessWidget {
     final isUp = (quote.changePercent ?? 0) > 0;
     final isDown = (quote.changePercent ?? 0) < 0;
     final accent = isUp
-        ? Colors.green
+        ? SahmiBrand.neonBull
         : isDown
-        ? Colors.redAccent
+        ? SahmiBrand.alertRed
         : Theme.of(context).colorScheme.primary;
 
     return Card(

@@ -32,7 +32,7 @@ class TerminalHaptics {
   static Future<void> success() async {
     try {
       await HapticFeedback.lightImpact();
-      await Future.delayed(const Duration(milliseconds: 80));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
       await HapticFeedback.mediumImpact();
     } catch (_) {}
   }
@@ -41,7 +41,7 @@ class TerminalHaptics {
   static Future<void> error() async {
     try {
       await HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       await HapticFeedback.heavyImpact();
     } catch (_) {}
   }

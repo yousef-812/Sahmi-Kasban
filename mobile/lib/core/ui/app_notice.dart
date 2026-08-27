@@ -210,14 +210,23 @@ class _AppNoticeBannerState extends State<_AppNoticeBanner>
 }
 
 _NoticePalette _palette(ColorScheme scheme, AppNoticeTone tone) {
+  final dark = scheme.brightness == Brightness.dark;
   return switch (tone) {
-    AppNoticeTone.success => const _NoticePalette(
-      background: Color(0xFFF0F9F4),
-      border: Color(0xFFB8DFC9),
-      iconBackground: Color(0xFFD8F0E2),
-      foreground: Color(0xFF145A43),
-      icon: Icons.check_circle_rounded,
-    ),
+    AppNoticeTone.success => dark
+        ? _NoticePalette(
+            background: const Color(0xFF10301F),
+            border: const Color(0xFF00E676).withValues(alpha: 0.35),
+            iconBackground: const Color(0xFF00E676).withValues(alpha: 0.14),
+            foreground: const Color(0xFF7CF0B5),
+            icon: Icons.check_circle_rounded,
+          )
+        : const _NoticePalette(
+            background: Color(0xFFF0F9F4),
+            border: Color(0xFFB8DFC9),
+            iconBackground: Color(0xFFD8F0E2),
+            foreground: Color(0xFF145A43),
+            icon: Icons.check_circle_rounded,
+          ),
     AppNoticeTone.error => _NoticePalette(
       background: scheme.errorContainer,
       border: scheme.error.withValues(alpha: 0.28),
@@ -225,13 +234,21 @@ _NoticePalette _palette(ColorScheme scheme, AppNoticeTone tone) {
       foreground: scheme.onErrorContainer,
       icon: Icons.error_rounded,
     ),
-    AppNoticeTone.warning => const _NoticePalette(
-      background: Color(0xFFFFF8E7),
-      border: Color(0xFFF0D391),
-      iconBackground: Color(0xFFFFE8B1),
-      foreground: Color(0xFF6B4B00),
-      icon: Icons.warning_amber_rounded,
-    ),
+    AppNoticeTone.warning => dark
+        ? _NoticePalette(
+            background: const Color(0xFF332A10),
+            border: const Color(0xFFFFB800).withValues(alpha: 0.35),
+            iconBackground: const Color(0xFFFFB800).withValues(alpha: 0.14),
+            foreground: const Color(0xFFFFDCA6),
+            icon: Icons.warning_amber_rounded,
+          )
+        : const _NoticePalette(
+            background: Color(0xFFFFF8E7),
+            border: Color(0xFFF0D391),
+            iconBackground: Color(0xFFFFE8B1),
+            foreground: Color(0xFF6B4B00),
+            icon: Icons.warning_amber_rounded,
+          ),
     AppNoticeTone.info => _NoticePalette(
       background: scheme.surfaceContainerHighest,
       border: scheme.outlineVariant,

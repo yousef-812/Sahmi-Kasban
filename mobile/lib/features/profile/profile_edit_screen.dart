@@ -6,6 +6,7 @@ import '../../core/avatar_assets.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/theme/theme_controller.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
@@ -254,6 +255,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              const _ThemeModeCard(),
+              const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: _saving ? null : _save,
                 icon: _saving
@@ -313,6 +316,131 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeModeCard extends ConsumerWidget {
+  const _ThemeModeCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeControllerProvider);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.dark_mode_outlined),
+                const SizedBox(width: 10),
+                Text(
+                  'المظهر',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text('اختر مظهر التطبيق (دارك أو فاتح).'),
+            const SizedBox(height: 12),
+            _ModeOption(
+              value: AppThemeMode.system,
+              selected: mode,
+              icon: Icons.brightness_auto_rounded,
+              label: 'تلقائي (حسب النظام)',
+              onSelected: (value) =>
+                  ref.read(themeControllerProvider.notifier).setMode(value),
+            ),
+            const SizedBox(height: 8),
+            _ModeOption(
+              value: AppThemeMode.dark,
+              selected: mode,
+              icon: Icons.dark_mode_rounded,
+              label: 'دارك',
+              onSelected: (value) =>
+                  ref.read(themeControllerProvider.notifier).setMode(value),
+            ),
+            const SizedBox(height: 8),
+            _ModeOption(
+              value: AppThemeMode.light,
+              selected: mode,
+              icon: Icons.light_mode_rounded,
+              label: 'فاتح',
+              onSelected: (value) =>
+                  ref.read(themeControllerProvider.notifier).setMode(value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeOption extends StatelessWidget {
+  const _ModeOption({
+    required this.value,
+    required this.selected,
+    required this.label,
+    required this.icon,
+    required this.onSelected,
+  });
+
+  final AppThemeMode value;
+  final AppThemeMode selected;
+  final String label;
+  final IconData icon;
+  final ValueChanged<AppThemeMode> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = value == selected;
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => onSelected(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: isSelected
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+          ],
         ),
       ),
     );

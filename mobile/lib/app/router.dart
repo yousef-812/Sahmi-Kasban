@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -39,6 +39,37 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   void refresh() => notifyListeners();
 }
 
+/// صفحة انتقال سلسة بين شاشات التطبيق لراحة بصرية أفضل.
+/// تجمع بين انزلاق خفيف من اليمين (اتجاه RTL) وبهتان ناعم.
+CustomTransitionPage<void> _sahmiPage({
+  required String childKey,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: ValueKey(childKey),
+    child: child,
+    transitionDuration: const Duration(milliseconds: 260),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.06, 0),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = _RouterRefreshNotifier();
   ref.onDispose(refreshNotifier.dispose);
@@ -58,39 +89,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (context, state) => const SplashScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'splash', child: const SplashScreen()),
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'onboarding', child: const OnboardingScreen()),
       ),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'login', child: const LoginScreen()),
+      ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => const RegisterScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'register', child: const RegisterScreen()),
       ),
       GoRoute(
         path: '/verify-email',
-        builder: (context, state) =>
-            VerifyEmailScreen(email: state.uri.queryParameters['email']),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'verify', child: VerifyEmailScreen(email: state.uri.queryParameters['email'])),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'forgot', child: const ForgotPasswordScreen()),
       ),
       GoRoute(
         path: '/reset-password',
-        builder: (context, state) =>
-            ResetPasswordScreen(email: state.uri.queryParameters['email']),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'reset', child: ResetPasswordScreen(email: state.uri.queryParameters['email'])),
       ),
       GoRoute(
         path: '/biometric-prompt',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final extra = state.extra as Map<String, String>? ?? {};
-          return BiometricPromptScreen(
-            accessToken: extra['accessToken'] ?? '',
-            refreshToken: extra['refreshToken'] ?? '',
-            onComplete: () => context.go('/pulse'),
+          return _sahmiPage(
+            childKey: 'biometric',
+            child: BiometricPromptScreen(
+              accessToken: extra['accessToken'] ?? '',
+              refreshToken: extra['refreshToken'] ?? '',
+              onComplete: () => context.go('/pulse'),
+            ),
           );
         },
       ),
@@ -117,89 +159,124 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/stocks',
-        builder: (context, state) => const StocksScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'stocks', child: const StocksScreen()),
       ),
       GoRoute(
         path: '/stocks/:ticker',
-        builder: (context, state) =>
-            StockDetailScreen(ticker: state.pathParameters['ticker']!),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'stocks-${state.pathParameters['ticker']}',
+          child: StockDetailScreen(ticker: state.pathParameters['ticker']!),
+        ),
       ),
       GoRoute(
         path: '/reports',
-        builder: (context, state) => const ReportsScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'reports', child: const ReportsScreen()),
       ),
       GoRoute(
         path: '/market/compare',
-        builder: (context, state) => const StockComparisonScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'compare', child: const StockComparisonScreen()),
       ),
       GoRoute(
         path: '/market/analyze/:ticker',
-        builder: (context, state) =>
-            StockAnalysisScreen(ticker: state.pathParameters['ticker']!),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'analyze-${state.pathParameters['ticker']}',
+          child: StockAnalysisScreen(ticker: state.pathParameters['ticker']!),
+        ),
       ),
       GoRoute(
         path: '/profile/edit',
-        builder: (context, state) => const ProfileEditScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'profile', child: const ProfileEditScreen()),
       ),
       GoRoute(
         path: '/wallet/history',
-        builder: (context, state) => const WalletHistoryScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'wallet', child: const WalletHistoryScreen()),
       ),
       GoRoute(
         path: '/monetization',
-        builder: (context, state) => const MonetizationPage(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'monetization', child: const MonetizationPage()),
       ),
       GoRoute(
         path: '/notifications',
-        builder: (context, state) => const NotificationScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'notifications', child: const NotificationScreen()),
       ),
       GoRoute(
         path: '/performance',
-        builder: (context, state) => const PerformanceScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'performance', child: const PerformanceScreen()),
       ),
       GoRoute(
         path: '/performance/reports/:reportId',
-        builder: (context, state) => PerformanceReportScreen(
-          reportId: state.pathParameters['reportId']!,
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'perf-report-${state.pathParameters['reportId']}',
+          child: PerformanceReportScreen(
+            reportId: state.pathParameters['reportId']!,
+          ),
         ),
       ),
       GoRoute(
         path: '/admin',
-        builder: (context, state) => const AdminDashboardScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'admin', child: const AdminDashboardScreen()),
       ),
       GoRoute(
         path: '/admin/performance',
-        builder: (context, state) => const PerformanceAdminScreen(),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'admin-perf',
+          child: const PerformanceAdminScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/wallet-credit',
-        builder: (context, state) => const AdminWalletCreditScreen(),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'admin-wallet',
+          child: const AdminWalletCreditScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/historical-replays',
-        builder: (context, state) => const HistoricalReplayControlScreen(),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'admin-replays',
+          child: const HistoricalReplayControlScreen(),
+        ),
       ),
       GoRoute(
         path: '/community/new',
-        builder: (context, state) => const CommunityCreateScreen(),
+        pageBuilder: (context, state) =>
+            _sahmiPage(childKey: 'community-new', child: const CommunityCreateScreen()),
       ),
       GoRoute(
         path: '/community/mine',
-        builder: (context, state) => const MyDiscussionsScreen(),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'community-mine',
+          child: const MyDiscussionsScreen(),
+        ),
       ),
       GoRoute(
         path: '/community/:discussionId',
-        builder: (context, state) => CommunityDetailScreen(
-          discussionId: state.pathParameters['discussionId']!,
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'community-${state.pathParameters['discussionId']}',
+          child: CommunityDetailScreen(
+            discussionId: state.pathParameters['discussionId']!,
+          ),
         ),
       ),
       GoRoute(
         path: '/reports/:reportId',
-        builder: (context, state) => MarketReportScreen(
-          reportId: state.pathParameters['reportId']!,
-          preview: state.extra is MarketReportPreview
-              ? state.extra! as MarketReportPreview
-              : null,
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'report-${state.pathParameters['reportId']}',
+          child: MarketReportScreen(
+            reportId: state.pathParameters['reportId']!,
+            preview: state.extra is MarketReportPreview
+                ? state.extra! as MarketReportPreview
+                : null,
+          ),
         ),
       ),
     ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme.dart';
 import '../../core/auth/biometric_service.dart';
 import '../../core/haptics.dart';
 import '../auth/session_controller.dart';
@@ -21,7 +22,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _tryBiometricAutoLogin() async {
-    await Future.delayed(const Duration(milliseconds: 600));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
 
     try {
@@ -47,6 +48,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
+      backgroundColor: SahmiBrand.deepSpace,
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: DecoratedBox(
@@ -54,7 +56,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
-              colors: [Color(0xFF041F18), Color(0xFF07543A), Color(0xFF0B382A)],
+              colors: [
+                Color(0xFF0A0E1A),
+                Color(0xFF141824),
+                Color(0xFF10162B),
+              ],
             ),
           ),
           child: Stack(
@@ -63,12 +69,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               _AmbientCircle(
                 alignment: Alignment.topLeft,
                 size: 260,
-                color: Color(0x1FC9A85C),
+                color: Color(0x3300E676),
               ),
               _AmbientCircle(
                 alignment: Alignment.bottomRight,
                 size: 310,
-                color: Color(0x1F2EB67D),
+                color: Color(0x26FFB800),
               ),
               SafeArea(
                 child: Center(
@@ -83,7 +89,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           'سهمي كسبان',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: SahmiBrand.iceWhite,
                             fontSize: 38,
                             height: 1.15,
                             fontWeight: FontWeight.w900,
@@ -95,7 +101,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           'تحليل أذكى • قرارات أوضح',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFFE8D39A),
+                            color: SahmiBrand.signalGold,
                             fontSize: 16,
                             height: 1.5,
                             fontWeight: FontWeight.w600,
@@ -106,9 +112,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           width: 104,
                           child: LinearProgressIndicator(
                             minHeight: 4,
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(20),
+                            ),
                             backgroundColor: Color(0x33FFFFFF),
-                            color: Color(0xFFD8B867),
+                            color: SahmiBrand.signalGold,
                           ),
                         ),
                       ],
@@ -138,7 +146,7 @@ class _BrandMark extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [Color(0xFFF2D996), Color(0xFFB98B2F)],
+          colors: [Color(0xFF00E676), Color(0xFF0A9D5E)],
         ),
         boxShadow: const [
           BoxShadow(
@@ -155,11 +163,11 @@ class _BrandMark extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return const ColoredBox(
-              color: Color(0xFF07543A),
+              color: SahmiBrand.deepSpace,
               child: Icon(
                 Icons.trending_up_rounded,
                 size: 56,
-                color: Color(0xFFD8B867),
+                color: SahmiBrand.neonBull,
               ),
             );
           },
