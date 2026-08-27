@@ -357,9 +357,9 @@ class StockAnalysisResult {
       cached: json['cached'] as bool? ?? false,
       marketSnapshotCached: json['market_snapshot_cached'] as bool? ?? false,
       chargedPoints: (json['charged_points'] as num?)?.toInt() ?? 0,
-      chargedCoins: (json['charged_coins'] as num?)?.toString() ?? '0.00',
+      chargedCoins: _asCoinsString(json['charged_coins']),
       balancePoints: (json['balance_points'] as num?)?.toInt() ?? 0,
-      balanceCoins: (json['balance_coins'] as num?)?.toString() ?? '0.00',
+      balanceCoins: _asCoinsString(json['balance_coins']),
       dataAsOf: DateTime.parse(json['data_as_of'] as String),
       payload: _map(json['payload']),
       sectorMomentumPct: (json['sector_momentum_pct'] as num?)?.toDouble(),
@@ -622,6 +622,18 @@ double? _asDouble(Object? value) {
     return double.tryParse(value);
   }
   return null;
+}
+
+/// يحوّل قيمة عملات قادمة إمّا كرقم أو كنص إلى نص موحّد.
+/// يتحمل أن تعيد الواجهة الخلفية العملات كأرقام أو كسلاسل.
+String _asCoinsString(Object? value, [String fallback = '0.00']) {
+  if (value is num) {
+    return value.toStringAsFixed(2);
+  }
+  if (value is String) {
+    return value;
+  }
+  return fallback;
 }
 
 Map<String, dynamic> _map(Object? value) {
