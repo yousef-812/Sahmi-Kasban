@@ -53,11 +53,7 @@ class _TerminalSkeletonState extends State<TerminalSkeleton>
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [
-                theme.bgSurface,
-                theme.bgElevated,
-                theme.bgSurface,
-              ],
+              colors: [theme.bgSurface, theme.bgElevated, theme.bgSurface],
               stops: [
                 (progress - 0.3).clamp(0.0, 1.0),
                 progress,
@@ -81,7 +77,11 @@ class QuickAnalyzeSkeleton extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // شريط البحث
-        const TerminalSkeleton(width: double.infinity, height: 56, borderRadius: 12),
+        const TerminalSkeleton(
+          width: double.infinity,
+          height: 56,
+          borderRadius: 12,
+        ),
         const SizedBox(height: 24),
         // عنوان القسم
         const TerminalSkeleton(width: 120, height: 14),
@@ -143,7 +143,11 @@ class PulseSkeleton extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Market Status
-        const TerminalSkeleton(width: double.infinity, height: 120, borderRadius: 12),
+        const TerminalSkeleton(
+          width: double.infinity,
+          height: 120,
+          borderRadius: 12,
+        ),
         const SizedBox(height: 16),
         // Quick Stats
         Row(
@@ -159,10 +163,18 @@ class PulseSkeleton extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         // Last Analysis
-        const TerminalSkeleton(width: double.infinity, height: 80, borderRadius: 12),
+        const TerminalSkeleton(
+          width: double.infinity,
+          height: 80,
+          borderRadius: 12,
+        ),
         const SizedBox(height: 16),
         // Top 10
-        const TerminalSkeleton(width: double.infinity, height: 200, borderRadius: 12),
+        const TerminalSkeleton(
+          width: double.infinity,
+          height: 200,
+          borderRadius: 12,
+        ),
       ],
     );
   }

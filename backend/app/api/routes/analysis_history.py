@@ -46,11 +46,23 @@ async def list_recent_analyses(
     ).all()
 
     items: list[AnalysisHistoryItem] = []
-    for access, analysis in rows:
+    for _access, analysis in rows:
         payload = analysis.payload if isinstance(analysis.payload, dict) else {}
-        analysis_data = payload.get("analysis", {}) if isinstance(payload.get("analysis"), dict) else {}
-        engines = analysis_data.get("engines", {}) if isinstance(analysis_data.get("engines"), dict) else {}
-        tech_details = engines.get("technical", {}).get("details", {}) if isinstance(engines.get("technical"), dict) else {}
+        analysis_data = (
+            payload.get("analysis", {})
+            if isinstance(payload.get("analysis"), dict)
+            else {}
+        )
+        engines = (
+            analysis_data.get("engines", {})
+            if isinstance(analysis_data.get("engines"), dict)
+            else {}
+        )
+        tech_details = (
+            engines.get("technical", {}).get("details", {})
+            if isinstance(engines.get("technical"), dict)
+            else {}
+        )
 
         signal = str(analysis_data.get("signal", "WATCH"))
         score = _safe_float(analysis_data.get("final_score")) or 0.0

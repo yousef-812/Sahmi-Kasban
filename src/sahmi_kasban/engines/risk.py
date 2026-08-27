@@ -40,7 +40,10 @@ class RiskEngine(AnalysisEngine):
 
         if market_regime == "sideways" or market_volatility < 40.0:
             adaptive_atr_multiple = max(1.5, base_atr_multiple - 0.5)
-        elif market_regime in ("speculative_bullish", "risk_off_volatile") or market_volatility > 65.0:
+        elif (
+            market_regime in ("speculative_bullish", "risk_off_volatile")
+            or market_volatility > 65.0
+        ):
             adaptive_atr_multiple = min(3.0, base_atr_multiple + 0.5)
         else:
             adaptive_atr_multiple = base_atr_multiple

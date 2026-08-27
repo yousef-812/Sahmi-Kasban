@@ -47,10 +47,7 @@ class SectorMomentumCard extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Text(
-                        'زخم آخر 5 جلسات',
-                        style: theme.textTheme.bodySmall,
-                      ),
+                      Text('زخم آخر 5 جلسات', style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ),
@@ -120,7 +117,8 @@ enum _SectorState {
     mildBullish => '📈 القطاع إيجابي — يدعم اتجاه السهم',
     neutral => '⚖️ القطاع محايد — لا ضغط إضافي على السهم',
     mildBearish => '⚠️ القطاع تحت ضغط — انتبه لمخاطر القطاع',
-    strongBearish => '🚨 القطاع في هبوط حاد — مخاطر قطاعية عالية، تم تحويل التوصية للمراقبة',
+    strongBearish =>
+      '🚨 القطاع في هبوط حاد — مخاطر قطاعية عالية، تم تحويل التوصية للمراقبة',
   };
 }
 
@@ -173,7 +171,7 @@ class _MomentumBar extends StatelessWidget {
     const range = 10.0;
     final clamped = pct.clamp(-range, range);
     final normalizedPosition = (clamped + range) / (2 * range); // 0 إلى 1
-    
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;

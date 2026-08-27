@@ -10,8 +10,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.market_data.quotes import fetch_single_quote
 from app.market_data.provider import get_market_data_provider
+from app.market_data.quotes import fetch_single_quote
 from app.services.stock_analysis import execute_stock_analysis, get_stock_ai_service
 
 logger = logging.getLogger(__name__)

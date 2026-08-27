@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -5,8 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-import pytest
-from app.schemas.analysis_history import AnalysisHistoryItem, AnalysisHistoryResponse
+from app.schemas.analysis_history import AnalysisHistoryItem, AnalysisHistoryResponse  # noqa: E402
 
 
 def test_analysis_history_schemas() -> None:

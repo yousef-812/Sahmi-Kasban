@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
+
+if TYPE_CHECKING:
+    from app.models.watchlist import WatchlistItem
 
 from sqlalchemy import (
     JSON,

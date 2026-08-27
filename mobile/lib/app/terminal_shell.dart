@@ -13,8 +13,10 @@ class TerminalShell extends StatelessWidget {
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/pulse')) return 0;
-    if (location.startsWith('/stocks') || location.startsWith('/analyze')) return 1;
-    if (location.startsWith('/watch') || location.startsWith('/market/compare')) return 2;
+    if (location.startsWith('/stocks') || location.startsWith('/analyze'))
+      return 1;
+    if (location.startsWith('/watch') || location.startsWith('/market/compare'))
+      return 2;
     if (location.startsWith('/reports')) return 3;
     if (location.startsWith('/me') || location.startsWith('/profile')) return 4;
     return 0;
@@ -58,7 +60,9 @@ class TerminalShell extends StatelessWidget {
           backgroundColor: theme.bgBase,
           selectedItemColor: theme.signalGold,
           unselectedItemColor: theme.textSecondary,
-          selectedLabelStyle: theme.monoTiny.copyWith(fontWeight: FontWeight.w800),
+          selectedLabelStyle: theme.monoTiny.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
           unselectedLabelStyle: theme.monoTiny,
           type: BottomNavigationBarType.fixed,
           items: const [

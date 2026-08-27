@@ -234,10 +234,7 @@ class _MarketStatusSection extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             // شريط التقدم البصري
-            _TrendBar(
-              value: data.egx30ChangePct,
-              theme: theme,
-            ),
+            _TrendBar(value: data.egx30ChangePct, theme: theme),
           ],
         ),
       ),
@@ -412,7 +409,9 @@ class _LastAnalysisCard extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: theme.signalGold.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.signalGold.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: theme.signalGold.withValues(alpha: 0.4),
+                ),
               ),
               child: const Icon(
                 Icons.history_rounded,
@@ -517,7 +516,11 @@ class _Top10PreviewSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.leaderboard_rounded, color: theme.signalGold, size: 20),
+              Icon(
+                Icons.leaderboard_rounded,
+                color: theme.signalGold,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'تقرير اليوم — أفضل 10',

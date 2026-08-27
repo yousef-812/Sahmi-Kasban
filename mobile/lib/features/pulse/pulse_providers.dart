@@ -21,8 +21,9 @@ class MarketPulseData {
   final MarketQuote? mostActive;
 }
 
-final marketPulseProvider =
-    FutureProvider.autoDispose<MarketPulseData>((ref) async {
+final marketPulseProvider = FutureProvider.autoDispose<MarketPulseData>((
+  ref,
+) async {
   final repo = ref.watch(backendRepositoryProvider);
   final snapshot = await repo.getMarketQuotes();
   final quotes = snapshot.items;
@@ -64,17 +65,18 @@ final marketPulseProvider =
   );
 });
 
-final top10PreviewProvider =
-    FutureProvider.autoDispose<List<MarketReportItem>>((ref) async {
-  final repo = ref.watch(backendRepositoryProvider);
-  final preview = await repo.getLatestReportPreview();
-  if (preview == null) {
-    return const [];
-  }
-  try {
-    final report = await repo.getMarketReport(preview.reportId);
-    return report?.items ?? const [];
-  } catch (_) {
-    return const [];
-  }
-});
+final top10PreviewProvider = FutureProvider.autoDispose<List<MarketReportItem>>(
+  (ref) async {
+    final repo = ref.watch(backendRepositoryProvider);
+    final preview = await repo.getLatestReportPreview();
+    if (preview == null) {
+      return const [];
+    }
+    try {
+      final report = await repo.getMarketReport(preview.reportId);
+      return report?.items ?? const [];
+    } catch (_) {
+      return const [];
+    }
+  },
+);

@@ -118,20 +118,44 @@ class OpportunityQualityEngine(AnalysisEngine):
         directional_conflict = bool(context.get("directional_conflict", False))
 
         cfg = self.config
-        elite_min_dir_score = getattr(cfg, "elite_min_directional_score", ELITE_MIN_DIRECTIONAL_SCORE)
+        elite_min_dir_score = getattr(
+            cfg, "elite_min_directional_score", ELITE_MIN_DIRECTIONAL_SCORE
+        )
         elite_min_conf = getattr(cfg, "elite_min_confidence", ELITE_MIN_CONFIDENCE)
-        balanced_max_ret_20d = getattr(cfg, "balanced_max_return_20d_pct", BALANCED_MAX_RETURN_20D_PCT)
+        balanced_max_ret_20d = getattr(
+            cfg, "balanced_max_return_20d_pct", BALANCED_MAX_RETURN_20D_PCT
+        )
         balanced_base_atr = getattr(cfg, "balanced_base_max_atr_pct", BALANCED_BASE_MAX_ATR_PCT)
-        balanced_base_risk = getattr(cfg, "balanced_base_max_total_risk_pct", BALANCED_BASE_MAX_TOTAL_RISK_PCT)
-        aggressive_min_ret_20d = getattr(cfg, "aggressive_min_return_20d_pct", AGGRESSIVE_MIN_RETURN_20D_PCT)
-        aggressive_max_ret_20d = getattr(cfg, "aggressive_max_return_20d_pct", AGGRESSIVE_MAX_RETURN_20D_PCT)
-        aggressive_max_ret_5d = getattr(cfg, "aggressive_max_return_5d_pct", AGGRESSIVE_MAX_RETURN_5D_PCT)
-        aggressive_min_breakout = getattr(cfg, "aggressive_min_breakout_pct", AGGRESSIVE_MIN_BREAKOUT_PCT)
-        aggressive_max_breakout = getattr(cfg, "aggressive_max_breakout_pct", AGGRESSIVE_MAX_BREAKOUT_PCT)
-        aggressive_min_vol_ratio = getattr(cfg, "aggressive_min_volume_ratio", AGGRESSIVE_MIN_VOLUME_RATIO)
-        aggressive_min_turnover = getattr(cfg, "aggressive_min_turnover_egp", AGGRESSIVE_MIN_TURNOVER_EGP)
-        elite_max_zero_vol = getattr(cfg, "elite_max_zero_volume_ratio", ELITE_MAX_ZERO_VOLUME_RATIO)
-        aggressive_max_zero_vol = getattr(cfg, "aggressive_max_zero_volume_ratio", AGGRESSIVE_MAX_ZERO_VOLUME_RATIO)
+        balanced_base_risk = getattr(
+            cfg, "balanced_base_max_total_risk_pct", BALANCED_BASE_MAX_TOTAL_RISK_PCT
+        )
+        aggressive_min_ret_20d = getattr(
+            cfg, "aggressive_min_return_20d_pct", AGGRESSIVE_MIN_RETURN_20D_PCT
+        )
+        aggressive_max_ret_20d = getattr(
+            cfg, "aggressive_max_return_20d_pct", AGGRESSIVE_MAX_RETURN_20D_PCT
+        )
+        aggressive_max_ret_5d = getattr(
+            cfg, "aggressive_max_return_5d_pct", AGGRESSIVE_MAX_RETURN_5D_PCT
+        )
+        aggressive_min_breakout = getattr(
+            cfg, "aggressive_min_breakout_pct", AGGRESSIVE_MIN_BREAKOUT_PCT
+        )
+        aggressive_max_breakout = getattr(
+            cfg, "aggressive_max_breakout_pct", AGGRESSIVE_MAX_BREAKOUT_PCT
+        )
+        aggressive_min_vol_ratio = getattr(
+            cfg, "aggressive_min_volume_ratio", AGGRESSIVE_MIN_VOLUME_RATIO
+        )
+        aggressive_min_turnover = getattr(
+            cfg, "aggressive_min_turnover_egp", AGGRESSIVE_MIN_TURNOVER_EGP
+        )
+        elite_max_zero_vol = getattr(
+            cfg, "elite_max_zero_volume_ratio", ELITE_MAX_ZERO_VOLUME_RATIO
+        )
+        aggressive_max_zero_vol = getattr(
+            cfg, "aggressive_max_zero_volume_ratio", AGGRESSIVE_MAX_ZERO_VOLUME_RATIO
+        )
 
         liquidity_tier = _liquidity_tier(average_turnover_egp)
         limits = _adaptive_limits(

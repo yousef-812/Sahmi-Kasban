@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from sahmi_kasban.backtesting import walk_forward_backtest
 from sahmi_kasban.engines.smc import SMCEngine
@@ -104,8 +103,8 @@ def test_smc_order_block_requires_breakout_and_volume() -> None:
     ]
     # Candle 20: bearish small body (0.1 <= 0.2 body median) (the potential order block)
     rows.append({"open": 10.0, "high": 10.1, "low": 9.8, "close": 9.9, "volume": 100_000.0})
-    
-    # Candle 21 scenario A: displacement green (body 0.3 >= 0.2 * 1.5), but DOES NOT close above previous high 10.1 (no breakout: close 10.0 <= 10.1)
+
+    # Scenario A: displacement green, but DOES NOT close above previous high 10.1
     rows_no_breakout = list(rows)
     rows_no_breakout.append(
         {"open": 9.7, "high": 10.1, "low": 9.6, "close": 10.0, "volume": 300_000.0}
@@ -113,7 +112,7 @@ def test_smc_order_block_requires_breakout_and_volume() -> None:
     res_no_breakout = SMCEngine(AnalysisConfig()).analyze(pd.DataFrame(rows_no_breakout), {})
     assert len(res_no_breakout.details["bullish_order_blocks"]) == 0
 
-    # Candle 21 scenario B: green, closes ABOVE previous high (10.4 > 10.1) but LOW volume (50k < 100k avg)
+    # Scenario B: green, closes ABOVE previous high (10.4 > 10.1) but LOW volume (50k < 100k avg)
     rows_low_vol = list(rows)
     rows_low_vol.append(
         {"open": 9.8, "high": 10.5, "low": 9.7, "close": 10.4, "volume": 50_000.0}
@@ -121,7 +120,7 @@ def test_smc_order_block_requires_breakout_and_volume() -> None:
     res_low_vol = SMCEngine(AnalysisConfig()).analyze(pd.DataFrame(rows_low_vol), {})
     assert len(res_low_vol.details["bullish_order_blocks"]) == 0
 
-    # Candle 21 scenario C: green, closes ABOVE previous high (10.4 > 10.1) AND volume >= average (300k > 100k)
+    # Scenario C: green, closes ABOVE previous high (10.4 > 10.1) AND volume >= average
     rows_valid = list(rows)
     rows_valid.append(
         {"open": 9.8, "high": 10.5, "low": 9.7, "close": 10.4, "volume": 300_000.0}
@@ -213,7 +212,7 @@ def test_sector_momentum_engine_and_gate() -> None:
         "COMI",
         candles,
     )
-    # If sector momentum is strongly bearish (-4.0), score < 40.0, any BUY signal downgrades to WATCH
+    # If sector momentum is strongly bearish (-4.0), BUY signal downgrades to WATCH
     if report_bearish_sector.signal == "BUY":
         # Force context with bearish sector
         context = {"sector_momentum_5d_pct": -4.0}
@@ -232,10 +231,12 @@ def test_adaptive_atr_trailing_stop_in_risk_engine() -> None:
     candles = _generate_synthetic_candles(60)
 
     # Sideways market -> ATR multiple narrows (1.5)
-    res_sideways = risk_engine.analyze(candles, {"market_regime": "sideways", "annualized_volatility": 30.0})
+    ctx_sideways = {"market_regime": "sideways", "annualized_volatility": 30.0}
+    res_sideways = risk_engine.analyze(candles, ctx_sideways)
     assert res_sideways.details["adaptive_atr_multiple"] == 1.5
     assert res_sideways.details["model_version"] == "risk-plan-v2.4-adaptive-atr"
 
     # Speculative bullish / volatile market -> ATR multiple expands (2.5)
-    res_volatile = risk_engine.analyze(candles, {"market_regime": "speculative_bullish", "annualized_volatility": 70.0})
+    ctx_volatile = {"market_regime": "speculative_bullish", "annualized_volatility": 70.0}
+    res_volatile = risk_engine.analyze(candles, ctx_volatile)
     assert res_volatile.details["adaptive_atr_multiple"] == 2.5

@@ -23,38 +23,34 @@ class TerminalThemeData {
   });
 
   // Backgrounds
-  final Color bgBase;       // #0A0E1A
-  final Color bgSurface;    // #1C2130
-  final Color bgElevated;   // #252A3A
+  final Color bgBase; // #0A0E1A
+  final Color bgSurface; // #1C2130
+  final Color bgElevated; // #252A3A
 
   // Text
-  final Color textPrimary;   // #E8ECF4
+  final Color textPrimary; // #E8ECF4
   final Color textSecondary; // #8892A6
-  final Color textTertiary;  // #5A6478
+  final Color textTertiary; // #5A6478
 
   // Signals
-  final Color bullGreen;    // #00E676
-  final Color bearRed;      // #FF3D57
-  final Color signalGold;   // #FFB800
+  final Color bullGreen; // #00E676
+  final Color bearRed; // #FF3D57
+  final Color signalGold; // #FFB800
 
   // Borders
-  final Color border;       // #2A3040
+  final Color border; // #2A3040
 
   // Typography
   final TextStyle titleSmall;
-  final TextStyle monoHuge;    // 32px للأرقام الكبيرة
-  final TextStyle monoLarge;   // 24px
-  final TextStyle monoMedium;  // 16px
-  final TextStyle monoSmall;   // 13px
-  final TextStyle monoTiny;    // 11px
+  final TextStyle monoHuge; // 32px للأرقام الكبيرة
+  final TextStyle monoLarge; // 24px
+  final TextStyle monoMedium; // 16px
+  final TextStyle monoSmall; // 13px
+  final TextStyle monoTiny; // 11px
 }
 
 class TerminalTheme extends InheritedWidget {
-  const TerminalTheme({
-    required super.child,
-    required this.data,
-    super.key,
-  });
+  const TerminalTheme({required super.child, required this.data, super.key});
 
   final TerminalThemeData data;
 

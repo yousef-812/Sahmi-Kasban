@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
+from typing import Any
 
 from sahmi_kasban.models import EngineResult, Signal
 
@@ -153,10 +154,11 @@ def score_to_signal(
     risk_score: float,
     config: Any | None = None,
 ) -> Signal:
-    buy_score = getattr(config, "signal_buy_score_threshold", 67.0) if config is not None else 67.0
-    buy_risk = getattr(config, "signal_buy_risk_threshold", 50.0) if config is not None else 50.0
-    avoid_score = getattr(config, "signal_avoid_score_threshold", 42.0) if config is not None else 42.0
-    avoid_risk = getattr(config, "signal_avoid_risk_threshold", 35.0) if config is not None else 35.0
+    cfg = config
+    buy_score = getattr(cfg, "signal_buy_score_threshold", 67.0) if cfg is not None else 67.0
+    buy_risk = getattr(cfg, "signal_buy_risk_threshold", 50.0) if cfg is not None else 50.0
+    avoid_score = getattr(cfg, "signal_avoid_score_threshold", 42.0) if cfg is not None else 42.0
+    avoid_risk = getattr(cfg, "signal_avoid_risk_threshold", 35.0) if cfg is not None else 35.0
 
     if not qualified or risk_score < avoid_risk or score < avoid_score:
         return "AVOID"

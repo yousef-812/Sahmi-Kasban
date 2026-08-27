@@ -78,12 +78,12 @@ async def add_to_watchlist(
     db.add(item)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"{ticker} is already in your watchlist",
-        )
+        ) from exc
 
     db.refresh(item)
     return WatchlistItemOut.model_validate(item)
@@ -193,8 +193,11 @@ async def refresh_signal(
         db.refresh(item)
     except Exception as exc:
         logger.warning("Failed to refresh watchlist signal for %s: %s", normalized, exc)
+        svc_unavail = getattr(
+            status, "HTTP_533_SERVICE_UNAVAILABLE", status.HTTP_503_SERVICE_UNAVAILABLE
+        )
         raise HTTPException(
-            status_code=status.HTTP_533_SERVICE_UNAVAILABLE if hasattr(status, "HTTP_533") else status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=svc_unavail,
             detail="Market data temporarily unavailable",
         ) from exc
 

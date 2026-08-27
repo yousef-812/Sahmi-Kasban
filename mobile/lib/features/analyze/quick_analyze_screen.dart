@@ -149,7 +149,11 @@ class _QuickAnalyzeScreenState extends ConsumerState<QuickAnalyzeScreen> {
           ],
 
           // التحليلات الأخيرة
-          _SectionHeader(title: 'آخر التحليلات', theme: theme, action: 'عرض الكل'),
+          _SectionHeader(
+            title: 'آخر التحليلات',
+            theme: theme,
+            action: 'عرض الكل',
+          ),
           const SizedBox(height: 8),
           historyAsync.when(
             data: (response) => response.items.isEmpty
@@ -166,10 +170,8 @@ class _QuickAnalyzeScreenState extends ConsumerState<QuickAnalyzeScreen> {
                         .toList(),
                   ),
             loading: () => const _HistorySkeleton(),
-            error: (_, __) => _ErrorMessage(
-              message: 'تعذر تحميل السجل',
-              theme: theme,
-            ),
+            error: (_, __) =>
+                _ErrorMessage(message: 'تعذر تحميل السجل', theme: theme),
           ),
           const SizedBox(height: 16),
 
@@ -218,7 +220,10 @@ class _SearchBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.bgSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.signalGold.withValues(alpha: 0.4), width: 1.5),
+        border: Border.all(
+          color: theme.signalGold.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: theme.signalGold.withValues(alpha: 0.1),
@@ -258,7 +263,11 @@ class _SearchBar extends StatelessWidget {
                 controller.clear();
                 onChanged('');
               },
-              icon: Icon(Icons.close_rounded, color: theme.textSecondary, size: 20),
+              icon: Icon(
+                Icons.close_rounded,
+                color: theme.textSecondary,
+                size: 20,
+              ),
               visualDensity: VisualDensity.compact,
             ),
           const SizedBox(width: 8),
@@ -328,7 +337,9 @@ class _InstrumentTile extends StatelessWidget {
                     if (instrument.description.isNotEmpty)
                       Text(
                         instrument.description,
-                        style: theme.monoTiny.copyWith(color: theme.textSecondary),
+                        style: theme.monoTiny.copyWith(
+                          color: theme.textSecondary,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -429,7 +440,10 @@ class _RecentAnalysisTile extends StatelessWidget {
               ),
               // شارة الإشارة
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: signalColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -506,11 +520,7 @@ class _PopularTickerChip extends StatelessWidget {
 
 /// عنوان قسم
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.theme,
-    this.action,
-  });
+  const _SectionHeader({required this.title, required this.theme, this.action});
 
   final String title;
   final TerminalThemeData theme;

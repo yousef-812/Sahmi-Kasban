@@ -46,14 +46,20 @@ class WatchlistScreen extends ConsumerWidget {
       ),
       body: watchlistAsync.when(
         data: (response) => response.items.isEmpty
-            ? _EmptyState(theme: theme, onAdd: () => _showAddDialog(context, ref))
+            ? _EmptyState(
+                theme: theme,
+                onAdd: () => _showAddDialog(context, ref),
+              )
             : RefreshIndicator(
                 color: theme.signalGold,
                 onRefresh: () async {
                   await ref.read(watchlistProvider.notifier).refreshAll();
                 },
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   itemCount: response.items.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
@@ -62,8 +68,12 @@ class WatchlistScreen extends ConsumerWidget {
                       item: item,
                       rank: index + 1,
                       onTap: () => context.push('/stocks/${item.ticker}'),
-                      onRefresh: () => ref.read(watchlistProvider.notifier).refreshSignal(item.ticker),
-                      onRemove: () => ref.read(watchlistProvider.notifier).remove(item.ticker),
+                      onRefresh: () => ref
+                          .read(watchlistProvider.notifier)
+                          .refreshSignal(item.ticker),
+                      onRemove: () => ref
+                          .read(watchlistProvider.notifier)
+                          .remove(item.ticker),
                     );
                   },
                 ),
@@ -85,7 +95,10 @@ class WatchlistScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => ref.invalidate(watchlistProvider),
-                child: Text('إعادة المحاولة', style: TextStyle(color: theme.signalGold)),
+                child: Text(
+                  'إعادة المحاولة',
+                  style: TextStyle(color: theme.signalGold),
+                ),
               ),
             ],
           ),
@@ -178,7 +191,9 @@ class _WatchlistTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         _formatTimeAgo(item.lastCheckedAt!),
-                        style: theme.monoTiny.copyWith(color: theme.textTertiary),
+                        style: theme.monoTiny.copyWith(
+                          color: theme.textTertiary,
+                        ),
                       ),
                     ],
                   ],
@@ -200,7 +215,9 @@ class _WatchlistTile extends StatelessWidget {
                       Text(
                         '${item.lastChangePct! >= 0 ? '+' : ''}${item.lastChangePct!.toStringAsFixed(2)}%',
                         style: theme.monoTiny.copyWith(
-                          color: item.lastChangePct! >= 0 ? theme.bullGreen : theme.bearRed,
+                          color: item.lastChangePct! >= 0
+                              ? theme.bullGreen
+                              : theme.bearRed,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -210,7 +227,10 @@ class _WatchlistTile extends StatelessWidget {
                 const SizedBox(width: 12),
               ],
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: signalBg,
                   borderRadius: BorderRadius.circular(6),
@@ -228,7 +248,11 @@ class _WatchlistTile extends StatelessWidget {
               const SizedBox(width: 8),
               IconButton(
                 onPressed: onRefresh,
-                icon: Icon(Icons.refresh_rounded, color: theme.textSecondary, size: 20),
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  color: theme.textSecondary,
+                  size: 20,
+                ),
                 tooltip: 'تحديث الإشارة',
                 visualDensity: VisualDensity.compact,
               ),
@@ -277,7 +301,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.visibility_off_rounded, color: theme.textTertiary, size: 64),
+            Icon(
+              Icons.visibility_off_rounded,
+              color: theme.textTertiary,
+              size: 64,
+            ),
             const SizedBox(height: 20),
             Text(
               'قائمة المراقبة فارغة',
@@ -290,7 +318,10 @@ class _EmptyState extends StatelessWidget {
             Text(
               'أضف أسهمًا لمتابعتها لحظيًا\nمع إشارات BUY/WATCH/AVOID حية',
               textAlign: TextAlign.center,
-              style: theme.monoSmall.copyWith(color: theme.textSecondary, height: 1.6),
+              style: theme.monoSmall.copyWith(
+                color: theme.textSecondary,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
@@ -300,7 +331,10 @@ class _EmptyState extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: theme.signalGold,
                 foregroundColor: theme.bgBase,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -314,7 +348,8 @@ class _AddToWatchlistDialog extends ConsumerStatefulWidget {
   const _AddToWatchlistDialog();
 
   @override
-  ConsumerState<_AddToWatchlistDialog> createState() => _AddToWatchlistDialogState();
+  ConsumerState<_AddToWatchlistDialog> createState() =>
+      _AddToWatchlistDialogState();
 }
 
 class _AddToWatchlistDialogState extends ConsumerState<_AddToWatchlistDialog> {
@@ -405,7 +440,11 @@ class _AddToWatchlistDialogState extends ConsumerState<_AddToWatchlistDialog> {
             foregroundColor: theme.bgBase,
           ),
           child: _loading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('إضافة'),
         ),
       ],

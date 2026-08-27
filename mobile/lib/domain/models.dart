@@ -599,10 +599,7 @@ class AnalysisHistoryItem {
 
 /// استجابة قائمة التحليلات الأخيرة.
 class AnalysisHistoryResponse {
-  AnalysisHistoryResponse({
-    required this.items,
-    required this.count,
-  });
+  AnalysisHistoryResponse({required this.items, required this.count});
 
   final List<AnalysisHistoryItem> items;
   final int count;

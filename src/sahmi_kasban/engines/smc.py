@@ -80,19 +80,23 @@ class SMCEngine(AnalysisEngine):
 
             volume_confirmed = next_volume >= next_avg_vol * volume_mult
 
-            if candle_body <= body_median and displacement >= body_median * displacement_mult and volume_confirmed:
+            if (
+                candle_body <= body_median
+                and displacement >= body_median * displacement_mult
+                and volume_confirmed
+            ):
                 block = {
                     "low": round(candle_low, 4),
                     "high": round(candle_high, 4),
                 }
-                # Bullish OB: previous candle red, next candle green, next closes ABOVE previous high (Breakout)
+                # Bullish OB: prev red, next green, next closes ABOVE prev high
                 if (
                     candle_close < candle_open
                     and next_close > next_open
                     and next_close > candle_high
                 ):
                     bullish_order_blocks.append(block)
-                # Bearish OB: previous candle green, next candle red, next closes BELOW previous low (Breakout)
+                # Bearish OB: prev green, next red, next closes BELOW prev low
                 elif (
                     candle_close > candle_open
                     and next_close < next_open

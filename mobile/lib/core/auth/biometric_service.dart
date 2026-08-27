@@ -6,9 +6,11 @@ import 'package:local_auth/local_auth.dart';
 /// خدمة المصادقة البيومترية (Face ID / Fingerprint).
 /// تُستخدم لتسريع الدخول بعد أول تسجيل دخول ناجح.
 class BiometricService {
-  BiometricService({LocalAuthentication? localAuth, FlutterSecureStorage? storage})
-      : _localAuth = localAuth ?? LocalAuthentication(),
-        _storage = storage ?? const FlutterSecureStorage();
+  BiometricService({
+    LocalAuthentication? localAuth,
+    FlutterSecureStorage? storage,
+  }) : _localAuth = localAuth ?? LocalAuthentication(),
+       _storage = storage ?? const FlutterSecureStorage();
 
   final LocalAuthentication _localAuth;
   final FlutterSecureStorage _storage;
@@ -26,7 +28,8 @@ class BiometricService {
       if (!canCheck) return BiometricAvailability.noBiometrics;
 
       final availableBiometrics = await _localAuth.availableBiometrics;
-      if (availableBiometrics.isEmpty) return BiometricAvailability.noBiometrics;
+      if (availableBiometrics.isEmpty)
+        return BiometricAvailability.noBiometrics;
 
       return BiometricAvailability.available;
     } on PlatformException catch (e) {
@@ -115,12 +118,7 @@ class BiometricService {
   }
 }
 
-enum BiometricAvailability {
-  available,
-  noBiometrics,
-  notSupported,
-  error,
-}
+enum BiometricAvailability { available, noBiometrics, notSupported, error }
 
 class BiometricLoginResult {
   const BiometricLoginResult({
@@ -138,6 +136,8 @@ final biometricServiceProvider = Provider<BiometricService>((ref) {
 });
 
 /// Provider لحالة توفر المصادقة البيومترية.
-final biometricAvailabilityProvider = FutureProvider<BiometricAvailability>((ref) async {
+final biometricAvailabilityProvider = FutureProvider<BiometricAvailability>((
+  ref,
+) async {
   return ref.read(biometricServiceProvider).checkAvailability();
 });

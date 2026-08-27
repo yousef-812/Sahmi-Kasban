@@ -8,6 +8,7 @@ Create Date: 2026-07-31
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0019_auth_rate_limits_defaults"

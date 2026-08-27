@@ -117,7 +117,9 @@ class _BiometricPromptScreenState extends ConsumerState<BiometricPromptScreen> {
                   decoration: BoxDecoration(
                     color: theme.bearRed.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: theme.bearRed.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: theme.bearRed.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -179,7 +181,10 @@ class _BiometricPromptScreenState extends ConsumerState<BiometricPromptScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: theme.textSecondary),
+                            Icon(
+                              Icons.info_outline,
+                              color: theme.textSecondary,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -218,7 +223,8 @@ class _BiometricPromptScreenState extends ConsumerState<BiometricPromptScreen> {
   String _biometricMessage(BiometricAvailability status) {
     return switch (status) {
       BiometricAvailability.noBiometrics => 'جهازك لا يدعم البصمة أو Face ID',
-      BiometricAvailability.notSupported => 'المصادقة البيومترية غير متوفرة على هذا الجهاز',
+      BiometricAvailability.notSupported =>
+        'المصادقة البيومترية غير متوفرة على هذا الجهاز',
       BiometricAvailability.error => 'حدث خطأ في التحقق من التوفر',
       BiometricAvailability.available => '',
     };

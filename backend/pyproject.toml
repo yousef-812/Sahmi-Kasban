@@ -54,6 +54,7 @@ line-length = 110
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "reusable_data_fetcher"]

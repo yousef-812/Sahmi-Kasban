@@ -5,8 +5,8 @@ import 'watchlist_repository.dart';
 /// Provider لقائمة المراقبة الكاملة.
 final watchlistProvider =
     AsyncNotifierProvider<WatchlistNotifier, WatchlistResponse>(
-  WatchlistNotifier.new,
-);
+      WatchlistNotifier.new,
+    );
 
 /// Notifier لإدارة حالة قائمة المراقبة.
 class WatchlistNotifier extends AsyncNotifier<WatchlistResponse> {
@@ -46,11 +46,13 @@ class WatchlistNotifier extends AsyncNotifier<WatchlistResponse> {
       final updatedItems = current.items.map((item) {
         return item.ticker == ticker ? updated : item;
       }).toList();
-      state = AsyncData(WatchlistResponse(
-        items: updatedItems,
-        count: current.count,
-        maxItems: current.maxItems,
-      ));
+      state = AsyncData(
+        WatchlistResponse(
+          items: updatedItems,
+          count: current.count,
+          maxItems: current.maxItems,
+        ),
+      );
     } catch (e, st) {
       state = AsyncError(e, st);
     }
