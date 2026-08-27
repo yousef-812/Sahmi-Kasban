@@ -144,10 +144,47 @@ def test_admin_operations_and_notification_inbox_flow(
     assert "operational_setting_updated" in actions
     assert "notification_broadcast" in actions
 
+    from app.services.daily_reports import DailyReportGenerationResult
+    from app.models import MarketReport, MarketScanRun
+    from datetime import date
+    import uuid
+
+    fake_report = MarketReport(
+        id=uuid.uuid4(),
+        target_session_date=date.today(),
+        status="completed",
+        market_summary={},
+    )
+    from datetime import datetime, timezone
+
+    fake_scan = MarketScanRun(
+        id=uuid.uuid4(),
+        source_session_date=date.today(),
+        target_session_date=date.today(),
+        scheduled_for=datetime.now(timezone.utc),
+        started_at=datetime.now(timezone.utc),
+        status="completed",
+        total_symbols=10,
+        analyzed_count=10,
+        eligible_count=10,
+        failed_count=0,
+        details={},
+    )
+    async def mock_gen(*args, **kwargs):
+        return DailyReportGenerationResult(
+            report=fake_report, scan_run=fake_scan, created=True
+        )
+
+    monkeypatch.setattr(
+        "app.services.daily_reports.generate_daily_top10_report",
+        mock_gen,
+    )
+
     regen = client.post(
         "/api/v1/admin/operations/reports/regenerate",
         headers=admin_headers,
     )
     assert regen.status_code == 200
     assert regen.json()["status"] == "success"
+
 
