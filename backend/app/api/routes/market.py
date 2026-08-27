@@ -77,6 +77,18 @@ def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisRespon
     def _as_f(val: object) -> float | None:
         return float(val) if isinstance(val, (int, float)) else None
 
+    sector_quality = payload.get("sector_quality")
+    if not isinstance(sector_quality, dict):
+        from app.services.sector_quality import compute_sector_quality
+        score = float(analysis_data.get("final_score", 0)) if isinstance(analysis_data, dict) else 0.0
+        ret_20d = tech_eng.get("return_20d_pct") if isinstance(tech_eng, dict) else None
+        sector_quality = compute_sector_quality(
+            analysis.ticker,
+            score=score,
+            return_20d=_as_f(ret_20d),
+            raw_sector=str(sector_name) if sector_name is not None else None,
+        )
+
     return StockAnalysisResponse(
         analysis_id=analysis.id,
         ticker=analysis.ticker,
@@ -93,6 +105,7 @@ def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisRespon
         adaptive_atr_multiple=_as_f(adaptive_atr_multiple),
         market_regime_context=str(market_regime_context) if market_regime_context is not None else None,
         vwap_20=_as_f(vwap_20),
+        sector_quality=sector_quality,
     )
 
 

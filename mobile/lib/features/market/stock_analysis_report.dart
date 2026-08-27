@@ -40,6 +40,14 @@ class StockAnalysisReport extends StatelessWidget {
           balanceCoins: analysis.balanceCoins,
         ),
         const SizedBox(height: 12),
+        _SectorQualityCard(
+          sectorQuality: _asMap(payload['sector_quality']),
+          fallbackSector: _text(marketData['sector']).isNotEmpty
+              ? _text(marketData['sector'])
+              : _text(payload['sector']),
+          score: _number(analysisData['final_score']),
+        ),
+        const SizedBox(height: 12),
         _EngineUpgradesExplanationCard(
           sector: _text(marketData['sector']).isNotEmpty
               ? _text(marketData['sector'])
@@ -914,6 +922,132 @@ class _FeatureRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SectorQualityCard extends StatelessWidget {
+  const _SectorQualityCard({
+    required this.sectorQuality,
+    required this.fallbackSector,
+    required this.score,
+  });
+
+  final Map<String, dynamic> sectorQuality;
+  final String fallbackSector;
+  final double? score;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final currentScore = score;
+    final sectorName = _text(sectorQuality['sector_name']).isNotEmpty
+        ? _text(sectorQuality['sector_name'])
+        : (fallbackSector.isNotEmpty ? fallbackSector : 'عام');
+
+    final qualityLabel = _text(sectorQuality['quality_label']).isNotEmpty
+        ? _text(sectorQuality['quality_label'])
+        : ((currentScore ?? 0) >= 75
+              ? 'متفوق على قطاع $sectorName'
+              : ((currentScore ?? 0) >= 50
+                    ? 'متوافق مع قطاع $sectorName'
+                    : 'أقل من متوسط قطاع $sectorName'));
+
+    final qualityStatus = _text(sectorQuality['quality_status']).isNotEmpty
+        ? _text(sectorQuality['quality_status'])
+        : ((currentScore ?? 0) >= 75
+              ? 'outperforming'
+              : ((currentScore ?? 0) >= 50 ? 'in_line' : 'underperforming'));
+
+    final summaryAr = _text(sectorQuality['summary_ar']).isNotEmpty
+        ? _text(sectorQuality['summary_ar'])
+        : 'أداء وتقييم السهم بالمقارنة مع معايير ومتوسط حركة قطاع $sectorName.';
+
+    final return20d = _number(sectorQuality['return_20d_pct']);
+
+    final badgeColor = switch (qualityStatus) {
+      'outperforming' => Colors.green.shade700,
+      'in_line' => Colors.blue.shade700,
+      _ => Colors.orange.shade800,
+    };
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.pie_chart_outline_rounded,
+                  color: Colors.amber,
+                  size: 24,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'جودة السهم مقابل القطاع',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: badgeColor.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    qualityLabel,
+                    style: TextStyle(
+                      color: badgeColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              summaryAr,
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            _MetricGrid(
+              items: [
+                _MetricData(label: 'اسم القطاع', value: sectorName),
+                _MetricData(
+                  label: 'درجة التقييم النسبي',
+                  value: currentScore != null
+                      ? '${currentScore.toStringAsFixed(1)}/100'
+                      : '—',
+                ),
+                if (return20d != null && return20d != 0)
+                  _MetricData(
+                    label: 'عائد السهم (20 يوم)',
+                    value: '${_formatNumber(return20d)}%',
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

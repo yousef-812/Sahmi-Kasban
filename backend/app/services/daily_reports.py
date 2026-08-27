@@ -150,6 +150,20 @@ def _deterministic_explanation(candidate: Candidate) -> str:
     )
 
 
+def _resolve_candidate_sector_quality(candidate: Candidate) -> dict[str, Any]:
+    from app.services.sector_quality import compute_sector_quality
+
+    analysis = candidate.analysis if isinstance(candidate.analysis, dict) else {}
+    engines = analysis.get("engines", {}) if isinstance(analysis.get("engines"), dict) else {}
+    tech = engines.get("technical", {}).get("details", {}) if isinstance(engines.get("technical"), dict) else {}
+    ret_20d = tech.get("return_20d_pct") if isinstance(tech, dict) else None
+    return compute_sector_quality(
+        candidate.ticker,
+        score=candidate.final_score,
+        return_20d=float(ret_20d) if isinstance(ret_20d, (int, float)) else None,
+    )
+
+
 def _build_extended_entry(
     candidate: Candidate,
     *,
@@ -201,6 +215,7 @@ def _build_extended_entry(
         "top_fraction_pct": round(rank / max(eligible_count, 1) * 100.0, 2),
         "eligible_universe_size": eligible_count,
         "selection_note": classification.note,
+        "sector_quality": _resolve_candidate_sector_quality(candidate),
     }
 
 
@@ -688,6 +703,7 @@ async def generate_daily_top10_report(
             start=1,
         ):
             explanation, explanation_source = explanation_data
+            sector_qual = _resolve_candidate_sector_quality(candidate)
             db.add(
                 MarketReportItem(
                     report_id=report.id,
@@ -721,8 +737,10 @@ async def generate_daily_top10_report(
                             "data_as_of": candidate.data_as_of.isoformat(),
                             "fingerprint": candidate.fingerprint,
                             "candle_count": candidate.candle_count,
+                            "sector": sector_qual["sector_name"],
                         },
                         "analysis": candidate.analysis,
+                        "sector_quality": sector_qual,
                         "explanation": explanation,
                         "explanation_source": explanation_source,
                         "disclaimer": DISCLAIMER_AR,

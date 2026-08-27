@@ -395,6 +395,17 @@ async def execute_stock_analysis(
     except AIProviderError as exc:
         logger.info("AI explanation fallback for %s: %s", series.ticker, exc)
 
+    from app.services.sector_quality import compute_sector_quality
+
+    tech_eng = report_payload.get("engines", {}).get("technical", {}).get("details", {}) if isinstance(report_payload.get("engines"), dict) and isinstance(report_payload.get("engines", {}).get("technical"), dict) else {}
+    ret_20d = tech_eng.get("return_20d_pct") if isinstance(tech_eng, dict) else None
+    score_val = float(report_payload.get("final_score", 0)) if isinstance(report_payload, dict) else 0.0
+    sector_quality = compute_sector_quality(
+        series.ticker,
+        score=score_val,
+        return_20d=float(ret_20d) if isinstance(ret_20d, (int, float)) else None,
+    )
+
     payload = {
         "version": settings.analysis_engine_version,
         "market_data": {
@@ -404,6 +415,7 @@ async def execute_stock_analysis(
             "data_as_of": series.data_as_of.isoformat(),
             "fingerprint": series.fingerprint,
             "candle_count": series.candle_count,
+            "sector": sector_quality["sector_name"],
         },
         "index": (
             {
@@ -420,6 +432,7 @@ async def execute_stock_analysis(
         "explanation": explanation,
         "explanation_source": explanation_source,
         "disclaimer": DISCLAIMER_AR,
+        "sector_quality": sector_quality,
     }
     analysis = StockAnalysis(
         ticker=series.ticker,

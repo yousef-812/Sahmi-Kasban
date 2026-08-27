@@ -502,6 +502,19 @@ class _ReportItemCard extends StatelessWidget {
     final riskLevel = _riskLabel(_text(risk['risk_level']));
     final reasons = _collectReasons(engines);
 
+    final sectorQuality = _map(payload['sector_quality']);
+    final marketData = _map(payload['market_data']);
+    final sectorName = _text(sectorQuality['sector_name']).isNotEmpty
+        ? _text(sectorQuality['sector_name'])
+        : _text(marketData['sector']);
+    final qualityLabel = _text(sectorQuality['quality_label']).isNotEmpty
+        ? _text(sectorQuality['quality_label'])
+        : (item.score >= 75
+              ? 'متفوق على قطاع $sectorName'
+              : (item.score >= 50
+                    ? 'متوافق مع قطاع $sectorName'
+                    : 'أقل من متوسط قطاع $sectorName'));
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -543,7 +556,56 @@ class _ReportItemCard extends StatelessWidget {
                 _MetricChip(label: 'السعر', value: _price(price)),
                 _MetricChip(label: 'الاتجاه', value: trend),
                 _MetricChip(label: 'المخاطرة', value: riskLevel),
+                if (sectorName.isNotEmpty)
+                  _MetricChip(label: 'القطاع', value: sectorName),
               ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.pie_chart_outline_rounded,
+                    size: 18,
+                    color: Colors.amber,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'جودة السهم مقابل القطاع',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                        ),
+                        Text(
+                          qualityLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             if (entry > 0 || stop > 0 || target1 > 0) ...[
               const SizedBox(height: 14),

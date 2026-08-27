@@ -40,6 +40,7 @@ class StockAnalysisResponse(BaseModel):
     adaptive_atr_multiple: float | None = None
     market_regime_context: str | None = None
     vwap_20: float | None = None
+    sector_quality: dict | None = None
 
 
 class StockComparisonRequest(BaseModel):
