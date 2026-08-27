@@ -477,7 +477,7 @@ async def regenerate_daily_report(
     from app.services.daily_reports import generate_daily_top10_report
 
     try:
-        report = await generate_daily_top10_report(
+        res = await generate_daily_top10_report(
             db,
             provider=provider,
             ai_service=ai_service,
@@ -485,8 +485,8 @@ async def regenerate_daily_report(
         )
         return {
             "status": "success",
-            "report_id": str(report.id),
-            "target_session_date": report.target_session_date.isoformat(),
+            "report_id": str(res.report.id),
+            "target_session_date": res.report.target_session_date.isoformat(),
             "message": "تم إعادة إنشاء تقرير السوق اليومي بنجاح.",
         }
     except Exception as exc:

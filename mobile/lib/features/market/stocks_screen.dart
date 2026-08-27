@@ -438,6 +438,103 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     }
   }
 
+  static final Map<String, List<String>> _sectorStockMap = {
+    'العقارات': [
+      'TMGH', 'PHDC', 'HELI', 'EMFD', 'SODI', 'ORHD', 'EGTS', 'OCDI', 'RREI', 'EHDR',
+      'ACAP', 'AREH', 'ARAB', 'CCRS', 'DAPH', 'IDRE', 'KORA', 'MAAL', 'MASR', 'MOED',
+      'NARE', 'ODIN', 'ROTO', 'UEGC', 'UNIT', 'UPMS', 'UTOP'
+    ],
+    'البنوك': [
+      'COMI', 'ADIB', 'HDBK', 'CIEB', 'QNBE', 'EGBE', 'EXPA', 'SAIB', 'NBKE', 'CANA',
+      'CBKD', 'FAIT', 'FAITA'
+    ],
+    'الخدمات المالية': [
+      'HRHO', 'FWRY', 'CCAP', 'RAYA', 'BTFH', 'CICH', 'BINV', 'CNFN', 'EFIH', 'VALU',
+      'AIFI', 'AIH', 'BONY', 'CFGH', 'GDWA', 'GIHD', 'GRCA', 'OFH', 'OIH', 'PIOH',
+      'PRMH', 'RKAZ', 'SDTI', 'TYCN'
+    ],
+    'الأغذية والمشروبات': [
+      'JUFO', 'OLFI', 'EAST', 'DOMT', 'GOUR', 'SUGR', 'EFID', 'ISMA', 'POUL', 'AJWA',
+      'AFDI', 'AFMC', 'AMER', 'BIDI', 'COSG', 'DTPP', 'EASB', 'EBSC', 'EGWA', 'INFI',
+      'ISMQ', 'LKGP', 'MBEG', 'MILS', 'MITR', 'MPCO', 'NEDA', 'SNFC', 'UEFM', 'WATP'
+    ],
+    'الكيماويات': [
+      'KIMA', 'MFPC', 'ABUK', 'SKPC', 'AMOC', 'SIDM', 'EFIC', 'PACH', 'AALR', 'ACAMD',
+      'BIOC', 'CPCI', 'EGCH', 'ICID', 'MICH', 'MPCI', 'NCGC', 'NFCI', 'NIPH', 'SIPC',
+      'SMFR', 'ZEOT'
+    ],
+    'موارد أساسية': [
+      'EGAL', 'ESRS', 'IRON', 'ALUM', 'SPMD', 'ASCM', 'ANCC', 'ARCC', 'DCRC', 'IRAX',
+      'LCSW', 'MCQE', 'SCEM', 'SCFM', 'SINA', 'SVCE'
+    ],
+    'الرعاية الصحية': [
+      'CLHO', 'PHAR', 'RMDA', 'ISPH', 'EITP', 'ADCI', 'AXPH', 'CEFM', 'CERA', 'CID',
+      'EPCO', 'FCMD', 'MCRO', 'MEPA', 'MIPH', 'OBRI', 'OCPH', 'SPHT'
+    ],
+    'الاتصالات والتكنولوجيا': [
+      'ETEL', 'ORAS', 'SWDY', 'GTWL', 'ELEC', 'AIDC', 'ENGC', 'FTNS', 'HAEX',
+      'HAVC', 'HBCO', 'ICFC', 'IEEC', 'INEG', 'MOIL', 'NAHO', 'NCCW', 'TAQA'
+    ],
+    'مغاسل وغزل ونسيج': [
+      'ORWE', 'KABO', 'UNIP', 'SPIN', 'GTEX', 'ACFR', 'ACGC', 'AMIA', 'AMII', 'AMPI',
+      'APSW', 'DCCC', 'EEII', 'ELKA', 'ELNA', 'ELWA', 'EPPK', 'ETRS', 'FIRE',
+      'FNAR', 'GGCC', 'GGRN', 'GPIM', 'GPPL', 'GSSC', 'GTHE', 'HDST', 'IBCT', 'ICLE',
+      'IFAP', 'KWIN', 'KZPC', 'LUTS', 'MBSC', 'MENA', 'MFSC', 'MHOT', 'MISR', 'MKIT',
+      'MLIC', 'MMAT', 'MMHC', 'MOIN', 'MOSC', 'MPRC', 'NHPS', 'NINH', 'NMIN', 'OCAP',
+      'PHTV', 'PMSC', 'POCO', 'PRCL', 'PRDC', 'RACC', 'RAKT', 'RMTV', 'RUBX', 'SACE',
+      'SAUD', 'SCTS', 'SEIG', 'SIEG', 'SMPP', 'SNFI', 'TALM', 'TANM', 'TORA', 'TRTO',
+      'TWSA', 'UBEE', 'VERT', 'VLMR', 'VLMRA', 'WCDF', 'WKOL', 'YAYT', 'ZMID'
+    ],
+    'مواد البناء': [
+      'ARCC', 'SCEM', 'MCQE', 'TORA', 'PRCL', 'ALUM', 'EALR', 'ECAP', 'EDFM', 'EEP',
+      'EFAC', 'EGAS', 'EGOTH', 'EGREF', 'ELAB', 'ENPI', 'EOSB', 'EXPA', 'GEOS'
+    ],
+  };
+
+  bool _matchSector(MarketQuote quote, String selectedSector) {
+    if (selectedSector == 'الجميع') return true;
+
+    // 1. Check curated ticker map
+    final list = _sectorStockMap[selectedSector];
+    if (list != null && list.contains(quote.ticker)) {
+      return true;
+    }
+
+    // 2. Check quote.sector if present
+    if (quote.sector != null && quote.sector!.isNotEmpty) {
+      if (quote.sector!.contains(selectedSector) || selectedSector.contains(quote.sector!)) {
+        return true;
+      }
+    }
+
+    // 3. Keyword fallbacks in ticker or description
+    final desc = '${quote.ticker} ${quote.description}';
+    switch (selectedSector) {
+      case 'العقارات':
+        return desc.contains('عقار') || desc.contains('إسكان') || desc.contains('تعمير') || desc.contains('تنمية') || desc.contains('أراضي') || desc.contains('مصطفى') || desc.contains('هيلز');
+      case 'البنوك':
+        return desc.contains('بنك') || desc.contains('مصرف') || desc.contains('تجاري دولي') || desc.contains('أبوظبي') || desc.contains('كريدي');
+      case 'الخدمات المالية':
+        return desc.contains('مالية') || desc.contains('استثمار') || desc.contains('فوري') || desc.contains('هيرميس') || desc.contains('القلعة') || desc.contains('راية') || desc.contains('بلتون');
+      case 'الأغذية والمشروبات':
+        return desc.contains('أغذية') || desc.contains('مشروب') || desc.contains('جهينة') || desc.contains('لاند') || desc.contains('دومتي') || desc.contains('دخان') || desc.contains('مطاحن') || desc.contains('دواجن') || desc.contains('سكر');
+      case 'الكيماويات':
+        return desc.contains('كيماو') || desc.contains('كيما') || desc.contains('موبكو') || desc.contains('أسمدة') || desc.contains('بتروكيماويات') || desc.contains('زيوت');
+      case 'موارد أساسية':
+        return desc.contains('حديد') || desc.contains('صلب') || desc.contains('ألومنيوم') || desc.contains('معادن') || desc.contains('مناجم');
+      case 'الرعاية الصحية':
+        return desc.contains('أدوية') || desc.contains('صيدل') || desc.contains('مستشفى') || desc.contains('رعاية') || desc.contains('طبي');
+      case 'الاتصالات والتكنولوجيا':
+        return desc.contains('اتصالا') || desc.contains('كهربا') || desc.contains('شبكات') || desc.contains('تكنولوجيا') || desc.contains('سويدي');
+      case 'مغاسل وغزل ونسيج':
+        return desc.contains('غزل') || desc.contains('نسيج') || desc.contains('سجاد') || desc.contains('ملابس') || desc.contains('نساجون') || desc.contains('دايس');
+      case 'مواد البناء':
+        return desc.contains('أسمنت') || desc.contains('سيراميك') || desc.contains('بناء') || desc.contains('حراريات') || desc.contains('بورسلين');
+      default:
+        return desc.contains(selectedSector);
+    }
+  }
+
   List<MarketQuote> _filterQuotes(List<MarketQuote> quotes) {
     return quotes.where((quote) {
       if (_query.isNotEmpty) {
@@ -446,9 +543,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
         if (!match) return false;
       }
       if (_currentTabIndex == 1 && _selectedSector != 'الجميع') {
-        // Match sector if available or description keyword
-        final matchSector = quote.description.contains(_selectedSector);
-        if (!matchSector) return false;
+        if (!_matchSector(quote, _selectedSector)) return false;
       }
       return true;
     }).toList();

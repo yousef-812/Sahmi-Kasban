@@ -553,23 +553,42 @@ async def generate_daily_top10_report(
     ai_service: SahmiAIService,
     moment: datetime | None = None,
     tickers: tuple[str, ...] = EGX_SEED_SYMBOLS,
+    force_regenerate: bool = False,
 ) -> DailyReportGenerationResult:
     settings = get_settings()
     calendar = EGXTradingCalendar.from_settings()
     session = calendar.resolve_scan_session(moment)
-    existing_report = _complete_report_for_target(db, session.target_session_date)
-    if existing_report is not None:
-        run = db.scalar(
+
+    if force_regenerate:
+        existing_rep = db.scalar(
+            select(MarketReport).where(
+                MarketReport.target_session_date == session.target_session_date
+            )
+        )
+        if existing_rep is not None:
+            db.delete(existing_rep)
+        existing_run = db.scalar(
             select(MarketScanRun).where(
                 MarketScanRun.source_session_date == session.source_session_date
             )
         )
-        if run is None:
-            raise DailyReportGenerationError("Report exists without a scan audit record")
-        return DailyReportGenerationResult(report=existing_report, scan_run=run, created=False)
+        if existing_run is not None:
+            db.delete(existing_run)
+        db.commit()
+    else:
+        existing_report = _complete_report_for_target(db, session.target_session_date)
+        if existing_report is not None:
+            run = db.scalar(
+                select(MarketScanRun).where(
+                    MarketScanRun.source_session_date == session.source_session_date
+                )
+            )
+            if run is None:
+                raise DailyReportGenerationError("Report exists without a scan audit record")
+            return DailyReportGenerationResult(report=existing_report, scan_run=run, created=False)
 
     run = _start_scan_run(db, session, len(tickers))
-    if run.status == "complete":
+    if not force_regenerate and run.status == "complete":
         report = _complete_report_for_target(db, session.target_session_date)
         if report is None:
             raise DailyReportGenerationError("Completed scan has no market report")

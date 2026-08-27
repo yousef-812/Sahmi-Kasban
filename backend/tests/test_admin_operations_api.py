@@ -143,3 +143,11 @@ def test_admin_operations_and_notification_inbox_flow(
     actions = {item["action"] for item in audit.json()["items"]}
     assert "operational_setting_updated" in actions
     assert "notification_broadcast" in actions
+
+    regen = client.post(
+        "/api/v1/admin/operations/reports/regenerate",
+        headers=admin_headers,
+    )
+    assert regen.status_code == 200
+    assert regen.json()["status"] == "success"
+
