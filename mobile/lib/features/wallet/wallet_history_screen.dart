@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/theme.dart';
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
@@ -157,7 +156,7 @@ class _WalletEntryCard extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
             color: positive
-                ? SahmiBrand.neonBull
+                ? Colors.green.shade700
                 : Theme.of(context).colorScheme.error,
           ),
         ),

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
-import '../../app/theme.dart';
 import '../../core/network/api_exception.dart';
 import 'labs_models.dart';
 import 'labs_providers.dart';
@@ -670,8 +669,8 @@ class _TradeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final returnColor = (trade.returnPct ?? 0) >= 0
-        ? SahmiBrand.neonBull
-        : SahmiBrand.alertRed;
+        ? Colors.green.shade700
+        : Colors.red.shade700;
     final isHit = trade.hit;
 
     return Card(

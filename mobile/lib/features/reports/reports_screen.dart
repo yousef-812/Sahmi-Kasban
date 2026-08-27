@@ -57,11 +57,9 @@ class ReportsScreen extends ConsumerWidget {
                   : _ReportPreviewCard(report: report),
             ),
             const SizedBox(height: 24),
-            Text(
+            const Text(
               'ملاحظة: يتم إصدار تقارير السوق بشكل دوري بناءً على مسح شامل لجميع الأسهم.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ],

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../app/theme.dart';
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
 import 'market_quotes_providers.dart';
@@ -55,7 +54,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+          backgroundColor: const Color(0xFFF7F7F7),
           body: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) => TradingViewWidget(
@@ -179,9 +178,9 @@ class _Header extends StatelessWidget {
     final isUp = (quote.changePercent ?? 0) > 0;
     final isDown = (quote.changePercent ?? 0) < 0;
     final accent = isUp
-        ? SahmiBrand.neonBull
+        ? Colors.green
         : isDown
-        ? SahmiBrand.alertRed
+        ? Colors.redAccent
         : Theme.of(context).colorScheme.primary;
     return Card(
       child: Padding(
@@ -291,12 +290,12 @@ class _StatsRow extends StatelessWidget {
           _Stat(
             label: 'الأعلى',
             value: formatPrice(quote.sessionHigh ?? quote.week52High),
-            color: SahmiBrand.neonBull,
+            color: Colors.green,
           ),
           _Stat(
             label: 'الأدنى',
             value: formatPrice(quote.sessionLow ?? quote.week52Low),
-            color: SahmiBrand.alertRed,
+            color: Colors.redAccent,
           ),
         ],
       ),
@@ -335,12 +334,12 @@ class _AnnualRange extends StatelessWidget {
                 _Stat(
                   label: 'أعلى سعر سنوي',
                   value: formatPrice(quote.week52High),
-                  color: SahmiBrand.neonBull,
+                  color: Colors.green,
                 ),
                 _Stat(
                   label: 'أدنى سعر سنوي',
                   value: formatPrice(quote.week52Low),
-                  color: SahmiBrand.alertRed,
+                  color: Colors.redAccent,
                 ),
               ],
             ),
@@ -420,6 +419,7 @@ class TradingViewWidget extends StatefulWidget {
 
   final String symbol;
   final double height;
+  final bool dark = false;
 
   @override
   State<TradingViewWidget> createState() => _TradingViewWidgetState();
@@ -427,29 +427,19 @@ class TradingViewWidget extends StatefulWidget {
 
 class _TradingViewWidgetState extends State<TradingViewWidget> {
   late final WebViewController _controller;
+  late final String _html;
 
   @override
   void initState() {
     super.initState();
+    _html = _buildHtml();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(
-        Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF0A0E1A)
-            : const Color(0xFFFFFFFF),
-      )
-      ..loadHtmlString(_buildHtml());
+      ..setBackgroundColor(const Color(0xFFFFFFFF));
   }
-
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
   String _buildHtml() {
     final symbol = widget.symbol.toUpperCase();
-    final chartTheme = _isDark ? 'dark' : 'light';
-    final bg = _isDark ? '#0a0e1a' : '#ffffff';
-    final toolbarBg = _isDark ? '#141824' : '#f1f3f6';
-    final spinnerBorder = _isDark ? '#2a3040' : '#e0e0e0';
-    final spinnerAccent = _isDark ? '#00e676' : '#1f6feb';
     return '''
 <!DOCTYPE html>
 <html>
@@ -457,13 +447,13 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   html, body {
-    margin: 0; padding: 0; height: 100%; background: $bg;
+    margin: 0; padding: 0; height: 100%; background: #ffffff;
     font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   #tv { width: 100%; height: 100%; }
   body.loading #tv { visibility: hidden; }
   .center { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .spinner { width: 28px; height: 28px; border: 3px solid $spinnerBorder; border-top-color: $spinnerAccent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #e0e0e0; border-top-color: #1f6feb; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -480,10 +470,10 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     "symbol": "EGX:$symbol",
     "interval": "D",
     "timezone": "Africa/Cairo",
-    "theme": "$chartTheme",
+    "theme": "light",
     "style": "1",
     "locale": "ar_AE",
-    "toolbar_bg": "$toolbarBg",
+    "toolbar_bg": "#f1f3f6",
     "enable_publishing": false,
     "hide_side_toolbar": false,
     "allow_symbol_change": true,
@@ -508,8 +498,9 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   void didUpdateWidget(covariant TradingViewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.symbol != widget.symbol) {
+      _html = _buildHtml();
       _controller
-        ..loadHtmlString(_buildHtml())
+        ..loadHtmlString(_html)
         ..reload();
     }
   }
@@ -522,17 +513,17 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            Positioned.fill(
+            const Positioned.fill(
               child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: _isDark
-                      ? const Color(0xFF0A0E1A)
-                      : const Color(0xFFF7F7F7),
-                ),
-                child: const Center(child: CircularProgressIndicator()),
+                decoration: BoxDecoration(color: Color(0xFFF7F7F7)),
+                child: Center(child: CircularProgressIndicator()),
               ),
             ),
-            Positioned.fill(child: WebViewWidget(controller: _controller)),
+            Positioned.fill(
+              child: WebViewWidget(
+                controller: _controller..loadHtmlString(_html),
+              ),
+            ),
           ],
         ),
       ),

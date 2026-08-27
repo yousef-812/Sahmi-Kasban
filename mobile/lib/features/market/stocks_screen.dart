@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/theme.dart';
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
 import 'market_quotes_providers.dart';
@@ -193,7 +192,7 @@ class QuoteSessionHeader extends StatelessWidget {
                 : Icons.pause_circle_outline_rounded,
             size: 34,
             color: open
-                ? SahmiBrand.neonBull
+                ? Colors.green
                 : Theme.of(context).colorScheme.onSurface,
           ),
           const SizedBox(width: 12),

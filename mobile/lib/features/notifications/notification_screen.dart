@@ -436,13 +436,12 @@ class _NotificationLoading extends StatelessWidget {
 }
 
 _CategoryVisual _categoryVisual(String category, ColorScheme colors) {
-  final dark = colors.brightness == Brightness.dark;
   final normalized = category.toLowerCase();
   if (normalized.contains('reward') || normalized.contains('wallet')) {
-    return _CategoryVisual(
+    return const _CategoryVisual(
       icon: Icons.workspace_premium_rounded,
-      background: dark ? const Color(0xFF3A2F10) : const Color(0xFFFFF1C7),
-      foreground: dark ? const Color(0xFFFFDCA6) : const Color(0xFF805B00),
+      background: Color(0xFFFFF1C7),
+      foreground: Color(0xFF805B00),
     );
   }
   if (normalized.contains('report') || normalized.contains('analysis')) {
@@ -453,10 +452,10 @@ _CategoryVisual _categoryVisual(String category, ColorScheme colors) {
     );
   }
   if (normalized.contains('community')) {
-    return _CategoryVisual(
+    return const _CategoryVisual(
       icon: Icons.forum_rounded,
-      background: dark ? const Color(0xFF26203C) : const Color(0xFFE9E4FF),
-      foreground: dark ? const Color(0xFFC6BDFF) : const Color(0xFF4F378B),
+      background: Color(0xFFE9E4FF),
+      foreground: Color(0xFF4F378B),
     );
   }
   return _CategoryVisual(

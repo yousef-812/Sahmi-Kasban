@@ -1,54 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../app/theme.dart';
-import '../../core/auth/biometric_service.dart';
-import '../../core/haptics.dart';
-import '../auth/session_controller.dart';
-
-class SplashScreen extends ConsumerStatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-
-  @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends ConsumerState<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _tryBiometricAutoLogin();
-  }
-
-  Future<void> _tryBiometricAutoLogin() async {
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-
-    try {
-      final biometricService = ref.read(biometricServiceProvider);
-      final biometricResult = await biometricService.tryLogin();
-
-      if (biometricResult != null && mounted) {
-        final session = ref.read(sessionControllerProvider.notifier);
-        await session.authenticateWithTokens(
-          accessToken: biometricResult.accessToken,
-          refreshToken: biometricResult.refreshToken,
-        );
-        TerminalHaptics.success();
-        if (mounted) {
-          context.go('/pulse');
-        }
-      }
-    } catch (_) {
-      // Ignore errors so normal authentication flow takes over safely.
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: SahmiBrand.deepSpace,
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: DecoratedBox(
@@ -56,7 +13,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
-              colors: [Color(0xFF0A0E1A), Color(0xFF141824), Color(0xFF10162B)],
+              colors: [Color(0xFF041F18), Color(0xFF07543A), Color(0xFF0B382A)],
             ),
           ),
           child: Stack(
@@ -65,12 +22,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               _AmbientCircle(
                 alignment: Alignment.topLeft,
                 size: 260,
-                color: Color(0x3300E676),
+                color: Color(0x1FC9A85C),
               ),
               _AmbientCircle(
                 alignment: Alignment.bottomRight,
                 size: 310,
-                color: Color(0x26FFB800),
+                color: Color(0x1F2EB67D),
               ),
               SafeArea(
                 child: Center(
@@ -85,7 +42,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           'سهمي كسبان',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: SahmiBrand.iceWhite,
+                            color: Colors.white,
                             fontSize: 38,
                             height: 1.15,
                             fontWeight: FontWeight.w900,
@@ -97,7 +54,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           'تحليل أذكى • قرارات أوضح',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: SahmiBrand.signalGold,
+                            color: Color(0xFFE8D39A),
                             fontSize: 16,
                             height: 1.5,
                             fontWeight: FontWeight.w600,
@@ -110,7 +67,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             minHeight: 4,
                             borderRadius: BorderRadius.all(Radius.circular(20)),
                             backgroundColor: Color(0x33FFFFFF),
-                            color: SahmiBrand.signalGold,
+                            color: Color(0xFFD8B867),
                           ),
                         ),
                       ],
@@ -140,7 +97,7 @@ class _BrandMark extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [Color(0xFF00E676), Color(0xFF0A9D5E)],
+          colors: [Color(0xFFF2D996), Color(0xFFB98B2F)],
         ),
         boxShadow: const [
           BoxShadow(
@@ -157,11 +114,11 @@ class _BrandMark extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return const ColoredBox(
-              color: SahmiBrand.deepSpace,
+              color: Color(0xFF07543A),
               child: Icon(
                 Icons.trending_up_rounded,
                 size: 56,
-                color: SahmiBrand.neonBull,
+                color: Color(0xFFD8B867),
               ),
             );
           },

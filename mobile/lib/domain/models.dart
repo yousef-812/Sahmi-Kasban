@@ -326,11 +326,6 @@ class StockAnalysisResult {
     required this.balanceCoins,
     required this.dataAsOf,
     required this.payload,
-    this.sectorMomentumPct,
-    this.sectorName,
-    this.adaptiveAtrMultiple,
-    this.marketRegimeContext,
-    this.vwap20,
   });
 
   final String analysisId;
@@ -344,29 +339,18 @@ class StockAnalysisResult {
   final DateTime dataAsOf;
   final Map<String, dynamic> payload;
 
-  final double? sectorMomentumPct;
-  final String? sectorName;
-  final double? adaptiveAtrMultiple;
-  final String? marketRegimeContext;
-  final double? vwap20;
-
   factory StockAnalysisResult.fromJson(Map<String, dynamic> json) {
     return StockAnalysisResult(
       analysisId: json['analysis_id'] as String,
       ticker: json['ticker'] as String,
-      cached: json['cached'] as bool? ?? false,
-      marketSnapshotCached: json['market_snapshot_cached'] as bool? ?? false,
-      chargedPoints: (json['charged_points'] as num?)?.toInt() ?? 0,
-      chargedCoins: _asCoinsString(json['charged_coins']),
-      balancePoints: (json['balance_points'] as num?)?.toInt() ?? 0,
-      balanceCoins: _asCoinsString(json['balance_coins']),
+      cached: json['cached'] as bool,
+      marketSnapshotCached: json['market_snapshot_cached'] as bool,
+      chargedPoints: json['charged_points'] as int,
+      chargedCoins: json['charged_coins'] as String,
+      balancePoints: json['balance_points'] as int,
+      balanceCoins: json['balance_coins'] as String,
       dataAsOf: DateTime.parse(json['data_as_of'] as String),
       payload: _map(json['payload']),
-      sectorMomentumPct: (json['sector_momentum_pct'] as num?)?.toDouble(),
-      sectorName: json['sector_name'] as String?,
-      adaptiveAtrMultiple: (json['adaptive_atr_multiple'] as num?)?.toDouble(),
-      marketRegimeContext: json['market_regime_context'] as String?,
-      vwap20: (json['vwap_20'] as num?)?.toDouble(),
     );
   }
 }
@@ -497,123 +481,6 @@ class MarketReportUnlockResult {
   }
 }
 
-/// عنصر في قائمة المراقبة (Watchlist) مع إشارة حية مخزنة.
-class WatchlistItem {
-  WatchlistItem({
-    required this.ticker,
-    required this.addedAt,
-    this.lastSignal,
-    this.lastScore,
-    this.lastPrice,
-    this.lastChangePct,
-    this.lastCheckedAt,
-    this.notes = const {},
-  });
-
-  final String ticker;
-  final DateTime addedAt;
-  final String? lastSignal;
-  final double? lastScore;
-  final double? lastPrice;
-  final double? lastChangePct;
-  final DateTime? lastCheckedAt;
-  final Map<String, dynamic> notes;
-
-  factory WatchlistItem.fromJson(Map<String, dynamic> json) {
-    return WatchlistItem(
-      ticker: json['ticker'] as String,
-      addedAt: DateTime.parse(json['added_at'] as String),
-      lastSignal: json['last_signal'] as String?,
-      lastScore: (json['last_score'] as num?)?.toDouble(),
-      lastPrice: (json['last_price'] as num?)?.toDouble(),
-      lastChangePct: (json['last_change_pct'] as num?)?.toDouble(),
-      lastCheckedAt: json['last_checked_at'] != null
-          ? DateTime.parse(json['last_checked_at'] as String)
-          : null,
-      notes: Map<String, dynamic>.from(json['notes'] as Map? ?? {}),
-    );
-  }
-}
-
-/// استجابة قائمة المراقبة الكاملة.
-class WatchlistResponse {
-  WatchlistResponse({
-    required this.items,
-    required this.count,
-    required this.maxItems,
-  });
-
-  final List<WatchlistItem> items;
-  final int count;
-  final int maxItems;
-
-  factory WatchlistResponse.fromJson(Map<String, dynamic> json) {
-    return WatchlistResponse(
-      items: (json['items'] as List)
-          .map((e) => WatchlistItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      count: json['count'] as int,
-      maxItems: json['max_items'] as int? ?? 50,
-    );
-  }
-}
-
-/// ملخص تحليل سابق — يُستخدم في شاشة التحليل السريع.
-class AnalysisHistoryItem {
-  AnalysisHistoryItem({
-    required this.analysisId,
-    required this.ticker,
-    required this.signal,
-    required this.score,
-    required this.confidence,
-    this.priceAtAnalysis,
-    required this.dataAsOf,
-    required this.engineVersion,
-    required this.cached,
-  });
-
-  final String analysisId;
-  final String ticker;
-  final String signal;
-  final double score;
-  final double confidence;
-  final double? priceAtAnalysis;
-  final DateTime dataAsOf;
-  final String engineVersion;
-  final bool cached;
-
-  factory AnalysisHistoryItem.fromJson(Map<String, dynamic> json) {
-    return AnalysisHistoryItem(
-      analysisId: json['analysis_id'] as String,
-      ticker: json['ticker'] as String,
-      signal: json['signal'] as String? ?? 'WATCH',
-      score: (json['score'] as num?)?.toDouble() ?? 0.0,
-      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
-      priceAtAnalysis: (json['price_at_analysis'] as num?)?.toDouble(),
-      dataAsOf: DateTime.parse(json['data_as_of'] as String),
-      engineVersion: json['engine_version'] as String? ?? 'unknown',
-      cached: json['cached'] as bool? ?? false,
-    );
-  }
-}
-
-/// استجابة قائمة التحليلات الأخيرة.
-class AnalysisHistoryResponse {
-  AnalysisHistoryResponse({required this.items, required this.count});
-
-  final List<AnalysisHistoryItem> items;
-  final int count;
-
-  factory AnalysisHistoryResponse.fromJson(Map<String, dynamic> json) {
-    return AnalysisHistoryResponse(
-      items: (json['items'] as List)
-          .map((e) => AnalysisHistoryItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      count: json['count'] as int? ?? 0,
-    );
-  }
-}
-
 double? _asDouble(Object? value) {
   if (value is num) {
     return value.toDouble();
@@ -622,18 +489,6 @@ double? _asDouble(Object? value) {
     return double.tryParse(value);
   }
   return null;
-}
-
-/// يحوّل قيمة عملات قادمة إمّا كرقم أو كنص إلى نص موحّد.
-/// يتحمل أن تعيد الواجهة الخلفية العملات كأرقام أو كسلاسل.
-String _asCoinsString(Object? value, [String fallback = '0.00']) {
-  if (value is num) {
-    return value.toStringAsFixed(2);
-  }
-  if (value is String) {
-    return value;
-  }
-  return fallback;
 }
 
 Map<String, dynamic> _map(Object? value) {
