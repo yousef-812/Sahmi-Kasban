@@ -915,7 +915,8 @@ class _RegenerateReportTab extends ConsumerStatefulWidget {
   const _RegenerateReportTab();
 
   @override
-  ConsumerState<_RegenerateReportTab> createState() => _RegenerateReportTabState();
+  ConsumerState<_RegenerateReportTab> createState() =>
+      _RegenerateReportTabState();
 }
 
 class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
@@ -935,13 +936,16 @@ class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
       setState(() {
         _loading = false;
         _isSuccess = true;
-        _statusMessage = result['message']?.toString() ?? 'تم إعادة التقرير بنجاح.';
+        _statusMessage =
+            result['message']?.toString() ?? 'تم إعادة التقرير بنجاح.';
       });
     } catch (error) {
       setState(() {
         _loading = false;
         _isSuccess = false;
-        _statusMessage = error is ApiException ? error.message : 'حدث خطأ أثناء تنفيذ الطلب.';
+        _statusMessage = error is ApiException
+            ? error.message
+            : 'حدث خطأ أثناء تنفيذ الطلب.';
       });
     }
   }
@@ -963,13 +967,17 @@ class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
           const SizedBox(height: 16),
           Text(
             'إعادة إنشاء تقرير اليوم الحقيقي',
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'استخدم هذا الخيار لإعادة تشغيل محرك التقارير فور إدخال تحديثات جديدة على خوارزميات المحرك (VWAP, Sector Momentum, Adaptive ATR).',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -977,13 +985,17 @@ class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _isSuccess ? Colors.green.withValues(alpha: 0.1) : theme.colorScheme.errorContainer,
+                color: _isSuccess
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : theme.colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 _statusMessage!,
                 style: TextStyle(
-                  color: _isSuccess ? Colors.green : theme.colorScheme.onErrorContainer,
+                  color: _isSuccess
+                      ? Colors.green
+                      : theme.colorScheme.onErrorContainer,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -996,10 +1008,17 @@ class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
             icon: _loading
                 ? const SizedBox.square(
                     dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Icon(Icons.refresh_rounded),
-            label: Text(_loading ? 'جاري إعادة إنشاء التقرير...' : 'تشغيل إعادة التقرير الآن'),
+            label: Text(
+              _loading
+                  ? 'جاري إعادة إنشاء التقرير...'
+                  : 'تشغيل إعادة التقرير الآن',
+            ),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),

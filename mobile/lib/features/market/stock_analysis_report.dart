@@ -41,8 +41,8 @@ class StockAnalysisReport extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _EngineUpgradesExplanationCard(
-          sector: _text(marketData['sector']) .isNotEmpty 
-              ? _text(marketData['sector']) 
+          sector: _text(marketData['sector']).isNotEmpty
+              ? _text(marketData['sector'])
               : _text(payload['sector']),
         ),
         const SizedBox(height: 12),
@@ -844,25 +844,29 @@ class _EngineUpgradesExplanationCard extends StatelessWidget {
             _FeatureRow(
               icon: Icons.show_chart_rounded,
               title: 'مؤشر VWAP المؤسسي',
-              desc: 'حساب متوسط السعر المرجح بحجم التداول لكشف دخول وصانع السوق.',
+              desc:
+                  'حساب متوسط السعر المرجح بحجم التداول لكشف دخول وصانع السوق.',
             ),
             const SizedBox(height: 8),
             _FeatureRow(
               icon: Icons.shield_rounded,
               title: 'محرك زخم القطاع (Sector Engine)',
-              desc: 'حماية إشارات الشراء وضمان عدم الدخول في سهم جيد داخل قطاع هابط.',
+              desc:
+                  'حماية إشارات الشراء وضمان عدم الدخول في سهم جيد داخل قطاع هابط.',
             ),
             const SizedBox(height: 8),
             _FeatureRow(
               icon: Icons.auto_graph_rounded,
               title: 'وقف الخسارة التكيفي (Adaptive ATR)',
-              desc: 'متابعة الأرباح ووقف الخسارة ديناميكياً بحسب نسبة تذبذب السهم.',
+              desc:
+                  'متابعة الأرباح ووقف الخسارة ديناميكياً بحسب نسبة تذبذب السهم.',
             ),
             const SizedBox(height: 8),
             _FeatureRow(
               icon: Icons.account_balance_wallet_rounded,
               title: 'حماية التكاليف والانزلاق (0.3% Guard)',
-              desc: 'خصم تلقائي 0.3% لعمولات البورصة والانزلاق السعري لنتائج واقعية 100%.',
+              desc:
+                  'خصم تلقائي 0.3% لعمولات البورصة والانزلاق السعري لنتائج واقعية 100%.',
             ),
           ],
         ),

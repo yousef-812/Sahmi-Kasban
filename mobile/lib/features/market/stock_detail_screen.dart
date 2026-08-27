@@ -159,10 +159,15 @@ class _DetailContentState extends State<_DetailContent> {
                 ),
               ),
               IconButton(
-                tooltip: _hideSideToolbar ? 'إظهار أدوات الرسم' : 'إخفاء أدوات الرسم',
-                onPressed: () => setState(() => _hideSideToolbar = !_hideSideToolbar),
+                tooltip: _hideSideToolbar
+                    ? 'إظهار أدوات الرسم'
+                    : 'إخفاء أدوات الرسم',
+                onPressed: () =>
+                    setState(() => _hideSideToolbar = !_hideSideToolbar),
                 icon: Icon(
-                  _hideSideToolbar ? Icons.edit_note_rounded : Icons.edit_off_rounded,
+                  _hideSideToolbar
+                      ? Icons.edit_note_rounded
+                      : Icons.edit_off_rounded,
                 ),
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -522,7 +527,8 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   @override
   void didUpdateWidget(covariant TradingViewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.symbol != widget.symbol || oldWidget.hideSideToolbar != widget.hideSideToolbar) {
+    if (oldWidget.symbol != widget.symbol ||
+        oldWidget.hideSideToolbar != widget.hideSideToolbar) {
       _html = _buildHtml();
       _controller
         ..loadHtmlString(_html)

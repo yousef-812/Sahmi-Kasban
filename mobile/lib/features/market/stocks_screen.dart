@@ -24,9 +24,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
   int _currentTabIndex = 0;
 
   // Custom User Watchlists stored locally: { watchlistName: [ticker1, ticker2] }
-  Map<String, List<String>> _userWatchlists = {
-    'متابعة 1': [],
-  };
+  Map<String, List<String>> _userWatchlists = {'متابعة 1': []};
 
   final List<String> _sectors = const [
     'الجميع',
@@ -55,7 +53,9 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
 
     if (rawWatchlists != null) {
       try {
-        final decoded = Map<String, dynamic>.from(jsonDecode(rawWatchlists) as Map);
+        final decoded = Map<String, dynamic>.from(
+          jsonDecode(rawWatchlists) as Map,
+        );
         _userWatchlists = decoded.map(
           (k, v) => MapEntry(k, (v as List).map((e) => e.toString()).toList()),
         );
@@ -69,9 +69,10 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
   }
 
   void _initTabController({int initialIndex = 0}) {
-    final totalTabs = 2 + _userWatchlists.length; // 0: All, 1: Sectors, 2+: Custom Watchlists
+    final totalTabs =
+        2 + _userWatchlists.length; // 0: All, 1: Sectors, 2+: Custom Watchlists
     final targetIndex = initialIndex < totalTabs ? initialIndex : 0;
-    
+
     _tabController?.dispose();
     _tabController = TabController(
       length: totalTabs,
@@ -81,7 +82,8 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     _currentTabIndex = targetIndex;
 
     _tabController!.addListener(() {
-      if (_tabController!.indexIsChanging || _tabController!.index != _currentTabIndex) {
+      if (_tabController!.indexIsChanging ||
+          _tabController!.index != _currentTabIndex) {
         setState(() {
           _currentTabIndex = _tabController!.index;
         });
@@ -157,7 +159,9 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('السهم $ticker موجود بالفعل في قائمة "$watchlistName"'),
+            content: Text(
+              'السهم $ticker موجود بالفعل في قائمة "$watchlistName"',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -189,8 +193,8 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
                 Text(
                   'إضافة سهم لقائمة "$watchlistName"',
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -208,13 +212,24 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (ctx, index) {
                       final item = filtered[index];
-                      final isAdded = _userWatchlists[watchlistName]?.contains(item.ticker) ?? false;
+                      final isAdded =
+                          _userWatchlists[watchlistName]?.contains(
+                            item.ticker,
+                          ) ??
+                          false;
                       return ListTile(
-                        title: Text(item.ticker, textDirection: TextDirection.ltr),
+                        title: Text(
+                          item.ticker,
+                          textDirection: TextDirection.ltr,
+                        ),
                         subtitle: Text(item.description),
                         trailing: Icon(
-                          isAdded ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
-                          color: isAdded ? Colors.green : Theme.of(ctx).colorScheme.primary,
+                          isAdded
+                              ? Icons.check_circle_rounded
+                              : Icons.add_circle_outline_rounded,
+                          color: isAdded
+                              ? Colors.green
+                              : Theme.of(ctx).colorScheme.primary,
                         ),
                         onTap: () {
                           _addStockToWatchlist(watchlistName, item.ticker);
@@ -250,8 +265,8 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
                   Text(
                     'إضافة ${quote.ticker} إلى قوائم المتابعة',
                     style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -264,20 +279,36 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
               if (_userWatchlists.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(12),
-                  child: Text('لا توجد قوائم متابعة حالية. اضغط + لإضافة قائمة.'),
+                  child: Text(
+                    'لا توجد قوائم متابعة حالية. اضغط + لإضافة قائمة.',
+                  ),
                 )
               else
                 ..._userWatchlists.keys.map((name) {
-                  final inList = _userWatchlists[name]?.contains(quote.ticker) ?? false;
+                  final inList =
+                      _userWatchlists[name]?.contains(quote.ticker) ?? false;
                   return ListTile(
                     leading: Icon(
-                      inList ? Icons.bookmark_added_rounded : Icons.bookmark_add_outlined,
-                      color: inList ? Colors.green : Theme.of(ctx).colorScheme.primary,
+                      inList
+                          ? Icons.bookmark_added_rounded
+                          : Icons.bookmark_add_outlined,
+                      color: inList
+                          ? Colors.green
+                          : Theme.of(ctx).colorScheme.primary,
                     ),
                     title: Text(name),
                     trailing: inList
-                        ? const Text('مضاف', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
-                        : const Text('+ إضافة', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ? const Text(
+                            'مضاف',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : const Text(
+                            '+ إضافة',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                     onTap: () {
                       Navigator.of(ctx).pop();
                       _addStockToWatchlist(name, quote.ticker);
@@ -347,7 +378,9 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
             ),
 
           Expanded(
-            child: ref.watch(marketQuotesProvider).when(
+            child: ref
+                .watch(marketQuotesProvider)
+                .when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
                   error: (error, stack) => _ErrorView(
@@ -419,13 +452,14 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
               children: [
                 Text(
                   'عدد الأسهم: ${filtered.length}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
-                  onPressed: () => _showAddStockPicker(currentListName, allQuotes),
+                  onPressed: () =>
+                      _showAddStockPicker(currentListName, allQuotes),
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('إضافة سهم'),
                 ),
@@ -440,54 +474,289 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
 
   static final Map<String, List<String>> _sectorStockMap = {
     'العقارات': [
-      'TMGH', 'PHDC', 'HELI', 'EMFD', 'SODI', 'ORHD', 'EGTS', 'OCDI', 'RREI', 'EHDR',
-      'ACAP', 'AREH', 'ARAB', 'CCRS', 'DAPH', 'IDRE', 'KORA', 'MAAL', 'MASR', 'MOED',
-      'NARE', 'ODIN', 'ROTO', 'UEGC', 'UNIT', 'UPMS', 'UTOP'
+      'TMGH',
+      'PHDC',
+      'HELI',
+      'EMFD',
+      'SODI',
+      'ORHD',
+      'EGTS',
+      'OCDI',
+      'RREI',
+      'EHDR',
+      'ACAP',
+      'AREH',
+      'ARAB',
+      'CCRS',
+      'DAPH',
+      'IDRE',
+      'KORA',
+      'MAAL',
+      'MASR',
+      'MOED',
+      'NARE',
+      'ODIN',
+      'ROTO',
+      'UEGC',
+      'UNIT',
+      'UPMS',
+      'UTOP',
     ],
     'البنوك': [
-      'COMI', 'ADIB', 'HDBK', 'CIEB', 'QNBE', 'EGBE', 'EXPA', 'SAIB', 'NBKE', 'CANA',
-      'CBKD', 'FAIT', 'FAITA'
+      'COMI',
+      'ADIB',
+      'HDBK',
+      'CIEB',
+      'QNBE',
+      'EGBE',
+      'EXPA',
+      'SAIB',
+      'NBKE',
+      'CANA',
+      'CBKD',
+      'FAIT',
+      'FAITA',
     ],
     'الخدمات المالية': [
-      'HRHO', 'FWRY', 'CCAP', 'RAYA', 'BTFH', 'CICH', 'BINV', 'CNFN', 'EFIH', 'VALU',
-      'AIFI', 'AIH', 'BONY', 'CFGH', 'GDWA', 'GIHD', 'GRCA', 'OFH', 'OIH', 'PIOH',
-      'PRMH', 'RKAZ', 'SDTI', 'TYCN'
+      'HRHO',
+      'FWRY',
+      'CCAP',
+      'RAYA',
+      'BTFH',
+      'CICH',
+      'BINV',
+      'CNFN',
+      'EFIH',
+      'VALU',
+      'AIFI',
+      'AIH',
+      'BONY',
+      'CFGH',
+      'GDWA',
+      'GIHD',
+      'GRCA',
+      'OFH',
+      'OIH',
+      'PIOH',
+      'PRMH',
+      'RKAZ',
+      'SDTI',
+      'TYCN',
     ],
     'الأغذية والمشروبات': [
-      'JUFO', 'OLFI', 'EAST', 'DOMT', 'GOUR', 'SUGR', 'EFID', 'ISMA', 'POUL', 'AJWA',
-      'AFDI', 'AFMC', 'AMER', 'BIDI', 'COSG', 'DTPP', 'EASB', 'EBSC', 'EGWA', 'INFI',
-      'ISMQ', 'LKGP', 'MBEG', 'MILS', 'MITR', 'MPCO', 'NEDA', 'SNFC', 'UEFM', 'WATP'
+      'JUFO',
+      'OLFI',
+      'EAST',
+      'DOMT',
+      'GOUR',
+      'SUGR',
+      'EFID',
+      'ISMA',
+      'POUL',
+      'AJWA',
+      'AFDI',
+      'AFMC',
+      'AMER',
+      'BIDI',
+      'COSG',
+      'DTPP',
+      'EASB',
+      'EBSC',
+      'EGWA',
+      'INFI',
+      'ISMQ',
+      'LKGP',
+      'MBEG',
+      'MILS',
+      'MITR',
+      'MPCO',
+      'NEDA',
+      'SNFC',
+      'UEFM',
+      'WATP',
     ],
     'الكيماويات': [
-      'KIMA', 'MFPC', 'ABUK', 'SKPC', 'AMOC', 'SIDM', 'EFIC', 'PACH', 'AALR', 'ACAMD',
-      'BIOC', 'CPCI', 'EGCH', 'ICID', 'MICH', 'MPCI', 'NCGC', 'NFCI', 'NIPH', 'SIPC',
-      'SMFR', 'ZEOT'
+      'KIMA',
+      'MFPC',
+      'ABUK',
+      'SKPC',
+      'AMOC',
+      'SIDM',
+      'EFIC',
+      'PACH',
+      'AALR',
+      'ACAMD',
+      'BIOC',
+      'CPCI',
+      'EGCH',
+      'ICID',
+      'MICH',
+      'MPCI',
+      'NCGC',
+      'NFCI',
+      'NIPH',
+      'SIPC',
+      'SMFR',
+      'ZEOT',
     ],
     'موارد أساسية': [
-      'EGAL', 'ESRS', 'IRON', 'ALUM', 'SPMD', 'ASCM', 'ANCC', 'ARCC', 'DCRC', 'IRAX',
-      'LCSW', 'MCQE', 'SCEM', 'SCFM', 'SINA', 'SVCE'
+      'EGAL',
+      'ESRS',
+      'IRON',
+      'ALUM',
+      'SPMD',
+      'ASCM',
+      'ANCC',
+      'ARCC',
+      'DCRC',
+      'IRAX',
+      'LCSW',
+      'MCQE',
+      'SCEM',
+      'SCFM',
+      'SINA',
+      'SVCE',
     ],
     'الرعاية الصحية': [
-      'CLHO', 'PHAR', 'RMDA', 'ISPH', 'EITP', 'ADCI', 'AXPH', 'CEFM', 'CERA', 'CID',
-      'EPCO', 'FCMD', 'MCRO', 'MEPA', 'MIPH', 'OBRI', 'OCPH', 'SPHT'
+      'CLHO',
+      'PHAR',
+      'RMDA',
+      'ISPH',
+      'EITP',
+      'ADCI',
+      'AXPH',
+      'CEFM',
+      'CERA',
+      'CID',
+      'EPCO',
+      'FCMD',
+      'MCRO',
+      'MEPA',
+      'MIPH',
+      'OBRI',
+      'OCPH',
+      'SPHT',
     ],
     'الاتصالات والتكنولوجيا': [
-      'ETEL', 'ORAS', 'SWDY', 'GTWL', 'ELEC', 'AIDC', 'ENGC', 'FTNS', 'HAEX',
-      'HAVC', 'HBCO', 'ICFC', 'IEEC', 'INEG', 'MOIL', 'NAHO', 'NCCW', 'TAQA'
+      'ETEL',
+      'ORAS',
+      'SWDY',
+      'GTWL',
+      'ELEC',
+      'AIDC',
+      'ENGC',
+      'FTNS',
+      'HAEX',
+      'HAVC',
+      'HBCO',
+      'ICFC',
+      'IEEC',
+      'INEG',
+      'MOIL',
+      'NAHO',
+      'NCCW',
+      'TAQA',
     ],
     'مغاسل وغزل ونسيج': [
-      'ORWE', 'KABO', 'UNIP', 'SPIN', 'GTEX', 'ACFR', 'ACGC', 'AMIA', 'AMII', 'AMPI',
-      'APSW', 'DCCC', 'EEII', 'ELKA', 'ELNA', 'ELWA', 'EPPK', 'ETRS', 'FIRE',
-      'FNAR', 'GGCC', 'GGRN', 'GPIM', 'GPPL', 'GSSC', 'GTHE', 'HDST', 'IBCT', 'ICLE',
-      'IFAP', 'KWIN', 'KZPC', 'LUTS', 'MBSC', 'MENA', 'MFSC', 'MHOT', 'MISR', 'MKIT',
-      'MLIC', 'MMAT', 'MMHC', 'MOIN', 'MOSC', 'MPRC', 'NHPS', 'NINH', 'NMIN', 'OCAP',
-      'PHTV', 'PMSC', 'POCO', 'PRCL', 'PRDC', 'RACC', 'RAKT', 'RMTV', 'RUBX', 'SACE',
-      'SAUD', 'SCTS', 'SEIG', 'SIEG', 'SMPP', 'SNFI', 'TALM', 'TANM', 'TORA', 'TRTO',
-      'TWSA', 'UBEE', 'VERT', 'VLMR', 'VLMRA', 'WCDF', 'WKOL', 'YAYT', 'ZMID'
+      'ORWE',
+      'KABO',
+      'UNIP',
+      'SPIN',
+      'GTEX',
+      'ACFR',
+      'ACGC',
+      'AMIA',
+      'AMII',
+      'AMPI',
+      'APSW',
+      'DCCC',
+      'EEII',
+      'ELKA',
+      'ELNA',
+      'ELWA',
+      'EPPK',
+      'ETRS',
+      'FIRE',
+      'FNAR',
+      'GGCC',
+      'GGRN',
+      'GPIM',
+      'GPPL',
+      'GSSC',
+      'GTHE',
+      'HDST',
+      'IBCT',
+      'ICLE',
+      'IFAP',
+      'KWIN',
+      'KZPC',
+      'LUTS',
+      'MBSC',
+      'MENA',
+      'MFSC',
+      'MHOT',
+      'MISR',
+      'MKIT',
+      'MLIC',
+      'MMAT',
+      'MMHC',
+      'MOIN',
+      'MOSC',
+      'MPRC',
+      'NHPS',
+      'NINH',
+      'NMIN',
+      'OCAP',
+      'PHTV',
+      'PMSC',
+      'POCO',
+      'PRCL',
+      'PRDC',
+      'RACC',
+      'RAKT',
+      'RMTV',
+      'RUBX',
+      'SACE',
+      'SAUD',
+      'SCTS',
+      'SEIG',
+      'SIEG',
+      'SMPP',
+      'SNFI',
+      'TALM',
+      'TANM',
+      'TORA',
+      'TRTO',
+      'TWSA',
+      'UBEE',
+      'VERT',
+      'VLMR',
+      'VLMRA',
+      'WCDF',
+      'WKOL',
+      'YAYT',
+      'ZMID',
     ],
     'مواد البناء': [
-      'ARCC', 'SCEM', 'MCQE', 'TORA', 'PRCL', 'ALUM', 'EALR', 'ECAP', 'EDFM', 'EEP',
-      'EFAC', 'EGAS', 'EGOTH', 'EGREF', 'ELAB', 'ENPI', 'EOSB', 'EXPA', 'GEOS'
+      'ARCC',
+      'SCEM',
+      'MCQE',
+      'TORA',
+      'PRCL',
+      'ALUM',
+      'EALR',
+      'ECAP',
+      'EDFM',
+      'EEP',
+      'EFAC',
+      'EGAS',
+      'EGOTH',
+      'EGREF',
+      'ELAB',
+      'ENPI',
+      'EOSB',
+      'EXPA',
+      'GEOS',
     ],
   };
 
@@ -502,7 +771,8 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
 
     // 2. Check quote.sector if present
     if (quote.sector != null && quote.sector!.isNotEmpty) {
-      if (quote.sector!.contains(selectedSector) || selectedSector.contains(quote.sector!)) {
+      if (quote.sector!.contains(selectedSector) ||
+          selectedSector.contains(quote.sector!)) {
         return true;
       }
     }
@@ -511,25 +781,75 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     final desc = '${quote.ticker} ${quote.description}';
     switch (selectedSector) {
       case 'العقارات':
-        return desc.contains('عقار') || desc.contains('إسكان') || desc.contains('تعمير') || desc.contains('تنمية') || desc.contains('أراضي') || desc.contains('مصطفى') || desc.contains('هيلز');
+        return desc.contains('عقار') ||
+            desc.contains('إسكان') ||
+            desc.contains('تعمير') ||
+            desc.contains('تنمية') ||
+            desc.contains('أراضي') ||
+            desc.contains('مصطفى') ||
+            desc.contains('هيلز');
       case 'البنوك':
-        return desc.contains('بنك') || desc.contains('مصرف') || desc.contains('تجاري دولي') || desc.contains('أبوظبي') || desc.contains('كريدي');
+        return desc.contains('بنك') ||
+            desc.contains('مصرف') ||
+            desc.contains('تجاري دولي') ||
+            desc.contains('أبوظبي') ||
+            desc.contains('كريدي');
       case 'الخدمات المالية':
-        return desc.contains('مالية') || desc.contains('استثمار') || desc.contains('فوري') || desc.contains('هيرميس') || desc.contains('القلعة') || desc.contains('راية') || desc.contains('بلتون');
+        return desc.contains('مالية') ||
+            desc.contains('استثمار') ||
+            desc.contains('فوري') ||
+            desc.contains('هيرميس') ||
+            desc.contains('القلعة') ||
+            desc.contains('راية') ||
+            desc.contains('بلتون');
       case 'الأغذية والمشروبات':
-        return desc.contains('أغذية') || desc.contains('مشروب') || desc.contains('جهينة') || desc.contains('لاند') || desc.contains('دومتي') || desc.contains('دخان') || desc.contains('مطاحن') || desc.contains('دواجن') || desc.contains('سكر');
+        return desc.contains('أغذية') ||
+            desc.contains('مشروب') ||
+            desc.contains('جهينة') ||
+            desc.contains('لاند') ||
+            desc.contains('دومتي') ||
+            desc.contains('دخان') ||
+            desc.contains('مطاحن') ||
+            desc.contains('دواجن') ||
+            desc.contains('سكر');
       case 'الكيماويات':
-        return desc.contains('كيماو') || desc.contains('كيما') || desc.contains('موبكو') || desc.contains('أسمدة') || desc.contains('بتروكيماويات') || desc.contains('زيوت');
+        return desc.contains('كيماو') ||
+            desc.contains('كيما') ||
+            desc.contains('موبكو') ||
+            desc.contains('أسمدة') ||
+            desc.contains('بتروكيماويات') ||
+            desc.contains('زيوت');
       case 'موارد أساسية':
-        return desc.contains('حديد') || desc.contains('صلب') || desc.contains('ألومنيوم') || desc.contains('معادن') || desc.contains('مناجم');
+        return desc.contains('حديد') ||
+            desc.contains('صلب') ||
+            desc.contains('ألومنيوم') ||
+            desc.contains('معادن') ||
+            desc.contains('مناجم');
       case 'الرعاية الصحية':
-        return desc.contains('أدوية') || desc.contains('صيدل') || desc.contains('مستشفى') || desc.contains('رعاية') || desc.contains('طبي');
+        return desc.contains('أدوية') ||
+            desc.contains('صيدل') ||
+            desc.contains('مستشفى') ||
+            desc.contains('رعاية') ||
+            desc.contains('طبي');
       case 'الاتصالات والتكنولوجيا':
-        return desc.contains('اتصالا') || desc.contains('كهربا') || desc.contains('شبكات') || desc.contains('تكنولوجيا') || desc.contains('سويدي');
+        return desc.contains('اتصالا') ||
+            desc.contains('كهربا') ||
+            desc.contains('شبكات') ||
+            desc.contains('تكنولوجيا') ||
+            desc.contains('سويدي');
       case 'مغاسل وغزل ونسيج':
-        return desc.contains('غزل') || desc.contains('نسيج') || desc.contains('سجاد') || desc.contains('ملابس') || desc.contains('نساجون') || desc.contains('دايس');
+        return desc.contains('غزل') ||
+            desc.contains('نسيج') ||
+            desc.contains('سجاد') ||
+            desc.contains('ملابس') ||
+            desc.contains('نساجون') ||
+            desc.contains('دايس');
       case 'مواد البناء':
-        return desc.contains('أسمنت') || desc.contains('سيراميك') || desc.contains('بناء') || desc.contains('حراريات') || desc.contains('بورسلين');
+        return desc.contains('أسمنت') ||
+            desc.contains('سيراميك') ||
+            desc.contains('بناء') ||
+            desc.contains('حراريات') ||
+            desc.contains('بورسلين');
       default:
         return desc.contains(selectedSector);
     }
@@ -538,8 +858,8 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
   List<MarketQuote> _filterQuotes(List<MarketQuote> quotes) {
     return quotes.where((quote) {
       if (_query.isNotEmpty) {
-        final match = quote.ticker.contains(_query) ||
-            quote.description.contains(_query);
+        final match =
+            quote.ticker.contains(_query) || quote.description.contains(_query);
         if (!match) return false;
       }
       if (_currentTabIndex == 1 && _selectedSector != 'الجميع') {
@@ -556,10 +876,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
         children: const [
           Icon(Icons.search_off_rounded, size: 48),
           SizedBox(height: 12),
-          Text(
-            'لا توجد أسهم في هذه القائمة.',
-            textAlign: TextAlign.center,
-          ),
+          Text('لا توجد أسهم في هذه القائمة.', textAlign: TextAlign.center),
         ],
       );
     }
