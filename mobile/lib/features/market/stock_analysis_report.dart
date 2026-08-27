@@ -964,6 +964,9 @@ class _SectorQualityCard extends StatelessWidget {
         : 'أداء وتقييم السهم بالمقارنة مع معايير ومتوسط حركة قطاع $sectorName.';
 
     final return20d = _number(sectorQuality['return_20d_pct']);
+    final sectorTrendAr = _text(sectorQuality['sector_trend_ar']).isNotEmpty
+        ? _text(sectorQuality['sector_trend_ar'])
+        : ((return20d ?? 0) >= 0 ? 'صاعد 📈' : 'هابط 📉');
 
     final badgeColor = switch (qualityStatus) {
       'outperforming' => Colors.green.shade700,
@@ -1032,6 +1035,7 @@ class _SectorQualityCard extends StatelessWidget {
             _MetricGrid(
               items: [
                 _MetricData(label: 'اسم القطاع', value: sectorName),
+                _MetricData(label: 'اتجاه القطاع', value: sectorTrendAr),
                 _MetricData(
                   label: 'درجة التقييم النسبي',
                   value: currentScore != null

@@ -156,11 +156,14 @@ def _resolve_candidate_sector_quality(candidate: Candidate) -> dict[str, Any]:
     analysis = candidate.analysis if isinstance(candidate.analysis, dict) else {}
     engines = analysis.get("engines", {}) if isinstance(analysis.get("engines"), dict) else {}
     tech = engines.get("technical", {}).get("details", {}) if isinstance(engines.get("technical"), dict) else {}
+    sector_eng = engines.get("sector_momentum", {}).get("details", {}) if isinstance(engines.get("sector_momentum"), dict) else {}
     ret_20d = tech.get("return_20d_pct") if isinstance(tech, dict) else None
+    sec_mom_pct = sector_eng.get("sector_momentum_5d_pct") if isinstance(sector_eng, dict) else None
     return compute_sector_quality(
         candidate.ticker,
         score=candidate.final_score,
         return_20d=float(ret_20d) if isinstance(ret_20d, (int, float)) else None,
+        sector_momentum_pct=float(sec_mom_pct) if isinstance(sec_mom_pct, (int, float)) else None,
     )
 
 

@@ -515,6 +515,10 @@ class _ReportItemCard extends StatelessWidget {
                     ? 'متوافق مع قطاع $sectorName'
                     : 'أقل من متوسط قطاع $sectorName'));
 
+    final sectorTrendAr = _text(sectorQuality['sector_trend_ar']).isNotEmpty
+        ? _text(sectorQuality['sector_trend_ar'])
+        : 'صاعد 📈';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -558,6 +562,7 @@ class _ReportItemCard extends StatelessWidget {
                 _MetricChip(label: 'المخاطرة', value: riskLevel),
                 if (sectorName.isNotEmpty)
                   _MetricChip(label: 'القطاع', value: sectorName),
+                _MetricChip(label: 'اتجاه القطاع', value: sectorTrendAr),
               ],
             ),
             const SizedBox(height: 10),

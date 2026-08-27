@@ -398,12 +398,15 @@ async def execute_stock_analysis(
     from app.services.sector_quality import compute_sector_quality
 
     tech_eng = report_payload.get("engines", {}).get("technical", {}).get("details", {}) if isinstance(report_payload.get("engines"), dict) and isinstance(report_payload.get("engines", {}).get("technical"), dict) else {}
+    sector_eng = report_payload.get("engines", {}).get("sector_momentum", {}).get("details", {}) if isinstance(report_payload.get("engines"), dict) and isinstance(report_payload.get("engines", {}).get("sector_momentum"), dict) else {}
     ret_20d = tech_eng.get("return_20d_pct") if isinstance(tech_eng, dict) else None
+    sec_mom_pct = sector_eng.get("sector_momentum_5d_pct") if isinstance(sector_eng, dict) else None
     score_val = float(report_payload.get("final_score", 0)) if isinstance(report_payload, dict) else 0.0
     sector_quality = compute_sector_quality(
         series.ticker,
         score=score_val,
         return_20d=float(ret_20d) if isinstance(ret_20d, (int, float)) else None,
+        sector_momentum_pct=float(sec_mom_pct) if isinstance(sec_mom_pct, (int, float)) else None,
     )
 
     payload = {

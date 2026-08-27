@@ -86,6 +86,7 @@ def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisRespon
             analysis.ticker,
             score=score,
             return_20d=_as_f(ret_20d),
+            sector_momentum_pct=_as_f(sector_momentum_pct),
             raw_sector=str(sector_name) if sector_name is not None else None,
         )
 
