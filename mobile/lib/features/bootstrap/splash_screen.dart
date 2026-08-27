@@ -56,11 +56,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
-              colors: [
-                Color(0xFF0A0E1A),
-                Color(0xFF141824),
-                Color(0xFF10162B),
-              ],
+              colors: [Color(0xFF0A0E1A), Color(0xFF141824), Color(0xFF10162B)],
             ),
           ),
           child: Stack(
@@ -112,9 +108,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           width: 104,
                           child: LinearProgressIndicator(
                             minHeight: 4,
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(20),
-                            ),
+                            borderRadius: BorderRadius.all(Radius.circular(20)),
                             backgroundColor: Color(0x33FFFFFF),
                             color: SahmiBrand.signalGold,
                           ),

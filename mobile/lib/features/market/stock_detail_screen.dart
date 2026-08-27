@@ -55,9 +55,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => Scaffold(
-          backgroundColor: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerLowest,
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
           body: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) => TradingViewWidget(
@@ -534,9 +532,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
                 child: const Center(child: CircularProgressIndicator()),
               ),
             ),
-            Positioned.fill(
-              child: WebViewWidget(controller: _controller),
-            ),
+            Positioned.fill(child: WebViewWidget(controller: _controller)),
           ],
         ),
       ),

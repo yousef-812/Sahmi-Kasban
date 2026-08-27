@@ -341,9 +341,9 @@ class _ThemeModeCard extends ConsumerWidget {
                 const SizedBox(width: 10),
                 Text(
                   'المظهر',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),

@@ -104,17 +104,14 @@ enum _SectorState {
   Color backgroundColor(ThemeData theme) {
     final dark = theme.brightness == Brightness.dark;
     return switch (this) {
-      strongBullish =>
-        dark ? const Color(0x1A00E676) : Colors.green.shade50,
-      mildBullish => dark
-          ? const Color(0x1200E676)
-          : Colors.green.shade50.withValues(alpha: 0.5),
+      strongBullish => dark ? const Color(0x1A00E676) : Colors.green.shade50,
+      mildBullish =>
+        dark
+            ? const Color(0x1200E676)
+            : Colors.green.shade50.withValues(alpha: 0.5),
       neutral => theme.colorScheme.surfaceContainerLow,
-      mildBearish => dark
-          ? const Color(0x1AFF8A3C)
-          : Colors.orange.shade50,
-      strongBearish =>
-        dark ? const Color(0x1AFF3D57) : Colors.red.shade50,
+      mildBearish => dark ? const Color(0x1AFF8A3C) : Colors.orange.shade50,
+      strongBearish => dark ? const Color(0x1AFF3D57) : Colors.red.shade50,
     };
   }
 

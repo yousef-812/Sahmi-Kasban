@@ -109,8 +109,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/verify-email',
-        pageBuilder: (context, state) =>
-            _sahmiPage(childKey: 'verify', child: VerifyEmailScreen(email: state.uri.queryParameters['email'])),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'verify',
+          child: VerifyEmailScreen(email: state.uri.queryParameters['email']),
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -119,8 +121,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/reset-password',
-        pageBuilder: (context, state) =>
-            _sahmiPage(childKey: 'reset', child: ResetPasswordScreen(email: state.uri.queryParameters['email'])),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'reset',
+          child: ResetPasswordScreen(email: state.uri.queryParameters['email']),
+        ),
       ),
       GoRoute(
         path: '/biometric-prompt',
@@ -176,8 +180,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/market/compare',
-        pageBuilder: (context, state) =>
-            _sahmiPage(childKey: 'compare', child: const StockComparisonScreen()),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'compare',
+          child: const StockComparisonScreen(),
+        ),
       ),
       GoRoute(
         path: '/market/analyze/:ticker',
@@ -198,18 +204,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/monetization',
-        pageBuilder: (context, state) =>
-            _sahmiPage(childKey: 'monetization', child: const MonetizationPage()),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'monetization',
+          child: const MonetizationPage(),
+        ),
       ),
       GoRoute(
         path: '/notifications',
-        pageBuilder: (context, state) =>
-            _sahmiPage(childKey: 'notifications', child: const NotificationScreen()),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'notifications',
+          child: const NotificationScreen(),
+        ),
       ),
       GoRoute(
         path: '/performance',
-        pageBuilder: (context, state) =>
-            _sahmiPage(childKey: 'performance', child: const PerformanceScreen()),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'performance',
+          child: const PerformanceScreen(),
+        ),
       ),
       GoRoute(
         path: '/performance/reports/:reportId',
@@ -248,8 +260,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/community/new',
-        pageBuilder: (context, state) =>
-            _sahmiPage(childKey: 'community-new', child: const CommunityCreateScreen()),
+        pageBuilder: (context, state) => _sahmiPage(
+          childKey: 'community-new',
+          child: const CommunityCreateScreen(),
+        ),
       ),
       GoRoute(
         path: '/community/mine',

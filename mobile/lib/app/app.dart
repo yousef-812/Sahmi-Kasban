@@ -30,9 +30,7 @@ class SahmiKasbanApp extends ConsumerWidget {
           child: TerminalTheme(
             data: isDark ? defaultDark() : defaultLight(),
             child: NotificationMessagingShell(
-              child: FreePlanAdShell(
-                child: child ?? const SizedBox.shrink(),
-              ),
+              child: FreePlanAdShell(child: child ?? const SizedBox.shrink()),
             ),
           ),
         );

@@ -9,10 +9,10 @@ enum AppThemeMode {
   dark;
 
   ThemeMode toMaterialThemeMode() => switch (this) {
-        AppThemeMode.system => ThemeMode.system,
-        AppThemeMode.light => ThemeMode.light,
-        AppThemeMode.dark => ThemeMode.dark,
-      };
+    AppThemeMode.system => ThemeMode.system,
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+  };
 }
 
 /// يتحكم بوضع السمة (دارك / لايت / تلقائي).
