@@ -760,99 +760,171 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     ],
   };
 
-  bool _matchSector(MarketQuote quote, String selectedSector) {
-    if (selectedSector == 'الجميع') return true;
+  static const Set<String> _bankTickers = {
+    'COMI',
+    'ADIB',
+    'HDBK',
+    'BTFH',
+    'CIEB',
+    'QNBE',
+    'EXPA',
+    'SAIB',
+    'NBKE',
+    'CANA',
+    'EGBE',
+    'SAUD',
+    'FAIT',
+    'FAITA',
+    'CBKD',
+  };
 
-    // 1. Check curated ticker map
-    final list = _sectorStockMap[selectedSector];
-    if (list != null && list.contains(quote.ticker)) {
-      return true;
+  static String _getCanonicalSector(MarketQuote quote) {
+    // 1. Strict bank priority check (Prevents BTFH/HDBK from showing in Real Estate)
+    if (_bankTickers.contains(quote.ticker)) {
+      return 'البنوك';
     }
 
-    // 2. Check quote.sector if present
+    // 2. Check quote.sector if returned by TradingView/backend
     if (quote.sector != null && quote.sector!.isNotEmpty) {
-      if (quote.sector!.contains(selectedSector) ||
-          selectedSector.contains(quote.sector!)) {
-        return true;
+      final sec = quote.sector!;
+      if (sec == 'البنوك' || sec.contains('Bank')) return 'البنوك';
+      if (sec == 'العقارات' || sec.contains('Real Estate')) return 'العقارات';
+      if (sec == 'الخدمات المالية' ||
+          sec.contains('Finance') ||
+          sec.contains('Financial')) {
+        return 'الخدمات المالية';
+      }
+      if (sec == 'الأغذية والمشروبات' ||
+          sec.contains('Food') ||
+          sec.contains('Tobacco') ||
+          sec.contains('Agricultural')) {
+        return 'الأغذية والمشروبات';
+      }
+      if (sec == 'الكيماويات' ||
+          sec.contains('Chemical') ||
+          sec.contains('Process') ||
+          sec.contains('Petro')) {
+        return 'الكيماويات';
+      }
+      if (sec == 'موارد أساسية' ||
+          sec.contains('Mineral') ||
+          sec.contains('Steel') ||
+          sec.contains('Aluminum')) {
+        return 'موارد أساسية';
+      }
+      if (sec == 'الرعاية الصحية' ||
+          sec.contains('Health') ||
+          sec.contains('Pharma') ||
+          sec.contains('Hospital')) {
+        return 'الرعاية الصحية';
+      }
+      if (sec == 'الاتصالات والتكنولوجيا' ||
+          sec.contains('Tech') ||
+          sec.contains('Telecom') ||
+          sec.contains('Electric')) {
+        return 'الاتصالات والتكنولوجيا';
+      }
+      if (sec == 'مواد البناء' ||
+          sec.contains('Building') ||
+          sec.contains('Cement')) {
+        return 'مواد البناء';
+      }
+      if (sec == 'مغاسل وغزل ونسيج' ||
+          sec.contains('Textiles') ||
+          sec.contains('Apparel') ||
+          sec.contains('Durables')) {
+        return 'مغاسل وغزل ونسيج';
       }
     }
 
-    // 3. Keyword fallbacks in ticker or description
-    final desc = '${quote.ticker} ${quote.description}';
-    switch (selectedSector) {
-      case 'العقارات':
-        return desc.contains('عقار') ||
-            desc.contains('إسكان') ||
-            desc.contains('تعمير') ||
-            desc.contains('تنمية') ||
-            desc.contains('أراضي') ||
-            desc.contains('مصطفى') ||
-            desc.contains('هيلز');
-      case 'البنوك':
-        return desc.contains('بنك') ||
-            desc.contains('مصرف') ||
-            desc.contains('تجاري دولي') ||
-            desc.contains('أبوظبي') ||
-            desc.contains('كريدي');
-      case 'الخدمات المالية':
-        return desc.contains('مالية') ||
-            desc.contains('استثمار') ||
-            desc.contains('فوري') ||
-            desc.contains('هيرميس') ||
-            desc.contains('القلعة') ||
-            desc.contains('راية') ||
-            desc.contains('بلتون');
-      case 'الأغذية والمشروبات':
-        return desc.contains('أغذية') ||
-            desc.contains('مشروب') ||
-            desc.contains('جهينة') ||
-            desc.contains('لاند') ||
-            desc.contains('دومتي') ||
-            desc.contains('دخان') ||
-            desc.contains('مطاحن') ||
-            desc.contains('دواجن') ||
-            desc.contains('سكر');
-      case 'الكيماويات':
-        return desc.contains('كيماو') ||
-            desc.contains('كيما') ||
-            desc.contains('موبكو') ||
-            desc.contains('أسمدة') ||
-            desc.contains('بتروكيماويات') ||
-            desc.contains('زيوت');
-      case 'موارد أساسية':
-        return desc.contains('حديد') ||
-            desc.contains('صلب') ||
-            desc.contains('ألومنيوم') ||
-            desc.contains('معادن') ||
-            desc.contains('مناجم');
-      case 'الرعاية الصحية':
-        return desc.contains('أدوية') ||
-            desc.contains('صيدل') ||
-            desc.contains('مستشفى') ||
-            desc.contains('رعاية') ||
-            desc.contains('طبي');
-      case 'الاتصالات والتكنولوجيا':
-        return desc.contains('اتصالا') ||
-            desc.contains('كهربا') ||
-            desc.contains('شبكات') ||
-            desc.contains('تكنولوجيا') ||
-            desc.contains('سويدي');
-      case 'مغاسل وغزل ونسيج':
-        return desc.contains('غزل') ||
-            desc.contains('نسيج') ||
-            desc.contains('سجاد') ||
-            desc.contains('ملابس') ||
-            desc.contains('نساجون') ||
-            desc.contains('دايس');
-      case 'مواد البناء':
-        return desc.contains('أسمنت') ||
-            desc.contains('سيراميك') ||
-            desc.contains('بناء') ||
-            desc.contains('حراريات') ||
-            desc.contains('بورسلين');
-      default:
-        return desc.contains(selectedSector);
+    // 3. Check curated ticker map
+    for (final entry in _sectorStockMap.entries) {
+      if (entry.value.contains(quote.ticker)) {
+        return entry.key;
+      }
     }
+
+    // 4. Keyword fallbacks
+    final desc = '${quote.ticker} ${quote.description}';
+    if (desc.contains('بنك') ||
+        desc.contains('مصرف') ||
+        desc.contains('تجاري دولي') ||
+        desc.contains('أبوظبي') ||
+        desc.contains('كريدي')) {
+      return 'البنوك';
+    }
+    if (desc.contains('عقار') ||
+        desc.contains('تطوير عقاري') ||
+        desc.contains('طلعت مصطفى') ||
+        desc.contains('بالم هيلز') ||
+        desc.contains('سوديك') ||
+        desc.contains('إعمار')) {
+      return 'العقارات';
+    }
+    if (desc.contains('مالية') ||
+        desc.contains('استثمار') ||
+        desc.contains('فوري') ||
+        desc.contains('هيرميس') ||
+        desc.contains('القلعة') ||
+        desc.contains('راية') ||
+        desc.contains('بلتون')) {
+      return 'الخدمات المالية';
+    }
+    if (desc.contains('أغذية') ||
+        desc.contains('مشروب') ||
+        desc.contains('جهينة') ||
+        desc.contains('دومتي') ||
+        desc.contains('دخان') ||
+        desc.contains('مطاحن') ||
+        desc.contains('دواجن') ||
+        desc.contains('سكر')) {
+      return 'الأغذية والمشروبات';
+    }
+    if (desc.contains('كيماو') ||
+        desc.contains('موبكو') ||
+        desc.contains('أسمدة') ||
+        desc.contains('بتروكيماويات') ||
+        desc.contains('زيوت')) {
+      return 'الكيماويات';
+    }
+    if (desc.contains('حديد') ||
+        desc.contains('صلب') ||
+        desc.contains('ألومنيوم') ||
+        desc.contains('معادن')) {
+      return 'موارد أساسية';
+    }
+    if (desc.contains('أدوية') ||
+        desc.contains('صيدل') ||
+        desc.contains('مستشفى') ||
+        desc.contains('طبي')) {
+      return 'الرعاية الصحية';
+    }
+    if (desc.contains('اتصالا') ||
+        desc.contains('كهربا') ||
+        desc.contains('تكنولوجيا') ||
+        desc.contains('سويدي')) {
+      return 'الاتصالات والتكنولوجيا';
+    }
+    if (desc.contains('غزل') ||
+        desc.contains('نسيج') ||
+        desc.contains('سجاد') ||
+        desc.contains('ملابس') ||
+        desc.contains('نساجون')) {
+      return 'مغاسل وغزل ونسيج';
+    }
+    if (desc.contains('أسمنت') ||
+        desc.contains('سيراميك') ||
+        desc.contains('حراريات') ||
+        desc.contains('بورسلين')) {
+      return 'مواد البناء';
+    }
+
+    return 'العقارات';
+  }
+
+  bool _matchSector(MarketQuote quote, String selectedSector) {
+    if (selectedSector == 'الجميع') return true;
+    return _getCanonicalSector(quote) == selectedSector;
   }
 
   List<MarketQuote> _filterQuotes(List<MarketQuote> quotes) {

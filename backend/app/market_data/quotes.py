@@ -49,6 +49,59 @@ _quotes_cache_at: datetime | None = None
 _quotes_cache: MarketQuotesSnapshot | None = None
 
 
+_EGX_BANK_TICKERS = {
+    "COMI", "ADIB", "HDBK", "BTFH", "CIEB", "QNBE", "EXPA", "SAIB", "NBKE",
+    "CANA", "EGBE", "SAUD", "FAIT", "FAITA", "CBKD"
+}
+
+_TRADINGVIEW_SECTOR_TRANSLATION = {
+    "Finance": "البنوك",
+    "Commercial Banks": "البنوك",
+    "Regional Banks": "البنوك",
+    "Real Estate": "العقارات",
+    "Real Estate Development": "العقارات",
+    "Consumer Non-Durables": "الأغذية والمشروبات",
+    "Food Retail": "الأغذية والمشروبات",
+    "Agricultural Commodities/Milling": "الأغذية والمشروبات",
+    "Tobacco": "الأغذية والمشروبات",
+    "Process Industries": "الكيماويات",
+    "Chemicals: Major Diversified": "الكيماويات",
+    "Chemicals: Agricultural": "الكيماويات",
+    "Oil & Gas Production": "الكيماويات",
+    "Non-Energy Minerals": "موارد أساسية",
+    "Steel": "موارد أساسية",
+    "Aluminum": "موارد أساسية",
+    "Health Technology": "الرعاية الصحية",
+    "Health Services": "الرعاية الصحية",
+    "Pharmaceuticals: Major": "الرعاية الصحية",
+    "Pharmaceuticals: Generic": "الرعاية الصحية",
+    "Technology Services": "الاتصالات والتكنولوجيا",
+    "Telecommunications Equipment": "الاتصالات والتكنولوجيا",
+    "Major Telecommunications": "الاتصالات والتكنولوجيا",
+    "Electronic Technology": "الاتصالات والتكنولوجيا",
+    "Utilities": "الاتصالات والتكنولوجيا",
+    "Building Materials": "مواد البناء",
+    "Industrial Services": "مواد البناء",
+    "Consumer Durables": "مغاسل وغزل ونسيج",
+    "Apparel/Footwear": "مغاسل وغزل ونسيج",
+    "Retail Trade": "الخدمات المالية",
+}
+
+
+def _resolve_canonical_sector(ticker: str, raw_sector: str | None) -> str | None:
+    if ticker in _EGX_BANK_TICKERS:
+        return "البنوك"
+    if raw_sector and raw_sector.strip():
+        text = raw_sector.strip()
+        if text in _TRADINGVIEW_SECTOR_TRANSLATION:
+            return _TRADINGVIEW_SECTOR_TRANSLATION[text]
+        for key, val in _TRADINGVIEW_SECTOR_TRANSLATION.items():
+            if key in text:
+                return val
+        return text
+    return None
+
+
 @dataclass(frozen=True)
 class MarketQuote:
     ticker: str
@@ -215,7 +268,7 @@ def _parse_scanner_quotes(payload: object) -> dict[str, MarketQuote]:
             ticker=ticker,
             description=fallback_description,
             exchange="EGX",
-            sector=sector_text,
+            sector=_resolve_canonical_sector(ticker, sector_text),
             current_price=close,
             open_price=open_price,
             previous_close=previous_close,
