@@ -32,7 +32,20 @@ class RiskEngine(AnalysisEngine):
         )
 
         entry = price
-        stop_loss = max(0.01, entry - atr_value * self.config.stop_atr_multiple)
+
+        market_regime = str(context.get("market_regime", "sideways"))
+        market_volatility = safe_float(context.get("annualized_volatility"), 50.0)
+
+        base_atr_multiple = self.config.stop_atr_multiple
+
+        if market_regime == "sideways" or market_volatility < 40.0:
+            adaptive_atr_multiple = max(1.5, base_atr_multiple - 0.5)
+        elif market_regime in ("speculative_bullish", "risk_off_volatile") or market_volatility > 65.0:
+            adaptive_atr_multiple = min(3.0, base_atr_multiple + 0.5)
+        else:
+            adaptive_atr_multiple = base_atr_multiple
+
+        stop_loss = max(0.01, entry - atr_value * adaptive_atr_multiple)
         risk_per_share = max(entry - stop_loss, entry * 0.005)
         risk_amount = self.config.capital * self.config.risk_per_trade
         by_risk = int(risk_amount / risk_per_share)
@@ -87,7 +100,7 @@ class RiskEngine(AnalysisEngine):
             score=score,
             confidence=88.0,
             details={
-                "model_version": "risk-plan-v2.3-atr-5-session",
+                "model_version": "risk-plan-v2.4-adaptive-atr",
                 "risk_level": context["risk_level"],
                 "total_risk_pct": round(total_risk, 2),
                 "atr_pct": round(atr_pct, 2),
@@ -96,6 +109,9 @@ class RiskEngine(AnalysisEngine):
                 "plan_style": plan_style,
                 "horizon_sessions": SHORT_HORIZON_SESSIONS,
                 "target_model": "atr_reward_targets_for_5_sessions",
+                "base_atr_multiple": base_atr_multiple,
+                "adaptive_atr_multiple": round(adaptive_atr_multiple, 2),
+                "market_regime_context": market_regime,
                 "recommended_position_multiplier": (
                     0.5 if aggressive_breakout else 1.0
                 ),

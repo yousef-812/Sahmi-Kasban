@@ -63,7 +63,7 @@ def test_balanced_elite_uses_adaptive_liquidity_limits() -> None:
         _context(atr_pct=5.0, total_risk_pct=31.0, risk_level="medium"),
     )
 
-    assert result.details["model_version"] == "elite-quality-v2.3-regime-aware"
+    assert result.details["model_version"] == "elite-quality-v2.4-regime-adaptive"
     assert result.details["selected_profile"] == "balanced"
     assert result.details["balanced_ready"] is True
     assert result.details["aggressive_ready"] is False
@@ -80,7 +80,7 @@ def test_aggressive_elite_requires_breakout_volume_and_smaller_position() -> Non
     result = OpportunityQualityEngine(AnalysisConfig()).analyze(
         candles,
         _context(
-            atr_pct=6.5,
+            atr_pct=5.5,
             total_risk_pct=38.0,
             risk_level="medium",
             market_regime_profile="breakout_bullish",
@@ -125,7 +125,7 @@ def test_trade_plan_uses_realistic_five_session_targets() -> None:
     result = RiskEngine(AnalysisConfig()).analyze(_candles(), {})
     plan = result.details["trade_plan"]
 
-    assert result.details["model_version"] == "risk-plan-v2.3-atr-5-session"
+    assert result.details["model_version"] == "risk-plan-v2.4-adaptive-atr"
     assert result.details["horizon_sessions"] == 5
     assert plan["reward_risk_1"] == 1.0
     assert plan["reward_risk_2"] == 1.75

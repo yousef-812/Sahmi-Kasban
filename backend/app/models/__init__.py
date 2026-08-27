@@ -46,6 +46,7 @@ from app.models.performance import (
     MarketReportOutcomeRevision,
 )
 from app.models.replays import AnalysisReplayJob, AnalysisReplayRow, AnalysisReplayTicker
+from app.models.watchlist import WatchlistItem
 
 __all__ = [
     "AccountToken",
@@ -89,5 +90,6 @@ __all__ = [
     "UserStockAnalysisAccess",
     "WalletAccount",
     "WalletEntry",
+    "WatchlistItem",
     "WeeklyGrant",
 ]

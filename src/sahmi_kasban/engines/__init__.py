@@ -5,6 +5,7 @@ from sahmi_kasban.engines.opportunity_quality import OpportunityQualityEngine
 from sahmi_kasban.engines.quantitative import QuantitativeEngine
 from sahmi_kasban.engines.risk import RiskEngine
 from sahmi_kasban.engines.scenario import ScenarioEngine
+from sahmi_kasban.engines.sector import SectorMomentumEngine
 from sahmi_kasban.engines.smc import SMCEngine
 from sahmi_kasban.engines.technical import TechnicalEngine
 
@@ -17,6 +18,7 @@ __all__ = [
     "RiskEngine",
     "SMCEngine",
     "ScenarioEngine",
+    "SectorMomentumEngine",
     "StockQualificationEngine",
     "TechnicalEngine",
 ]

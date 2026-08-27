@@ -47,6 +47,14 @@ class TechnicalEngine(AnalysisEngine):
         elif sma_200 > 0:
             score -= 8
 
+        vwap_20 = safe_float(latest.get("vwap_20"), close)
+        if close > vwap_20:
+            score += 6
+            reasons.append("Price trading above 20-day VWAP (Institutional support)")
+        elif close < vwap_20 * 0.95:
+            score -= 6
+            reasons.append("Price significantly below VWAP (Institutional distribution)")
+
         if 45 <= rsi <= 65:
             score += 10
             reasons.append("RSI in constructive range")
@@ -93,12 +101,13 @@ class TechnicalEngine(AnalysisEngine):
             score=score,
             confidence=min(96.0, 60.0 + abs(score - 50.0) * 0.7),
             details={
-                "model_version": "technical-v2.2-overextension-aware",
+                "model_version": "technical-v2.3-vwap-aware",
                 "trend": trend,
                 "close": round(close, 4),
                 "sma_20": round(sma_20, 4),
                 "sma_50": round(sma_50, 4),
                 "sma_200": round(sma_200, 4),
+                "vwap_20": round(vwap_20, 4),
                 "rsi": round(rsi, 2),
                 "macd": round(macd, 4),
                 "macd_signal": round(macd_signal, 4),

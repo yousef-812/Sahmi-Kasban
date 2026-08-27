@@ -7,7 +7,7 @@ from typing import Any, Protocol
 
 import pandas as pd
 
-from sahmi_kasban.indicators import prepare_candles
+from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 from sahmi_kasban.models import AnalysisReport
 
 
@@ -17,6 +17,13 @@ class AnalyzerProtocol(Protocol):
         ticker: str,
         candles: pd.DataFrame | Iterable[Mapping[str, Any]],
         index: tuple[str, pd.DataFrame | Iterable[Mapping[str, Any]]] | None = None,
+    ) -> AnalysisReport: ...
+
+    def analyze_prepared(
+        self,
+        ticker: str,
+        candles: pd.DataFrame,
+        index: tuple[str, pd.DataFrame] | None = None,
     ) -> AnalysisReport: ...
 
 
@@ -88,6 +95,7 @@ def walk_forward_backtest(
     horizon_sessions: int = 5,
     step_sessions: int = 5,
     neutral_band_pct: float = 1.0,
+    slippage_and_fees_pct: float = 0.3,
 ) -> BacktestSummary:
     """Evaluate frozen historical signals without exposing future candles to the analyzer.
 
@@ -104,6 +112,8 @@ def walk_forward_backtest(
         raise ValueError("step_sessions must be positive")
     if neutral_band_pct < 0:
         raise ValueError("neutral_band_pct cannot be negative")
+    if slippage_and_fees_pct < 0:
+        raise ValueError("slippage_and_fees_pct cannot be negative")
 
     if analyzer is None:
         from sahmi_kasban.orchestrator import SahmiKasbanAnalyzer
@@ -113,6 +123,12 @@ def walk_forward_backtest(
     prepared = prepare_candles(candles)
     if len(prepared) < min_train_size + horizon_sessions:
         raise ValueError("not enough candles for the requested walk-forward backtest")
+
+    has_analyze_prepared = hasattr(analyzer, "analyze_prepared")
+    if has_analyze_prepared:
+        enriched = enrich_indicators(prepared)
+    else:
+        enriched = prepared
 
     prepared_index = None
     if index is not None:
@@ -128,7 +144,7 @@ def walk_forward_backtest(
         len(prepared) - horizon_sessions + 1,
         step_sessions,
     ):
-        history = prepared.iloc[:cutoff].copy()
+        history = enriched.iloc[:cutoff]
         future = prepared.iloc[cutoff : cutoff + horizon_sessions]
         report_index = None
         if prepared_index is not None:
@@ -138,13 +154,19 @@ def walk_forward_backtest(
             ]
             if len(index_slice) >= 60:
                 report_index = (index_name, index_slice)
-        report = analyzer.analyze(ticker, history, index=report_index)
+        if has_analyze_prepared:
+            report = analyzer.analyze_prepared(ticker, history, index=report_index)
+        else:
+            report = analyzer.analyze(ticker, history, index=report_index)
 
         entry = float(history.iloc[-1]["close"])
         exit_price = float(future.iloc[-1]["close"])
-        forward_return = (exit_price / entry - 1.0) * 100.0
-        max_upside = (float(future["high"].max()) / entry - 1.0) * 100.0
-        max_drawdown = (float(future["low"].min()) / entry - 1.0) * 100.0
+        
+        gross_forward_return = (exit_price / entry - 1.0) * 100.0
+        forward_return = gross_forward_return - slippage_and_fees_pct
+
+        max_upside = (float(future["high"].max()) / entry - 1.0) * 100.0 - slippage_and_fees_pct
+        max_drawdown = (float(future["low"].min()) / entry - 1.0) * 100.0 - slippage_and_fees_pct
 
         if report.signal == "BUY":
             correct = forward_return > neutral_band_pct

@@ -1,7 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class SplashScreen extends StatelessWidget {
+import '../../core/auth/biometric_service.dart';
+import '../../core/haptics.dart';
+import '../auth/session_controller.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _tryBiometricAutoLogin();
+  }
+
+  Future<void> _tryBiometricAutoLogin() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    try {
+      final biometricService = ref.read(biometricServiceProvider);
+      final biometricResult = await biometricService.tryLogin();
+
+      if (biometricResult != null && mounted) {
+        final session = ref.read(sessionControllerProvider.notifier);
+        await session.authenticateWithTokens(
+          accessToken: biometricResult.accessToken,
+          refreshToken: biometricResult.refreshToken,
+        );
+        TerminalHaptics.success();
+        if (mounted) {
+          context.go('/pulse');
+        }
+      }
+    } catch (_) {
+      // Ignore errors so normal authentication flow takes over safely.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

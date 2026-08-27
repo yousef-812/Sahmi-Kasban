@@ -15,7 +15,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 
@@ -33,6 +33,10 @@ class User(TimestampMixin, Base):
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     auth_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    watchlist_items: Mapped[list[WatchlistItem]] = relationship(
+        "WatchlistItem", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class WalletEntry(TimestampMixin, Base):

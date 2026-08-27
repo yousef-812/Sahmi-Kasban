@@ -9,6 +9,7 @@ import '../features/admin/admin_wallet_credit_screen.dart';
 import '../features/admin/historical_replay_control_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
+import '../features/auth/biometric_prompt_screen.dart';
 import '../features/auth/session_controller.dart';
 import '../features/bootstrap/splash_screen.dart';
 import '../features/community/community_create_screen.dart';
@@ -27,9 +28,13 @@ import '../features/performance/performance_admin_screen.dart';
 import '../features/performance/performance_report_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
+import '../features/pulse/pulse_screen.dart';
+import '../features/analyze/quick_analyze_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
+import '../features/watchlist/watchlist_screen.dart';
+import 'terminal_shell.dart';
 
 class _RouterRefreshNotifier extends ChangeNotifier {
   void refresh() => notifyListeners();
@@ -80,8 +85,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ResetPasswordScreen(email: state.uri.queryParameters['email']),
       ),
       GoRoute(
-        path: '/home',
-        builder: (context, state) => const DashboardScreen(),
+        path: '/biometric-prompt',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, String>? ?? {};
+          return BiometricPromptScreen(
+            accessToken: extra['accessToken'] ?? '',
+            refreshToken: extra['refreshToken'] ?? '',
+            onComplete: () => context.go('/pulse'),
+          );
+        },
+      ),
+      ShellRoute(
+        builder: (context, state, child) => TerminalShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/pulse',
+            builder: (context, state) => const PulseScreen(),
+          ),
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const PulseScreen(),
+          ),
+          GoRoute(
+            path: '/watch',
+            builder: (context, state) => const WatchlistScreen(),
+          ),
+          GoRoute(
+            path: '/analyze',
+            builder: (context, state) => const QuickAnalyzeScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/stocks',

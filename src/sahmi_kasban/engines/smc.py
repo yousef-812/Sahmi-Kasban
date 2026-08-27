@@ -57,28 +57,46 @@ class SMCEngine(AnalysisEngine):
 
         body = (recent["close"] - recent["open"]).abs()
         body_median = safe_float(body.tail(20).median())
+        volume_avg = safe_float(recent["volume"].tail(20).mean())
+        displacement_mult = getattr(self.config, "smc_ob_displacement_multiplier", 1.5)
+        volume_mult = getattr(self.config, "smc_ob_volume_multiplier", 1.0)
+
         bullish_order_blocks: list[dict[str, float]] = []
         bearish_order_blocks: list[dict[str, float]] = []
         for index in range(max(1, len(recent) - 12), len(recent) - 1):
             candle = recent.iloc[index]
             next_candle = recent.iloc[index + 1]
-            candle_body = abs(safe_float(candle["close"]) - safe_float(candle["open"]))
-            displacement = abs(
-                safe_float(next_candle["close"]) - safe_float(next_candle["open"])
-            )
-            if candle_body <= body_median and displacement >= body_median * 1.5:
+            candle_close = safe_float(candle["close"])
+            candle_open = safe_float(candle["open"])
+            candle_high = safe_float(candle["high"])
+            candle_low = safe_float(candle["low"])
+            candle_body = abs(candle_close - candle_open)
+
+            next_close = safe_float(next_candle["close"])
+            next_open = safe_float(next_candle["open"])
+            next_volume = safe_float(next_candle["volume"])
+            next_avg_vol = safe_float(next_candle.get("avg_volume_20"), volume_avg)
+            displacement = abs(next_close - next_open)
+
+            volume_confirmed = next_volume >= next_avg_vol * volume_mult
+
+            if candle_body <= body_median and displacement >= body_median * displacement_mult and volume_confirmed:
                 block = {
-                    "low": round(safe_float(candle["low"]), 4),
-                    "high": round(safe_float(candle["high"]), 4),
+                    "low": round(candle_low, 4),
+                    "high": round(candle_high, 4),
                 }
+                # Bullish OB: previous candle red, next candle green, next closes ABOVE previous high (Breakout)
                 if (
-                    safe_float(candle["close"]) < safe_float(candle["open"])
-                    and safe_float(next_candle["close"]) > safe_float(next_candle["open"])
+                    candle_close < candle_open
+                    and next_close > next_open
+                    and next_close > candle_high
                 ):
                     bullish_order_blocks.append(block)
+                # Bearish OB: previous candle green, next candle red, next closes BELOW previous low (Breakout)
                 elif (
-                    safe_float(candle["close"]) > safe_float(candle["open"])
-                    and safe_float(next_candle["close"]) < safe_float(next_candle["open"])
+                    candle_close > candle_open
+                    and next_close < next_open
+                    and next_close < candle_low
                 ):
                     bearish_order_blocks.append(block)
 

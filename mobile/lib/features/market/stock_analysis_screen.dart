@@ -7,6 +7,7 @@ import '../../domain/models.dart';
 import '../auth/session_controller.dart';
 import '../monetization/free_plan_ads.dart';
 import '../wallet/wallet_providers.dart';
+import '../watchlist/watchlist_providers.dart';
 import 'stock_analysis_report.dart';
 
 class StockAnalysisScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,32 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
   void initState() {
     super.initState();
     Future<void>.microtask(_loadSavedAnalysis);
+  }
+
+  Future<void> _addToWatchlist(BuildContext context) async {
+    try {
+      await ref.read(watchlistProvider.notifier).add(widget.ticker);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تمت إضافة ${widget.ticker} لـ قائمة المراقبة'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('already')
+                  ? 'السهم موجود بالفعل في قائمة المراقبة'
+                  : 'تعذر إضافة السهم للمراقبة',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadSavedAnalysis() async {
@@ -120,7 +147,16 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('تحليل ${widget.ticker}')),
+      appBar: AppBar(
+        title: Text('تحليل ${widget.ticker}'),
+        actions: [
+          IconButton(
+            onPressed: () => _addToWatchlist(context),
+            icon: const Icon(Icons.visibility_rounded),
+            tooltip: 'أضف للمراقبة',
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _loadSavedAnalysis,
         child: ListView(

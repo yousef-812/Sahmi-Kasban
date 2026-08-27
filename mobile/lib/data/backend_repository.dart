@@ -240,6 +240,18 @@ class BackendRepository {
     }
   }
 
+  Future<AnalysisHistoryResponse> getAnalysisHistory({int limit = 10}) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/analysis-history',
+        queryParameters: <String, dynamic>{'limit': limit},
+      );
+      return AnalysisHistoryResponse.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReportPreview?> getLatestReportPreview() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(

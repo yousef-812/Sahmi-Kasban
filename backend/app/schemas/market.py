@@ -35,6 +35,11 @@ class StockAnalysisResponse(BaseModel):
     balance_coins: str
     data_as_of: datetime
     payload: dict
+    sector_momentum_pct: float | None = None
+    sector_name: str | None = None
+    adaptive_atr_multiple: float | None = None
+    market_regime_context: str | None = None
+    vwap_20: float | None = None
 
 
 class StockComparisonRequest(BaseModel):

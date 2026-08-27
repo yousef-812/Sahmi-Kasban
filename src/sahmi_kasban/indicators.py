@@ -67,6 +67,22 @@ def atr(df: pd.DataFrame, window: int = 14) -> pd.Series:
     return true_range(df).ewm(alpha=1 / window, adjust=False, min_periods=window).mean()
 
 
+def rolling_vwap(df: pd.DataFrame, window: int = 20) -> pd.Series:
+    """
+    حساب متوسط السعر المرجح بحجم التداول (Rolling VWAP)
+    نستخدم نافذة متحركة (20 يوم افتراضياً) لأن بياناتنا يومية، وهذا يعكس 
+    تكلفة الدخول المتوسطة للمؤسسات خلال الشهر الأخير.
+    """
+    typical_price = (df["high"] + df["low"] + df["close"]) / 3.0
+    volume = df["volume"].clip(lower=0.0)
+
+    rolling_vp = (typical_price * volume).rolling(window=window, min_periods=1).sum()
+    rolling_vol = volume.rolling(window=window, min_periods=1).sum()
+
+    vwap = rolling_vp / rolling_vol.replace(0.0, pd.NA)
+    return vwap.fillna(typical_price)
+
+
 def enrich_indicators(df: pd.DataFrame) -> pd.DataFrame:
     enriched = df.copy()
     enriched["sma_20"] = sma(enriched["close"], 20)
@@ -79,6 +95,7 @@ def enrich_indicators(df: pd.DataFrame) -> pd.DataFrame:
     enriched["rsi"] = rsi(enriched["close"])
     enriched["atr"] = atr(enriched)
     enriched["avg_volume_20"] = enriched["volume"].rolling(20, min_periods=5).mean()
+    enriched["vwap_20"] = rolling_vwap(enriched, window=20)
     enriched["return_1d"] = enriched["close"].pct_change()
     enriched["return_20d"] = enriched["close"].pct_change(20)
     enriched["volatility_20d"] = enriched["return_1d"].rolling(20, min_periods=10).std()

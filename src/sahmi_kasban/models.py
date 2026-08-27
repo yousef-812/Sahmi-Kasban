@@ -22,6 +22,29 @@ class AnalysisConfig:
     stop_atr_multiple: float = 2.0
     target_1_r: float = 1.0
     target_2_r: float = 1.75
+    # Opportunity quality & tuning thresholds
+    elite_min_directional_score: float = 80.0
+    elite_min_confidence: float = 70.0
+    balanced_max_return_20d_pct: float = 30.0
+    balanced_base_max_atr_pct: float = 4.5
+    balanced_base_max_total_risk_pct: float = 30.0
+    aggressive_min_return_20d_pct: float = 5.0
+    aggressive_max_return_20d_pct: float = 45.0
+    aggressive_max_return_5d_pct: float = 15.0
+    aggressive_min_breakout_pct: float = 2.0
+    aggressive_max_breakout_pct: float = 12.0
+    aggressive_min_volume_ratio: float = 2.0
+    aggressive_min_turnover_egp: float = 5_000_000.0
+    elite_max_zero_volume_ratio: float = 0.10
+    aggressive_max_zero_volume_ratio: float = 0.05
+    # Signal thresholds
+    signal_buy_score_threshold: float = 67.0
+    signal_buy_risk_threshold: float = 50.0
+    signal_avoid_score_threshold: float = 42.0
+    signal_avoid_risk_threshold: float = 35.0
+    # SMC Order Block thresholds
+    smc_ob_displacement_multiplier: float = 1.5
+    smc_ob_volume_multiplier: float = 1.0
 
     def __post_init__(self) -> None:
         if self.capital <= 0:

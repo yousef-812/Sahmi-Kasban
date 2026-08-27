@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/models.dart';
 import '../../widgets/structured_data_card.dart';
+import 'sector_momentum_card.dart';
 
 class StockAnalysisReport extends StatelessWidget {
   const StockAnalysisReport({required this.analysis, super.key});
@@ -40,14 +41,27 @@ class StockAnalysisReport extends StatelessWidget {
           balanceCoins: analysis.balanceCoins,
         ),
         const SizedBox(height: 12),
-        _TradePlanCard(tradePlan: tradePlan, risk: risk),
+        _TradePlanCard(
+          tradePlan: tradePlan,
+          risk: risk,
+          adaptiveAtrMultiple: analysis.adaptiveAtrMultiple,
+          marketRegimeContext: analysis.marketRegimeContext,
+        ),
         const SizedBox(height: 12),
         _TechnicalOverviewCard(
           technical: technical,
           marketEnvironment: marketEnvironment,
           risk: risk,
+          vwap20: analysis.vwap20,
         ),
         const SizedBox(height: 12),
+        if (analysis.sectorMomentumPct != null) ...[
+          SectorMomentumCard(
+            sectorMomentumPct: analysis.sectorMomentumPct!,
+            sectorName: analysis.sectorName,
+          ),
+          const SizedBox(height: 12),
+        ],
         _ScenarioCard(scenario: scenario),
         const SizedBox(height: 12),
         _EngineScoresCard(engines: engines),
@@ -191,10 +205,17 @@ class _DecisionCard extends StatelessWidget {
 }
 
 class _TradePlanCard extends StatelessWidget {
-  const _TradePlanCard({required this.tradePlan, required this.risk});
+  const _TradePlanCard({
+    required this.tradePlan,
+    required this.risk,
+    this.adaptiveAtrMultiple,
+    this.marketRegimeContext,
+  });
 
   final Map<String, dynamic> tradePlan;
   final Map<String, dynamic> risk;
+  final double? adaptiveAtrMultiple;
+  final String? marketRegimeContext;
 
   @override
   Widget build(BuildContext context) {
@@ -206,52 +227,107 @@ class _TradePlanCard extends StatelessWidget {
       title: 'خطة التداول الافتراضية',
       subtitle:
           'الأرقام محسوبة آليًا وفق إعدادات رأس المال والمخاطر داخل النظام.',
-      child: _MetricGrid(
-        items: [
-          _MetricData(
-            label: 'سعر الدخول',
-            value: _formatMoney(tradePlan['entry']),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MetricGrid(
+            items: [
+              _MetricData(
+                label: 'سعر الدخول',
+                value: _formatMoney(tradePlan['entry']),
+              ),
+              _MetricData(
+                label: 'وقف الخسارة',
+                value: _formatMoney(tradePlan['stop_loss']),
+              ),
+              _MetricData(
+                label: 'الهدف الأول',
+                value: _formatMoney(tradePlan['target_1']),
+              ),
+              _MetricData(
+                label: 'الهدف الثاني',
+                value: _formatMoney(tradePlan['target_2']),
+              ),
+              _MetricData(
+                label: 'العائد/المخاطرة 1',
+                value: _formatNumber(tradePlan['reward_risk_1']),
+              ),
+              _MetricData(
+                label: 'العائد/المخاطرة 2',
+                value: _formatNumber(tradePlan['reward_risk_2']),
+              ),
+              _MetricData(
+                label: 'حجم المركز المقترح',
+                value: _formatInteger(tradePlan['position_size']),
+              ),
+              _MetricData(
+                label: 'قيمة المركز',
+                value: '${_formatNumber(tradePlan['position_value'])} ج.م',
+              ),
+              _MetricData(
+                label: 'مبلغ المخاطرة',
+                value: '${_formatNumber(tradePlan['risk_amount'])} ج.م',
+              ),
+              _MetricData(
+                label: 'مستوى المخاطرة',
+                value: _riskLabel(_text(risk['risk_level'])),
+              ),
+            ],
           ),
-          _MetricData(
-            label: 'وقف الخسارة',
-            value: _formatMoney(tradePlan['stop_loss']),
-          ),
-          _MetricData(
-            label: 'الهدف الأول',
-            value: _formatMoney(tradePlan['target_1']),
-          ),
-          _MetricData(
-            label: 'الهدف الثاني',
-            value: _formatMoney(tradePlan['target_2']),
-          ),
-          _MetricData(
-            label: 'العائد/المخاطرة 1',
-            value: _formatNumber(tradePlan['reward_risk_1']),
-          ),
-          _MetricData(
-            label: 'العائد/المخاطرة 2',
-            value: _formatNumber(tradePlan['reward_risk_2']),
-          ),
-          _MetricData(
-            label: 'حجم المركز المقترح',
-            value: _formatInteger(tradePlan['position_size']),
-          ),
-          _MetricData(
-            label: 'قيمة المركز',
-            value: '${_formatNumber(tradePlan['position_value'])} ج.م',
-          ),
-          _MetricData(
-            label: 'مبلغ المخاطرة',
-            value: '${_formatNumber(tradePlan['risk_amount'])} ج.م',
-          ),
-          _MetricData(
-            label: 'مستوى المخاطرة',
-            value: _riskLabel(_text(risk['risk_level'])),
-          ),
+          if (adaptiveAtrMultiple != null && marketRegimeContext != null) ...[
+            const Divider(height: 24),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'وقف خسارة تكيفي',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'مضاعف ATR: ${adaptiveAtrMultiple!.toStringAsFixed(2)}× — بناءً على حالة السوق: ${_translateRegime(marketRegimeContext!)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  String _translateRegime(String regime) => switch (regime) {
+    'bullish' => 'صاعد',
+    'bearish' => 'هابط',
+    'sideways' => 'جانبي',
+    'speculative_bullish' => 'مضاربي صاعد',
+    'risk_off_volatile' => 'عالي التقلب',
+    _ => regime,
+  };
 }
 
 class _TechnicalOverviewCard extends StatelessWidget {
@@ -259,11 +335,13 @@ class _TechnicalOverviewCard extends StatelessWidget {
     required this.technical,
     required this.marketEnvironment,
     required this.risk,
+    this.vwap20,
   });
 
   final Map<String, dynamic> technical;
   final Map<String, dynamic> marketEnvironment;
   final Map<String, dynamic> risk;
+  final double? vwap20;
 
   @override
   Widget build(BuildContext context) {
@@ -297,6 +375,12 @@ class _TechnicalOverviewCard extends StatelessWidget {
             label: 'متوسط 200 يوم',
             value: _formatMoney(technical['sma_200']),
           ),
+          if (vwap20 != null)
+            _MetricData(
+              label: 'VWAP 20',
+              value: _formatMoney(vwap20),
+              subtitle: _vwapRelation(technical['close'], vwap20),
+            ),
           _MetricData(
             label: 'MACD',
             value: _formatNumber(technical['macd'], decimals: 4),
@@ -320,6 +404,15 @@ class _TechnicalOverviewCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String? _vwapRelation(dynamic closeValue, double? vwap) {
+    if (vwap == null || closeValue == null) return null;
+    final close = (closeValue as num).toDouble();
+    final diffPct = ((close - vwap) / vwap) * 100;
+    if (diffPct > 2) return 'أعلى بـ ${diffPct.toStringAsFixed(1)}%';
+    if (diffPct < -2) return 'أقل بـ ${diffPct.abs().toStringAsFixed(1)}%';
+    return 'قريب من التكلفة المؤسسية';
   }
 }
 
@@ -741,6 +834,7 @@ String _engineLabel(String key) {
     'smc' => 'هيكل السوق SMC',
     'multi_timeframe' => 'تعدد الأطر الزمنية',
     'quantitative' => 'التحليل الكمي',
+    'sector_momentum' => 'زخم القطاع',
     'risk' => 'إدارة المخاطر',
     'scenario' => 'السيناريوهات',
     _ => key,

@@ -83,6 +83,26 @@ class SessionController extends StateNotifier<SessionState> {
     }
   }
 
+  Future<void> authenticateWithTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    state = const SessionState.loading();
+    try {
+      await _tokenStore.save(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
+      final profile = await _repository.getProfile();
+      state = SessionState.authenticated(profile);
+    } on Object {
+      state = const SessionState.unauthenticated(
+        errorMessage: 'تعذر الدخول بالبصمة.',
+      );
+      rethrow;
+    }
+  }
+
   void loginAsDemo() {
     state = const SessionState.authenticated(
       UserProfile(

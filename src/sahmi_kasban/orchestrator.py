@@ -13,6 +13,7 @@ from sahmi_kasban.engines import (
     QuantitativeEngine,
     RiskEngine,
     ScenarioEngine,
+    SectorMomentumEngine,
     SMCEngine,
     StockQualificationEngine,
     TechnicalEngine,
@@ -36,11 +37,24 @@ _REQUIRED_PREPARED_COLUMNS = frozenset(
         "rsi",
         "atr",
         "avg_volume_20",
+        "vwap_20",
         "return_1d",
         "return_20d",
         "volatility_20d",
     }
 )
+
+
+def _is_prepared_candles(candles: Any) -> bool:
+    if not isinstance(candles, pd.DataFrame) or candles.empty:
+        return False
+    required = ("open", "high", "low", "close", "volume")
+    if not set(required).issubset(candles.columns):
+        return False
+    if "timestamp" in candles.columns:
+        if not pd.api.types.is_datetime64_any_dtype(candles["timestamp"]):
+            return False
+    return True
 
 
 def _prepare_index(
@@ -52,6 +66,8 @@ def _prepare_index(
     index_name = (index_name or "").strip().upper()
     if not index_name:
         raise ValueError("index name cannot be empty")
+    if _is_prepared_candles(index_candles):
+        return index_name, index_candles
     return index_name, prepare_candles(index_candles)
 
 
@@ -73,6 +89,7 @@ class SahmiKasbanAnalyzer:
         ticker: str,
         candles: pd.DataFrame | Iterable[Mapping[str, Any]],
         index: tuple[str, pd.DataFrame | Iterable[Mapping[str, Any]]] | None = None,
+        context: dict[str, object] | None = None,
     ) -> AnalysisReport:
         """Prepare raw candles and run the full analysis pipeline.
 
@@ -83,13 +100,14 @@ class SahmiKasbanAnalyzer:
 
         symbol = self._symbol(ticker)
         prepared = enrich_indicators(prepare_candles(candles))
-        return self._analyze_enriched(symbol, prepared, _prepare_index(index))
+        return self._analyze_enriched(symbol, prepared, _prepare_index(index), context=context)
 
     def analyze_prepared(
         self,
         ticker: str,
         candles: pd.DataFrame,
         index: tuple[str, pd.DataFrame] | None = None,
+        context: dict[str, object] | None = None,
     ) -> AnalysisReport:
         """Analyze a causal indicator frame that was prepared once by a replay.
 
@@ -110,15 +128,19 @@ class SahmiKasbanAnalyzer:
             raise ValueError(
                 "prepared candles are missing indicator columns: " + ", ".join(missing)
             )
-        return self._analyze_enriched(symbol, candles, _prepare_index(index))
+        return self._analyze_enriched(symbol, candles, _prepare_index(index), context=context)
 
     def _analyze_enriched(
         self,
         symbol: str,
         prepared: pd.DataFrame,
         index: tuple[str, pd.DataFrame] | None = None,
+        context: dict[str, object] | None = None,
     ) -> AnalysisReport:
-        context: dict[str, object] = {"ticker": symbol}
+        ctx: dict[str, object] = {"ticker": symbol}
+        if context is not None:
+            ctx.update(context)
+        context = ctx
         results: dict[str, EngineResult] = {}
         warnings: list[str] = []
 
@@ -132,6 +154,7 @@ class SahmiKasbanAnalyzer:
             SMCEngine(self.config),
             MultiTimeframeEngine(self.config),
             QuantitativeEngine(self.config),
+            SectorMomentumEngine(self.config),
             RiskEngine(self.config),
         ]
 
@@ -199,7 +222,7 @@ class SahmiKasbanAnalyzer:
         final_score = diagnostics.final_score
         confidence = diagnostics.confidence
         risk_result = results.get("risk", EngineResult("risk", 0, 0))
-        signal = score_to_signal(final_score, qualified, risk_result.score)
+        signal = score_to_signal(final_score, qualified, risk_result.score, config=self.config)
         trade_plan = context.get("trade_plan")
         if not isinstance(trade_plan, TradePlan):
             trade_plan = None
@@ -230,6 +253,13 @@ class SahmiKasbanAnalyzer:
             if index_trend == "bearish":
                 signal = "WATCH"
                 warnings.append("BUY downgraded because the market index trend is bearish")
+
+        sector_score = safe_float(
+            results.get("sector_momentum", EngineResult("sector_momentum", 50.0, 50.0)).score
+        )
+        if signal == "BUY" and sector_score < 40.0:
+            signal = "WATCH"
+            warnings.append("BUY downgraded because sector momentum is bearish (systemic risk)")
 
         context.update(
             {

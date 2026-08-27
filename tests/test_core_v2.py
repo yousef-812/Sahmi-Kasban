@@ -159,7 +159,7 @@ def test_elite_quality_engine_keeps_name_for_robust_buy() -> None:
         _quality_context(),
     )
 
-    assert result.details["model_version"] == "elite-quality-v2.3-regime-aware"
+    assert result.details["model_version"] == "elite-quality-v2.4-regime-adaptive"
     assert result.details["engine_ready"] is True
     assert result.details["selected_profile"] == "balanced"
     assert result.details["failed_checks"] == []

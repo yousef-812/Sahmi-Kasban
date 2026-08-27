@@ -7,6 +7,7 @@ from app.api.routes.admin_performance_recovery import (
 )
 from app.api.routes.admin_replays import router as admin_replays_router
 from app.api.routes.admin_wallet import router as admin_wallet_router
+from app.api.routes.analysis_history import router as analysis_history_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.community import router as community_router
 from app.api.routes.community_admin import router as community_admin_router
@@ -24,6 +25,7 @@ from app.api.routes.quality import admin_router as quality_admin_router
 from app.api.routes.quality import public_router as quality_public_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.wallet import router as wallet_router
+from app.api.routes.watchlist import router as watchlist_router
 
 api_router = APIRouter()
 api_router.include_router(health_router)
@@ -32,6 +34,8 @@ api_router.include_router(auth_router)
 api_router.include_router(profile_router)
 api_router.include_router(wallet_router)
 api_router.include_router(market_router)
+api_router.include_router(watchlist_router)
+api_router.include_router(analysis_history_router)
 api_router.include_router(reports_router)
 api_router.include_router(labs_router)
 api_router.include_router(performance_router)

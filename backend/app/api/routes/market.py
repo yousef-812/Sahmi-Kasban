@@ -48,6 +48,20 @@ StockAIService = Annotated[SahmiAIService, Depends(get_stock_ai_service)]
 
 def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisResponse:
     analysis = execution.analysis
+    payload = analysis.payload if isinstance(analysis.payload, dict) else {}
+    analysis_data = payload.get("analysis", {}) if isinstance(payload.get("analysis"), dict) else {}
+    engines = analysis_data.get("engines", {}) if isinstance(analysis_data.get("engines"), dict) else {}
+
+    sector_eng = engines.get("sector_momentum", {}).get("details", {}) if isinstance(engines.get("sector_momentum"), dict) else {}
+    risk_eng = engines.get("risk", {}).get("details", {}) if isinstance(engines.get("risk"), dict) else {}
+    tech_eng = engines.get("technical", {}).get("details", {}) if isinstance(engines.get("technical"), dict) else {}
+
+    sector_momentum_pct = sector_eng.get("sector_momentum_5d_pct") if isinstance(sector_eng, dict) else None
+    sector_name = sector_eng.get("sector_name") if isinstance(sector_eng, dict) else None
+    adaptive_atr_multiple = risk_eng.get("adaptive_atr_multiple") if isinstance(risk_eng, dict) else None
+    market_regime_context = risk_eng.get("market_regime_context") if isinstance(risk_eng, dict) else None
+    vwap_20 = tech_eng.get("vwap_20") if isinstance(tech_eng, dict) else None
+
     return StockAnalysisResponse(
         analysis_id=analysis.id,
         ticker=analysis.ticker,
@@ -59,6 +73,11 @@ def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisRespon
         balance_coins=points_to_coins(execution.balance_points),
         data_as_of=analysis.data_as_of,
         payload=analysis.payload,
+        sector_momentum_pct=float(sector_momentum_pct) if isinstance(sector_momentum_pct, (int, float)) else None,
+        sector_name=str(sector_name) if sector_name is not None else None,
+        adaptive_atr_multiple=float(adaptive_atr_multiple) if isinstance(adaptive_atr_multiple, (int, float)) else None,
+        market_regime_context=str(market_regime_context) if market_regime_context is not None else None,
+        vwap_20=float(vwap_20) if isinstance(vwap_20, (int, float)) else None,
     )
 
 

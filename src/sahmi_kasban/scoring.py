@@ -12,10 +12,11 @@ from sahmi_kasban.models import EngineResult, Signal
 # forecast. These weights preserve the previous relative directional weights.
 DEFAULT_WEIGHTS: dict[str, float] = {
     "market_environment": 0.15,
-    "technical": 0.275,
+    "technical": 0.225,
     "smc": 0.225,
-    "multi_timeframe": 0.175,
-    "quantitative": 0.175,
+    "multi_timeframe": 0.15,
+    "quantitative": 0.15,
+    "sector_momentum": 0.10,
 }
 
 DIRECTIONAL_ENGINES = frozenset(DEFAULT_WEIGHTS)
@@ -146,9 +147,19 @@ def calculate_final_score(
     return diagnostics.final_score, diagnostics.confidence
 
 
-def score_to_signal(score: float, qualified: bool, risk_score: float) -> Signal:
-    if not qualified or risk_score < 35 or score < 42:
+def score_to_signal(
+    score: float,
+    qualified: bool,
+    risk_score: float,
+    config: Any | None = None,
+) -> Signal:
+    buy_score = getattr(config, "signal_buy_score_threshold", 67.0) if config is not None else 67.0
+    buy_risk = getattr(config, "signal_buy_risk_threshold", 50.0) if config is not None else 50.0
+    avoid_score = getattr(config, "signal_avoid_score_threshold", 42.0) if config is not None else 42.0
+    avoid_risk = getattr(config, "signal_avoid_risk_threshold", 35.0) if config is not None else 35.0
+
+    if not qualified or risk_score < avoid_risk or score < avoid_score:
         return "AVOID"
-    if score >= 67 and risk_score >= 50:
+    if score >= buy_score and risk_score >= buy_risk:
         return "BUY"
     return "WATCH"

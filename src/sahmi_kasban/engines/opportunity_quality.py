@@ -32,9 +32,15 @@ def _liquidity_tier(average_turnover_egp: float) -> str:
     return "basic"
 
 
-def _adaptive_limits(*, liquidity_tier: str, market_regime: str) -> dict[str, float]:
-    balanced_atr = BALANCED_BASE_MAX_ATR_PCT
-    balanced_risk = BALANCED_BASE_MAX_TOTAL_RISK_PCT
+def _adaptive_limits(
+    *,
+    liquidity_tier: str,
+    market_regime: str,
+    balanced_base_atr: float = BALANCED_BASE_MAX_ATR_PCT,
+    balanced_base_risk: float = BALANCED_BASE_MAX_TOTAL_RISK_PCT,
+) -> dict[str, float]:
+    balanced_atr = balanced_base_atr
+    balanced_risk = balanced_base_risk
     aggressive_atr = 5.0
     aggressive_risk = 35.0
 
@@ -111,16 +117,34 @@ class OpportunityQualityEngine(AnalysisEngine):
         bearish_count = int(safe_float(context.get("bearish_engine_count")))
         directional_conflict = bool(context.get("directional_conflict", False))
 
+        cfg = self.config
+        elite_min_dir_score = getattr(cfg, "elite_min_directional_score", ELITE_MIN_DIRECTIONAL_SCORE)
+        elite_min_conf = getattr(cfg, "elite_min_confidence", ELITE_MIN_CONFIDENCE)
+        balanced_max_ret_20d = getattr(cfg, "balanced_max_return_20d_pct", BALANCED_MAX_RETURN_20D_PCT)
+        balanced_base_atr = getattr(cfg, "balanced_base_max_atr_pct", BALANCED_BASE_MAX_ATR_PCT)
+        balanced_base_risk = getattr(cfg, "balanced_base_max_total_risk_pct", BALANCED_BASE_MAX_TOTAL_RISK_PCT)
+        aggressive_min_ret_20d = getattr(cfg, "aggressive_min_return_20d_pct", AGGRESSIVE_MIN_RETURN_20D_PCT)
+        aggressive_max_ret_20d = getattr(cfg, "aggressive_max_return_20d_pct", AGGRESSIVE_MAX_RETURN_20D_PCT)
+        aggressive_max_ret_5d = getattr(cfg, "aggressive_max_return_5d_pct", AGGRESSIVE_MAX_RETURN_5D_PCT)
+        aggressive_min_breakout = getattr(cfg, "aggressive_min_breakout_pct", AGGRESSIVE_MIN_BREAKOUT_PCT)
+        aggressive_max_breakout = getattr(cfg, "aggressive_max_breakout_pct", AGGRESSIVE_MAX_BREAKOUT_PCT)
+        aggressive_min_vol_ratio = getattr(cfg, "aggressive_min_volume_ratio", AGGRESSIVE_MIN_VOLUME_RATIO)
+        aggressive_min_turnover = getattr(cfg, "aggressive_min_turnover_egp", AGGRESSIVE_MIN_TURNOVER_EGP)
+        elite_max_zero_vol = getattr(cfg, "elite_max_zero_volume_ratio", ELITE_MAX_ZERO_VOLUME_RATIO)
+        aggressive_max_zero_vol = getattr(cfg, "aggressive_max_zero_volume_ratio", AGGRESSIVE_MAX_ZERO_VOLUME_RATIO)
+
         liquidity_tier = _liquidity_tier(average_turnover_egp)
         limits = _adaptive_limits(
             liquidity_tier=liquidity_tier,
             market_regime=market_regime,
+            balanced_base_atr=balanced_base_atr,
+            balanced_base_risk=balanced_base_risk,
         )
         common_checks: dict[str, bool] = {
             "buy_signal": signal == "BUY",
             "qualified": qualified,
-            "directional_score": final_score >= ELITE_MIN_DIRECTIONAL_SCORE,
-            "aggregate_confidence": confidence >= ELITE_MIN_CONFIDENCE,
+            "directional_score": final_score >= elite_min_dir_score,
+            "aggregate_confidence": confidence >= elite_min_conf,
             "directional_consensus": (
                 bullish_count >= 4 and bearish_count == 0 and not directional_conflict
             ),
@@ -129,30 +153,30 @@ class OpportunityQualityEngine(AnalysisEngine):
         }
         balanced_checks = {
             **common_checks,
-            "momentum_not_overextended": return_20d_pct <= BALANCED_MAX_RETURN_20D_PCT,
+            "momentum_not_overextended": return_20d_pct <= balanced_max_ret_20d,
             "atr_controlled": 0 < atr_pct <= limits["balanced_max_atr_pct"],
             "risk_controlled": (
                 risk_level != "high"
                 and total_risk_pct <= limits["balanced_max_total_risk_pct"]
             ),
-            "trading_continuity": zero_volume_ratio <= ELITE_MAX_ZERO_VOLUME_RATIO,
+            "trading_continuity": zero_volume_ratio <= elite_max_zero_vol,
         }
         aggressive_checks = {
             **common_checks,
             "liquidity_supports_aggressive_profile": (
-                average_turnover_egp >= AGGRESSIVE_MIN_TURNOVER_EGP
+                average_turnover_egp >= aggressive_min_turnover
             ),
             "breakout_confirmed": (
-                AGGRESSIVE_MIN_BREAKOUT_PCT
+                aggressive_min_breakout
                 <= breakout_pct
-                <= AGGRESSIVE_MAX_BREAKOUT_PCT
+                <= aggressive_max_breakout
             ),
-            "volume_confirmation": volume_ratio >= AGGRESSIVE_MIN_VOLUME_RATIO,
+            "volume_confirmation": volume_ratio >= aggressive_min_vol_ratio,
             "momentum_window": (
-                AGGRESSIVE_MIN_RETURN_20D_PCT
+                aggressive_min_ret_20d
                 <= return_20d_pct
-                <= AGGRESSIVE_MAX_RETURN_20D_PCT
-                and 0 < return_5d_pct <= AGGRESSIVE_MAX_RETURN_5D_PCT
+                <= aggressive_max_ret_20d
+                and 0 < return_5d_pct <= aggressive_max_ret_5d
                 and return_20d_pct >= 1.3 * return_5d_pct
             ),
             "rsi_not_exhausted": 50 <= rsi <= 82,
@@ -162,7 +186,7 @@ class OpportunityQualityEngine(AnalysisEngine):
                 and total_risk_pct <= limits["aggressive_max_total_risk_pct"]
             ),
             "aggressive_trading_continuity": (
-                zero_volume_ratio <= AGGRESSIVE_MAX_ZERO_VOLUME_RATIO
+                zero_volume_ratio <= aggressive_max_zero_vol
             ),
         }
         balanced_weights: Mapping[str, float] = {
