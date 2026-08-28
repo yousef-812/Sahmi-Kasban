@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../../domain/models.dart';
 import '../../widgets/structured_data_card.dart';
@@ -187,7 +188,36 @@ class _DecisionCard extends StatelessWidget {
             ],
             if (explanation.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(explanation, style: Theme.of(context).textTheme.bodyLarge),
+              MarkdownBody(
+                data: explanation,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                    .copyWith(
+                      p: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(height: 1.5),
+                      h1: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      h2: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      h3: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      tableBody: Theme.of(context).textTheme.bodyMedium,
+                      tableBorder: TableBorder.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                      tableHead: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                      tableCellsPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+              ),
             ],
             const SizedBox(height: 12),
             Text(
@@ -1027,9 +1057,12 @@ class _SectorQualityCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              summaryAr,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+            MarkdownBody(
+              data: summaryAr,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet.fromTheme(
+                theme,
+              ).copyWith(p: theme.textTheme.bodyMedium?.copyWith(height: 1.4)),
             ),
             const SizedBox(height: 14),
             _MetricGrid(

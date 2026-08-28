@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/avatar_assets.dart';
@@ -225,7 +226,18 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                               ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 12),
-                        Text(item.content),
+                        MarkdownBody(
+                          data: item.content,
+                          selectable: true,
+                          styleSheet:
+                              MarkdownStyleSheet.fromTheme(
+                                Theme.of(context),
+                              ).copyWith(
+                                p: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.copyWith(height: 1.5),
+                              ),
+                        ),
                         const SizedBox(height: 16),
                         Wrap(
                           spacing: 8,
