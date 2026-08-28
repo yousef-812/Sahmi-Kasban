@@ -904,7 +904,6 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     'COMI',
     'ADIB',
     'HDBK',
-    'BTFH',
     'CIEB',
     'QNBE',
     'EXPA',
