@@ -1,8 +1,12 @@
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 
 from app.api.dependencies import CurrentUser, DatabaseSession
+from app.core.security import InvalidAccessTokenError, decode_access_token
+from app.db.session import SessionLocal
+from app.market_data.broadcaster import get_quote_broadcaster
 from app.market_data.catalog import market_instrument_exists, search_market_instruments
 from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.provider import get_market_data_provider
@@ -12,6 +16,7 @@ from app.market_data.types import (
     MarketDataUnavailableError,
     UnknownTickerError,
 )
+from app.models import User
 from app.schemas.market import (
     MarketInstrumentListResponse,
     MarketInstrumentResponse,
@@ -174,6 +179,40 @@ async def get_market_quotes(
         next_session_open=snapshot.next_session_open,
         items=[_quote_response(item) for item in snapshot.items],
     )
+
+
+@router.websocket("/market/quotes/stream")
+async def stream_market_quotes(
+    websocket: WebSocket,
+    token: str | None = Query(default=None),
+) -> None:
+    # Authenticate token if present or query parameter
+    if token:
+        try:
+            payload = decode_access_token(token)
+            user_id = UUID(payload["sub"])
+            token_version = int(payload["ver"])
+            with SessionLocal() as db:
+                user = db.get(User, user_id)
+                if user is None or user.status != "active" or user.auth_version != token_version:
+                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                    return
+        except (InvalidAccessTokenError, ValueError, TypeError, KeyError):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+    broadcaster = get_quote_broadcaster()
+    await broadcaster.connect(websocket)
+    try:
+        while True:
+            # Keep alive and receive any client-side ping
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+    except (WebSocketDisconnect, Exception):
+        pass
+    finally:
+        await broadcaster.disconnect(websocket)
 
 
 @router.get("/market/quotes/{ticker}", response_model=MarketQuoteResponse)

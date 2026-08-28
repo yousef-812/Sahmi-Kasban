@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -275,6 +279,72 @@ class BackendRepository {
       return MarketQuotesSnapshot.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
+    }
+  }
+
+  Stream<MarketQuotesSnapshot> streamMarketQuotes() async* {
+    // 1. First emit instant cached snapshot from REST endpoint
+    try {
+      final initial = await getMarketQuotes();
+      yield initial;
+    } catch (_) {
+      // Continue to WebSocket even if initial REST fails
+    }
+
+    // 2. Connect to WebSocket stream for real-time live price push
+    while (true) {
+      WebSocket? socket;
+      Timer? pingTimer;
+      try {
+        final token = await _tokenStore.readAccessToken();
+        final rawBase = _apiClient.dio.options.baseUrl;
+        final wsScheme = rawBase.startsWith('https') ? 'wss' : 'ws';
+        final hostAndPath = rawBase.replaceFirst(RegExp(r'^https?://'), '');
+        final urlBuffer = StringBuffer(
+          '$wsScheme://$hostAndPath/market/quotes/stream',
+        );
+        if (token != null && token.isNotEmpty) {
+          urlBuffer.write('?token=$token');
+        }
+
+        final uri = Uri.parse(urlBuffer.toString());
+        socket = await WebSocket.connect(
+          uri.toString(),
+        ).timeout(const Duration(seconds: 8));
+
+        // Periodically ping to keep socket alive
+        pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+          try {
+            socket?.add('ping');
+          } catch (_) {}
+        });
+
+        await for (final message in socket) {
+          if (message is String) {
+            if (message == 'pong') continue;
+            try {
+              final decoded = jsonDecode(message);
+              if (decoded is Map<String, dynamic>) {
+                yield MarketQuotesSnapshot.fromJson(decoded);
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {
+        // Fallback: On disconnect or connection error, fetch one REST snapshot and wait before reconnecting
+        try {
+          final fallback = await getMarketQuotes();
+          yield fallback;
+        } catch (_) {}
+      } finally {
+        pingTimer?.cancel();
+        try {
+          await socket?.close();
+        } catch (_) {}
+      }
+
+      // Exponential or safe delay before reconnect
+      await Future<void>.delayed(const Duration(seconds: 4));
     }
   }
 
