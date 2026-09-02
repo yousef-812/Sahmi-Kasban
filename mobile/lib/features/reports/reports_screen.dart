@@ -58,9 +58,15 @@ class ReportsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Card(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -71,7 +77,9 @@ class ReportsScreen extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 'سجل خطتك الحالية: $daysText',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             TextButton(
@@ -87,16 +95,18 @@ class ReportsScreen extends ConsumerWidget {
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.all(40),
-                          child: Text('لا توجد تقارير متاحة في نطاق خطتك حالياً.'),
+                          child: Text(
+                            'لا توجد تقارير متاحة في نطاق خطتك حالياً.',
+                          ),
                         ),
                       )
                     else ...[
                       Text(
                         'أحدث تقرير',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       _ReportPreviewCard(report: reports.first),
@@ -104,7 +114,8 @@ class ReportsScreen extends ConsumerWidget {
                         const SizedBox(height: 24),
                         Text(
                           'أرشيف التقارير السابقة (${reports.length - 1})',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.primary,
                               ),

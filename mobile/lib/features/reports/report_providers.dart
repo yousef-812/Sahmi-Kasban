@@ -8,7 +8,8 @@ final latestReportPreviewProvider =
       return ref.watch(backendRepositoryProvider).getLatestReportPreview();
     });
 
-final reportHistoryProvider =
-    FutureProvider.autoDispose<MarketReportHistory>((ref) {
-      return ref.watch(backendRepositoryProvider).getReportHistory();
-    });
+final reportHistoryProvider = FutureProvider.autoDispose<MarketReportHistory>((
+  ref,
+) {
+  return ref.watch(backendRepositoryProvider).getReportHistory();
+});

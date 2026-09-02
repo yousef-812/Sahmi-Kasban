@@ -280,7 +280,9 @@ class _PlanCard extends StatelessWidget {
                         : Icons.block_outlined,
                     size: 16,
                   ),
-                  label: Text(plan.adsEnabled ? 'مع الإعلانات' : 'بدون إعلانات'),
+                  label: Text(
+                    plan.adsEnabled ? 'مع الإعلانات' : 'بدون إعلانات',
+                  ),
                 ),
                 Chip(
                   avatar: const Icon(Icons.history_rounded, size: 16),
@@ -311,8 +313,7 @@ class _PlanCard extends StatelessWidget {
             ],
             const SizedBox(height: 12),
             FilledButton.tonal(
-              onPressed:
-                  current || onPurchase == null || busy
+              onPressed: current || onPurchase == null || busy
                   ? null
                   : onPurchase,
               child: Text(
@@ -321,8 +322,8 @@ class _PlanCard extends StatelessWidget {
                     : current
                     ? 'مفعّلة'
                     : (price.isNotEmpty && price != 'غير متاح حاليًا'
-                        ? price
-                        : 'اشترك الآن'),
+                          ? price
+                          : 'اشترك الآن'),
               ),
             ),
           ],
