@@ -77,10 +77,6 @@ class MonetizationScreen extends ConsumerWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'العملات المشتراة تُضاف بعد تحقق السيرفر من Google Play فقط.',
-                  ),
                   const SizedBox(height: 10),
                   if (catalog != null)
                     for (final pack in catalog.coinPacks)
@@ -102,8 +98,6 @@ class MonetizationScreen extends ConsumerWidget {
                     icon: const Icon(Icons.restore_rounded),
                     label: const Text('استعادة مشتريات Google Play'),
                   ),
-                  const SizedBox(height: 14),
-                  const _SecurityNote(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -222,11 +216,6 @@ class _RewardedAdCard extends StatelessWidget {
                     )
                   : const Icon(Icons.play_arrow_rounded),
               label: Text(busy ? 'جارٍ تجهيز الإعلان...' : 'مشاهدة الإعلان'),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'لا تُضاف المكافأة من الهاتف؛ السيرفر ينتظر تحقق AdMob أولًا.',
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -398,34 +387,6 @@ class _NoticeCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Text(message, textAlign: TextAlign.center),
-      ),
-    );
-  }
-}
-
-class _SecurityNote extends StatelessWidget {
-  const _SecurityNote();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.verified_user_outlined,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Google Play وAdMob لا يغيّران رصيدك مباشرة من التطبيق. كل عملية تُراجع على السيرفر، وتُسجل بمعرف فريد لمنع التكرار.',
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
