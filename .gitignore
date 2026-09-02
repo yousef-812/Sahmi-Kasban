@@ -20,3 +20,4 @@ backend/.env
 mobile/android/key.properties
 mobile/android/app/*.jks
 mobile/android/app/*.keystore
+.vercel

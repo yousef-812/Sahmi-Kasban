@@ -1,0 +1,10 @@
+{
+  "framework": null,
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "destination": "https://sahmi-kasban.fly.dev/:path*"
+    }
+  ]
+}

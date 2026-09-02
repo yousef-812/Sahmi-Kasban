@@ -2,18 +2,19 @@
 
 Package: `com.sahmikasban.sahmi_kasban_mobile`
 
-## Public Fly URLs
+## Public URLs (Custom Domain: `sahmi-kasban.bdaey.com`)
 
 After deploying this branch, use:
 
-- Privacy policy: `https://sahmi-kasban.fly.dev/privacy`
-- Terms: `https://sahmi-kasban.fly.dev/terms`
-- Financial disclaimer: `https://sahmi-kasban.fly.dev/financial-disclaimer`
-- Data safety working sheet: `https://sahmi-kasban.fly.dev/data-safety`
-- Financial features working sheet: `https://sahmi-kasban.fly.dev/financial-features`
-- Account deletion URL: `https://sahmi-kasban.fly.dev/delete-account`
-- Legal index: `https://sahmi-kasban.fly.dev/legal`
-- App Ads TXT: `https://sahmi-kasban.fly.dev/app-ads.txt`
+- Privacy policy: `https://sahmi-kasban.bdaey.com/privacy`
+- Terms: `https://sahmi-kasban.bdaey.com/terms`
+- Financial disclaimer: `https://sahmi-kasban.bdaey.com/financial-disclaimer`
+- Data safety working sheet: `https://sahmi-kasban.bdaey.com/data-safety`
+- Financial features working sheet: `https://sahmi-kasban.bdaey.com/financial-features`
+- Account deletion URL: `https://sahmi-kasban.bdaey.com/delete-account`
+- Legal index: `https://sahmi-kasban.bdaey.com/legal`
+- App Ads TXT: `https://sahmi-kasban.bdaey.com/app-ads.txt`
+- Fallback Fly URL: `https://sahmi-kasban.fly.dev`
 
 The deletion page authenticates the user and calls the same server-authoritative deletion API used by the app. The Android app also exposes deletion under **Account > Edit profile > Delete account permanently**.
 
