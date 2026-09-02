@@ -42,3 +42,10 @@ class MarketReportUnlockResponse(BaseModel):
     balance_points: int = Field(ge=0)
     balance_coins: str
     report: MarketReportResponse
+
+
+class MarketReportHistoryResponse(BaseModel):
+    history_days_allowed: int = Field(ge=0)
+    plan_code: str
+    reports: list[MarketReportPreviewResponse]
+

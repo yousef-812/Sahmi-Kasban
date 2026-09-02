@@ -260,6 +260,17 @@ class BackendRepository {
     }
   }
 
+  Future<MarketReportHistory> getReportHistory() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/reports/history',
+      );
+      return MarketReportHistory.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReport> getMarketReport(String reportId) async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(

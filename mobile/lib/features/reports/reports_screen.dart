@@ -10,25 +10,26 @@ class ReportsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final preview = ref.watch(latestReportPreviewProvider);
+    final historyState = ref.watch(reportHistoryProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('تقارير السوق')),
       body: RefreshIndicator(
         onRefresh: () async {
+          ref.invalidate(reportHistoryProvider);
           ref.invalidate(latestReportPreviewProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
             Text(
-              'أحدث التقارير التحليلية للبورصة المصرية',
+              'التقارير التحليلية للبورصة المصرية',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 16),
-            preview.when(
+            const SizedBox(height: 12),
+            historyState.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) => Center(
                 child: Padding(
@@ -37,24 +38,88 @@ class ReportsScreen extends ConsumerWidget {
                     children: [
                       const Icon(Icons.error_outline_rounded),
                       const SizedBox(height: 12),
-                      Text('تعذر تحميل التقارير.'),
+                      const Text('تعذر تحميل التقارير.'),
                       TextButton(
-                        onPressed: () =>
-                            ref.invalidate(latestReportPreviewProvider),
+                        onPressed: () => ref.invalidate(reportHistoryProvider),
                         child: const Text('إعادة المحاولة'),
                       ),
                     ],
                   ),
                 ),
               ),
-              data: (report) => report == null
-                  ? const Center(
+              data: (history) {
+                final reports = history.reports;
+                final days = history.historyDaysAllowed;
+                final daysText = days >= 365
+                    ? '${(days / 365).round()} سنة'
+                    : '$days يوماً';
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Card(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       child: Padding(
-                        padding: EdgeInsets.all(40),
-                        child: Text('لا توجد تقارير متاحة حاليًا.'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.history_toggle_off_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'سجل خطتك الحالية: $daysText',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => context.push('/monetization'),
+                              child: const Text('ترقية الخطة'),
+                            ),
+                          ],
+                        ),
                       ),
-                    )
-                  : _ReportPreviewCard(report: report),
+                    ),
+                    const SizedBox(height: 16),
+                    if (reports.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: Text('لا توجد تقارير متاحة في نطاق خطتك حالياً.'),
+                        ),
+                      )
+                    else ...[
+                      Text(
+                        'أحدث تقرير',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      _ReportPreviewCard(report: reports.first),
+                      if (reports.length > 1) ...[
+                        const SizedBox(height: 24),
+                        Text(
+                          'أرشيف التقارير السابقة (${reports.length - 1})',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        for (final pastReport in reports.skip(1))
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _ReportPreviewCard(report: pastReport),
+                          ),
+                      ],
+                    ],
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 24),
             const Text(

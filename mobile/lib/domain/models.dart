@@ -396,6 +396,28 @@ class MarketReportPreview {
   }
 }
 
+class MarketReportHistory {
+  const MarketReportHistory({
+    required this.historyDaysAllowed,
+    required this.planCode,
+    required this.reports,
+  });
+
+  final int historyDaysAllowed;
+  final String planCode;
+  final List<MarketReportPreview> reports;
+
+  factory MarketReportHistory.fromJson(Map<String, dynamic> json) {
+    return MarketReportHistory(
+      historyDaysAllowed: json['history_days_allowed'] as int? ?? 1,
+      planCode: json['plan_code'] as String? ?? 'free',
+      reports: (json['reports'] as List? ?? const [])
+          .map((item) => MarketReportPreview.fromJson(_map(item)))
+          .toList(growable: false),
+    );
+  }
+}
+
 class MarketReportItem {
   const MarketReportItem({
     required this.ticker,

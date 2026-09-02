@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
@@ -10,6 +10,7 @@ from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.config import get_settings
 from app.models import MarketReport, MarketReportItem
 from app.schemas.reports import (
+    MarketReportHistoryResponse,
     MarketReportItemResponse,
     MarketReportPreviewResponse,
     MarketReportResponse,
@@ -25,6 +26,8 @@ from app.services.daily_reports import (
     report_is_unlocked,
     unlock_market_report,
 )
+from app.services.monetization_catalog import get_plan
+from app.services.profile import get_active_subscription
 from app.services.wallet import InsufficientBalanceError, points_to_coins
 
 router = APIRouter(prefix="/market/reports", tags=["market-reports"])
@@ -147,12 +150,83 @@ def get_latest_report_preview(
     )
 
 
+@router.get("/history", response_model=MarketReportHistoryResponse)
+def get_market_reports_history(
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> MarketReportHistoryResponse:
+    settings = get_settings()
+    subscription = get_active_subscription(db, current_user.id)
+    plan = get_plan(subscription.plan_code)
+    history_days = plan.report_history_days
+
+    cutoff_date = date.today() - timedelta(days=history_days)
+
+    reports = tuple(
+        db.scalars(
+            select(MarketReport)
+            .where(
+                MarketReport.status == "complete",
+                MarketReport.target_session_date >= cutoff_date,
+            )
+            .order_by(MarketReport.target_session_date.desc())
+        ).all()
+    )
+
+    previews = []
+    for report in reports:
+        try:
+            source_session_date = _source_session_date(report)
+        except Exception:
+            continue
+        item_count = db.scalar(
+            select(func.count(MarketReportItem.id)).where(
+                MarketReportItem.report_id == report.id
+            )
+        )
+        previews.append(
+            MarketReportPreviewResponse(
+                report_id=report.id,
+                source_session_date=source_session_date,
+                target_session_date=report.target_session_date,
+                generated_at=report.generated_at,
+                status=report.status,
+                item_count=int(item_count or 0),
+                unlocked=report_is_unlocked(
+                    db,
+                    user_id=current_user.id,
+                    report_id=report.id,
+                ),
+                unlock_cost_points=settings.daily_report_cost_points,
+                unlock_cost_coins=points_to_coins(settings.daily_report_cost_points),
+                market_summary=report.market_summary,
+            )
+        )
+
+    return MarketReportHistoryResponse(
+        history_days_allowed=history_days,
+        plan_code=subscription.plan_code,
+        reports=previews,
+    )
+
+
 @router.get("/{report_id}", response_model=MarketReportResponse)
 def get_unlocked_market_report(
     report_id: UUID,
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> MarketReportResponse:
+    subscription = get_active_subscription(db, current_user.id)
+    plan = get_plan(subscription.plan_code)
+    cutoff_date = date.today() - timedelta(days=plan.report_history_days)
+
+    report = db.get(MarketReport, report_id)
+    if report is not None and report.target_session_date < cutoff_date:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"تتطلب مشاهدة هذا التقرير الترقية لخطة أعلى (سجل خطتك الحالية: {plan.report_history_days} يوماً)",
+        )
+
     try:
         access = get_report_access(
             db,
@@ -179,6 +253,17 @@ def unlock_report(
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> MarketReportUnlockResponse:
+    subscription = get_active_subscription(db, current_user.id)
+    plan = get_plan(subscription.plan_code)
+    cutoff_date = date.today() - timedelta(days=plan.report_history_days)
+
+    report = db.get(MarketReport, report_id)
+    if report is not None and report.target_session_date < cutoff_date:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"تتطلب فتح هذا التقرير الترقية لخطة أعلى (سجل خطتك الحالية: {plan.report_history_days} يوماً)",
+        )
+
     try:
         execution = unlock_market_report(
             db,
