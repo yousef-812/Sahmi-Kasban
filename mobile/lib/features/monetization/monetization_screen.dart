@@ -293,7 +293,7 @@ class _PlanCard extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.tonal(
               onPressed:
-                  current || onPurchase == null || !storeAvailable || busy
+                  current || onPurchase == null || busy
                   ? null
                   : onPurchase,
               child: Text(
@@ -301,7 +301,9 @@ class _PlanCard extends StatelessWidget {
                     ? 'جارٍ فتح Google Play...'
                     : current
                     ? 'مفعّلة'
-                    : price,
+                    : (price.isNotEmpty && price != 'غير متاح حاليًا'
+                        ? price
+                        : 'اشترك الآن'),
               ),
             ),
           ],
@@ -328,13 +330,23 @@ class _CoinPackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayPrice = (price.isNotEmpty && price != 'غير متاح حاليًا')
+        ? price
+        : '${pack.coins} عملة';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            const CircleAvatar(child: Icon(Icons.monetization_on_rounded)),
+            CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Icon(
+                Icons.monetization_on_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -349,9 +361,10 @@ class _CoinPackCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$price — ${pack.points} نقطة',
+                    displayPrice,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -364,7 +377,7 @@ class _CoinPackCard extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2.5),
                   )
                 : FilledButton(
-                    onPressed: storeAvailable ? onPurchase : null,
+                    onPressed: onPurchase,
                     child: const Text('شراء'),
                   ),
           ],
