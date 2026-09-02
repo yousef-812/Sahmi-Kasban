@@ -102,14 +102,4 @@ app.include_router(legal_router)
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 
-@app.get("/", tags=["system"])
-def root() -> dict[str, str]:
-    return {
-        "service": settings.app_name,
-        "status": "running",
-        "health": f"{settings.api_v1_prefix}/health",
-        "legal": "/legal",
-        "privacy": "/privacy",
-        "delete_account": "/delete-account",
-        "app_ads": "/app-ads.txt",
-    }
+

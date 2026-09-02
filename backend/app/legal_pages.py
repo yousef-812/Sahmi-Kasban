@@ -15,21 +15,30 @@ _APP_ADS_TXT_CONTENT = "google.com, pub-4624889874966809, DIRECT, f08c47fec0942f
 _STYLE = """
 :root{color-scheme:light;--green:#176f54;--deep:#173c30;--gold:#bd8b2f;--bg:#f4f7f5;--card:#fff;--muted:#60736b;--line:#dce9e3;--danger:#a93838}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--deep);font-family:Tahoma,Arial,sans-serif;line-height:1.9}
-a{color:var(--green)}header{background:linear-gradient(135deg,#125c46,#1b8061);color:#fff;padding:34px 18px;text-align:center}
-header h1{margin:0;font-size:30px}header p{margin:6px 0 0;opacity:.9}.wrap{max-width:920px;margin:auto;padding:24px 16px 48px}
-nav{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 20px}nav a{background:#fff;border:1px solid var(--line);padding:7px 12px;border-radius:999px;text-decoration:none;font-weight:700}
-.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;margin:0 0 16px;box-shadow:0 8px 30px rgba(20,76,57,.06)}
-h2{font-size:21px;margin:0 0 8px}h3{font-size:17px;margin:18px 0 6px}p,li{color:#344e45}.muted{color:var(--muted);font-size:14px}.warning{border-right:5px solid var(--gold)}
+a{color:var(--green)}header{background:linear-gradient(135deg,#125c46,#1b8061);color:#fff;padding:42px 18px;text-align:center}
+header h1{margin:0;font-size:32px;letter-spacing:-0.5px}header p{margin:8px 0 0;opacity:.92;font-size:16px}.wrap{max-width:960px;margin:auto;padding:24px 16px 48px}
+nav{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 24px}nav a{background:#fff;border:1px solid var(--line);padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;transition:all 0.2s}
+nav a:hover{background:var(--green);color:#fff;border-color:var(--green)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;margin:0 0 20px;box-shadow:0 8px 30px rgba(20,76,57,.06)}
+h2{font-size:22px;margin:0 0 10px}h3{font-size:18px;margin:18px 0 6px}p,li{color:#344e45}.muted{color:var(--muted);font-size:14px}.warning{border-right:5px solid var(--gold)}
 table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
 label{display:block;font-weight:700;margin-top:12px}input{width:100%;padding:13px;border:1px solid #b9d0c7;border-radius:12px;font:inherit;direction:ltr}
 button{margin-top:18px;border:0;border-radius:12px;padding:13px 20px;background:var(--danger);color:#fff;font:inherit;font-weight:800;cursor:pointer}
-#result{margin-top:14px;font-weight:700}.ok{color:#16704d}.error{color:var(--danger)}footer{text-align:center;color:var(--muted);font-size:13px;padding:22px}
+#result{margin-top:14px;font-weight:700}.ok{color:#16704d}.error{color:var(--danger)}footer{text-align:center;color:var(--muted);font-size:13px;padding:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:16px 0}
+.btn-card{display:flex;flex-direction:column;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;text-decoration:none;color:inherit;transition:all 0.2s;box-shadow:0 4px 16px rgba(20,76,57,.04)}
+.btn-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(23,111,84,.12);border-color:var(--green)}
+.btn-card h3{margin:0 0 6px;color:var(--green);font-size:17px}
+.btn-card p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.6}
+.btn-card .arrow{margin-top:14px;font-weight:700;color:var(--green);font-size:13.5px}
+.badge{display:inline-block;background:#e8f5f0;color:var(--green);padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:700;margin-bottom:8px}
 """
 
 
 def _navigation() -> str:
     return """
-<nav aria-label="الصفحات القانونية">
+<nav aria-label="الصفحات الرئيسية والقانونية">
+  <a href="/">الرئيسية</a>
   <a href="/legal">الصفحات القانونية</a>
   <a href="/privacy">سياسة الخصوصية</a>
   <a href="/terms">شروط الاستخدام</a>
@@ -55,6 +64,98 @@ def _page(title: str, intro: str, body: str) -> HTMLResponse:
 </main><footer>سهمي كسبان — معلومات وتحليلات آلية وليست توصية استثمارية.</footer>
 </body></html>"""
     return HTMLResponse(document)
+
+
+@router.get("/", response_class=HTMLResponse)
+def home_page() -> HTMLResponse:
+    return _page(
+        "الموقع الرسمي لتطبيق سهمي كسبان",
+        "أداة تحليلات ومعلومات آلية لأسهم البورصة المصرية تتيح المؤشرات الفنية، السيناريوهات الاحتمالية، وسجل الأداء الشفاف.",
+        """
+<section class="card">
+  <h2>مرحباً بك في سهمي كسبان</h2>
+  <p>تطبيق سهمي كسبان يوفر للمستثمرين والمتداولين تحليلات رقمية وآلية واضحة ومستقلة لأسهم البورصة المصرية. يتم تقديم الخدمة كأداة إعلامية وتعليمية لمساعدتك في اتخاذ قراراتك بنفسك.</p>
+</section>
+
+<section class="card">
+  <h2>صفحات الخدمة والمعلومات القانونية</h2>
+  <p>اختر الصفحة التي تريد الانتقال إليها:</p>
+  <div class="grid">
+    <a href="/privacy" class="btn-card">
+      <div>
+        <span class="badge">الخصوصية والأمان</span>
+        <h3>سياسة الخصوصية</h3>
+        <p>تفاصيل البيانات التي نجمعها ونحميها وكيفية التعامل مع بيانات الحساب.</p>
+      </div>
+      <div class="arrow">عرض سياسة الخصوصية ←</div>
+    </a>
+
+    <a href="/terms" class="btn-card">
+      <div>
+        <span class="badge">الشروط والأحكام</span>
+        <h3>شروط الاستخدام</h3>
+        <p>القواعد والمسؤوليات المنظمة لاستخدام تطبيق سهمي كسبان والخدمات المتاحة.</p>
+      </div>
+      <div class="arrow">عرض شروط الاستخدام ←</div>
+    </a>
+
+    <a href="/financial-disclaimer" class="btn-card">
+      <div>
+        <span class="badge">تنبيه هام</span>
+        <h3>إخلاء المسؤولية المالية</h3>
+        <p>توضيح طبيعة التحليلات الآلية وأن التحليلات لا تشكل توصية استثمارية مباشرة.</p>
+      </div>
+      <div class="arrow">عرض إخلاء المسؤولية ←</div>
+    </a>
+
+    <a href="/data-safety" class="btn-card">
+      <div>
+        <span class="badge">Google Play</span>
+        <h3>سلامة البيانات (Data Safety)</h3>
+        <p>ملخص التصريح وإفصاحات سلامة البيانات لنشر التطبيق على Google Play.</p>
+      </div>
+      <div class="arrow">عرض سلامة البيانات ←</div>
+    </a>
+
+    <a href="/financial-features" class="btn-card">
+      <div>
+        <span class="badge">Google Play</span>
+        <h3>الإقرار بالميزات المالية</h3>
+        <p>تفاصيل إقرار الميزات المالية الخاصة بالتطبيق على منصة Play Console.</p>
+      </div>
+      <div class="arrow">عرض الإقرار المالي ←</div>
+    </a>
+
+    <a href="/delete-account" class="btn-card">
+      <div>
+        <span class="badge">إدارة الحساب</span>
+        <h3>حذف الحساب والبيانات</h3>
+        <p>الصفحة المباشرة لتأكيد طلب حذف الحساب والبيانات المسجلة نهائياً.</p>
+      </div>
+      <div class="arrow">الانتقال لحذف الحساب ←</div>
+    </a>
+
+    <a href="/app-ads.txt" class="btn-card">
+      <div>
+        <span class="badge">Google AdMob</span>
+        <h3>ملف app-ads.txt</h3>
+        <p>ملف إثبات الملكية المعتمد لإعلانات AdMob والناشرين المعتمدين.</p>
+      </div>
+      <div class="arrow">عرض ملف app-ads.txt ←</div>
+    </a>
+
+    <a href="/legal" class="btn-card">
+      <div>
+        <span class="badge">دليل الروابط</span>
+        <h3>الفهرس القانوني الشامل</h3>
+        <p>قائمة تجميعية لكافة الروابط والمستندات الرسمية المتاحة على الممتلكات الرقمية.</p>
+      </div>
+      <div class="arrow">عرض الفهرس القانوني ←</div>
+    </a>
+  </div>
+</section>
+""",
+    )
 
 
 @router.get("/legal", response_class=HTMLResponse)
