@@ -2,7 +2,6 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
-from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.security import InvalidAccessTokenError, decode_access_token
@@ -45,6 +44,7 @@ from app.services.stock_comparisons import (
     execute_stock_comparison,
 )
 from app.services.wallet import InsufficientBalanceError, points_to_coins
+from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(tags=["market"])
 MarketProvider = Annotated[MarketDataProvider, Depends(get_market_data_provider)]
