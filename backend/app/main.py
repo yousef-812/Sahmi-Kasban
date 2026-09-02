@@ -111,4 +111,5 @@ def root() -> dict[str, str]:
         "legal": "/legal",
         "privacy": "/privacy",
         "delete_account": "/delete-account",
+        "app_ads": "/app-ads.txt",
     }

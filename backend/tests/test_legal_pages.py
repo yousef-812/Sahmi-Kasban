@@ -31,6 +31,13 @@ def test_delete_account_page_uses_existing_authenticated_api(
     assert "حذف الحساب نهائيًا" in response.text
 
 
+def test_app_ads_txt_endpoint(client: TestClient) -> None:
+    response = client.get("/app-ads.txt")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "google.com, pub-4624889874966809, DIRECT, f08c47fec0942fa0" in response.text
+
+
 def test_root_advertises_legal_links(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
@@ -38,3 +45,4 @@ def test_root_advertises_legal_links(client: TestClient) -> None:
     assert payload["legal"] == "/legal"
     assert payload["privacy"] == "/privacy"
     assert payload["delete_account"] == "/delete-account"
+    assert payload["app_ads"] == "/app-ads.txt"

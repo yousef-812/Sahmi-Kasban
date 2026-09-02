@@ -13,6 +13,7 @@ After deploying this branch, use:
 - Financial features working sheet: `https://sahmi-kasban.fly.dev/financial-features`
 - Account deletion URL: `https://sahmi-kasban.fly.dev/delete-account`
 - Legal index: `https://sahmi-kasban.fly.dev/legal`
+- App Ads TXT: `https://sahmi-kasban.fly.dev/app-ads.txt`
 
 The deletion page authenticates the user and calls the same server-authoritative deletion API used by the app. The Android app also exposes deletion under **Account > Edit profile > Delete account permanently**.
 

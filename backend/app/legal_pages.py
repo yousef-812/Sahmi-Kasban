@@ -4,12 +4,13 @@ from __future__ import annotations
 import html
 
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from app.core.config import get_settings
 
 router = APIRouter(include_in_schema=False)
 _UPDATED_AT = "28 يوليو 2026"
+_APP_ADS_TXT_CONTENT = "google.com, pub-4624889874966809, DIRECT, f08c47fec0942fa0\n"
 
 _STYLE = """
 :root{color-scheme:light;--green:#176f54;--deep:#173c30;--gold:#bd8b2f;--bg:#f4f7f5;--card:#fff;--muted:#60736b;--line:#dce9e3;--danger:#a93838}
@@ -36,6 +37,7 @@ def _navigation() -> str:
   <a href="/data-safety">سلامة البيانات</a>
   <a href="/financial-features">الإقرار بالميزات المالية</a>
   <a href="/delete-account">حذف الحساب</a>
+  <a href="/app-ads.txt">app-ads.txt</a>
 </nav>
 """
 
@@ -61,16 +63,22 @@ def legal_index() -> HTMLResponse:
         "الصفحات القانونية",
         "هذه الصفحة تجمع الروابط القانونية وسياسات البيانات الخاصة بالتطبيق.",
         """
-<section class="card"><h2>روابط النشر على Google Play</h2><ul>
+<section class="card"><h2>روابط النشر على Google Play و AdMob</h2><ul>
 <li>سياسة الخصوصية: <code>/privacy</code></li>
 <li>شروط الاستخدام: <code>/terms</code></li>
 <li>إخلاء المسؤولية المالية: <code>/financial-disclaimer</code></li>
 <li>سلامة البيانات: <code>/data-safety</code></li>
 <li>الإقرار بالميزات المالية: <code>/financial-features</code></li>
 <li>حذف الحساب والبيانات: <code>/delete-account</code></li>
+<li>ملف إعلانات التطبيقات (app-ads.txt): <code>/app-ads.txt</code></li>
 </ul></section>
 """,
     )
+
+
+@router.get("/app-ads.txt", response_class=PlainTextResponse)
+def app_ads_txt() -> PlainTextResponse:
+    return PlainTextResponse(_APP_ADS_TXT_CONTENT)
 
 
 @router.get("/privacy", response_class=HTMLResponse)
