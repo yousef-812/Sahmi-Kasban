@@ -3,8 +3,12 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/:path*",
-      "destination": "https://sahmi-kasban.fly.dev/:path*"
+      "source": "/",
+      "destination": "https://sahmi-kasban.fly.dev/"
+    },
+    {
+      "source": "/:match*",
+      "destination": "https://sahmi-kasban.fly.dev/:match*"
     }
   ]
 }
