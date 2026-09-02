@@ -120,9 +120,7 @@ def test_bulk_weekly_job_does_not_duplicate_grants(db_session: Session) -> None:
 def test_bulk_weekly_job_uses_active_paid_plan_allocation(db_session: Session) -> None:
     user = create_registered_user(db_session, "paid-weekly@example.com")
     moment = datetime(2026, 8, 10, 9, tzinfo=UTC)
-    existing_sub = db_session.scalar(
-        select(Subscription).where(Subscription.user_id == user.id)
-    )
+    existing_sub = db_session.scalar(select(Subscription).where(Subscription.user_id == user.id))
     if existing_sub:
         existing_sub.status = "canceled"
     paid = Subscription(

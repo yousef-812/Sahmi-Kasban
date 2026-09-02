@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from datetime import UTC, datetime
 
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -19,7 +20,6 @@ from app.models import (
     User,
     WalletAccount,
 )
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 
 def get_admin_overview(db: Session, *, moment: datetime | None = None) -> dict:
@@ -33,19 +33,14 @@ def get_admin_overview(db: Session, *, moment: datetime | None = None) -> dict:
         "users_total": count(User),
         "users_active": count(User, User.status == "active"),
         "users_suspended": count(User, User.status == "suspended"),
-        "discussions_pending": count(
-            Discussion, Discussion.status == "pending_review"
-        ),
-        "discussions_published": count(
-            Discussion, Discussion.status == "published"
-        ),
+        "discussions_pending": count(Discussion, Discussion.status == "pending_review"),
+        "discussions_published": count(Discussion, Discussion.status == "published"),
         "discussions_hidden": count(Discussion, Discussion.status == "hidden"),
         "open_reports": count(DiscussionReport, DiscussionReport.status == "open"),
         "open_appeals": count(DiscussionAppeal, DiscussionAppeal.status == "open"),
         "verified_predictions": count(PredictionVerification),
         "wallet_points_total": int(
-            db.scalar(select(func.coalesce(func.sum(WalletAccount.balance_points), 0)))
-            or 0
+            db.scalar(select(func.coalesce(func.sum(WalletAccount.balance_points), 0))) or 0
         ),
         "notifications_today": count(Notification, Notification.sent_at >= today_start),
         "unread_notifications": count(Notification, Notification.read_at.is_(None)),
@@ -128,9 +123,7 @@ def list_admin_audit_events(
     filters = []
     if action:
         filters.append(CommunityAdminEvent.action == action)
-    total = int(
-        db.scalar(select(func.count(CommunityAdminEvent.id)).where(*filters)) or 0
-    )
+    total = int(db.scalar(select(func.count(CommunityAdminEvent.id)).where(*filters)) or 0)
     items = db.scalars(
         select(CommunityAdminEvent)
         .where(*filters)

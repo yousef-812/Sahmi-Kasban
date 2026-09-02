@@ -12,9 +12,7 @@ from cryptography.fernet import Fernet
 from app.core.config import Environment, Settings, get_settings
 
 _EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_REQUIRED_SERVICE_ACCOUNT_FIELDS = frozenset(
-    {"project_id", "client_email", "private_key"}
-)
+_REQUIRED_SERVICE_ACCOUNT_FIELDS = frozenset({"project_id", "client_email", "private_key"})
 
 
 class ProductionReadinessError(RuntimeError):
@@ -79,9 +77,7 @@ def production_readiness_issues(
             break
 
     admin_emails = tuple(
-        item.strip().casefold()
-        for item in env.get("ADMIN_EMAILS", "").split(",")
-        if item.strip()
+        item.strip().casefold() for item in env.get("ADMIN_EMAILS", "").split(",") if item.strip()
     )
     if not admin_emails:
         issues.append("ADMIN_EMAILS must contain at least one production administrator")
@@ -112,9 +108,7 @@ def production_readiness_issues(
         if fcm_issue:
             issues.append(fcm_issue)
     else:
-        issues.append(
-            "FCM_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS is required in production"
-        )
+        issues.append("FCM_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS is required in production")
     if fcm_payload and fcm_project_id:
         credential_project = str(fcm_payload.get("project_id") or "").strip()
         if credential_project != fcm_project_id:
@@ -151,9 +145,7 @@ def enforce_production_readiness(
     issues = production_readiness_issues(settings, environ)
     if issues:
         details = "\n".join(f"- {issue}" for issue in issues)
-        raise ProductionReadinessError(
-            "Production readiness checks failed:\n" + details
-        )
+        raise ProductionReadinessError("Production readiness checks failed:\n" + details)
 
 
 def main() -> None:

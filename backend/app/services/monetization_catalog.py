@@ -137,9 +137,7 @@ COIN_PACKS: tuple[CoinPackDefinition, ...] = (
 )
 
 _PLAN_BY_CODE = {plan.code: plan for plan in PLANS}
-_PLAN_BY_PRODUCT_ID = {
-    plan.product_id: plan for plan in PLANS if plan.product_id is not None
-}
+_PLAN_BY_PRODUCT_ID = {plan.product_id: plan for plan in PLANS if plan.product_id is not None}
 _COIN_PACK_BY_PRODUCT_ID = {pack.product_id: pack for pack in COIN_PACKS}
 
 

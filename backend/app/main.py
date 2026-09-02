@@ -100,6 +100,3 @@ app.add_middleware(RequestContextMiddleware)
 app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.is_production)
 app.include_router(legal_router)
 app.include_router(api_router, prefix=settings.api_v1_prefix)
-
-
-

@@ -59,10 +59,7 @@ class EGXTradingCalendar:
         )
 
     def is_trading_session(self, session_date: date) -> bool:
-        return (
-            session_date.weekday() not in self.weekend_weekdays
-            and session_date not in self.holidays
-        )
+        return session_date.weekday() not in self.weekend_weekdays and session_date not in self.holidays
 
     def next_trading_session(self, after_date: date) -> date:
         candidate = after_date + timedelta(days=1)
@@ -79,9 +76,7 @@ class EGXTradingCalendar:
         local = current.astimezone(self.timezone)
         source_date = local.date()
         if not self.is_trading_session(source_date):
-            raise NonTradingSessionError(
-                f"{source_date.isoformat()} is not an EGX trading session"
-            )
+            raise NonTradingSessionError(f"{source_date.isoformat()} is not an EGX trading session")
         if local.timetz().replace(tzinfo=None) < self.scan_time:
             raise ScanNotDueError(
                 f"Daily scan is scheduled for {self.scan_time.isoformat(timespec='minutes')} "

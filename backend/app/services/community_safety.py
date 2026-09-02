@@ -73,9 +73,7 @@ def _validate_duplicate_content(
         period_type=period_type,
     )
     if discussion.content_fingerprint != expected:
-        raise CommunityConflictError(
-            "Content fingerprint was already used for different discussion data"
-        )
+        raise CommunityConflictError("Content fingerprint was already used for different discussion data")
 
 
 def _retry_after(
@@ -96,9 +94,7 @@ def _enforce_submission_rate_limit(
     user_id: UUID,
     moment: datetime,
 ) -> None:
-    short_window = timedelta(
-        minutes=get_int_setting(db, "community_short_window_minutes")
-    )
+    short_window = timedelta(minutes=get_int_setting(db, "community_short_window_minutes"))
     short_limit = get_int_setting(db, "community_short_window_limit")
     daily_limit = get_int_setting(db, "community_daily_limit")
     daily_start = moment - DAILY_WINDOW
@@ -115,8 +111,7 @@ def _enforce_submission_rate_limit(
     short_timestamps = [
         timestamp
         for timestamp in timestamps
-        if (timestamp.replace(tzinfo=UTC) if timestamp.tzinfo is None else timestamp)
-        >= moment - short_window
+        if (timestamp.replace(tzinfo=UTC) if timestamp.tzinfo is None else timestamp) >= moment - short_window
     ]
     if len(short_timestamps) >= short_limit:
         raise CommunityRateLimitError(

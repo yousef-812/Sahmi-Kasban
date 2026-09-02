@@ -1,4 +1,5 @@
 """User recent analyses endpoint — fast retrieval without re-running analysis engines."""
+
 from __future__ import annotations
 
 import logging
@@ -48,16 +49,8 @@ async def list_recent_analyses(
     items: list[AnalysisHistoryItem] = []
     for _access, analysis in rows:
         payload = analysis.payload if isinstance(analysis.payload, dict) else {}
-        analysis_data = (
-            payload.get("analysis", {})
-            if isinstance(payload.get("analysis"), dict)
-            else {}
-        )
-        engines = (
-            analysis_data.get("engines", {})
-            if isinstance(analysis_data.get("engines"), dict)
-            else {}
-        )
+        analysis_data = payload.get("analysis", {}) if isinstance(payload.get("analysis"), dict) else {}
+        engines = analysis_data.get("engines", {}) if isinstance(analysis_data.get("engines"), dict) else {}
         tech_details = (
             engines.get("technical", {}).get("details", {})
             if isinstance(engines.get("technical"), dict)

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 from datetime import UTC, date, datetime
@@ -73,9 +73,7 @@ def _candle(
     close: float,
 ) -> dict[str, object]:
     return {
-        "timestamp": datetime(
-            2026, 7, day, hour, minute, tzinfo=_CALENDAR_TZ
-        ).astimezone(UTC).isoformat(),
+        "timestamp": datetime(2026, 7, day, hour, minute, tzinfo=_CALENDAR_TZ).astimezone(UTC).isoformat(),
         "open": open_price,
         "high": high,
         "low": low,

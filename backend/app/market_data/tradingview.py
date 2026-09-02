@@ -30,9 +30,7 @@ def _tradingview_interval(interval: str) -> str:
     try:
         return mapping[normalized]
     except KeyError as exc:
-        raise MarketDataUnavailableError(
-            f"TradingView interval is not supported: {interval}"
-        ) from exc
+        raise MarketDataUnavailableError(f"TradingView interval is not supported: {interval}") from exc
 
 
 def _history_count(period: str, interval: str) -> int:
@@ -132,17 +130,13 @@ class TradingViewMarketDataProvider:
                 timeout=settings.market_data_timeout_seconds,
             )
         except Exception as exc:
-            raise MarketDataUnavailableError(
-                f"TradingView websocket failed for {provider_symbol}"
-            ) from exc
+            raise MarketDataUnavailableError(f"TradingView websocket failed for {provider_symbol}") from exc
         finally:
             await connector.close()
 
         candles = _normalize_candles(raw_candles)
         if not candles:
-            raise MarketDataUnavailableError(
-                f"TradingView returned no usable candles for {provider_symbol}"
-            )
+            raise MarketDataUnavailableError(f"TradingView returned no usable candles for {provider_symbol}")
 
         fetched_at = datetime.now(UTC)
         data_as_of = datetime.fromisoformat(str(candles[-1]["timestamp"]))

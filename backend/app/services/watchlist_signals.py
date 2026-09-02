@@ -3,6 +3,7 @@
 Reuses the cached market-data and analysis layers to avoid redundant fetches.
 Returns a minimal snapshot (signal, score, price, change_pct).
 """
+
 from __future__ import annotations
 
 import logging

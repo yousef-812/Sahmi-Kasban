@@ -41,11 +41,7 @@ def main() -> None:
                 .where(MarketInstrumentCatalog.active.is_(True))
                 .order_by(MarketInstrumentCatalog.ticker)
             ).scalars()
-            arabic_rows = [
-                (row.ticker, row.description)
-                for row in rows
-                if has_arabic_text(row.description)
-            ]
+            arabic_rows = [(row.ticker, row.description) for row in rows if has_arabic_text(row.description)]
         finally:
             db.close()
 

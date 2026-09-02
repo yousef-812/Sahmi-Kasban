@@ -44,9 +44,7 @@ def test_admin_wallet_credit_is_audited_and_idempotent(db_session: Session) -> N
         request_id="wallet-credit-test-1",
     )
 
-    account = db_session.scalar(
-        select(WalletAccount).where(WalletAccount.user_id == target.id)
-    )
+    account = db_session.scalar(select(WalletAccount).where(WalletAccount.user_id == target.id))
     assert account is not None
     assert account.balance_points == 3_500
     assert first["balance_points"] == 3_500
@@ -55,14 +53,10 @@ def test_admin_wallet_credit_is_audited_and_idempotent(db_session: Session) -> N
     assert second["idempotent"] is True
 
     wallet_entries = db_session.scalar(
-        select(func.count(WalletEntry.id)).where(
-            WalletEntry.entry_type == "admin_wallet_credit"
-        )
+        select(func.count(WalletEntry.id)).where(WalletEntry.entry_type == "admin_wallet_credit")
     )
     audit_events = db_session.scalar(
-        select(func.count(CommunityAdminEvent.id)).where(
-            CommunityAdminEvent.action == "wallet_credit"
-        )
+        select(func.count(CommunityAdminEvent.id)).where(CommunityAdminEvent.action == "wallet_credit")
     )
     assert wallet_entries == 1
     assert audit_events == 1

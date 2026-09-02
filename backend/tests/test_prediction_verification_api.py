@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
+from sahmi_kasban.ai import AIProviderError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,7 +13,6 @@ from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries
 from app.models import Discussion, WalletEntry
 from app.services.community_ai import get_community_ai_service
-from sahmi_kasban.ai import AIProviderError
 
 PASSWORD = "StrongPass123"
 
@@ -185,9 +185,7 @@ def test_prediction_verification_rewards_once_and_updates_stats(
     assert provider.calls == 1
 
     rewards = db_session.scalars(
-        select(WalletEntry).where(
-            WalletEntry.entry_type == "prediction_verification_reward"
-        )
+        select(WalletEntry).where(WalletEntry.entry_type == "prediction_verification_reward")
     ).all()
     assert len(rewards) == 1
     assert rewards[0].amount_points == 200

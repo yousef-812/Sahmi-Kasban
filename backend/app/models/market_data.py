@@ -21,18 +21,12 @@ class MarketInstrumentCatalog(TimestampMixin, Base):
     __tablename__ = "market_instrument_catalog"
 
     ticker: Mapped[str] = mapped_column(String(24), primary_key=True)
-    provider_symbol: Mapped[str] = mapped_column(
-        String(64), unique=True, index=True, nullable=False
-    )
+    provider_symbol: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     exchange: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     source: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
-    active: Mapped[bool] = mapped_column(
-        Boolean, index=True, nullable=False, default=True
-    )
-    last_seen_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), index=True, nullable=False
-    )
+    active: Mapped[bool] = mapped_column(Boolean, index=True, nullable=False, default=True)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
 
 
 class MarketDataSnapshot(TimestampMixin, Base):

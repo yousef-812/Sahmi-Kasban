@@ -44,33 +44,17 @@ def _session_payload(trade: Any) -> dict[str, object]:
         "ticker": trade.ticker,
         "score": trade.score,
         "price_at_analysis": (
-            round(float(trade.price_at_analysis), 4)
-            if trade.price_at_analysis is not None
-            else None
+            round(float(trade.price_at_analysis), 4) if trade.price_at_analysis is not None else None
         ),
         "targets": [round(float(target), 4) for target in trade.targets],
-        "stop_loss": (
-            round(float(trade.stop_loss), 4)
-            if trade.stop_loss is not None
-            else None
-        ),
-        "session_open": (
-            round(float(trade.session_open), 4)
-            if trade.session_open is not None
-            else None
-        ),
-        "exit_price": (
-            round(float(trade.exit_price), 4)
-            if trade.exit_price is not None
-            else None
-        ),
+        "stop_loss": (round(float(trade.stop_loss), 4) if trade.stop_loss is not None else None),
+        "session_open": (round(float(trade.session_open), 4) if trade.session_open is not None else None),
+        "exit_price": (round(float(trade.exit_price), 4) if trade.exit_price is not None else None),
         "exit_reason": trade.exit_reason,
         "hit": trade.hit,
         "minutes_to_exit": trade.minutes_to_exit,
         "return_pct": trade.return_pct,
-        "tracked": [
-            _tracked_point_payload(point) for point in trade.tracked
-        ],
+        "tracked": [_tracked_point_payload(point) for point in trade.tracked],
     }
 
 

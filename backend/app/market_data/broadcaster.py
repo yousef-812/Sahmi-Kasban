@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -70,7 +69,9 @@ class QuoteBroadcaster:
     async def disconnect(self, websocket: WebSocket) -> None:
         async with self._lock:
             self._active_connections.discard(websocket)
-            logger.info("WebSocket client disconnected. Active connections: %s", len(self._active_connections))
+            logger.info(
+                "WebSocket client disconnected. Active connections: %s", len(self._active_connections)
+            )
 
     async def broadcast_snapshot(self, snapshot: MarketQuotesSnapshot) -> None:
         payload = _snapshot_to_dict(snapshot)

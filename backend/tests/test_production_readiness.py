@@ -74,9 +74,7 @@ def test_complete_production_configuration_passes() -> None:
 
 
 def test_production_allows_sentry_to_be_disabled() -> None:
-    settings = _production_settings().model_copy(
-        update={"sentry_dsn": "", "sentry_release": ""}
-    )
+    settings = _production_settings().model_copy(update={"sentry_dsn": "", "sentry_release": ""})
 
     issues = production_readiness_issues(settings, _production_environment())
 
@@ -125,16 +123,11 @@ def test_production_rejects_insecure_public_urls() -> None:
     issues = production_readiness_issues(settings, _production_environment())
 
     assert "APP_PUBLIC_URL must be an absolute https:// URL in production" in issues
-    assert (
-        "CORS_ORIGINS may contain only explicit https:// origins in production"
-        in issues
-    )
+    assert "CORS_ORIGINS may contain only explicit https:// origins in production" in issues
 
 
 def test_production_rejects_invalid_billing_cipher_key() -> None:
-    settings = _production_settings().model_copy(
-        update={"billing_token_encryption_key": "not-a-fernet-key"}
-    )
+    settings = _production_settings().model_copy(update={"billing_token_encryption_key": "not-a-fernet-key"})
 
     issues = production_readiness_issues(settings, _production_environment())
 

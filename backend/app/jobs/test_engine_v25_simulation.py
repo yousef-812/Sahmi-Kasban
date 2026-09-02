@@ -12,7 +12,7 @@ def run_v25_simulation_for_dates():
     db = SessionLocal()
     try:
         target_dates = [date(2026, 8, 2), date(2026, 8, 3)]
-        
+
         print("=========================================================")
         print("   Core v2.4 vs Core v2.5 Isolated Engine Simulation")
         print("=========================================================\n")
@@ -23,7 +23,7 @@ def run_v25_simulation_for_dates():
                 .where(MarketReport.target_session_date == s_date)
                 .order_by(MarketReport.created_at.desc())
             )
-            
+
             if not report:
                 print(f"⚠️ No report found for target date: {s_date}")
                 continue
@@ -37,8 +37,7 @@ def run_v25_simulation_for_dates():
             outcomes = {
                 out.report_item_id: out
                 for out in db.scalars(
-                    select(MarketReportItemOutcome)
-                    .where(MarketReportItemOutcome.report_id == report.id)
+                    select(MarketReportItemOutcome).where(MarketReportItemOutcome.report_id == report.id)
                 ).all()
             }
 
@@ -60,18 +59,14 @@ def run_v25_simulation_for_dates():
 
             for item in items:
                 p = item.payload if isinstance(item.payload, dict) else {}
-                analysis = (
-                    p.get("analysis") if isinstance(p.get("analysis"), dict) else {}
-                )
+                analysis = p.get("analysis") if isinstance(p.get("analysis"), dict) else {}
                 indicators = (
-                    analysis.get("indicators")
-                    if isinstance(analysis.get("indicators"), dict)
-                    else {}
+                    analysis.get("indicators") if isinstance(analysis.get("indicators"), dict) else {}
                 )
-                
+
                 volume_ratio = float(indicators.get("volume_ratio") or 1.0)
                 v24_signal = str(p.get("signal", "WATCH")).upper()
-                
+
                 if v24_signal == "BUY" and volume_ratio < 1.30:
                     v25_signal = "WATCH (Vol<1.3)"
                 else:
@@ -80,7 +75,7 @@ def run_v25_simulation_for_dates():
                 out = outcomes.get(item.id)
                 max_up = float(out.max_upside_bp / 100.0) if out and out.max_upside_bp is not None else 0.0
                 ret = float(out.return_bp / 100.0) if out and out.return_bp is not None else 0.0
-                
+
                 v24_outcome = "➖ Pending"
                 v25_outcome = "➖ Pending"
 
@@ -120,17 +115,18 @@ def run_v25_simulation_for_dates():
             if evaluated_count > 0:
                 print(
                     f"📈 v2.4 Win Rate: {v24_wins}/{evaluated_count} "
-                    f"({v24_wins/evaluated_count*100:.1f}%)"
+                    f"({v24_wins / evaluated_count * 100:.1f}%)"
                 )
                 print(
                     f"🚀 v2.5 Simulated Win Rate: {v25_wins}/{evaluated_count} "
-                    f"({v25_wins/evaluated_count*100:.1f}%)\n"
+                    f"({v25_wins / evaluated_count * 100:.1f}%)\n"
                 )
             else:
                 print("ℹ️ Session evaluation is pending close.\n")
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     run_v25_simulation_for_dates()

@@ -61,10 +61,7 @@ def compute_sector_quality(
     else:
         quality_status = "underperforming"
         quality_label = f"أقل من متوسط قطاع {sector_name}"
-        summary_ar = (
-            f"تقييم السهم ({score:.1f}/100) يقع دون المستهدف لقطاع {sector_name} "
-            f"({trend_desc})."
-        )
+        summary_ar = f"تقييم السهم ({score:.1f}/100) يقع دون المستهدف لقطاع {sector_name} ({trend_desc})."
 
     return {
         "sector_name": sector_name,

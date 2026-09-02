@@ -31,11 +31,7 @@ def get_current_user(db: DatabaseSession, credentials: BearerCredentials) -> Use
         raise unauthorized from exc
 
     user = db.get(User, user_id)
-    if (
-        user is None
-        or user.status != "active"
-        or user.auth_version != token_version
-    ):
+    if user is None or user.status != "active" or user.auth_version != token_version:
         raise unauthorized
     return user
 

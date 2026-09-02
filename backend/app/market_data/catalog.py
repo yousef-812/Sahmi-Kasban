@@ -41,9 +41,7 @@ def seed_market_instrument_catalog(db: Session) -> None:
     now = _utcnow()
     existing = set(
         db.scalars(
-            select(MarketInstrumentCatalog.ticker).where(
-                MarketInstrumentCatalog.ticker.in_(EGX_SEED_SYMBOLS)
-            )
+            select(MarketInstrumentCatalog.ticker).where(MarketInstrumentCatalog.ticker.in_(EGX_SEED_SYMBOLS))
         ).all()
     )
     for ticker in EGX_SEED_SYMBOLS:
@@ -126,10 +124,7 @@ def _reconcile_scanner_rows(
 ) -> tuple[int, int]:
     now = _utcnow()
     seen = {row.ticker for row in rows}
-    existing_rows = {
-        item.ticker: item
-        for item in db.scalars(select(MarketInstrumentCatalog)).all()
-    }
+    existing_rows = {item.ticker: item for item in db.scalars(select(MarketInstrumentCatalog)).all()}
     for row in rows:
         existing = existing_rows.get(row.ticker)
         if existing is None:
@@ -149,11 +144,7 @@ def _reconcile_scanner_rows(
     deactivated = 0
     if authoritative:
         for existing in existing_rows.values():
-            if (
-                existing.exchange == "EGX"
-                and existing.ticker not in seen
-                and existing.active
-            ):
+            if existing.exchange == "EGX" and existing.ticker not in seen and existing.active:
                 existing.active = False
                 deactivated += 1
     return len(rows), deactivated
@@ -216,9 +207,7 @@ async def refresh_market_instrument_catalog(db: Session) -> int:
         rows = _parse_scanner_rows(response.json())
 
     if len(rows) < _SCANNER_MIN_AUTHORITATIVE_SYMBOLS:
-        raise RuntimeError(
-            "TradingView scanner returned too few EGX stocks for authoritative reconciliation"
-        )
+        raise RuntimeError("TradingView scanner returned too few EGX stocks for authoritative reconciliation")
 
     count, deactivated = _reconcile_scanner_rows(db, rows, authoritative=True)
     db.commit()
@@ -250,21 +239,15 @@ async def ensure_market_instrument_catalog(db: Session) -> str:
     now = _utcnow()
     catalog_stale = latest_seen is None or latest_seen < now - refresh_after
     retry_after = timedelta(minutes=settings.market_instrument_catalog_retry_minutes)
-    recently_attempted = (
-        _last_refresh_attempt_at is not None
-        and _last_refresh_attempt_at > now - retry_after
-    )
-    current_source = (
-        "tradingview_scanner" if latest_seen is not None else "legacy_seed_registry"
-    )
+    recently_attempted = _last_refresh_attempt_at is not None and _last_refresh_attempt_at > now - retry_after
+    current_source = "tradingview_scanner" if latest_seen is not None else "legacy_seed_registry"
     if not catalog_stale or recently_attempted or _refresh_lock.locked():
         return current_source
 
     async with _refresh_lock:
         now = _utcnow()
         recently_attempted = (
-            _last_refresh_attempt_at is not None
-            and _last_refresh_attempt_at > now - retry_after
+            _last_refresh_attempt_at is not None and _last_refresh_attempt_at > now - retry_after
         )
         if recently_attempted:
             return current_source
@@ -286,9 +269,7 @@ async def search_market_instruments(
 ) -> tuple[str, int, list[MarketInstrument]]:
     source = await ensure_market_instrument_catalog(db)
     normalized_query = query.strip().upper()
-    statement = select(MarketInstrumentCatalog).where(
-        MarketInstrumentCatalog.active.is_(True)
-    )
+    statement = select(MarketInstrumentCatalog).where(MarketInstrumentCatalog.active.is_(True))
     if normalized_query:
         pattern = f"%{normalized_query}%"
         statement = statement.where(
@@ -300,9 +281,7 @@ async def search_market_instruments(
             case(
                 (func.upper(MarketInstrumentCatalog.ticker) == normalized_query, 0),
                 (
-                    func.upper(MarketInstrumentCatalog.ticker).like(
-                        f"{normalized_query}%"
-                    ),
+                    func.upper(MarketInstrumentCatalog.ticker).like(f"{normalized_query}%"),
                     1,
                 ),
                 else_=2,
@@ -314,9 +293,9 @@ async def search_market_instruments(
 
     rows = db.scalars(statement.limit(limit)).all()
     total = db.scalar(
-        select(func.count()).select_from(MarketInstrumentCatalog).where(
-            MarketInstrumentCatalog.active.is_(True)
-        )
+        select(func.count())
+        .select_from(MarketInstrumentCatalog)
+        .where(MarketInstrumentCatalog.active.is_(True))
     )
     instruments = [
         MarketInstrument(

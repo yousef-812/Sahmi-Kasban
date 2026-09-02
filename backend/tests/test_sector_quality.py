@@ -1,4 +1,3 @@
-import pytest
 from app.services.sector_quality import compute_sector_quality
 
 
@@ -15,7 +14,9 @@ def test_compute_sector_quality_outperforming():
 
 
 def test_compute_sector_quality_in_line():
-    res = compute_sector_quality("TMGH", score=62.0, return_20d=1.2, sector_momentum_pct=0.1, raw_sector="Real Estate")
+    res = compute_sector_quality(
+        "TMGH", score=62.0, return_20d=1.2, sector_momentum_pct=0.1, raw_sector="Real Estate"
+    )
     assert res["sector_name"] == "العقارات"
     assert res["quality_status"] == "in_line"
     assert res["sector_trend"] == "neutral"
@@ -23,7 +24,9 @@ def test_compute_sector_quality_in_line():
 
 
 def test_compute_sector_quality_underperforming():
-    res = compute_sector_quality("ETEL", score=42.0, return_20d=-2.1, sector_momentum_pct=-1.8, raw_sector="Technology Services")
+    res = compute_sector_quality(
+        "ETEL", score=42.0, return_20d=-2.1, sector_momentum_pct=-1.8, raw_sector="Technology Services"
+    )
     assert res["sector_name"] == "الاتصالات والتكنولوجيا"
     assert res["quality_status"] == "underperforming"
     assert res["sector_trend"] == "bearish"

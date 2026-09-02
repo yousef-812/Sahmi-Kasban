@@ -7,6 +7,7 @@ from functools import lru_cache
 from typing import Any
 from uuid import UUID
 
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,7 +17,6 @@ from app.services.community import (
     DiscussionNotFoundError,
     apply_moderation_decision,
 )
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 _ALLOWED_DIRECTIONS = {"up", "down", "neutral"}
 _AI_REASON_CODES = {
@@ -143,11 +143,8 @@ def _safe_moderation_payload(moderation: dict[str, Any]) -> dict[str, Any]:
     return {
         "approved": bool(moderation.get("approved", False)),
         "category": _clean_text(moderation.get("category"), max_length=80) or "unknown",
-        "reason": _clean_text(moderation.get("reason"), max_length=500)
-        or "تعذر تحديد سبب واضح",
-        "flags": [str(item)[:80] for item in flags[:20]]
-        if isinstance(flags, list)
-        else [],
+        "reason": _clean_text(moderation.get("reason"), max_length=500) or "تعذر تحديد سبب واضح",
+        "flags": [str(item)[:80] for item in flags[:20]] if isinstance(flags, list) else [],
     }
 
 
@@ -159,11 +156,7 @@ def record_ai_review_failure(
     moment: datetime | None = None,
 ) -> Discussion:
     attempted_at = moment or datetime.now(UTC)
-    discussion = db.scalar(
-        select(Discussion)
-        .where(Discussion.id == discussion_id)
-        .with_for_update()
-    )
+    discussion = db.scalar(select(Discussion).where(Discussion.id == discussion_id).with_for_update())
     if discussion is None:
         raise DiscussionNotFoundError("Discussion does not exist")
     if discussion.status != "pending_review":

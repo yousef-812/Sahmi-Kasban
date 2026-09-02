@@ -20,11 +20,7 @@ def grant_welcome_bonus_if_eligible(db: Session, user: User) -> WalletEntry | No
     else:
         created_at = created_at.astimezone(UTC)
 
-    if (
-        user.status != "active"
-        or not user.email_verified
-        or created_at < WELCOME_BONUS_START_AT
-    ):
+    if user.status != "active" or not user.email_verified or created_at < WELCOME_BONUS_START_AT:
         return None
 
     return credit_points(

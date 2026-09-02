@@ -25,9 +25,7 @@ TEXT_SUFFIXES = {
 }
 SECRET_PATTERNS = {
     "private key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
-    "Google service-account private key": re.compile(
-        r'"private_key"\s*:\s*"-----BEGIN PRIVATE KEY-----'
-    ),
+    "Google service-account private key": re.compile(r'"private_key"\s*:\s*"-----BEGIN PRIVATE KEY-----'),
     "GitHub token": re.compile(r"\bgh[oprsu]_[A-Za-z0-9]{30,}\b"),
     "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     "Slack token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),

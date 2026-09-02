@@ -55,11 +55,7 @@ def _create_report(
         pending_count=sum(value is None for value in values),
         failed_count=0,
         started_at=datetime(2026, 7, 21, 15, 0, tzinfo=UTC),
-        completed_at=(
-            datetime(2026, 7, 21, 15, 5, tzinfo=UTC)
-            if evaluation_status == "complete"
-            else None
-        ),
+        completed_at=(datetime(2026, 7, 21, 15, 5, tzinfo=UTC) if evaluation_status == "complete" else None),
         last_attempt_at=datetime(2026, 7, 21, 15, 0, tzinfo=UTC),
         details={"negative_results_retained": True},
     )
@@ -85,8 +81,10 @@ def _create_report(
         db.add(item)
         db.flush()
         complete = return_bp is not None
-        close = None if return_bp is None else Decimal("100") * (
-            Decimal("1") + Decimal(return_bp) / Decimal("10000")
+        close = (
+            None
+            if return_bp is None
+            else Decimal("100") * (Decimal("1") + Decimal(return_bp) / Decimal("10000"))
         )
         outcome = MarketReportItemOutcome(
             evaluation_id=evaluation.id,
@@ -114,11 +112,7 @@ def _create_report(
             stop_loss_hit=True if complete else None,
             provider="fixture" if complete else None,
             data_fingerprint=f"fp-{ticker}" if complete else None,
-            data_as_of=(
-                datetime.combine(target_date, datetime.min.time(), tzinfo=UTC)
-                if complete
-                else None
-            ),
+            data_as_of=(datetime.combine(target_date, datetime.min.time(), tzinfo=UTC) if complete else None),
             evaluated_at=(datetime(2026, 7, 21, 15, 5, tzinfo=UTC) if complete else None),
             evaluator_version="report-performance-v1",
             evidence=(
@@ -262,18 +256,14 @@ def test_admin_correction_creates_revision_and_completes_evaluation(
     assert revision.before_payload["status"] == "pending_data"
     assert revision.after_payload["status"] == "complete"
     evaluation = db_session.scalar(
-        select(MarketReportEvaluation).where(
-            MarketReportEvaluation.report_id == report.id
-        )
+        select(MarketReportEvaluation).where(MarketReportEvaluation.report_id == report.id)
     )
     assert evaluation is not None
     assert evaluation.status == "complete"
     assert evaluation.evaluated_count == 2
     assert db_session.scalar(select(func.count(MarketReportOutcomeRevision.id))) == 1
     event = db_session.scalar(
-        select(CommunityAdminEvent).where(
-            CommunityAdminEvent.action == "report_outcome_corrected"
-        )
+        select(CommunityAdminEvent).where(CommunityAdminEvent.action == "report_outcome_corrected")
     )
     assert event is not None
     assert event.details["revision_number"] == 1

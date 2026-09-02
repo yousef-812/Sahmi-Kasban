@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC
+
 from fastapi.testclient import TestClient
 
 PASSWORD = "StrongPass123"
@@ -144,10 +146,11 @@ def test_admin_operations_and_notification_inbox_flow(
     assert "operational_setting_updated" in actions
     assert "notification_broadcast" in actions
 
-    from app.services.daily_reports import DailyReportGenerationResult
-    from app.models import MarketReport, MarketScanRun
-    from datetime import date
     import uuid
+    from datetime import date
+
+    from app.models import MarketReport, MarketScanRun
+    from app.services.daily_reports import DailyReportGenerationResult
 
     fake_report = MarketReport(
         id=uuid.uuid4(),
@@ -155,14 +158,14 @@ def test_admin_operations_and_notification_inbox_flow(
         status="completed",
         market_summary={},
     )
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     fake_scan = MarketScanRun(
         id=uuid.uuid4(),
         source_session_date=date.today(),
         target_session_date=date.today(),
-        scheduled_for=datetime.now(timezone.utc),
-        started_at=datetime.now(timezone.utc),
+        scheduled_for=datetime.now(UTC),
+        started_at=datetime.now(UTC),
         status="completed",
         total_symbols=10,
         analyzed_count=10,
@@ -170,10 +173,9 @@ def test_admin_operations_and_notification_inbox_flow(
         failed_count=0,
         details={},
     )
+
     async def mock_gen(*args, **kwargs):
-        return DailyReportGenerationResult(
-            report=fake_report, scan_run=fake_scan, created=True
-        )
+        return DailyReportGenerationResult(report=fake_report, scan_run=fake_scan, created=True)
 
     monkeypatch.setattr(
         "app.services.daily_reports.generate_daily_top10_report",
@@ -186,5 +188,3 @@ def test_admin_operations_and_notification_inbox_flow(
     )
     assert regen.status_code == 200
     assert regen.json()["status"] == "success"
-
-

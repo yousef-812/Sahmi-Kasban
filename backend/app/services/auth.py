@@ -167,9 +167,7 @@ def consume_email_verification_code(
     code: str,
 ) -> User:
     normalized_email = normalize_email(email)
-    user = db.scalar(
-        select(User).where(User.email == normalized_email).with_for_update()
-    )
+    user = db.scalar(select(User).where(User.email == normalized_email).with_for_update())
     if user is None or user.status != "active":
         raise InvalidAccountTokenError("Invalid or expired verification code")
     if user.email_verified:
@@ -418,9 +416,7 @@ def reset_user_password_by_code(
     new_password: str,
 ) -> User:
     normalized_email = normalize_email(email)
-    user = db.scalar(
-        select(User).where(User.email == normalized_email).with_for_update()
-    )
+    user = db.scalar(select(User).where(User.email == normalized_email).with_for_update())
     if user is None or user.status != "active":
         raise InvalidAccountTokenError("Invalid or expired reset code")
 

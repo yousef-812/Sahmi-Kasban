@@ -4,6 +4,7 @@ Adds a per-user watchlist with server-side signal caching so the mobile
 terminal can render live BUY/WATCH/AVOID badges without re-running the
 full analysis engine on every pull.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -22,7 +23,9 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "watchlist_items",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
+        sa.Column(
+            "id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+        ),
         sa.Column(
             "user_id",
             postgresql.UUID(as_uuid=True),

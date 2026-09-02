@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 
+from sahmi_kasban.index_resolver import resolve_index_for_ticker
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
-from sahmi_kasban.index_resolver import resolve_index_for_ticker
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +44,6 @@ async def fetch_index_series(
         period=period,
         interval=INDEX_HISTORY_INTERVAL,
         min_candles=INDEX_MIN_CANDLES,
-        cache_minutes=(
-            cache_minutes
-            if cache_minutes is not None
-            else settings.market_data_cache_minutes
-        ),
+        cache_minutes=(cache_minutes if cache_minutes is not None else settings.market_data_cache_minutes),
     )
     return series

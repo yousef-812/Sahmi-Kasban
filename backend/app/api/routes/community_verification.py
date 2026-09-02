@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.market_data.provider import get_market_data_provider
@@ -30,7 +31,6 @@ from app.services.prediction_evaluation import (
     select_window_candles,
 )
 from app.services.wallet import get_wallet_account, points_to_coins
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 router = APIRouter(prefix="/community", tags=["prediction-verification"])
 PredictionMarketProvider = Annotated[
@@ -65,18 +65,13 @@ def _status_response(result) -> PredictionVerificationStatusResponse:
         state=result.state,
         eligible_at=result.window.eligible_at if result.window is not None else None,
         verification=(
-            _verification_response(result.verification)
-            if result.verification is not None
-            else None
+            _verification_response(result.verification) if result.verification is not None else None
         ),
     )
 
 
 def _not_eligible_detail(exc: PredictionNotEligibleError) -> str:
-    return (
-        "لم تنتهِ فترة التوقع بعد. سيكون التحقق متاحًا بعد "
-        f"{exc.eligible_at.isoformat()}."
-    )
+    return f"لم تنتهِ فترة التوقع بعد. سيكون التحقق متاحًا بعد {exc.eligible_at.isoformat()}."
 
 
 def _safe_ai_explanation(
@@ -272,9 +267,7 @@ def my_prediction_stats(
     prediction_stats = get_prediction_stats(db, user_id=current_user.id)
     accuracy_percent = (
         round(
-            prediction_stats.accepted_predictions
-            / prediction_stats.verified_predictions
-            * 100,
+            prediction_stats.accepted_predictions / prediction_stats.verified_predictions * 100,
             2,
         )
         if prediction_stats.verified_predictions

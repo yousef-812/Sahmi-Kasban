@@ -64,11 +64,7 @@ def _job_response(
     *,
     tickers: list[AnalysisReplayTicker] | None = None,
 ) -> HistoricalReplayJobResponse:
-    progress = (
-        job.processed_tickers / job.total_tickers * 100.0
-        if job.total_tickers
-        else 0.0
-    )
+    progress = job.processed_tickers / job.total_tickers * 100.0 if job.total_tickers else 0.0
     throughput: float | None = None
     estimated_seconds_remaining: int | None = None
     if job.started_at is not None and job.processed_tickers > 0:
@@ -182,7 +178,7 @@ def create_labs_replay_job(
         f"labs_{payload.start_date.isoformat()}_{payload.end_date.isoformat()}_"
         f"{payload.rank or 'all'}_{payload.exit_mode}_{admin.id.hex[:8]}"
     )
-    
+
     try:
         job, _idempotent = create_historical_replay_job(
             db,
@@ -384,8 +380,7 @@ def export_replay_job(
             detail="لا توجد نتائج قابلة للتنزيل حتى الآن",
         )
     filename = (
-        f"sahmi-engine-replay-{job.start_date.isoformat()}-"
-        f"{job.end_date.isoformat()}-{str(job.id)[:8]}.csv"
+        f"sahmi-engine-replay-{job.start_date.isoformat()}-{job.end_date.isoformat()}-{str(job.id)[:8]}.csv"
     )
     return Response(
         content=build_historical_replay_csv(db, job=job),

@@ -77,9 +77,7 @@ def _admin_appeal_response(
 ) -> AdminAppealResponse:
     return AdminAppealResponse(
         appeal=_appeal_response(view.appeal),
-        discussion=_discussion_response(
-            DiscussionView(discussion=view.discussion, author=view.author)
-        ),
+        discussion=_discussion_response(DiscussionView(discussion=view.discussion, author=view.author)),
         charged_points=charged_points,
         charged_coins=points_to_coins(charged_points),
         idempotent=idempotent,
@@ -126,9 +124,7 @@ def admin_resolve_appeal(
             decision=payload.decision,
             reason_code=payload.reason_code,
             details=payload.details,
-            prediction=payload.prediction.model_dump()
-            if payload.prediction is not None
-            else None,
+            prediction=payload.prediction.model_dump() if payload.prediction is not None else None,
         )
         db.commit()
     except DiscussionAppealNotFoundError as exc:

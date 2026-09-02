@@ -68,9 +68,7 @@ async def get_cached_or_fresh_history(
     requested_cache_minutes = (
         cache_minutes if cache_minutes is not None else settings.market_data_cache_minutes
     )
-    requested_min_candles = (
-        min_candles if min_candles is not None else settings.market_data_min_candles
-    )
+    requested_min_candles = min_candles if min_candles is not None else settings.market_data_min_candles
     if requested_cache_minutes <= 0:
         raise ValueError("cache_minutes must be positive")
     if requested_min_candles < 1:
@@ -98,8 +96,7 @@ async def get_cached_or_fresh_history(
     )
     if series.candle_count < requested_min_candles:
         raise MarketDataUnavailableError(
-            f"Only {series.candle_count} candles were returned; "
-            f"at least {requested_min_candles} are required"
+            f"Only {series.candle_count} candles were returned; at least {requested_min_candles} are required"
         )
 
     expires_at = current + timedelta(minutes=requested_cache_minutes)

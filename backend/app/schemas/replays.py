@@ -55,10 +55,7 @@ class HistoricalReplayBatchCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_unique_windows(self) -> HistoricalReplayBatchCreateRequest:
-        identities = {
-            (window.start_date, window.end_date)
-            for window in self.windows
-        }
+        identities = {(window.start_date, window.end_date) for window in self.windows}
         if len(identities) != len(self.windows):
             raise ValueError("لا يمكن تكرار نفس الفترة داخل الدفعة")
         return self
@@ -128,6 +125,7 @@ class HistoricalReplayJobListResponse(BaseModel):
 
 class LabsReplayCreateRequest(BaseModel):
     """Schema for creating a labs-style backtest as a replay job."""
+
     start_date: date
     end_date: date
     rank: int | None = Field(default=None, ge=1, le=10)

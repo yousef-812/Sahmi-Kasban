@@ -69,15 +69,10 @@ class Settings(BaseSettings):
     market_data_timeout_seconds: float = 20.0
     market_data_min_candles: int = 200
 
-    tradingview_websocket_url: str = (
-        "wss://data.tradingview.com/socket.io/websocket"
-    )
+    tradingview_websocket_url: str = "wss://data.tradingview.com/socket.io/websocket"
     tradingview_scanner_url: str = "https://scanner.tradingview.com/egypt/scan"
     tradingview_origin: str = "https://www.tradingview.com"
-    tradingview_user_agent: str = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36"
-    )
+    tradingview_user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     tradingview_auth_token: str = "unauthorized_user_token"
     market_instrument_catalog_refresh_hours: int = 12
     market_instrument_catalog_retry_minutes: int = 10
@@ -117,12 +112,8 @@ class Settings(BaseSettings):
     billing_token_encryption_key: str = ""
 
     admob_ssv_verification_mode: str = "disabled"
-    admob_ssv_keys_url: str = (
-        "https://www.gstatic.com/admob/reward/verifier-keys.json"
-    )
-    admob_android_rewarded_ad_unit_id: str = (
-        "ca-app-pub-3940256099942544/5224354917"
-    )
+    admob_ssv_keys_url: str = "https://www.gstatic.com/admob/reward/verifier-keys.json"
+    admob_android_rewarded_ad_unit_id: str = "ca-app-pub-3940256099942544/5224354917"
     admob_ios_rewarded_ad_unit_id: str = "ca-app-pub-3940256099942544/1712485313"
     admob_reward_item: str = "coins"
     ad_reward_points: int = 75
@@ -135,29 +126,19 @@ class Settings(BaseSettings):
     def validate_sensitive_settings(self) -> Settings:
         if self.app_env in {Environment.STAGING, Environment.PRODUCTION}:
             if len(self.secret_key.strip()) < 32:
-                raise ValueError(
-                    "SECRET_KEY must contain at least 32 characters outside development"
-                )
+                raise ValueError("SECRET_KEY must contain at least 32 characters outside development")
             if not self.database_url.startswith("postgresql"):
-                raise ValueError(
-                    "PostgreSQL is required outside development and test environments"
-                )
+                raise ValueError("PostgreSQL is required outside development and test environments")
 
         if self.app_env is Environment.PRODUCTION:
             if not self.smtp_host:
-                raise ValueError(
-                    "SMTP_HOST is required outside development and test environments"
-                )
+                raise ValueError("SMTP_HOST is required outside development and test environments")
             if self.google_play_verification_mode != "live":
                 raise ValueError("Google Play verification must use live mode in production")
             if not self.google_play_service_account_json.strip():
-                raise ValueError(
-                    "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is required in production"
-                )
+                raise ValueError("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is required in production")
             if not self.billing_token_encryption_key.strip():
-                raise ValueError(
-                    "BILLING_TOKEN_ENCRYPTION_KEY is required in production"
-                )
+                raise ValueError("BILLING_TOKEN_ENCRYPTION_KEY is required in production")
             if self.admob_ssv_verification_mode != "live":
                 raise ValueError("AdMob SSV verification must use live mode in production")
             if "3940256099942544" in self.admob_android_rewarded_ad_unit_id:
@@ -208,17 +189,13 @@ class Settings(BaseSettings):
             try:
                 datetime_time.fromisoformat(session_time)
             except ValueError:
-                raise ValueError(
-                    "EGX_SESSION_OPEN_TIME/EGX_SESSION_CLOSE_TIME must be HH:MM"
-                ) from None
+                raise ValueError("EGX_SESSION_OPEN_TIME/EGX_SESSION_CLOSE_TIME must be HH:MM") from None
         if self.analysis_cost_points <= 0:
             raise ValueError("ANALYSIS_COST_POINTS must be positive")
         if self.analysis_default_capital <= 0:
             raise ValueError("ANALYSIS_DEFAULT_CAPITAL must be positive")
         if not 0 < self.analysis_risk_per_trade <= 0.10:
-            raise ValueError(
-                "ANALYSIS_RISK_PER_TRADE must be between 0 and 0.10"
-            )
+            raise ValueError("ANALYSIS_RISK_PER_TRADE must be between 0 and 0.10")
         if self.analysis_max_position_value <= 0:
             raise ValueError("ANALYSIS_MAX_POSITION_VALUE must be positive")
         if not 1 <= self.historical_replay_provider_concurrency <= 10:
@@ -228,9 +205,7 @@ class Settings(BaseSettings):
         if not 1 <= self.historical_replay_cache_hours <= 168:
             raise ValueError("HISTORICAL_REPLAY_CACHE_HOURS must be 1..168")
         if not 16 <= self.historical_replay_prepared_cache_entries <= 1_000:
-            raise ValueError(
-                "HISTORICAL_REPLAY_PREPARED_CACHE_ENTRIES must be 16..1000"
-            )
+            raise ValueError("HISTORICAL_REPLAY_PREPARED_CACHE_ENTRIES must be 16..1000")
         if not 0.1 <= self.historical_replay_active_poll_seconds <= 30:
             raise ValueError("HISTORICAL_REPLAY_ACTIVE_POLL_SECONDS must be 0.1..30")
         if not 1 <= self.historical_replay_idle_poll_seconds <= 300:
@@ -244,21 +219,15 @@ class Settings(BaseSettings):
         if self.daily_scan_min_average_turnover_egp < 0:
             raise ValueError("DAILY_SCAN_MIN_AVERAGE_TURNOVER_EGP cannot be negative")
         if not 0 <= self.daily_scan_min_nonzero_volume_ratio <= 1:
-            raise ValueError(
-                "DAILY_SCAN_MIN_NONZERO_VOLUME_RATIO must be between 0 and 1"
-            )
+            raise ValueError("DAILY_SCAN_MIN_NONZERO_VOLUME_RATIO must be between 0 and 1")
         if not 1 <= self.daily_report_size <= 10:
             raise ValueError("DAILY_REPORT_SIZE must be between 1 and 10")
         if self.daily_report_cost_points <= 0:
             raise ValueError("DAILY_REPORT_COST_POINTS must be positive")
         if self.google_play_verification_mode not in {"disabled", "stub", "live"}:
-            raise ValueError(
-                "GOOGLE_PLAY_VERIFICATION_MODE must be disabled, stub, or live"
-            )
+            raise ValueError("GOOGLE_PLAY_VERIFICATION_MODE must be disabled, stub, or live")
         if self.admob_ssv_verification_mode not in {"disabled", "stub", "live"}:
-            raise ValueError(
-                "ADMOB_SSV_VERIFICATION_MODE must be disabled, stub, or live"
-            )
+            raise ValueError("ADMOB_SSV_VERIFICATION_MODE must be disabled, stub, or live")
         if not self.google_play_package_name.strip():
             raise ValueError("GOOGLE_PLAY_PACKAGE_NAME must not be empty")
         if not self.admob_ssv_keys_url.startswith("https://"):
@@ -272,18 +241,12 @@ class Settings(BaseSettings):
         if not 1 <= self.ad_reward_session_minutes <= 60:
             raise ValueError("AD_REWARD_SESSION_MINUTES must be between 1 and 60")
         if not 60 <= self.admob_ssv_max_callback_age_seconds <= 86_400:
-            raise ValueError(
-                "ADMOB_SSV_MAX_CALLBACK_AGE_SECONDS must be between 60 and 86400"
-            )
+            raise ValueError("ADMOB_SSV_MAX_CALLBACK_AGE_SECONDS must be between 60 and 86400")
         return self
 
     @property
     def cors_origin_list(self) -> tuple[str, ...]:
-        return tuple(
-            item.strip()
-            for item in self.cors_origins.split(",")
-            if item.strip()
-        )
+        return tuple(item.strip() for item in self.cors_origins.split(",") if item.strip())
 
     @property
     def effective_migration_database_url(self) -> str:

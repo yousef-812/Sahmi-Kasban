@@ -1,4 +1,5 @@
 """Watchlist endpoints — CRUD + signal refresh."""
+
 from __future__ import annotations
 
 import logging
@@ -103,11 +104,7 @@ async def bulk_add_to_watchlist(
         except Exception:
             continue
 
-    existing = set(
-        db.scalars(
-            select(WatchlistItem.ticker).where(WatchlistItem.user_id == user.id)
-        ).all()
-    )
+    existing = set(db.scalars(select(WatchlistItem.ticker).where(WatchlistItem.user_id == user.id)).all())
 
     current_count = len(existing)
     slots_available = MAX_WATCHLIST_SIZE - current_count
@@ -193,9 +190,7 @@ async def refresh_signal(
         db.refresh(item)
     except Exception as exc:
         logger.warning("Failed to refresh watchlist signal for %s: %s", normalized, exc)
-        svc_unavail = getattr(
-            status, "HTTP_533_SERVICE_UNAVAILABLE", status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+        svc_unavail = getattr(status, "HTTP_533_SERVICE_UNAVAILABLE", status.HTTP_503_SERVICE_UNAVAILABLE)
         raise HTTPException(
             status_code=svc_unavail,
             detail="Market data temporarily unavailable",

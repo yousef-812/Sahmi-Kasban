@@ -47,16 +47,14 @@ def cairo_week_start(moment: datetime | None = None) -> date:
 
 
 def _locked_wallet_query(user_id: UUID) -> Select[tuple[WalletAccount]]:
-    return (
-        select(WalletAccount)
-        .where(WalletAccount.user_id == user_id)
-        .with_for_update()
-    )
+    return select(WalletAccount).where(WalletAccount.user_id == user_id).with_for_update()
 
 
 def get_wallet_account(db: Session, user_id: UUID, *, lock: bool = False) -> WalletAccount:
-    query = _locked_wallet_query(user_id) if lock else select(WalletAccount).where(
-        WalletAccount.user_id == user_id
+    query = (
+        _locked_wallet_query(user_id)
+        if lock
+        else select(WalletAccount).where(WalletAccount.user_id == user_id)
     )
     account = db.scalar(query)
     if account is None:
@@ -71,11 +69,7 @@ def _validate_existing_entry(
     expected_amount: int,
     entry_type: str,
 ) -> None:
-    if (
-        entry.user_id != user_id
-        or entry.amount_points != expected_amount
-        or entry.entry_type != entry_type
-    ):
+    if entry.user_id != user_id or entry.amount_points != expected_amount or entry.entry_type != entry_type:
         raise WalletTransactionConflictError(
             "Transaction ID was already used with different wallet operation data"
         )
@@ -83,9 +77,7 @@ def _validate_existing_entry(
 
 def _locked_wallet_entry(db: Session, transaction_id: str) -> WalletEntry | None:
     return db.scalar(
-        select(WalletEntry)
-        .where(WalletEntry.transaction_id == transaction_id)
-        .with_for_update()
+        select(WalletEntry).where(WalletEntry.transaction_id == transaction_id).with_for_update()
     )
 
 
@@ -104,9 +96,7 @@ def credit_points(
         raise ValueError("Credit amount must be positive")
 
     account = get_wallet_account(db, user_id, lock=True)
-    existing = db.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == transaction_id)
-    )
+    existing = db.scalar(select(WalletEntry).where(WalletEntry.transaction_id == transaction_id))
     if existing is not None:
         _validate_existing_entry(
             existing,
@@ -148,9 +138,7 @@ def debit_points(
         raise ValueError("Debit amount must be positive")
 
     account = get_wallet_account(db, user_id, lock=True)
-    existing = db.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == transaction_id)
-    )
+    existing = db.scalar(select(WalletEntry).where(WalletEntry.transaction_id == transaction_id))
     if existing is not None:
         _validate_existing_entry(
             existing,
@@ -285,11 +273,7 @@ def release_hold(
     if hold.status == "confirmed":
         raise WalletHoldStateError("A confirmed wallet hold cannot be released")
     if hold.status == "released":
-        refund = db.scalar(
-            select(WalletEntry).where(
-                WalletEntry.transaction_id == release_transaction_id
-            )
-        )
+        refund = db.scalar(select(WalletEntry).where(WalletEntry.transaction_id == release_transaction_id))
         if refund is None:
             raise WalletHoldStateError("Released wallet hold is missing its refund entry")
         _validate_existing_entry(

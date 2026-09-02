@@ -208,6 +208,4 @@ def test_fcm_uses_application_default_credentials(
 
     assert sender._credentials() is credentials
     assert sender.project_id == "detected-firebase-project"
-    assert requested_scopes == [
-        "https://www.googleapis.com/auth/firebase.messaging"
-    ]
+    assert requested_scopes == ["https://www.googleapis.com/auth/firebase.messaging"]

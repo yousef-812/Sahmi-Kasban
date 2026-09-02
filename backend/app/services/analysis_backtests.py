@@ -10,6 +10,12 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import (
+    AnalysisConfig,
+    BacktestSummary,
+    SahmiKasbanAnalyzer,
+    walk_forward_backtest,
+)
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -22,12 +28,6 @@ from app.models import (
     AnalysisBacktestRun,
 )
 from app.services.market_index import fetch_index_series, resolve_index_name
-from sahmi_kasban import (
-    AnalysisConfig,
-    BacktestSummary,
-    SahmiKasbanAnalyzer,
-    walk_forward_backtest,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -140,13 +140,9 @@ def _complete_result(
         average_forward_return_bp=_percent_to_bp(summary.average_forward_return_pct),
         median_forward_return_bp=_percent_to_bp(summary.median_forward_return_pct),
         average_buy_return_bp=_percent_to_bp(summary.average_buy_return_pct),
-        average_buy_max_drawdown_bp=_percent_to_bp(
-            summary.average_buy_max_drawdown_pct
-        ),
+        average_buy_max_drawdown_bp=_percent_to_bp(summary.average_buy_max_drawdown_pct),
         profit_factor_milli=(
-            None
-            if summary.profit_factor is None
-            else int(round(summary.profit_factor * 1000.0))
+            None if summary.profit_factor is None else int(round(summary.profit_factor * 1000.0))
         ),
         summary=_summary_payload(summary),
     )
@@ -233,16 +229,10 @@ async def execute_analysis_backtest(
         step_sessions=step_sessions,
         neutral_band_pct=neutral_band_pct,
     )
-    existing = db.scalar(
-        select(AnalysisBacktestRun).where(
-            AnalysisBacktestRun.request_key == request_key
-        )
-    )
+    existing = db.scalar(select(AnalysisBacktestRun).where(AnalysisBacktestRun.request_key == request_key))
     if existing is not None:
         if existing.details.get("request_signature") != signature:
-            raise AnalysisBacktestConflictError(
-                "The request key is already used for a different backtest"
-            )
+            raise AnalysisBacktestConflictError("The request key is already used for a different backtest")
         return AnalysisBacktestExecution(
             run=existing,
             results=_result_rows(db, run=existing),
@@ -273,11 +263,7 @@ async def execute_analysis_backtest(
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raced = db.scalar(
-            select(AnalysisBacktestRun).where(
-                AnalysisBacktestRun.request_key == request_key
-            )
-        )
+        raced = db.scalar(select(AnalysisBacktestRun).where(AnalysisBacktestRun.request_key == request_key))
         if raced is None:
             raise
         if raced.details.get("request_signature") != signature:
@@ -328,11 +314,7 @@ async def execute_analysis_backtest(
                 ticker,
                 pd.DataFrame(series.candles),
                 analyzer=analyzer,
-                index=(
-                    (index_series.ticker, index_series.candles)
-                    if index_series is not None
-                    else None
-                ),
+                index=((index_series.ticker, index_series.candles) if index_series is not None else None),
                 min_train_size=min_train_size,
                 horizon_sessions=horizon_sessions,
                 step_sessions=step_sessions,
@@ -363,13 +345,7 @@ async def execute_analysis_backtest(
         }
         db.commit()
 
-    run.status = (
-        "complete"
-        if completed == len(normalized_tickers)
-        else "partial"
-        if completed
-        else "failed"
-    )
+    run.status = "complete" if completed == len(normalized_tickers) else "partial" if completed else "failed"
     run.completed_at = datetime.now(UTC)
     db.commit()
     db.refresh(run)
@@ -409,14 +385,7 @@ def list_analysis_backtest_runs(
     if engine_version:
         filters.append(AnalysisBacktestRun.engine_version == engine_version)
 
-    total = int(
-        db.scalar(
-            select(func.count())
-            .select_from(AnalysisBacktestRun)
-            .where(*filters)
-        )
-        or 0
-    )
+    total = int(db.scalar(select(func.count()).select_from(AnalysisBacktestRun).where(*filters)) or 0)
     items = db.scalars(
         select(AnalysisBacktestRun)
         .where(*filters)
@@ -470,26 +439,16 @@ def analysis_backtest_version_summaries(db: Session) -> list[dict[str, Any]]:
         item["watch_count"] += result.watch_count
         item["avoid_count"] += result.avoid_count
         if directional_weight > 0:
-            item["directional_weighted"] += (
-                result.directional_accuracy_bp * directional_weight
-            )
+            item["directional_weighted"] += result.directional_accuracy_bp * directional_weight
             item["directional_weight"] += directional_weight
         if buy_weight > 0:
             item["buy_hit_weighted"] += result.buy_hit_rate_bp * buy_weight
-            item["buy_return_weighted"] += (
-                result.average_buy_return_bp * buy_weight
-            )
-            item["drawdown_weighted"] += (
-                result.average_buy_max_drawdown_bp * buy_weight
-            )
+            item["buy_return_weighted"] += result.average_buy_return_bp * buy_weight
+            item["drawdown_weighted"] += result.average_buy_max_drawdown_bp * buy_weight
             item["buy_weight"] += buy_weight
-        item["forward_weighted"] += (
-            result.average_forward_return_bp * observations
-        )
+        item["forward_weighted"] += result.average_forward_return_bp * observations
         if result.profit_factor_milli is not None and buy_weight > 0:
-            item["profit_factor_weighted"] += (
-                result.profit_factor_milli * buy_weight
-            )
+            item["profit_factor_weighted"] += result.profit_factor_milli * buy_weight
             item["profit_factor_weight"] += buy_weight
 
     summaries: list[dict[str, Any]] = []
@@ -510,9 +469,7 @@ def analysis_backtest_version_summaries(db: Session) -> list[dict[str, Any]]:
                     0.0
                     if directional_weight <= 0
                     else round(
-                        item["directional_weighted"]
-                        / directional_weight
-                        / 100.0,
+                        item["directional_weighted"] / directional_weight / 100.0,
                         2,
                     )
                 ),
@@ -548,9 +505,7 @@ def analysis_backtest_version_summaries(db: Session) -> list[dict[str, Any]]:
                     None
                     if item["profit_factor_weight"] <= 0
                     else round(
-                        item["profit_factor_weighted"]
-                        / item["profit_factor_weight"]
-                        / 1000.0,
+                        item["profit_factor_weighted"] / item["profit_factor_weight"] / 1000.0,
                         3,
                     )
                 ),

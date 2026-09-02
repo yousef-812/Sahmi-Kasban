@@ -144,13 +144,9 @@ def _validate_value(definition: SettingDefinition, value: object) -> object:
             raise OperationalSettingError(f"{definition.key} must be text")
         value = value.strip()
     if definition.min_value is not None and value < definition.min_value:
-        raise OperationalSettingError(
-            f"{definition.key} must be at least {definition.min_value}"
-        )
+        raise OperationalSettingError(f"{definition.key} must be at least {definition.min_value}")
     if definition.max_value is not None and value > definition.max_value:
-        raise OperationalSettingError(
-            f"{definition.key} must be at most {definition.max_value}"
-        )
+        raise OperationalSettingError(f"{definition.key} must be at most {definition.max_value}")
     return value
 
 
@@ -180,9 +176,7 @@ def runtime_monetization_settings(db: Session) -> Settings:
     runtime = get_settings().model_copy(deep=False)
     runtime.ad_reward_points = get_int_setting(db, "ad_reward_points")
     runtime.ad_reward_daily_limit = get_int_setting(db, "ad_reward_daily_limit")
-    runtime.ad_reward_cooldown_seconds = get_int_setting(
-        db, "ad_reward_cooldown_seconds"
-    )
+    runtime.ad_reward_cooldown_seconds = get_int_setting(db, "ad_reward_cooldown_seconds")
     return runtime
 
 

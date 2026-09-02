@@ -116,9 +116,7 @@ def decode_email_verification_reference(token: str) -> tuple[str, str]:
             options={"require": ["type", "email", "code", "iat", "exp"]},
         )
     except InvalidTokenError as exc:
-        raise InvalidVerificationReferenceError(
-            "Invalid or expired verification reference"
-        ) from exc
+        raise InvalidVerificationReferenceError("Invalid or expired verification reference") from exc
     if payload.get("type") != "email_verification_reference":
         raise InvalidVerificationReferenceError("Invalid verification reference type")
     email = payload.get("email")

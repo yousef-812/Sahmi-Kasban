@@ -48,4 +48,3 @@ class MarketReportHistoryResponse(BaseModel):
     history_days_allowed: int = Field(ge=0)
     plan_code: str
     reports: list[MarketReportPreviewResponse]
-

@@ -40,9 +40,7 @@ def wallet_history(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> WalletHistoryResponse:
-    total = db.scalar(
-        select(func.count(WalletEntry.id)).where(WalletEntry.user_id == current_user.id)
-    ) or 0
+    total = db.scalar(select(func.count(WalletEntry.id)).where(WalletEntry.user_id == current_user.id)) or 0
     entries = db.scalars(
         select(WalletEntry)
         .where(WalletEntry.user_id == current_user.id)

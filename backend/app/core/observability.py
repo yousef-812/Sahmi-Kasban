@@ -140,15 +140,9 @@ class RequestMetricsRegistry:
             else:
                 p95 = 0.0
                 maximum = 0.0
-            internal_error_rate = (
-                self._error_requests / total * 100 if total else 0.0
-            )
-            upstream_error_rate = (
-                self._upstream_error_requests / total * 100 if total else 0.0
-            )
-            server_error_rate = (
-                self._server_error_requests / total * 100 if total else 0.0
-            )
+            internal_error_rate = self._error_requests / total * 100 if total else 0.0
+            upstream_error_rate = self._upstream_error_requests / total * 100 if total else 0.0
+            server_error_rate = self._server_error_requests / total * 100 if total else 0.0
             return {
                 "started_at": self._started_at,
                 "sample_capacity": self._max_samples,
@@ -168,9 +162,7 @@ class RequestMetricsRegistry:
                 "average_latency_ms": round(average, 3),
                 "p95_latency_ms": round(p95, 3),
                 "max_latency_ms": round(maximum, 3),
-                "status_counts": {
-                    str(code): count for code, count in sorted(self._status_counts.items())
-                },
+                "status_counts": {str(code): count for code, count in sorted(self._status_counts.items())},
             }
 
 
@@ -203,10 +195,7 @@ def configure_observability(settings: Settings) -> None:
             handler.setFormatter(JsonLogFormatter())
         else:
             handler.setFormatter(
-                logging.Formatter(
-                    "%(asctime)s %(levelname)s %(name)s "
-                    "request_id=%(request_id)s %(message)s"
-                )
+                logging.Formatter("%(asctime)s %(levelname)s %(name)s request_id=%(request_id)s %(message)s")
             )
         root_logger.addHandler(handler)
         root_logger.setLevel(settings.log_level)

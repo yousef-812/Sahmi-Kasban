@@ -90,10 +90,7 @@ class TradingViewConnector:
     URL = "wss://data.tradingview.com/socket.io/websocket"
     HEADERS = {
         "Origin": "https://www.tradingview.com",
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36"
-        ),
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"),
     }
 
     def __init__(
@@ -205,9 +202,7 @@ class TradingViewConnector:
             if future is None or future.done():
                 return
             if payload.get("s") == "error":
-                future.set_exception(
-                    RuntimeError(str(payload.get("errmsg", "TradingView quote error")))
-                )
+                future.set_exception(RuntimeError(str(payload.get("errmsg", "TradingView quote error"))))
             else:
                 values = payload.get("v", {})
                 future.set_result(values if isinstance(values, dict) else {})
@@ -282,9 +277,7 @@ class TradingViewConnector:
             )
         )
         for symbol in symbols:
-            await self.ws.send(
-                self._fmt({"m": "quote_add_symbols", "p": [session, symbol]})
-            )
+            await self.ws.send(self._fmt({"m": "quote_add_symbols", "p": [session, symbol]}))
         return session
 
     async def get_quote(self, symbol: str, timeout: float = 10.0) -> dict[str, Any]:
@@ -573,12 +566,36 @@ class TechnicalAnalysisService:
             return parsed if np.isfinite(parsed) else None
 
         columns = [
-            "rsi", "macd", "macd_signal", "macd_histogram", "sma_20", "sma_50",
-            "sma_200", "ema_12", "ema_26", "bb_upper", "bb_middle", "bb_lower",
-            "atr", "adx", "stoch_k", "stoch_d", "cci", "williams_r", "roc",
-            "mfi", "vwap", "pivot_point", "resistance_1", "resistance_2",
-            "support_1", "support_2", "fib_level_236", "fib_level_382",
-            "fib_level_500", "fib_level_618",
+            "rsi",
+            "macd",
+            "macd_signal",
+            "macd_histogram",
+            "sma_20",
+            "sma_50",
+            "sma_200",
+            "ema_12",
+            "ema_26",
+            "bb_upper",
+            "bb_middle",
+            "bb_lower",
+            "atr",
+            "adx",
+            "stoch_k",
+            "stoch_d",
+            "cci",
+            "williams_r",
+            "roc",
+            "mfi",
+            "vwap",
+            "pivot_point",
+            "resistance_1",
+            "resistance_2",
+            "support_1",
+            "support_2",
+            "fib_level_236",
+            "fib_level_382",
+            "fib_level_500",
+            "fib_level_618",
         ]
         result = {column: value(column) for column in columns}
         result["price"] = value("close")
@@ -679,9 +696,7 @@ class StockDataFetcher:
     ) -> dict[str, Any]:
         exchange, ticker = parse_symbol(symbol, market)
         price_task = asyncio.create_task(self.get_realtime_price(ticker, exchange))
-        historical_task = asyncio.create_task(
-            self.get_historical_data(ticker, exchange, timeframe, count)
-        )
+        historical_task = asyncio.create_task(self.get_historical_data(ticker, exchange, timeframe, count))
         price, historical = await asyncio.gather(price_task, historical_task)
 
         errors: list[str] = []

@@ -63,9 +63,7 @@ def test_tradingview_history_normalization_filters_and_deduplicates() -> None:
 
 def test_technical_indicators_are_calculated_from_candles() -> None:
     service = TechnicalAnalysisService()
-    frame = service.calculate_all_indicators(
-        __import__("pandas").DataFrame(_sample_candles())
-    )
+    frame = service.calculate_all_indicators(__import__("pandas").DataFrame(_sample_candles()))
     indicators = service.get_current_indicators(frame)
     assert indicators["price"] > 0
     assert indicators["sma_20"] is not None

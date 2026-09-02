@@ -21,9 +21,7 @@ async def main() -> None:
     if data["errors"]:
         raise RuntimeError(f"Fetcher reported errors: {data['errors']}")
     if len(historical) < 200:
-        raise RuntimeError(
-            f"TradingView returned only {len(historical)} COMI candles"
-        )
+        raise RuntimeError(f"TradingView returned only {len(historical)} COMI candles")
     last_close = float(historical[-1]["close"])
     if last_close <= 0:
         raise RuntimeError("TradingView returned a non-positive COMI close")

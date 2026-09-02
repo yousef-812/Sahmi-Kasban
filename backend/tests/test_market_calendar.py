@@ -37,9 +37,7 @@ def test_scan_requires_three_pm_cairo_on_a_trading_day() -> None:
     with pytest.raises(ScanNotDueError):
         calendar.resolve_scan_session(datetime(2026, 7, 26, 14, 59, tzinfo=zone))
 
-    session = calendar.resolve_scan_session(
-        datetime(2026, 7, 26, 15, 0, tzinfo=zone)
-    )
+    session = calendar.resolve_scan_session(datetime(2026, 7, 26, 15, 0, tzinfo=zone))
     assert session.source_session_date == date(2026, 7, 26)
     assert session.target_session_date == date(2026, 7, 27)
     assert session.scheduled_for.hour == 15

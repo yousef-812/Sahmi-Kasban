@@ -155,11 +155,7 @@ def _recover_pending_registration(
     *,
     email: str,
 ) -> tuple[User, str] | None:
-    user = db.scalar(
-        select(User)
-        .where(User.email == normalize_email(email))
-        .with_for_update()
-    )
+    user = db.scalar(select(User).where(User.email == normalize_email(email)).with_for_update())
     if user is None or user.status != "active" or user.email_verified:
         return None
 
@@ -222,9 +218,7 @@ def register(
     return RegisterResponse(
         user_id=user.id,
         email=user.email,
-        weekly_points_granted=(
-            0 if recovered_pending_account else get_plan("free").weekly_points
-        ),
+        weekly_points_granted=(0 if recovered_pending_account else get_plan("free").weekly_points),
     )
 
 
@@ -234,9 +228,7 @@ def verify_email(
     request: Request,
     db: DatabaseSession,
 ) -> MessageResponse:
-    discriminator = (
-        normalize_email(str(payload.email)) if payload.email is not None else "token"
-    )
+    discriminator = normalize_email(str(payload.email)) if payload.email is not None else "token"
     _enforce_auth_limit(
         request,
         db,
@@ -297,9 +289,7 @@ def resend_verification(
                 code,
                 str(user.id),
             )
-    return MessageResponse(
-        message="If the account requires verification, a new code has been sent"
-    )
+    return MessageResponse(message="If the account requires verification, a new code has been sent")
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -390,9 +380,7 @@ def forgot_password(
             code,
             str(user.id),
         )
-    return MessageResponse(
-        message="If an active account exists, password reset instructions have been sent"
-    )
+    return MessageResponse(message="If an active account exists, password reset instructions have been sent")
 
 
 @router.post("/reset-password", response_model=MessageResponse)

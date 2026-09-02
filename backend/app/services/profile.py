@@ -95,19 +95,23 @@ def soft_delete_account(db: Session, user: User, *, password: str) -> None:
 
 
 def get_profile_stats(db: Session, user_id: UUID) -> dict[str, int]:
-    discussions_count = db.scalar(
-        select(func.count(Discussion.id)).where(Discussion.user_id == user_id)
-    ) or 0
-    verified_predictions_count = db.scalar(
-        select(func.count(PredictionVerification.id))
-        .join(Discussion, PredictionVerification.discussion_id == Discussion.id)
-        .where(Discussion.user_id == user_id)
-    ) or 0
-    total_reward_points = db.scalar(
-        select(func.coalesce(func.sum(PredictionVerification.reward_points), 0))
-        .join(Discussion, PredictionVerification.discussion_id == Discussion.id)
-        .where(Discussion.user_id == user_id)
-    ) or 0
+    discussions_count = db.scalar(select(func.count(Discussion.id)).where(Discussion.user_id == user_id)) or 0
+    verified_predictions_count = (
+        db.scalar(
+            select(func.count(PredictionVerification.id))
+            .join(Discussion, PredictionVerification.discussion_id == Discussion.id)
+            .where(Discussion.user_id == user_id)
+        )
+        or 0
+    )
+    total_reward_points = (
+        db.scalar(
+            select(func.coalesce(func.sum(PredictionVerification.reward_points), 0))
+            .join(Discussion, PredictionVerification.discussion_id == Discussion.id)
+            .where(Discussion.user_id == user_id)
+        )
+        or 0
+    )
     return {
         "discussions_count": int(discussions_count),
         "verified_predictions_count": int(verified_predictions_count),
@@ -116,9 +120,7 @@ def get_profile_stats(db: Session, user_id: UUID) -> dict[str, int]:
 
 
 def get_wallet_balance(db: Session, user_id: UUID) -> int:
-    balance = db.scalar(
-        select(WalletAccount.balance_points).where(WalletAccount.user_id == user_id)
-    )
+    balance = db.scalar(select(WalletAccount.balance_points).where(WalletAccount.user_id == user_id))
     if balance is None:
         raise RuntimeError("Wallet account is missing")
     return int(balance)

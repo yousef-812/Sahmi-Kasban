@@ -131,9 +131,7 @@ def _load_context(
     evaluations = {
         item.report_id: item
         for item in db.scalars(
-            select(MarketReportEvaluation).where(
-                MarketReportEvaluation.report_id.in_(report_ids)
-            )
+            select(MarketReportEvaluation).where(MarketReportEvaluation.report_id.in_(report_ids))
         ).all()
     }
     grouped_outcomes: dict[UUID, list[MarketReportItemOutcome]] = defaultdict(list)
@@ -265,11 +263,7 @@ def get_performance_summary(
         raise PerformanceExperienceError("Performance window must be 7 or 30 sessions")
     reports = _due_reports(db, moment=moment, maximum=window_sessions)
     context = _load_context(db, reports)
-    all_outcomes = [
-        outcome
-        for report in reports
-        for outcome in context.outcomes.get(report.id, ())
-    ]
+    all_outcomes = [outcome for report in reports for outcome in context.outcomes.get(report.id, ())]
     completed = _completed(tuple(all_outcomes))
     returns = [item.return_bp for item in completed if item.return_bp is not None]
     direction_values = [item.direction_correct for item in completed if item.direction_correct is not None]
@@ -482,11 +476,7 @@ def list_delayed_performance_reports(
         if total_items > 0 and completed_count == total_items:
             continue
         reasons = sorted(
-            {
-                str(item.evidence.get("reason", "unknown"))
-                for item in outcomes
-                if item.status != "complete"
-            }
+            {str(item.evidence.get("reason", "unknown")) for item in outcomes if item.status != "complete"}
         )
         if evaluation is None:
             reasons.append("evaluation_not_started")
@@ -611,9 +601,7 @@ def _refresh_evaluation(db: Session, outcome: MarketReportItemOutcome, moment: d
         raise PerformanceCorrectionError("Outcome evaluation is missing")
     total_items = int(
         db.scalar(
-            select(func.count(MarketReportItem.id)).where(
-                MarketReportItem.report_id == outcome.report_id
-            )
+            select(func.count(MarketReportItem.id)).where(MarketReportItem.report_id == outcome.report_id)
         )
         or 0
     )
@@ -664,9 +652,7 @@ def correct_performance_outcome(
     data_as_of: datetime,
 ) -> tuple[MarketReportItemOutcome, MarketReportOutcomeRevision]:
     outcome = db.scalar(
-        select(MarketReportItemOutcome)
-        .where(MarketReportItemOutcome.id == outcome_id)
-        .with_for_update()
+        select(MarketReportItemOutcome).where(MarketReportItemOutcome.id == outcome_id).with_for_update()
     )
     if outcome is None:
         raise PerformanceReportNotFoundError("Performance outcome was not found")
@@ -728,14 +714,17 @@ def correct_performance_outcome(
         "original_evaluator_version": EVALUATOR_VERSION,
         "negative_results_retained": True,
     }
-    revision_number = int(
-        db.scalar(
-            select(func.max(MarketReportOutcomeRevision.revision_number)).where(
-                MarketReportOutcomeRevision.outcome_id == outcome.id
+    revision_number = (
+        int(
+            db.scalar(
+                select(func.max(MarketReportOutcomeRevision.revision_number)).where(
+                    MarketReportOutcomeRevision.outcome_id == outcome.id
+                )
             )
+            or 0
         )
-        or 0
-    ) + 1
+        + 1
+    )
     after = _snapshot(outcome)
     revision = MarketReportOutcomeRevision(
         outcome_id=outcome.id,

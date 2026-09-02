@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.security import InvalidAccessTokenError, decode_access_token
@@ -44,7 +45,6 @@ from app.services.stock_comparisons import (
     execute_stock_comparison,
 )
 from app.services.wallet import InsufficientBalanceError, points_to_coins
-from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(tags=["market"])
 MarketProvider = Annotated[MarketDataProvider, Depends(get_market_data_provider)]
@@ -62,15 +62,9 @@ def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisRespon
         if isinstance(engines.get("sector_momentum"), dict)
         else {}
     )
-    risk_eng = (
-        engines.get("risk", {}).get("details", {})
-        if isinstance(engines.get("risk"), dict)
-        else {}
-    )
+    risk_eng = engines.get("risk", {}).get("details", {}) if isinstance(engines.get("risk"), dict) else {}
     tech_eng = (
-        engines.get("technical", {}).get("details", {})
-        if isinstance(engines.get("technical"), dict)
-        else {}
+        engines.get("technical", {}).get("details", {}) if isinstance(engines.get("technical"), dict) else {}
     )
 
     sector_momentum_pct = sector_eng.get("sector_momentum_5d_pct") if isinstance(sector_eng, dict) else None
@@ -85,6 +79,7 @@ def _analysis_response(execution: StockAnalysisExecution) -> StockAnalysisRespon
     sector_quality = payload.get("sector_quality")
     if not isinstance(sector_quality, dict):
         from app.services.sector_quality import compute_sector_quality
+
         score = float(analysis_data.get("final_score", 0)) if isinstance(analysis_data, dict) else 0.0
         ret_20d = tech_eng.get("return_20d_pct") if isinstance(tech_eng, dict) else None
         sector_quality = compute_sector_quality(
@@ -127,9 +122,7 @@ def _comparison_response(execution: StockComparisonExecution) -> StockComparison
         best_ticker=str(payload.get("best_ticker", "")),
         summary=str(payload.get("summary", "")),
         items=[StockComparisonItemResponse(**item) for item in raw_items],
-        failed_items=[
-            StockComparisonFailureResponse(**item) for item in raw_failed_items
-        ],
+        failed_items=[StockComparisonFailureResponse(**item) for item in raw_failed_items],
         included_allowance=comparison.included_allowance,
         comparison_charged_points=comparison.charged_points,
         comparison_charged_coins=points_to_coins(comparison.charged_points),
@@ -366,10 +359,7 @@ async def analyze_stock(
     except StockAnalysisExecutionError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                "لم يكتمل التحليل لأن تاريخ السهم أو بياناته لا تكفي "
-                "للمحركات حاليًا."
-            ),
+            detail=("لم يكتمل التحليل لأن تاريخ السهم أو بياناته لا تكفي للمحركات حاليًا."),
         ) from exc
 
     return _analysis_response(execution)

@@ -10,12 +10,7 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     with SessionLocal() as db:
-        reports = (
-            db.query(MarketReport)
-            .order_by(MarketReport.target_session_date.desc())
-            .limit(5)
-            .all()
-        )
+        reports = db.query(MarketReport).order_by(MarketReport.target_session_date.desc()).limit(5).all()
         for r in reports:
             logger.info(
                 "Re-enriching report: %s for target date: %s",

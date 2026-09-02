@@ -29,9 +29,7 @@ async def main() -> None:
         base_url="http://quality.test",
         timeout=10.0,
     ) as client:
-        results = await asyncio.gather(
-            *(run_request(client, semaphore) for _ in range(REQUEST_COUNT))
-        )
+        results = await asyncio.gather(*(run_request(client, semaphore) for _ in range(REQUEST_COUNT)))
 
     statuses = [status for status, _, _ in results]
     latencies = sorted(duration for _, duration, _ in results)
@@ -46,9 +44,7 @@ async def main() -> None:
     if len(set(request_ids)) != REQUEST_COUNT:
         raise SystemExit("Load smoke found duplicate generated request IDs")
     if p95 > P95_BUDGET_MS:
-        raise SystemExit(
-            f"Load smoke P95 {p95:.2f}ms exceeded budget {P95_BUDGET_MS:.2f}ms"
-        )
+        raise SystemExit(f"Load smoke P95 {p95:.2f}ms exceeded budget {P95_BUDGET_MS:.2f}ms")
 
     print(
         "Load smoke passed: "

@@ -89,9 +89,7 @@ def test_report_selection_uses_production_safe_public_labels(
     enriched = enrich_daily_report_selection(db_session, report_id=report.id)
     rows = {
         item.ticker: item
-        for item in db_session.query(MarketReportItem)
-        .filter(MarketReportItem.report_id == report.id)
-        .all()
+        for item in db_session.query(MarketReportItem).filter(MarketReportItem.report_id == report.id).all()
     }
 
     ready = rows["READY"].payload
@@ -119,10 +117,7 @@ def test_report_selection_uses_production_safe_public_labels(
     assert watch["decision"] == "مراقبة"
     assert watch["opportunity_tier"] == "watch"
 
-    assert (
-        enriched.market_summary["selection_model"]
-        == "cross-sectional-top10-v2.5-regime-adaptive"
-    )
+    assert enriched.market_summary["selection_model"] == "cross-sectional-top10-v2.5-regime-adaptive"
     assert enriched.market_summary["opportunity_tiers"] == {
         "conditional_buy_high_quality": 1,
         "conditional_buy": 1,
@@ -166,19 +161,11 @@ def test_enrich_daily_report_selection_is_idempotent(
     db_session.commit()
 
     enrich_daily_report_selection(db_session, report_id=report.id)
-    first_item = (
-        db_session.query(MarketReportItem)
-        .filter(MarketReportItem.report_id == report.id)
-        .first()
-    )
+    first_item = db_session.query(MarketReportItem).filter(MarketReportItem.report_id == report.id).first()
     first_explanation = first_item.payload["explanation"]
 
     enrich_daily_report_selection(db_session, report_id=report.id)
-    second_item = (
-        db_session.query(MarketReportItem)
-        .filter(MarketReportItem.report_id == report.id)
-        .first()
-    )
+    second_item = db_session.query(MarketReportItem).filter(MarketReportItem.report_id == report.id).first()
     second_explanation = second_item.payload["explanation"]
 
     assert first_explanation == second_explanation

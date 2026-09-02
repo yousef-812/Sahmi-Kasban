@@ -274,9 +274,7 @@ def _summary_stats(trades: list[SessionTrade]) -> dict[str, Any]:
             return ordered[middle]
         return (ordered[middle - 1] + ordered[middle]) / 2.0
 
-    minutes = sorted(
-        trade.minutes_to_exit for trade in hits if trade.minutes_to_exit is not None
-    )
+    minutes = sorted(trade.minutes_to_exit for trade in hits if trade.minutes_to_exit is not None)
     returns = [trade.return_pct for trade in traded if trade.return_pct is not None]
     hit_returns = [trade.return_pct for trade in hits if trade.return_pct is not None]
     miss_returns = [trade.return_pct for trade in misses if trade.return_pct is not None]
@@ -290,12 +288,8 @@ def _summary_stats(trades: list[SessionTrade]) -> dict[str, Any]:
         "hit_rate_pct": round(len(hits) / len(traded) * 100, 2) if traded else 0.0,
         "avg_return_pct": round(sum(returns) / len(returns), 2) if returns else 0.0,
         "median_return_pct": median(returns),
-        "avg_hit_return_pct": (
-            round(sum(hit_returns) / len(hit_returns), 2) if hit_returns else 0.0
-        ),
-        "avg_miss_return_pct": (
-            round(sum(miss_returns) / len(miss_returns), 2) if miss_returns else 0.0
-        ),
+        "avg_hit_return_pct": (round(sum(hit_returns) / len(hit_returns), 2) if hit_returns else 0.0),
+        "avg_miss_return_pct": (round(sum(miss_returns) / len(miss_returns), 2) if miss_returns else 0.0),
         "median_minutes_to_hit": median([float(m) for m in minutes]),
         "best_return_pct": max(returns) if returns else 0.0,
         "worst_return_pct": min(returns) if returns else 0.0,
@@ -316,9 +310,7 @@ async def execute_daily_report_backtest(
     if start_date > end_date:
         raise LabsBacktestRangeError("start_date must be on or before end_date")
     if (end_date - start_date).days > MAX_RANGE_DAYS:
-        raise LabsBacktestRangeError(
-            f"The backtest range is limited to {MAX_RANGE_DAYS} calendar days"
-        )
+        raise LabsBacktestRangeError(f"The backtest range is limited to {MAX_RANGE_DAYS} calendar days")
     if exit_mode not in {_EXIT_MODE_TARGET_TWO, _EXIT_MODE_HIGHEST}:
         raise LabsBacktestRangeError(f"Unsupported exit_mode: {exit_mode}")
 

@@ -134,12 +134,8 @@ def test_report_evaluation_retains_negative_results_and_is_idempotent(
     )
     provider = FakePerformanceProvider(
         {
-            "NEG": (
-                _candle(27, open_price=100, high=108, low=94, close=97),
-            ),
-            "POS": (
-                _candle(27, open_price=51, high=60, low=49, close=55),
-            ),
+            "NEG": (_candle(27, open_price=100, high=108, low=94, close=97),),
+            "POS": (_candle(27, open_price=51, high=60, low=49, close=55),),
         }
     )
 
@@ -234,9 +230,7 @@ def test_incomplete_market_data_retries_without_duplicate_outcome(
     assert first.outcomes[0].status == "pending_data"
     assert first.outcomes[0].evidence["retryable"] is True
 
-    provider.candles_by_ticker["RETRY"] = (
-        _candle(27, open_price=20, high=23, low=19, close=22),
-    )
+    provider.candles_by_ticker["RETRY"] = (_candle(27, open_price=20, high=23, low=19, close=22),)
     second = asyncio.run(
         evaluate_market_report(
             db_session,
@@ -266,13 +260,7 @@ def test_due_report_backfill_skips_future_reports(
         target_session_date=date(2026, 7, 29),
         items=({"ticker": "FUTURE", "price_at_analysis": 10},),
     )
-    provider = FakePerformanceProvider(
-        {
-            "DUE": (
-                _candle(27, open_price=10, high=11, low=9, close=10.5),
-            )
-        }
-    )
+    provider = FakePerformanceProvider({"DUE": (_candle(27, open_price=10, high=11, low=9, close=10.5),)})
 
     result = asyncio.run(
         evaluate_due_market_reports(
@@ -287,9 +275,7 @@ def test_due_report_backfill_skips_future_reports(
     assert result.completed_reports == 1
     assert result.skipped_reports == 1
     evaluation = db_session.scalar(
-        select(MarketReportEvaluation).where(
-            MarketReportEvaluation.report_id == due_report.id
-        )
+        select(MarketReportEvaluation).where(MarketReportEvaluation.report_id == due_report.id)
     )
     assert evaluation is not None
     assert evaluation.status == "complete"

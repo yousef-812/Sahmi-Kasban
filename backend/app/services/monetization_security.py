@@ -38,9 +38,7 @@ class PurchaseTokenCipher:
         if configured:
             key = configured.encode("ascii")
         else:
-            digest = hashlib.sha256(
-                f"billing:{self._settings.secret_key}".encode()
-            ).digest()
+            digest = hashlib.sha256(f"billing:{self._settings.secret_key}".encode()).digest()
             key = base64.urlsafe_b64encode(digest)
         try:
             self._fernet = Fernet(key)
@@ -195,8 +193,7 @@ class GooglePlayVerifier:
     ) -> VerifiedPurchase:
         package_name = self.settings.google_play_package_name
         payload = await self._get_json(
-            f"{self._api_root}/applications/{package_name}/purchases/subscriptionsv2/"
-            f"tokens/{purchase_token}"
+            f"{self._api_root}/applications/{package_name}/purchases/subscriptionsv2/tokens/{purchase_token}"
         )
         state_name = str(payload.get("subscriptionState", ""))
         state = (
@@ -260,9 +257,7 @@ class GooglePlayVerifier:
         if credentials is None:
             raw = self.settings.google_play_service_account_json.strip()
             if not raw:
-                raise MonetizationConfigurationError(
-                    "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not configured"
-                )
+                raise MonetizationConfigurationError("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not configured")
             try:
                 info = json.loads(raw)
             except json.JSONDecodeError as exc:
@@ -309,16 +304,12 @@ class AdMobSsvVerifier:
         signature_index = raw_query.find(signature_marker)
         key_index = raw_query.find(key_marker, signature_index + 1)
         if signature_index < 0 or key_index < 0:
-            raise MonetizationVerificationError(
-                "AdMob callback must end with signature and key_id"
-            )
+            raise MonetizationVerificationError("AdMob callback must end with signature and key_id")
         if key_index < signature_index:
             raise MonetizationVerificationError("AdMob callback parameter order is invalid")
 
         content = raw_query[:signature_index].encode("utf-8")
-        encoded_signature = raw_query[
-            signature_index + len(signature_marker) : key_index
-        ]
+        encoded_signature = raw_query[signature_index + len(signature_marker) : key_index]
         key_id_text = raw_query[key_index + len(key_marker) :]
         if "&" in key_id_text:
             raise MonetizationVerificationError("AdMob key_id must be the final parameter")

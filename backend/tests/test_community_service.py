@@ -37,8 +37,7 @@ def clean_payload() -> dict[str, str]:
         "ticker": "COMI",
         "title": "توقع فني لسهم البنك التجاري الدولي",
         "content": (
-            "أراقب منطقة الدعم الحالية وأتوقع تحسن الحركة خلال الفترة المحددة "
-            "مع الالتزام بإدارة المخاطر."
+            "أراقب منطقة الدعم الحالية وأتوقع تحسن الحركة خلال الفترة المحددة مع الالتزام بإدارة المخاطر."
         ),
         "period_type": "week",
     }
@@ -59,9 +58,7 @@ def test_submission_holds_points_and_is_idempotent(db_session: Session) -> None:
     assert get_wallet_account(db_session, user.id).balance_points == 450
 
     holds = db_session.scalars(
-        select(WalletEntry).where(
-            WalletEntry.entry_type == "discussion_submission_hold"
-        )
+        select(WalletEntry).where(WalletEntry.entry_type == "discussion_submission_hold")
     ).all()
     assert len(holds) == 1
     assert holds[0].amount_points == -50
@@ -99,9 +96,7 @@ def test_accepting_discussion_confirms_hold_once(db_session: Session) -> None:
     assert get_wallet_account(db_session, user.id).balance_points == 450
 
     hold = db_session.scalar(
-        select(WalletEntry).where(
-            WalletEntry.transaction_id == accepted.wallet_hold_transaction_id
-        )
+        select(WalletEntry).where(WalletEntry.transaction_id == accepted.wallet_hold_transaction_id)
     )
     assert hold is not None
     assert hold.status == "confirmed"
@@ -112,9 +107,7 @@ def test_static_rejection_releases_full_hold_once(db_session: Session) -> None:
     user = create_user(db_session, "community-three@example.com")
     payload = clean_payload()
     payload["submission_key"] = "submission-rejected-001"
-    payload["content"] = (
-        "هذا توقع للسهم وللتواصل واتساب على 01012345678 للحصول على توصيات أخرى."
-    )
+    payload["content"] = "هذا توقع للسهم وللتواصل واتساب على 01012345678 للحصول على توصيات أخرى."
 
     first = create_discussion(db_session, user=user, **payload)
     db_session.commit()
@@ -127,17 +120,13 @@ def test_static_rejection_releases_full_hold_once(db_session: Session) -> None:
     assert get_wallet_account(db_session, user.id).balance_points == 500
 
     hold = db_session.scalar(
-        select(WalletEntry).where(
-            WalletEntry.transaction_id == first.discussion.wallet_hold_transaction_id
-        )
+        select(WalletEntry).where(WalletEntry.transaction_id == first.discussion.wallet_hold_transaction_id)
     )
     assert hold is not None
     assert hold.status == "released"
 
     refunds = db_session.scalars(
-        select(WalletEntry).where(
-            WalletEntry.entry_type == "discussion_submission_release"
-        )
+        select(WalletEntry).where(WalletEntry.entry_type == "discussion_submission_release")
     ).all()
     assert len(refunds) == 1
     assert refunds[0].amount_points == 50
@@ -159,9 +148,7 @@ def test_submission_key_cannot_be_reused_for_other_content(
     db_session.commit()
 
     changed = dict(payload)
-    changed["content"] = (
-        "محتوى مختلف تمامًا مع الاحتفاظ بنفس مفتاح الطلب لاختبار منع التكرار الخاطئ."
-    )
+    changed["content"] = "محتوى مختلف تمامًا مع الاحتفاظ بنفس مفتاح الطلب لاختبار منع التكرار الخاطئ."
     try:
         create_discussion(db_session, user=user, **changed)
     except CommunityConflictError:
@@ -252,7 +239,5 @@ def test_reports_and_mutes_are_idempotent(db_session: Session) -> None:
     assert visible_total == 1
     assert visible_items[0].discussion.id == submission.discussion.id
 
-    stored = db_session.scalar(
-        select(Discussion).where(Discussion.id == submission.discussion.id)
-    )
+    stored = db_session.scalar(select(Discussion).where(Discussion.id == submission.discussion.id))
     assert stored is not None

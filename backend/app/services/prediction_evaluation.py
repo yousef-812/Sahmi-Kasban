@@ -43,9 +43,7 @@ class PredictionNotEligibleError(PredictionEvaluationError):
 
     def __init__(self, eligible_at: datetime) -> None:
         self.eligible_at = eligible_at
-        super().__init__(
-            f"Prediction can be verified after {eligible_at.isoformat()}"
-        )
+        super().__init__(f"Prediction can be verified after {eligible_at.isoformat()}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,14 +114,10 @@ def resolve_prediction_window(
         raise PredictionUnavailableError("Discussion period is not supported")
 
     trading_calendar = calendar or EGXTradingCalendar.from_settings()
-    published_local_date = _aware(discussion.published_at).astimezone(
-        trading_calendar.timezone
-    ).date()
+    published_local_date = _aware(discussion.published_at).astimezone(trading_calendar.timezone).date()
     session_dates = [trading_calendar.next_trading_session(published_local_date)]
     while len(session_dates) < session_count:
-        session_dates.append(
-            trading_calendar.next_trading_session(session_dates[-1])
-        )
+        session_dates.append(trading_calendar.next_trading_session(session_dates[-1]))
 
     eligible_local = datetime.combine(
         session_dates[-1],
@@ -154,9 +148,7 @@ def get_prediction_status(
         raise PredictionNotFoundError("Discussion does not exist")
 
     verification = db.scalar(
-        select(PredictionVerification).where(
-            PredictionVerification.discussion_id == discussion.id
-        )
+        select(PredictionVerification).where(PredictionVerification.discussion_id == discussion.id)
     )
     if verification is not None:
         window = (
@@ -205,13 +197,9 @@ def _price(candle: dict[str, object], field: str) -> float:
     try:
         price = float(value)
     except (TypeError, ValueError) as exc:
-        raise PredictionMarketEvidenceError(
-            f"Market candle has an invalid {field} price"
-        ) from exc
+        raise PredictionMarketEvidenceError(f"Market candle has an invalid {field} price") from exc
     if price <= 0:
-        raise PredictionMarketEvidenceError(
-            f"Market candle has a non-positive {field} price"
-        )
+        raise PredictionMarketEvidenceError(f"Market candle has a non-positive {field} price")
     return price
 
 
@@ -226,9 +214,9 @@ def select_window_candles(
     by_session_date: dict[date, dict[str, object]] = {}
     for raw_candle in series.candles:
         candle = dict(raw_candle)
-        session_date = _parse_candle_timestamp(candle.get("timestamp")).astimezone(
-            trading_calendar.timezone
-        ).date()
+        session_date = (
+            _parse_candle_timestamp(candle.get("timestamp")).astimezone(trading_calendar.timezone).date()
+        )
         if session_date in expected_dates:
             by_session_date[session_date] = candle
 
@@ -287,9 +275,7 @@ def _specificity(prediction: dict[str, Any]) -> tuple[float, bool]:
     if clean_claims:
         structured_specificity += 0.2
 
-    resolved_specificity = (
-    model_specificity if model_specificity > 0 else structured_specificity
-)
+    resolved_specificity = model_specificity if model_specificity > 0 else structured_specificity
     is_specific = target_price is not None or bool(deadline) or bool(clean_claims)
     return resolved_specificity, is_specific
 
@@ -326,22 +312,16 @@ def calculate_prediction_score(
     target_progress = 0.0
     if target_price is not None:
         if predicted_direction == "up" and target_price > start_price:
-            target_progress = _clamp(
-                (period_high - start_price) / (target_price - start_price)
-            )
+            target_progress = _clamp((period_high - start_price) / (target_price - start_price))
             target_hit = period_high >= target_price
         elif predicted_direction == "down" and target_price < start_price:
-            target_progress = _clamp(
-                (start_price - period_low) / (start_price - target_price)
-            )
+            target_progress = _clamp((start_price - period_low) / (start_price - target_price))
             target_hit = period_low <= target_price
         elif period_low <= target_price <= period_high:
             target_progress = 1.0
             target_hit = True
         else:
-            target_progress = _clamp(
-                1.0 - (abs(end_price - target_price) / target_price)
-            )
+            target_progress = _clamp(1.0 - (abs(end_price - target_price) / target_price))
     target_score = round(3000 * target_progress)
 
     deadline_score = 1000 if direction_match else 0
@@ -350,10 +330,13 @@ def calculate_prediction_score(
     elif predicted_direction == "down":
         adverse_excursion = max(0.0, (period_high - start_price) / start_price)
     else:
-        adverse_excursion = max(
-            abs(period_high - start_price),
-            abs(start_price - period_low),
-        ) / start_price
+        adverse_excursion = (
+            max(
+                abs(period_high - start_price),
+                abs(start_price - period_low),
+            )
+            / start_price
+        )
 
     if target_hit:
         path_score = 1000
@@ -446,10 +429,7 @@ def deterministic_explanation(score: PredictionScore) -> str:
         if score.market_outcome["target_hit"]
         else "ولم يصل السعر إلى الهدف كاملًا"
     )
-    return (
-        f"{direction_text} {target_text}. "
-        f"الدرجة المحسوبة بالقواعد الثابتة هي {score.score_bp / 100:.2f}%."
-    )
+    return f"{direction_text} {target_text}. الدرجة المحسوبة بالقواعد الثابتة هي {score.score_bp / 100:.2f}%."
 
 
 def finalize_prediction_verification(
@@ -497,9 +477,7 @@ def finalize_prediction_verification(
     evidence = {
         **score.evidence,
         "explanation": explanation,
-        "reward_transaction_id": reward_transaction_id
-        if score.reward_points > 0
-        else None,
+        "reward_transaction_id": reward_transaction_id if score.reward_points > 0 else None,
     }
     verification = PredictionVerification(
         discussion_id=discussion.id,
@@ -542,9 +520,7 @@ def get_prediction_stats(db: Session, *, user_id: UUID) -> PredictionStats:
     row = db.execute(
         select(
             func.count(PredictionVerification.id),
-            func.count(PredictionVerification.id).filter(
-                PredictionVerification.score_bp >= 4000
-            ),
+            func.count(PredictionVerification.id).filter(PredictionVerification.score_bp >= 4000),
             func.coalesce(func.avg(PredictionVerification.score_bp), 0),
             func.coalesce(func.sum(PredictionVerification.reward_points), 0),
         )

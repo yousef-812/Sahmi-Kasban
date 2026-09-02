@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
+from sahmi_kasban.ai import AIProviderError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,7 +11,6 @@ from app.services.auth import register_user
 from app.services.community import create_discussion
 from app.services.community_ai import review_pending_discussion
 from app.services.wallet import get_wallet_account
-from sahmi_kasban.ai import AIProviderError
 
 PASSWORD = "StrongPass123"
 
@@ -142,9 +142,7 @@ def test_ai_acceptance_publishes_and_freezes_server_authoritative_prediction(
     assert get_wallet_account(db_session, user.id).balance_points == 450
 
     hold = db_session.scalar(
-        select(WalletEntry).where(
-            WalletEntry.transaction_id == discussion.wallet_hold_transaction_id
-        )
+        select(WalletEntry).where(WalletEntry.transaction_id == discussion.wallet_hold_transaction_id)
     )
     assert hold is not None
     assert hold.status == "confirmed"
@@ -172,9 +170,7 @@ def test_ai_rejection_releases_hold_and_records_reason(db_session: Session) -> N
     assert get_wallet_account(db_session, user.id).balance_points == 500
 
     hold = db_session.scalar(
-        select(WalletEntry).where(
-            WalletEntry.transaction_id == discussion.wallet_hold_transaction_id
-        )
+        select(WalletEntry).where(WalletEntry.transaction_id == discussion.wallet_hold_transaction_id)
     )
     assert hold is not None
     assert hold.status == "released"
@@ -205,9 +201,7 @@ def test_ai_provider_failure_keeps_pending_hold_and_allows_safe_retry(
     assert get_wallet_account(db_session, user.id).balance_points == 450
 
     hold = db_session.scalar(
-        select(WalletEntry).where(
-            WalletEntry.transaction_id == discussion.wallet_hold_transaction_id
-        )
+        select(WalletEntry).where(WalletEntry.transaction_id == discussion.wallet_hold_transaction_id)
     )
     assert hold is not None
     assert hold.status == "held"

@@ -10,17 +10,21 @@ def run_volatile_days_simulation():
     db = SessionLocal()
     try:
         # Find two dates in 2025 where there was high intraday volatility (MaxUpside >= 4% but close < 0)
-        dates_query = db.execute(
-            select(AnalysisReplayRow.analysis_date)
-            .where(
-                AnalysisReplayRow.signal == "BUY",
-                AnalysisReplayRow.max_upside_bp >= 400,
-                AnalysisReplayRow.forward_return_bp < 0,
+        dates_query = (
+            db.execute(
+                select(AnalysisReplayRow.analysis_date)
+                .where(
+                    AnalysisReplayRow.signal == "BUY",
+                    AnalysisReplayRow.max_upside_bp >= 400,
+                    AnalysisReplayRow.forward_return_bp < 0,
+                )
+                .group_by(AnalysisReplayRow.analysis_date)
+                .order_by(func.count().desc())
+                .limit(2)
             )
-            .group_by(AnalysisReplayRow.analysis_date)
-            .order_by(func.count().desc())
-            .limit(2)
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         if not dates_query:
             print("No matching volatile replay dates found.")
@@ -86,11 +90,12 @@ def run_volatile_days_simulation():
 
             print("-" * 90)
             if count > 0:
-                print(f"📈 v2.4 Win Rate: {v24_wins}/{count} ({v24_wins/count*100:.1f}%)")
-                print(f"🚀 v2.5 Simulated Win Rate: {v25_wins}/{count} ({v25_wins/count*100:.1f}%)\n")
+                print(f"📈 v2.4 Win Rate: {v24_wins}/{count} ({v24_wins / count * 100:.1f}%)")
+                print(f"🚀 v2.5 Simulated Win Rate: {v25_wins}/{count} ({v25_wins / count * 100:.1f}%)\n")
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     run_volatile_days_simulation()

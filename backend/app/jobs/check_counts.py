@@ -11,5 +11,6 @@ def main():
         print(f"Target Date: {r.target_session_date} | Item Count: {cnt} | Status: {r.status}")
     db.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

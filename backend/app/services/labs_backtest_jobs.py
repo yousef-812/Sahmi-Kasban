@@ -36,9 +36,7 @@ def create_labs_backtest_job(
     if start_date > end_date:
         raise LabsBacktestJobRangeError("start_date must be on or before end_date")
     if (end_date - start_date).days > MAX_RANGE_DAYS:
-        raise LabsBacktestJobRangeError(
-            f"The backtest range is limited to {MAX_RANGE_DAYS} calendar days"
-        )
+        raise LabsBacktestJobRangeError(f"The backtest range is limited to {MAX_RANGE_DAYS} calendar days")
     if exit_mode not in ALLOWED_EXIT_MODES:
         raise LabsBacktestJobRangeError(f"Unsupported exit_mode: {exit_mode}")
 
@@ -96,12 +94,7 @@ def list_labs_backtest_jobs(
     offset: int,
 ) -> tuple[list[LabsBacktestJob], int]:
     filters = (LabsBacktestJob.requested_by == actor_user_id,)
-    total = int(
-        db.scalar(
-            select(func.count()).select_from(LabsBacktestJob).where(*filters)
-        )
-        or 0
-    )
+    total = int(db.scalar(select(func.count()).select_from(LabsBacktestJob).where(*filters)) or 0)
     items = db.scalars(
         select(LabsBacktestJob)
         .where(*filters)

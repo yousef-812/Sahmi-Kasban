@@ -1,4 +1,5 @@
 """Schemas for the user's recent analyses endpoint."""
+
 from __future__ import annotations
 
 from datetime import datetime

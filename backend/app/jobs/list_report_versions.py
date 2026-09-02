@@ -18,5 +18,6 @@ def main():
         print(f"{target_date:<15} | {source_date:<15} | {gate_version:<35} | {model:<45}")
     db.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

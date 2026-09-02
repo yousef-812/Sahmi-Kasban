@@ -131,9 +131,7 @@ async def process_next_historical_replay_batch() -> bool:
         return False
 
     settings = get_settings()
-    provider_semaphore = asyncio.Semaphore(
-        settings.historical_replay_provider_concurrency
-    )
+    provider_semaphore = asyncio.Semaphore(settings.historical_replay_provider_concurrency)
     cpu_semaphore = asyncio.Semaphore(settings.historical_replay_cpu_concurrency)
     computations = await asyncio.gather(
         *(

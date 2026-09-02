@@ -15,9 +15,7 @@ def _production_settings(**overrides: object) -> Settings:
         "google_play_service_account_json": "{}",
         "billing_token_encryption_key": "configured-by-readiness-test",
         "admob_ssv_verification_mode": "live",
-        "admob_android_rewarded_ad_unit_id": (
-            "ca-app-pub-1234567890123456/1234567890"
-        ),
+        "admob_android_rewarded_ad_unit_id": ("ca-app-pub-1234567890123456/1234567890"),
     }
     values.update(overrides)
     return Settings(**values)
@@ -73,8 +71,4 @@ def test_android_only_production_allows_sentry_and_ios_ads_to_be_unset() -> None
 
 def test_production_still_rejects_android_test_rewarded_unit() -> None:
     with pytest.raises(ValidationError, match="Android AdMob test ad unit"):
-        _production_settings(
-            admob_android_rewarded_ad_unit_id=(
-                "ca-app-pub-3940256099942544/5224354917"
-            )
-        )
+        _production_settings(admob_android_rewarded_ad_unit_id=("ca-app-pub-3940256099942544/5224354917"))

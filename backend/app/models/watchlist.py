@@ -26,9 +26,7 @@ class WatchlistItem(TimestampMixin, Base):
     """Per-user watchlist entry with cached signal snapshot."""
 
     __tablename__ = "watchlist_items"
-    __table_args__ = (
-        UniqueConstraint("user_id", "ticker", name="uq_watchlist_user_ticker"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "ticker", name="uq_watchlist_user_ticker"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(

@@ -42,8 +42,7 @@ def export_full_2025_md():
 
             total_all_rows += len(rows)
             md_lines.append(
-                f"## شهر: {job.start_date.strftime('%B %Y')} "
-                f"(من {job.start_date} إلى {job.end_date})"
+                f"## شهر: {job.start_date.strftime('%B %Y')} (من {job.start_date} إلى {job.end_date})"
             )
             md_lines.append(f"- **معرف البناء (Job ID)**: `{job.id}`")
             md_lines.append(f"- **إصدار المحرك**: `{job.engine_version}`")
@@ -55,8 +54,7 @@ def export_full_2025_md():
                 "أقصى صعود % | أقصى هبوط % | النتيجة | العائد الزائد % | النتيجة مقابل المؤشر |"
             )
             md_lines.append(
-                "| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | "
-                ":---: | :---: | :---: |"
+                "| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |"
             )
             for r in rows:
                 m = metrics.get(r.id)
@@ -65,7 +63,7 @@ def export_full_2025_md():
                 max_up = _pct(r.max_upside_bp)
                 max_down = _pct(r.max_drawdown_bp)
                 exc_ret = _pct(m.excess_return_bp) if m else None
-                
+
                 correct_str = (
                     "✅ ناجحة" if r.correct is True else ("❌ خاسرة" if r.correct is False else "➖")
                 )
@@ -92,6 +90,7 @@ def export_full_2025_md():
 
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     export_full_2025_md()

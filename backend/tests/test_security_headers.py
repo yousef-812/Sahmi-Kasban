@@ -22,9 +22,7 @@ def test_security_headers_are_added_to_http_responses() -> None:
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["referrer-policy"] == "no-referrer"
-    assert response.headers["permissions-policy"] == (
-        "camera=(), microphone=(), geolocation=()"
-    )
+    assert response.headers["permissions-policy"] == ("camera=(), microphone=(), geolocation=()")
     assert response.headers["cross-origin-opener-policy"] == "same-origin"
     assert "strict-transport-security" not in response.headers
 
@@ -32,6 +30,4 @@ def test_security_headers_are_added_to_http_responses() -> None:
 def test_hsts_is_enabled_only_for_production_configuration() -> None:
     response = _client(hsts_enabled=True).get("/probe")
 
-    assert response.headers["strict-transport-security"] == (
-        "max-age=31536000; includeSubDomains"
-    )
+    assert response.headers["strict-transport-security"] == ("max-age=31536000; includeSubDomains")

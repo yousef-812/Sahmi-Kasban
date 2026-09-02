@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
+from sahmi_kasban.ai import SahmiAIService
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -19,7 +20,6 @@ from app.services.stock_analysis import (
     execute_stock_analysis,
 )
 from app.services.wallet import debit_points, get_wallet_account
-from sahmi_kasban.ai import SahmiAIService
 
 COMPARISON_COST_POINTS = 50
 CAIRO = ZoneInfo("Africa/Cairo")
@@ -189,9 +189,7 @@ def _summary(
     ]
     if failed_items:
         failed = "، ".join(str(item["ticker"]) for item in failed_items)
-        fragments.append(
-            f"اكتملت المقارنة دون الأسهم التالية لتعذر بياناتها مؤقتًا: {failed}."
-        )
+        fragments.append(f"اكتملت المقارنة دون الأسهم التالية لتعذر بياناتها مؤقتًا: {failed}.")
     return " ".join(dict.fromkeys(fragments))
 
 
@@ -243,9 +241,7 @@ async def execute_stock_comparison(
 
     if existing is not None:
         if existing.tickers != normalized:
-            raise ComparisonConflictError(
-                "مفتاح طلب المقارنة استُخدم من قبل مع أسهم مختلفة."
-            )
+            raise ComparisonConflictError("مفتاح طلب المقارنة استُخدم من قبل مع أسهم مختلفة.")
         return _execution_from_existing(
             db,
             existing,
@@ -254,9 +250,7 @@ async def execute_stock_comparison(
         )
 
     if len(normalized) > max_stocks:
-        raise ComparisonPlanLimitError(
-            f"خطة {plan.display_name_ar} تسمح بمقارنة حتى {max_stocks} أسهم."
-        )
+        raise ComparisonPlanLimitError(f"خطة {plan.display_name_ar} تسمح بمقارنة حتى {max_stocks} أسهم.")
 
     executions: list[StockAnalysisExecution] = []
     failed_items: list[dict[str, object]] = []
@@ -322,10 +316,7 @@ async def execute_stock_comparison(
         "summary": _summary(items, failed_items),
         "items": items,
         "failed_items": failed_items,
-        "disclaimer": (
-            "المقارنة تحليل آلي لدعم القرار وليست توصية شراء أو بيع، "
-            "ولا تضمن تحقيق أرباح."
-        ),
+        "disclaimer": ("المقارنة تحليل آلي لدعم القرار وليست توصية شراء أو بيع، ولا تضمن تحقيق أرباح."),
     }
     comparison = StockComparison(
         user_id=user.id,

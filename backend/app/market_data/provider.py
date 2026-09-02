@@ -59,15 +59,11 @@ class YFinanceMarketDataProvider:
         try:
             frame = await asyncio.to_thread(download)
         except Exception as exc:
-            raise MarketDataUnavailableError(
-                f"yfinance failed for {normalized_ticker}"
-            ) from exc
+            raise MarketDataUnavailableError(f"yfinance failed for {normalized_ticker}") from exc
 
         candles = self._normalize_frame(frame)
         if not candles:
-            raise MarketDataUnavailableError(
-                f"yfinance returned no usable candles for {normalized_ticker}"
-            )
+            raise MarketDataUnavailableError(f"yfinance returned no usable candles for {normalized_ticker}")
 
         fetched_at = datetime.now(UTC)
         data_as_of = datetime.fromisoformat(str(candles[-1]["timestamp"]))
@@ -88,10 +84,7 @@ class YFinanceMarketDataProvider:
             return []
 
         normalized = frame.copy()
-        normalized.columns = [
-            str(column).strip().lower().replace(" ", "_")
-            for column in normalized.columns
-        ]
+        normalized.columns = [str(column).strip().lower().replace(" ", "_") for column in normalized.columns]
         required = ["open", "high", "low", "close", "volume"]
         if any(column not in normalized.columns for column in required):
             return []
@@ -103,9 +96,7 @@ class YFinanceMarketDataProvider:
                 normalized[column],
                 errors="coerce",
             )
-        normalized = normalized.dropna(
-            subset=["timestamp", "open", "high", "low", "close"]
-        )
+        normalized = normalized.dropna(subset=["timestamp", "open", "high", "low", "close"])
         normalized["volume"] = normalized["volume"].fillna(0).clip(lower=0)
         normalized = normalized.sort_values("timestamp").drop_duplicates(
             "timestamp",
@@ -187,9 +178,7 @@ class FallbackMarketDataProvider:
                         await asyncio.sleep(self.retry_backoff_seconds * attempt)
             if last_failure is not None:
                 failures.append(f"{provider.name}: {last_failure}")
-        raise MarketDataUnavailableError(
-            " | ".join(failures) or "No provider returned data"
-        )
+        raise MarketDataUnavailableError(" | ".join(failures) or "No provider returned data")
 
 
 def _provider_from_name(name: str) -> MarketDataProvider | None:
@@ -221,7 +210,5 @@ def get_market_data_provider() -> MarketDataProvider:
             seen.add(provider.name)
             providers.append(provider)
     if not providers:
-        raise MarketDataUnavailableError(
-            "No supported market-data provider is configured"
-        )
+        raise MarketDataUnavailableError("No supported market-data provider is configured")
     return FallbackMarketDataProvider(tuple(providers))

@@ -86,9 +86,7 @@ def test_authoritative_scanner_reconciliation_deactivates_stale_seed_symbols(
     rows = {
         row.ticker: row
         for row in db_session.scalars(
-            select(MarketInstrumentCatalog).where(
-                MarketInstrumentCatalog.ticker.in_(("OLDX", "KEEP"))
-            )
+            select(MarketInstrumentCatalog).where(MarketInstrumentCatalog.ticker.in_(("OLDX", "KEEP")))
         ).all()
     }
     assert count == 1
@@ -154,11 +152,7 @@ def test_reconcile_keeps_existing_description_when_scanner_description_is_empty(
     )
     db_session.commit()
 
-    row = db_session.scalar(
-        select(MarketInstrumentCatalog).where(
-            MarketInstrumentCatalog.ticker == "COMI"
-        )
-    )
+    row = db_session.scalar(select(MarketInstrumentCatalog).where(MarketInstrumentCatalog.ticker == "COMI"))
     assert row is not None
     assert row.description == "البنك التجاري الدولي"
 
@@ -188,16 +182,11 @@ def test_arabic_company_name_search_finds_instrument(db_session: Session) -> Non
     )
     db_session.commit()
 
-    _, _, results = asyncio.run(
-        search_market_instruments(db_session, query="البنك التجاري", limit=20)
-    )
+    _, _, results = asyncio.run(search_market_instruments(db_session, query="البنك التجاري", limit=20))
 
     assert [result.ticker for result in results] == ["COMI"]
 
-    _, _, partial = asyncio.run(
-        search_market_instruments(db_session, query="قلعة", limit=20)
-    )
+    _, _, partial = asyncio.run(search_market_instruments(db_session, query="قلعة", limit=20))
     assert [result.ticker for result in partial] == ["CCAP"]
 
     assert asyncio.run(market_instrument_exists(db_session, "COMI")) is True
-

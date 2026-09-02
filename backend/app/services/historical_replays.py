@@ -12,6 +12,8 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -25,8 +27,6 @@ from app.models import (
     AnalysisReplayTicker,
     MarketInstrumentCatalog,
 )
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.indicators import enrich_indicators, prepare_candles
 
 logger = logging.getLogger(__name__)
 
@@ -134,17 +134,10 @@ def create_historical_replay_job(
         min_train_size=min_train_size,
         neutral_band_pct=neutral_band_pct,
     )
-    existing = db.scalar(
-        select(AnalysisReplayJob).where(AnalysisReplayJob.request_key == request_key)
-    )
+    existing = db.scalar(select(AnalysisReplayJob).where(AnalysisReplayJob.request_key == request_key))
     if existing is not None:
-        if (
-            existing.requested_by != actor_user_id
-            or existing.details.get("request_signature") != signature
-        ):
-            raise HistoricalReplayConflictError(
-                "مفتاح الطلب مستخدم بالفعل لاختبار تاريخي مختلف"
-            )
+        if existing.requested_by != actor_user_id or existing.details.get("request_signature") != signature:
+            raise HistoricalReplayConflictError("مفتاح الطلب مستخدم بالفعل لاختبار تاريخي مختلف")
         return existing, True
 
     settings = get_settings()
@@ -181,20 +174,11 @@ def create_historical_replay_job(
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raced = db.scalar(
-            select(AnalysisReplayJob).where(
-                AnalysisReplayJob.request_key == request_key
-            )
-        )
+        raced = db.scalar(select(AnalysisReplayJob).where(AnalysisReplayJob.request_key == request_key))
         if raced is None:
             raise
-        if (
-            raced.requested_by != actor_user_id
-            or raced.details.get("request_signature") != signature
-        ):
-            raise HistoricalReplayConflictError(
-                "مفتاح الطلب مستخدم بالفعل لاختبار تاريخي مختلف"
-            ) from exc
+        if raced.requested_by != actor_user_id or raced.details.get("request_signature") != signature:
+            raise HistoricalReplayConflictError("مفتاح الطلب مستخدم بالفعل لاختبار تاريخي مختلف") from exc
         return raced, True
     db.refresh(job)
     return job, False
@@ -225,10 +209,7 @@ def list_historical_replay_jobs(
     offset: int,
 ) -> tuple[list[AnalysisReplayJob], int]:
     filters = (AnalysisReplayJob.requested_by == actor_user_id,)
-    total = int(
-        db.scalar(select(func.count()).select_from(AnalysisReplayJob).where(*filters))
-        or 0
-    )
+    total = int(db.scalar(select(func.count()).select_from(AnalysisReplayJob).where(*filters)) or 0)
     items = db.scalars(
         select(AnalysisReplayJob)
         .where(*filters)
@@ -251,9 +232,7 @@ def delete_historical_replay_job(
         actor_user_id=actor_user_id,
     )
     if job.status in {"pending", "running"}:
-        raise HistoricalReplayControlError(
-            "لا يمكن حذف اختبار جارٍ التشغيل. ألغِه أولًا ثم احذفه."
-        )
+        raise HistoricalReplayControlError("لا يمكن حذف اختبار جارٍ التشغيل. ألغِه أولًا ثم احذفه.")
     db.delete(job)
     db.commit()
 
@@ -515,9 +494,7 @@ def compute_replay_rows(
     frame = _prepared_history(series)
     session_dates = frame["timestamp"].dt.date
     target_indexes = [
-        index
-        for index, session_date in enumerate(session_dates)
-        if start_date <= session_date <= end_date
+        index for index, session_date in enumerate(session_dates) if start_date <= session_date <= end_date
     ]
     rows: list[dict[str, Any]] = []
     for cutoff in target_indexes:
@@ -549,12 +526,8 @@ def compute_replay_rows(
         if index_series is not None:
             try:
                 index_frame = pd.DataFrame(index_series.candles)
-                index_frame["timestamp"] = pd.to_datetime(
-                    index_frame["timestamp"], errors="coerce", utc=True
-                )
-                index_cutoff = index_frame.loc[
-                    index_frame["timestamp"] <= data_as_of
-                ]
+                index_frame["timestamp"] = pd.to_datetime(index_frame["timestamp"], errors="coerce", utc=True)
+                index_cutoff = index_frame.loc[index_frame["timestamp"] <= data_as_of]
                 if len(index_cutoff) >= settings.market_data_min_candles:
                     index = (index_series.ticker, index_cutoff)
             except Exception as exc:
@@ -697,11 +670,7 @@ def persist_replay_batch(
         task = db.get(AnalysisReplayTicker, computation.ticker_task_id)
         if task is None or task.job_id != job_id:
             continue
-        db.execute(
-            delete(AnalysisReplayRow).where(
-                AnalysisReplayRow.ticker_task_id == task.id
-            )
-        )
+        db.execute(delete(AnalysisReplayRow).where(AnalysisReplayRow.ticker_task_id == task.id))
         if computation.error_code is not None:
             task.status = "failed"
             task.provider = computation.provider
@@ -768,9 +737,7 @@ def _refresh_job_totals(db: Session, job: AnalysisReplayJob) -> None:
             func.count(AnalysisReplayTicker.id).filter(
                 AnalysisReplayTicker.status.in_(("complete", "partial"))
             ),
-            func.count(AnalysisReplayTicker.id).filter(
-                AnalysisReplayTicker.status == "failed"
-            ),
+            func.count(AnalysisReplayTicker.id).filter(AnalysisReplayTicker.status == "failed"),
             func.coalesce(func.sum(AnalysisReplayTicker.rows_written), 0),
             func.coalesce(func.sum(AnalysisReplayTicker.evaluated_rows), 0),
             func.coalesce(func.sum(AnalysisReplayTicker.pending_rows), 0),

@@ -110,10 +110,7 @@ def test_universe_quarantines_repeated_failures_but_keeps_recovered_symbols(
     assert universe.replay_failure_quarantine_count == 1
 
     apply_market_health_quarantine(db_session)
-    rows = {
-        row.ticker: row
-        for row in db_session.query(MarketInstrumentCatalog).all()
-    }
+    rows = {row.ticker: row for row in db_session.query(MarketInstrumentCatalog).all()}
     assert rows["COMI"].active is True
     assert rows["RECOVER"].active is True
     assert rows["DEAD"].active is False

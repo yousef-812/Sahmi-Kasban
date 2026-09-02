@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 
+from sahmi_kasban.ai import AIProviderError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.jobs import retry_pending_ai_reviews as retry_job
@@ -11,7 +12,6 @@ from app.services.auth import register_user
 from app.services.community import create_discussion
 from app.services.community_ai import review_pending_discussion
 from app.services.wallet import get_wallet_account
-from sahmi_kasban.ai import AIProviderError
 
 PASSWORD = "StrongPass123"
 
@@ -64,10 +64,7 @@ def test_retry_job_publishes_provider_failed_discussion(
         submission_key="automatic-ai-retry-submission",
         ticker="COMI",
         title="توقع فني لسهم البنك التجاري الدولي",
-        content=(
-            "أتوقع تحسن اتجاه السهم خلال الأسبوع مع انتظار تأكيد الحركة "
-            "والالتزام بإدارة المخاطر."
-        ),
+        content=("أتوقع تحسن اتجاه السهم خلال الأسبوع مع انتظار تأكيد الحركة والالتزام بإدارة المخاطر."),
         period_type="week",
     )
     db_session.commit()
@@ -95,9 +92,7 @@ def test_retry_job_publishes_provider_failed_discussion(
         "get_community_ai_service",
         lambda: ApprovingAIService(),
     )
-    result = asyncio.run(
-        retry_job.retry_pending_ai_reviews(attempted_at + timedelta(minutes=11))
-    )
+    result = asyncio.run(retry_job.retry_pending_ai_reviews(attempted_at + timedelta(minutes=11)))
 
     assert result["reviewed"] == 1
     assert result["published"] == 1

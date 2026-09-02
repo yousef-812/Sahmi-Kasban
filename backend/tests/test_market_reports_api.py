@@ -129,9 +129,7 @@ def test_incomplete_report_is_not_charged(
     )
 
     assert response.status_code == 409
-    account = db_session.scalar(
-        select(WalletAccount).where(WalletAccount.user_id == user.id)
-    )
+    account = db_session.scalar(select(WalletAccount).where(WalletAccount.user_id == user.id))
     assert account is not None
     assert account.balance_points == 300
     assert db_session.scalar(select(func.count(MarketReportUnlock.id))) == 0

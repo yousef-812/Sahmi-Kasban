@@ -48,9 +48,7 @@ class FakeMarketDataProvider:
             close = 100.0 + index * 0.1
             candles.append(
                 {
-                    "timestamp": (
-                        self.source_date - timedelta(days=199 - index)
-                    ).isoformat(),
+                    "timestamp": (self.source_date - timedelta(days=199 - index)).isoformat(),
                     "open": close - 0.2,
                     "high": close + 0.5,
                     "low": close - 0.5,
@@ -172,9 +170,7 @@ def test_daily_scan_creates_ranked_report_once(
     entries = extended["entries"]
     assert [entry["rank"] for entry in entries] == [11, 12]
     assert [entry["ticker"] for entry in entries] == ["T01", "T00"]
-    assert all(
-        entry["explanation_source"] == "deterministic" for entry in entries
-    )
+    assert all(entry["explanation_source"] == "deterministic" for entry in entries)
     assert all(entry["opportunity_tier"] == "watch" for entry in entries)
     assert all(entry["elite"] is False for entry in entries)
 
@@ -255,9 +251,7 @@ def test_report_unlock_charges_once(
     assert db_session.scalar(select(func.count(MarketReportUnlock.id))) == 1
     assert (
         db_session.scalar(
-            select(func.count(WalletEntry.id)).where(
-                WalletEntry.entry_type == "market_report_debit"
-            )
+            select(func.count(WalletEntry.id)).where(WalletEntry.entry_type == "market_report_debit")
         )
         == 1
     )
@@ -286,9 +280,7 @@ def test_report_unlock_with_insufficient_balance_rolls_back(
             report_id=generated.report.id,
         )
 
-    account = db_session.scalar(
-        select(WalletAccount).where(WalletAccount.user_id == user.id)
-    )
+    account = db_session.scalar(select(WalletAccount).where(WalletAccount.user_id == user.id))
     assert account is not None
     assert account.balance_points == 50
     assert db_session.scalar(select(func.count(MarketReportUnlock.id))) == 0

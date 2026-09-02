@@ -33,10 +33,17 @@ def upgrade() -> None:
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.CheckConstraint("status IN ('queued','running','complete','failed')", name="labs_backtest_job_status_allowed"),
+        sa.CheckConstraint(
+            "status IN ('queued','running','complete','failed')", name="labs_backtest_job_status_allowed"
+        ),
         sa.CheckConstraint("end_date >= start_date", name="labs_backtest_job_date_order"),
         sa.CheckConstraint("rank IS NULL OR rank BETWEEN 1 AND 10", name="labs_backtest_job_rank_range"),
-        sa.ForeignKeyConstraint(["requested_by"], ["users.id"], name="fk_labs_backtest_jobs_requested_by_users", ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["requested_by"],
+            ["users.id"],
+            name="fk_labs_backtest_jobs_requested_by_users",
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_labs_backtest_jobs"),
     )
     op.create_index("ix_labs_backtest_jobs_requested_by", "labs_backtest_jobs", ["requested_by"])

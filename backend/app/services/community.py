@@ -32,9 +32,7 @@ _URL_PATTERN = re.compile(
     r"(?:https?://|www\.|(?:t\.me|wa\.me)/|(?:[a-z0-9-]+\.)+(?:com|net|org|io|me|co|eg)\b)",
     re.IGNORECASE,
 )
-_EGYPT_PHONE_PATTERN = re.compile(
-    r"(?<!\d)(?:\+?20|0020|0)?1[0125](?:[\s-]?\d){8}(?!\d)"
-)
+_EGYPT_PHONE_PATTERN = re.compile(r"(?<!\d)(?:\+?20|0020|0)?1[0125](?:[\s-]?\d){8}(?!\d)")
 _CONTACT_PATTERN = re.compile(
     r"(?:واتس(?:اب)?|whats?app|تليجرام|تلجرام|telegram|تواصل|اتصل|كلمني|راسلني)"
     r"\s*[:：-]?\s*@?[\w.+-]{3,}",
@@ -167,9 +165,7 @@ def _validate_existing_submission(
         or discussion.content != content
         or discussion.period_type != period_type
     ):
-        raise CommunityConflictError(
-            "Submission key was already used for different discussion content"
-        )
+        raise CommunityConflictError("Submission key was already used for different discussion content")
 
 
 def create_discussion(
@@ -292,11 +288,7 @@ def apply_moderation_decision(
     if decision == "reject" and not reason_code:
         raise ValueError("Rejected discussions require a reason code")
 
-    discussion = db.scalar(
-        select(Discussion)
-        .where(Discussion.id == discussion_id)
-        .with_for_update()
-    )
+    discussion = db.scalar(select(Discussion).where(Discussion.id == discussion_id).with_for_update())
     if discussion is None:
         raise DiscussionNotFoundError("Discussion does not exist")
 
@@ -304,9 +296,7 @@ def apply_moderation_decision(
     if discussion.status == final_status:
         return discussion
     if discussion.status in {"published", "rejected", "hidden"}:
-        raise CommunityConflictError(
-            "Discussion already has a different final moderation state"
-        )
+        raise CommunityConflictError("Discussion already has a different final moderation state")
     if discussion.status != "pending_review":
         raise CommunityConflictError("Discussion is not awaiting moderation")
     if not discussion.wallet_hold_transaction_id:
@@ -388,9 +378,7 @@ def list_published_discussions(
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[DiscussionView], int]:
-    muted_user_ids = select(UserMute.muted_user_id).where(
-        UserMute.muter_user_id == viewer_user_id
-    )
+    muted_user_ids = select(UserMute.muted_user_id).where(UserMute.muter_user_id == viewer_user_id)
     filters = [
         Discussion.status == "published",
         Discussion.user_id.not_in(muted_user_ids),
@@ -417,9 +405,7 @@ def list_user_discussions(
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[DiscussionView], int]:
-    total = db.scalar(
-        select(func.count(Discussion.id)).where(Discussion.user_id == user.id)
-    ) or 0
+    total = db.scalar(select(func.count(Discussion.id)).where(Discussion.user_id == user.id)) or 0
     discussions = db.scalars(
         select(Discussion)
         .where(Discussion.user_id == user.id)

@@ -37,9 +37,7 @@ class FakeIntradayProvider:
         self.calls.append(ticker)
         candles: list[dict[str, object]] = []
         for index in range(18):
-            base = datetime(
-                2026, 7, 27, 10 + index // 12, (index % 12) * 5, tzinfo=_CALENDAR_TZ
-            )
+            base = datetime(2026, 7, 27, 10 + index // 12, (index % 12) * 5, tzinfo=_CALENDAR_TZ)
             candles.append(
                 {
                     "timestamp": base.astimezone(UTC).isoformat(),

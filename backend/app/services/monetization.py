@@ -151,9 +151,7 @@ def rewarded_ad_eligibility(
         )
 
     last_reward_at = db.scalar(
-        select(func.max(RewardedAdClaim.verified_at)).where(
-            RewardedAdClaim.user_id == user_id
-        )
+        select(func.max(RewardedAdClaim.verified_at)).where(RewardedAdClaim.user_id == user_id)
     )
     if last_reward_at is not None:
         next_available_at = _as_utc(last_reward_at) + timedelta(
@@ -235,15 +233,11 @@ async def process_google_play_purchase(
 
     token_hash = hash_secret(purchase_token)
     existing = db.scalar(
-        select(BillingPurchase)
-        .where(BillingPurchase.purchase_token_hash == token_hash)
-        .with_for_update()
+        select(BillingPurchase).where(BillingPurchase.purchase_token_hash == token_hash).with_for_update()
     )
     if existing is not None:
         if existing.user_id != user_id or existing.product_id != product_id:
-            raise PurchaseOwnershipConflictError(
-                "Purchase token is already attached to another entitlement"
-            )
+            raise PurchaseOwnershipConflictError("Purchase token is already attached to another entitlement")
         subscription = get_active_subscription(db, user_id)
         balance = get_wallet_balance(db, user_id)
         return PurchaseProcessingResult(
@@ -263,9 +257,7 @@ async def process_google_play_purchase(
         purchase_token=purchase_token,
     )
     if not verified.purchased:
-        raise PurchaseNotCompletedError(
-            f"Google Play purchase is not complete: {verified.state}"
-        )
+        raise PurchaseNotCompletedError(f"Google Play purchase is not complete: {verified.state}")
 
     now = moment or datetime.now(UTC)
     active_cipher = cipher or PurchaseTokenCipher()
@@ -284,9 +276,7 @@ async def process_google_play_purchase(
         verified_at=now,
         expires_at=verified.expires_at,
         linked_purchase_token_hash=(
-            hash_secret(verified.linked_purchase_token)
-            if verified.linked_purchase_token
-            else None
+            hash_secret(verified.linked_purchase_token) if verified.linked_purchase_token else None
         ),
         raw_payload=verified.raw_payload,
     )
@@ -327,9 +317,7 @@ async def process_google_play_purchase(
     try:
         db.flush()
     except IntegrityError as exc:
-        raise PurchaseOwnershipConflictError(
-            "Purchase token was processed concurrently"
-        ) from exc
+        raise PurchaseOwnershipConflictError("Purchase token was processed concurrently") from exc
 
     subscription = get_active_subscription(db, user_id)
     balance = get_wallet_balance(db, user_id)
@@ -355,9 +343,7 @@ async def process_rewarded_ad_callback(
     now = moment or datetime.now(UTC)
     transaction_id = _required(raw_payload, "transaction_id")
     existing = db.scalar(
-        select(RewardedAdClaim)
-        .where(RewardedAdClaim.transaction_id == transaction_id)
-        .with_for_update()
+        select(RewardedAdClaim).where(RewardedAdClaim.transaction_id == transaction_id).with_for_update()
     )
     if existing is not None:
         return RewardClaimResult(
@@ -466,8 +452,7 @@ def _replace_active_subscription(
     if purchase.linked_purchase_token_hash:
         linked = db.scalar(
             select(BillingPurchase).where(
-                BillingPurchase.purchase_token_hash
-                == purchase.linked_purchase_token_hash
+                BillingPurchase.purchase_token_hash == purchase.linked_purchase_token_hash
             )
         )
         if linked is not None and linked.subscription_id is not None:
@@ -517,7 +502,6 @@ def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
-
 
 
 def _parse_admob_timestamp(value: str) -> datetime:

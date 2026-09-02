@@ -10,6 +10,8 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -30,8 +32,6 @@ from app.services.operations_settings import get_int_setting
 from app.services.report_selection import classify_report_item
 from app.services.stock_analysis import DISCLAIMER_AR
 from app.services.wallet import debit_points, get_wallet_account
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -155,8 +155,14 @@ def _resolve_candidate_sector_quality(candidate: Candidate) -> dict[str, Any]:
 
     analysis = candidate.analysis if isinstance(candidate.analysis, dict) else {}
     engines = analysis.get("engines", {}) if isinstance(analysis.get("engines"), dict) else {}
-    tech = engines.get("technical", {}).get("details", {}) if isinstance(engines.get("technical"), dict) else {}
-    sector_eng = engines.get("sector_momentum", {}).get("details", {}) if isinstance(engines.get("sector_momentum"), dict) else {}
+    tech = (
+        engines.get("technical", {}).get("details", {}) if isinstance(engines.get("technical"), dict) else {}
+    )
+    sector_eng = (
+        engines.get("sector_momentum", {}).get("details", {})
+        if isinstance(engines.get("sector_momentum"), dict)
+        else {}
+    )
     ret_20d = tech.get("return_20d_pct") if isinstance(tech, dict) else None
     sec_mom_pct = sector_eng.get("sector_momentum_5d_pct") if isinstance(sector_eng, dict) else None
     return compute_sector_quality(
@@ -174,11 +180,7 @@ def _build_extended_entry(
     eligible_count: int,
 ) -> dict[str, Any]:
     analysis = candidate.analysis if isinstance(candidate.analysis, dict) else {}
-    plan = (
-        analysis.get("trade_plan")
-        if isinstance(analysis.get("trade_plan"), dict)
-        else {}
-    )
+    plan = analysis.get("trade_plan") if isinstance(analysis.get("trade_plan"), dict) else {}
     classification = classify_report_item(
         MarketReportItem(
             ticker=candidate.ticker,
@@ -438,11 +440,7 @@ async def _analyze_ticker(
             analyzer.analyze,
             series.ticker,
             frame,
-            (
-                (index_series.ticker, pd.DataFrame(index_series.candles))
-                if index_series is not None
-                else None
-            ),
+            ((index_series.ticker, pd.DataFrame(index_series.candles)) if index_series is not None else None),
         )
         raw_payload = _json_safe(report.to_dict())
     except Exception as exc:
@@ -579,16 +577,12 @@ async def generate_daily_top10_report(
 
     if force_regenerate:
         existing_rep = db.scalar(
-            select(MarketReport).where(
-                MarketReport.target_session_date == session.target_session_date
-            )
+            select(MarketReport).where(MarketReport.target_session_date == session.target_session_date)
         )
         if existing_rep is not None:
             db.delete(existing_rep)
         existing_run = db.scalar(
-            select(MarketScanRun).where(
-                MarketScanRun.source_session_date == session.source_session_date
-            )
+            select(MarketScanRun).where(MarketScanRun.source_session_date == session.source_session_date)
         )
         if existing_run is not None:
             db.delete(existing_run)
@@ -597,9 +591,7 @@ async def generate_daily_top10_report(
         existing_report = _complete_report_for_target(db, session.target_session_date)
         if existing_report is not None:
             run = db.scalar(
-                select(MarketScanRun).where(
-                    MarketScanRun.source_session_date == session.source_session_date
-                )
+                select(MarketScanRun).where(MarketScanRun.source_session_date == session.source_session_date)
             )
             if run is None:
                 raise DailyReportGenerationError("Report exists without a scan audit record")
@@ -627,15 +619,9 @@ async def generate_daily_top10_report(
     )
     candidates = [outcome.candidate for outcome in outcomes if outcome.candidate]
     candidates.sort(key=lambda candidate: candidate.sort_key, reverse=True)
-    failures = {
-        outcome.ticker: outcome.failure
-        for outcome in outcomes
-        if outcome.failure is not None
-    }
+    failures = {outcome.ticker: outcome.failure for outcome in outcomes if outcome.failure is not None}
     exclusions = Counter(
-        outcome.excluded_reason
-        for outcome in outcomes
-        if outcome.excluded_reason is not None
+        outcome.excluded_reason for outcome in outcomes if outcome.excluded_reason is not None
     )
     analyzed_count = len(tickers) - len(failures)
     if len(candidates) < settings.daily_report_size:
@@ -651,9 +637,7 @@ async def generate_daily_top10_report(
                 "failures": failures,
             },
         )
-        raise DailyReportGenerationError(
-            f"Only {len(candidates)} eligible candidates were produced"
-        )
+        raise DailyReportGenerationError(f"Only {len(candidates)} eligible candidates were produced")
 
     selected = candidates[: settings.daily_report_size]
     ai_semaphore = asyncio.Semaphore(2)
@@ -679,9 +663,7 @@ async def generate_daily_top10_report(
             "universe_size": len(tickers),
             "engine_version": settings.analysis_engine_version,
             "providers": sorted({candidate.provider for candidate in selected}),
-            "top_fingerprints": {
-                candidate.ticker: candidate.fingerprint for candidate in selected
-            },
+            "top_fingerprints": {candidate.ticker: candidate.fingerprint for candidate in selected},
         },
         market_summary={
             "title": "الأسهم الأعلى تقييمًا وفق التحليل الآلي للجلسة القادمة",
@@ -719,9 +701,7 @@ async def generate_daily_top10_report(
                         "price_at_analysis": round(candidate.last_close, 6),
                         "score": round(candidate.final_score, 2),
                         "signal": candidate.signal,
-                        "decision": (
-                            "فرصة قوية" if candidate.signal == "BUY" else "مراقبة"
-                        ),
+                        "decision": ("فرصة قوية" if candidate.signal == "BUY" else "مراقبة"),
                         "expected_direction": "up",
                         "confidence": round(candidate.confidence, 2),
                         "qualified": candidate.qualified,
@@ -767,11 +747,7 @@ async def generate_daily_top10_report(
                 "stored_count": len(extended),
                 "entries": extended,
             }
-        locked_run = db.scalar(
-            select(MarketScanRun)
-            .where(MarketScanRun.id == run.id)
-            .with_for_update()
-        )
+        locked_run = db.scalar(select(MarketScanRun).where(MarketScanRun.id == run.id).with_for_update())
         if locked_run is None:
             raise DailyReportGenerationError("Scan audit record disappeared")
         locked_run.status = "complete"
@@ -794,9 +770,7 @@ async def generate_daily_top10_report(
             raise
         refreshed_run = db.get(MarketScanRun, run.id)
         if refreshed_run is None:
-            raise DailyReportGenerationError(
-                "Concurrent report has no scan record"
-            ) from exc
+            raise DailyReportGenerationError("Concurrent report has no scan record") from exc
         return DailyReportGenerationResult(
             report=raced,
             scan_run=refreshed_run,

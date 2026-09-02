@@ -61,13 +61,9 @@ def _result_response(item) -> AnalysisBacktestResultResponse:
         average_forward_return_pct=_pct(item.average_forward_return_bp),
         median_forward_return_pct=_pct(item.median_forward_return_bp),
         average_buy_return_pct=_pct(item.average_buy_return_bp),
-        average_buy_max_drawdown_pct=_pct(
-            item.average_buy_max_drawdown_bp
-        ),
+        average_buy_max_drawdown_pct=_pct(item.average_buy_max_drawdown_bp),
         profit_factor=(
-            None
-            if item.profit_factor_milli is None
-            else round(item.profit_factor_milli / 1000.0, 3)
+            None if item.profit_factor_milli is None else round(item.profit_factor_milli / 1000.0, 3)
         ),
         error_code=item.error_code,
         error_message=item.error_message,
@@ -148,10 +144,7 @@ def list_backtest_runs(
         limit=limit,
         offset=offset,
     )
-    responses = [
-        _run_response(get_analysis_backtest_run(db, run_id=item.id))
-        for item in items
-    ]
+    responses = [_run_response(get_analysis_backtest_run(db, run_id=item.id)) for item in items]
     return AnalysisBacktestRunListResponse(
         items=responses,
         total=total,
@@ -185,7 +178,6 @@ def list_backtest_versions(
 ) -> AnalysisBacktestVersionListResponse:
     return AnalysisBacktestVersionListResponse(
         items=[
-            AnalysisBacktestVersionSummaryResponse(**item)
-            for item in analysis_backtest_version_summaries(db)
+            AnalysisBacktestVersionSummaryResponse(**item) for item in analysis_backtest_version_summaries(db)
         ]
     )

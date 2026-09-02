@@ -88,9 +88,7 @@ def test_weekly_job_grants_the_active_plan_amount_once_per_cairo_week(
     for plan in PLANS:
         user = users[plan.code]
         assert get_wallet_balance(db_session, user.id) == plan.weekly_points
-        grant = db_session.scalar(
-            select(WeeklyGrant).where(WeeklyGrant.user_id == user.id)
-        )
+        grant = db_session.scalar(select(WeeklyGrant).where(WeeklyGrant.user_id == user.id))
         assert grant is not None
         assert grant.plan_code == plan.code
         assert grant.amount_points == plan.weekly_points

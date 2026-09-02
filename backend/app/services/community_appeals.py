@@ -65,29 +65,17 @@ def submit_discussion_appeal(
     discussion_id: UUID,
     message: str,
 ) -> AppealSubmissionResult:
-    discussion = db.scalar(
-        select(Discussion)
-        .where(Discussion.id == discussion_id)
-        .with_for_update()
-    )
+    discussion = db.scalar(select(Discussion).where(Discussion.id == discussion_id).with_for_update())
     if discussion is None or discussion.user_id != user.id:
         raise DiscussionNotFoundError("Discussion does not exist")
     if discussion.status not in {"rejected", "hidden"}:
-        raise DiscussionAppealConflictError(
-            "Only rejected or hidden discussions can be appealed"
-        )
+        raise DiscussionAppealConflictError("Only rejected or hidden discussions can be appealed")
 
     cleaned_message = message.strip()
-    existing = db.scalar(
-        select(DiscussionAppeal).where(
-            DiscussionAppeal.discussion_id == discussion.id
-        )
-    )
+    existing = db.scalar(select(DiscussionAppeal).where(DiscussionAppeal.discussion_id == discussion.id))
     if existing is not None:
         if existing.user_id != user.id or existing.message != cleaned_message:
-            raise DiscussionAppealConflictError(
-                "This discussion already has a different appeal"
-            )
+            raise DiscussionAppealConflictError("This discussion already has a different appeal")
         return AppealSubmissionResult(appeal=existing, idempotent=True)
 
     appeal = DiscussionAppeal(
@@ -125,12 +113,7 @@ def list_user_appeals(
     offset: int = 0,
 ) -> tuple[list[DiscussionAppeal], int]:
     total = int(
-        db.scalar(
-            select(func.count(DiscussionAppeal.id)).where(
-                DiscussionAppeal.user_id == user_id
-            )
-        )
-        or 0
+        db.scalar(select(func.count(DiscussionAppeal.id)).where(DiscussionAppeal.user_id == user_id)) or 0
     )
     appeals = db.scalars(
         select(DiscussionAppeal)
@@ -152,9 +135,7 @@ def list_admin_appeals(
     filters = []
     if appeal_status:
         filters.append(DiscussionAppeal.status == appeal_status)
-    total = int(
-        db.scalar(select(func.count(DiscussionAppeal.id)).where(*filters)) or 0
-    )
+    total = int(db.scalar(select(func.count(DiscussionAppeal.id)).where(*filters)) or 0)
     rows = db.execute(
         select(DiscussionAppeal, Discussion, User)
         .join(Discussion, Discussion.id == DiscussionAppeal.discussion_id)
@@ -189,11 +170,7 @@ def resolve_discussion_appeal(
     if decision not in {"accept", "reject"}:
         raise ValueError("Appeal decision must be accept or reject")
     current = moment or datetime.now(UTC)
-    appeal = db.scalar(
-        select(DiscussionAppeal)
-        .where(DiscussionAppeal.id == appeal_id)
-        .with_for_update()
-    )
+    appeal = db.scalar(select(DiscussionAppeal).where(DiscussionAppeal.id == appeal_id).with_for_update())
     if appeal is None:
         raise DiscussionAppealNotFoundError("Appeal does not exist")
 
@@ -206,18 +183,10 @@ def resolve_discussion_appeal(
             idempotent=True,
         )
     if appeal.status != "open":
-        raise DiscussionAppealConflictError(
-            "Appeal already has a different final decision"
-        )
+        raise DiscussionAppealConflictError("Appeal already has a different final decision")
 
-    discussion = db.scalar(
-        select(Discussion)
-        .where(Discussion.id == appeal.discussion_id)
-        .with_for_update()
-    )
-    author = db.scalar(
-        select(User).where(User.id == appeal.user_id).with_for_update()
-    )
+    discussion = db.scalar(select(Discussion).where(Discussion.id == appeal.discussion_id).with_for_update())
+    author = db.scalar(select(User).where(User.id == appeal.user_id).with_for_update())
     if discussion is None or author is None:
         raise DiscussionAppealNotFoundError("Appeal target does not exist")
     if discussion.user_id != appeal.user_id:
@@ -228,9 +197,7 @@ def resolve_discussion_appeal(
     resolution_details = {"details": details.strip()} if details.strip() else {}
     if decision == "accept":
         if author.status != "active":
-            raise CommunityAdminActionError(
-                "Suspended users cannot have discussions republished"
-            )
+            raise CommunityAdminActionError("Suspended users cannot have discussions republished")
         if appeal.source_status == "hidden":
             if discussion.status != "hidden":
                 raise DiscussionAppealConflictError(
@@ -296,9 +263,7 @@ def resolve_discussion_appeal(
         discussion.moderation_result = moderation_result
     else:
         if not reason_code:
-            raise CommunityAdminActionError(
-                "Rejecting an appeal requires a reason code"
-            )
+            raise CommunityAdminActionError("Rejecting an appeal requires a reason code")
 
     appeal.status = final_status
     appeal.resolved_at = current

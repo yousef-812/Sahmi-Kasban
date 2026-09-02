@@ -136,22 +136,12 @@ def classify_report_item(
         balanced_ready = assessment.get("balanced_ready") is True
         aggressive_ready = assessment.get("aggressive_ready") is True
         if balanced_ready:
-            quality_score = _number(
-                assessment.get("balanced_readiness_score"), quality_score
-            )
+            quality_score = _number(assessment.get("balanced_readiness_score"), quality_score)
         elif aggressive_ready:
-            quality_score = _number(
-                assessment.get("aggressive_readiness_score"), quality_score
-            )
+            quality_score = _number(assessment.get("aggressive_readiness_score"), quality_score)
         failed_checks = tuple(
-            [
-                f"balanced:{name}"
-                for name in _failed_tuple(assessment.get("balanced_failed_checks"))
-            ]
-            + [
-                f"aggressive:{name}"
-                for name in _failed_tuple(assessment.get("aggressive_failed_checks"))
-            ]
+            [f"balanced:{name}" for name in _failed_tuple(assessment.get("balanced_failed_checks"))]
+            + [f"aggressive:{name}" for name in _failed_tuple(assessment.get("aggressive_failed_checks"))]
         )
         if aggressive_ready and not AGGRESSIVE_PROFILE_ENABLED:
             failed_checks += ("aggressive:disabled_pending_validation",)
@@ -223,9 +213,7 @@ def classify_report_item(
                 "لم تثبت تفوقًا مستقرًا يسمح بوصفه كفرصة نخبوية. راقب شروط "
                 "الدخول والسيولة وحركة السوق قبل اتخاذ القرار."
             ),
-            volatility_warning=(
-                "التصنيف تحليلي تجريبي ولا يضمن التفوق على السوق أو تحقيق ربح."
-            ),
+            volatility_warning=("التصنيف تحليلي تجريبي ولا يضمن التفوق على السوق أو تحقيق ربح."),
             position_multiplier=1.0,
         )
 
@@ -257,8 +245,7 @@ def classify_report_item(
         gate_version=gate_version,
         failed_checks=failed_checks,
         note=(
-            "السهم ظهر ضمن الترتيب التحليلي، لكن شروط الشراء غير مكتملة؛ "
-            "يعرض للمراقبة ولا يعامل كتوصية دخول."
+            "السهم ظهر ضمن الترتيب التحليلي، لكن شروط الشراء غير مكتملة؛ يعرض للمراقبة ولا يعامل كتوصية دخول."
         ),
         volatility_warning=None,
         position_multiplier=1.0,
@@ -272,12 +259,8 @@ def _adjusted_trade_plan(payload: dict, multiplier: float) -> dict | None:
         return None
     adjusted = dict(plan)
     adjusted["position_size"] = int(_number(plan.get("position_size")) * multiplier)
-    adjusted["position_value"] = round(
-        _number(plan.get("position_value")) * multiplier, 2
-    )
-    adjusted["risk_amount"] = round(
-        _number(plan.get("risk_amount")) * multiplier, 2
-    )
+    adjusted["position_value"] = round(_number(plan.get("position_value")) * multiplier, 2)
+    adjusted["risk_amount"] = round(_number(plan.get("risk_amount")) * multiplier, 2)
     adjusted["position_multiplier"] = multiplier
     return adjusted
 
@@ -291,8 +274,7 @@ _REPETITIVE_SENTENCES = (
     "يسمح بوصفه كفرصة نخبوية. راقب شروط الدخول والسيولة وحركة السوق قبل اتخاذ القرار.",
     "إشارة شراء اتجاهية، لكنها لم تجتز فلاتر الجودة المتوازنة كاملة؛ تُعرض للمراقبة "
     "المشروطة وليست توصية دخول.",
-    "السهم ظهر ضمن الترتيب التحليلي، لكن شروط الشراء غير مكتملة؛ يعرض للمراقبة "
-    "ولا يعامل كتوصية دخول.",
+    "السهم ظهر ضمن الترتيب التحليلي، لكن شروط الشراء غير مكتملة؛ يعرض للمراقبة ولا يعامل كتوصية دخول.",
     "التصنيف تحليلي تجريبي ولا يضمن التفوق على السوق أو تحقيق ربح.",
     "حتى الفرص النخبوية قد تتعرض لتذبذب وهبوط مؤقت؛ التزم بوقف الخسارة وحجم المركز "
     "ولا تعتبر التصنيف ضمانًا للربح.",
@@ -364,17 +346,13 @@ def enrich_daily_report_selection(
         elif classification.profile == "aggressive" and classification.elite:
             tier_counts["elite_aggressive"] += 1
 
-        raw_explanation = str(
-            payload.get("base_explanation") or payload.get("explanation", "")
-        ).strip()
+        raw_explanation = str(payload.get("base_explanation") or payload.get("explanation", "")).strip()
         base_explanation = _clean_base_explanation(raw_explanation)
 
         context_parts = [classification.note]
         if classification.volatility_warning:
             context_parts.append(classification.volatility_warning)
-        context_parts.append(
-            "الخطة محسوبة لأفق خمس جلسات وتستخدم أهدافًا مبنية على ATR."
-        )
+        context_parts.append("الخطة محسوبة لأفق خمس جلسات وتستخدم أهدافًا مبنية على ATR.")
         if base_explanation:
             context_parts.append(base_explanation)
 
@@ -415,9 +393,7 @@ def enrich_daily_report_selection(
     summary.update(
         {
             "title": "أفضل 10 فرص مرتبة للجلسة القادمة وفق Core v2.4",
-            "ranking_scope": (
-                "ترتيب يومي مع مسار نخبوية متوازن ومسار هجومي مشروط بحالة السوق"
-            ),
+            "ranking_scope": ("ترتيب يومي مع مسار نخبوية متوازن ومسار هجومي مشروط بحالة السوق"),
             "selection_model": SELECTION_MODEL,
             "selection_regime": regime,
             "short_horizon_sessions": SHORT_HORIZON_SESSIONS,

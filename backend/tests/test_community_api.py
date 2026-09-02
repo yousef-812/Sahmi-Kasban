@@ -54,8 +54,7 @@ def discussion_payload(submission_key: str) -> dict[str, str]:
         "ticker": "comi",
         "title": "رؤية فنية لحركة سهم البنك التجاري",
         "content": (
-            "السهم قريب من منطقة دعم مهمة وأراقب تأكيد الحركة قبل اتخاذ القرار "
-            "مع الالتزام بوقف الخسارة."
+            "السهم قريب من منطقة دعم مهمة وأراقب تأكيد الحركة قبل اتخاذ القرار مع الالتزام بوقف الخسارة."
         ),
         "period_type": "week",
     }
@@ -103,9 +102,7 @@ def test_community_submission_list_report_and_mute_flow(
 
     discussion_id = submitted_payload["discussion"]["id"]
     discussion_uuid = UUID(discussion_id)
-    discussion = db_session.scalar(
-        select(Discussion).where(Discussion.id == discussion_uuid)
-    )
+    discussion = db_session.scalar(select(Discussion).where(Discussion.id == discussion_uuid))
     assert discussion is not None
     apply_moderation_decision(
         db_session,
@@ -191,9 +188,7 @@ def test_static_rejection_returns_full_balance(
         display_name="Rejected Author",
     )
     payload = discussion_payload("api-community-rejected-001")
-    payload["content"] = (
-        "هذا تحليل للسهم وللتواصل واتساب على 01012345678 من أجل توصيات خاصة."
-    )
+    payload["content"] = "هذا تحليل للسهم وللتواصل واتساب على 01012345678 من أجل توصيات خاصة."
 
     response = client.post(
         "/api/v1/community/discussions",
@@ -210,7 +205,5 @@ def test_static_rejection_returns_full_balance(
     assert body["held_points"] == 0
     assert body["balance_points"] == 1_000
 
-    user = db_session.scalar(
-        select(User).where(User.email == "api-rejected@example.com")
-    )
+    user = db_session.scalar(select(User).where(User.email == "api-rejected@example.com"))
     assert user is not None

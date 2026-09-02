@@ -55,10 +55,7 @@ def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int
             db,
             user_id=user_id,
             title="تقرير أفضل الفرص اليومية جاهز",
-            body=(
-                "تم ترتيب أفضل 10 فرص مع تمييز النخبوية المتوازنة والهجومية "
-                "والشراء المشروط والمخاطر."
-            ),
+            body=("تم ترتيب أفضل 10 فرص مع تمييز النخبوية المتوازنة والهجومية والشراء المشروط والمخاطر."),
             category="market_report",
             data={
                 "report_id": report_id,
@@ -131,9 +128,7 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
         "source_session_date": result.report.source_snapshot.get("source_session_date"),
         "target_session_date": result.report.target_session_date.isoformat(),
         "generated_at": (
-            result.report.generated_at.isoformat()
-            if result.report.generated_at is not None
-            else None
+            result.report.generated_at.isoformat() if result.report.generated_at is not None else None
         ),
         "universe_size": len(tickers),
         "notifications_created": notification_count,

@@ -16,5 +16,6 @@ def main():
         print("No reports found!")
     db.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

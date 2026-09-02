@@ -74,17 +74,10 @@ def calculate_replay_export_metrics(
     metrics: dict[object, ReplayExportMetric] = {}
     for date_rows in by_date.values():
         evaluated = [
-            row
-            for row in date_rows
-            if row.status == "evaluated" and row.forward_return_bp is not None
+            row for row in date_rows if row.status == "evaluated" and row.forward_return_bp is not None
         ]
         benchmark_bp = (
-            int(
-                round(
-                    sum(int(row.forward_return_bp or 0) for row in evaluated)
-                    / len(evaluated)
-                )
-            )
+            int(round(sum(int(row.forward_return_bp or 0) for row in evaluated) / len(evaluated)))
             if evaluated
             else None
         )
@@ -98,11 +91,7 @@ def calculate_replay_export_metrics(
                 else None
             )
             benchmark_correct: bool | None = None
-            if (
-                scope == "directional"
-                and row.status == "evaluated"
-                and excess_bp is not None
-            ):
+            if scope == "directional" and row.status == "evaluated" and excess_bp is not None:
                 if row.signal == "BUY":
                     benchmark_correct = excess_bp > neutral_band_bp
                 elif row.signal == "AVOID":
@@ -206,9 +195,7 @@ def build_historical_replay_csv(
                 "qualified": row.qualified if row.qualified is not None else "",
                 "evaluation_scope": metric.evaluation_scope,
                 "entry": row.entry if row.entry is not None else "",
-                "evaluation_date": (
-                    row.evaluation_date.isoformat() if row.evaluation_date else ""
-                ),
+                "evaluation_date": (row.evaluation_date.isoformat() if row.evaluation_date else ""),
                 "exit": row.exit if row.exit is not None else "",
                 "forward_return_pct": _pct(row.forward_return_bp),
                 "market_benchmark_return_pct": _pct(metric.benchmark_return_bp),
@@ -217,9 +204,7 @@ def build_historical_replay_csv(
                 "max_drawdown_pct": _pct(row.max_drawdown_bp),
                 "correct": row.correct if row.correct is not None else "",
                 "benchmark_correct": (
-                    metric.benchmark_correct
-                    if metric.benchmark_correct is not None
-                    else ""
+                    metric.benchmark_correct if metric.benchmark_correct is not None else ""
                 ),
                 "engines_json": json.dumps(
                     row.engines,

@@ -27,10 +27,7 @@ def main() -> None:
         payload = build_historical_replay_csv(db, job=job)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(payload)
-    print(
-        f"Exported replay {args.job_id} to {args.output} "
-        f"({len(payload)} bytes, status={job.status})"
-    )
+    print(f"Exported replay {args.job_id} to {args.output} ({len(payload)} bytes, status={job.status})")
 
 
 if __name__ == "__main__":

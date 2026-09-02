@@ -43,9 +43,7 @@ def _replay_failure_quarantine(
             else_=0,
         )
     )
-    evaluated_success_count = func.sum(
-        case((AnalysisReplayTicker.evaluated_rows > 0, 1), else_=0)
-    )
+    evaluated_success_count = func.sum(case((AnalysisReplayTicker.evaluated_rows > 0, 1), else_=0))
     rows = db.execute(
         select(
             AnalysisReplayTicker.ticker,

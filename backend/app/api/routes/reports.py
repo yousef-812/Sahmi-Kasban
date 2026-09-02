@@ -53,9 +53,7 @@ def _source_session_date(report: MarketReport) -> date:
     try:
         return date.fromisoformat(str(raw_value))
     except (TypeError, ValueError) as exc:
-        raise DailyReportGenerationError(
-            "Market report has an invalid source session date"
-        ) from exc
+        raise DailyReportGenerationError("Market report has an invalid source session date") from exc
 
 
 def _report_response(access: MarketReportAccess) -> MarketReportResponse:
@@ -117,9 +115,7 @@ def get_latest_report_top10(db: DatabaseSession) -> MarketReportResponse:
             .order_by(MarketReportItem.rank)
         ).all()
     )
-    return _report_response(
-        MarketReportAccess(report=report, items=items, unlocked=True)
-    )
+    return _report_response(MarketReportAccess(report=report, items=items, unlocked=True))
 
 
 @router.get("/latest/preview", response_model=MarketReportPreviewResponse)
@@ -143,9 +139,7 @@ def get_latest_report_preview(
         ) from exc
 
     item_count = db.scalar(
-        select(func.count(MarketReportItem.id)).where(
-            MarketReportItem.report_id == report.id
-        )
+        select(func.count(MarketReportItem.id)).where(MarketReportItem.report_id == report.id)
     )
     return MarketReportPreviewResponse(
         report_id=report.id,
@@ -195,9 +189,7 @@ def get_market_reports_history(
         except Exception:
             continue
         item_count = db.scalar(
-            select(func.count(MarketReportItem.id)).where(
-                MarketReportItem.report_id == report.id
-            )
+            select(func.count(MarketReportItem.id)).where(MarketReportItem.report_id == report.id)
         )
         previews.append(
             MarketReportPreviewResponse(

@@ -50,9 +50,7 @@ router = APIRouter(prefix="/monetization", tags=["monetization"])
 
 
 @router.get("/catalog", response_model=MonetizationCatalogResponse)
-def monetization_catalog(
-    db: DatabaseSession, current_user: CurrentUser
-) -> MonetizationCatalogResponse:
+def monetization_catalog(db: DatabaseSession, current_user: CurrentUser) -> MonetizationCatalogResponse:
     del current_user
     payload = catalog_payload(runtime_monetization_settings(db))
     for raw_plan in payload["plans"]:

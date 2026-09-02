@@ -182,9 +182,7 @@ def test_basic_plan_uses_included_monthly_comparison(
     provider = ComparisonMarketDataProvider()
     _install(provider)
     headers = _register_login(client, fake_email_service, "basic-compare@example.com")
-    subscription = db_session.scalar(
-        select(Subscription).where(Subscription.plan_code == "free")
-    )
+    subscription = db_session.scalar(select(Subscription).where(Subscription.plan_code == "free"))
     assert subscription is not None
     subscription.plan_code = "basic"
     subscription.weekly_points = 2_500

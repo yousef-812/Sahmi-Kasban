@@ -51,13 +51,21 @@ def upgrade() -> None:
         sa.Column("error_message", sa.String(length=1000), nullable=True),
         sa.Column("details", sa.JSON(), nullable=False),
         *_timestamps(),
-        sa.CheckConstraint("status IN ('pending','running','complete','partial','failed')", name="analysis_replay_job_status_allowed"),
+        sa.CheckConstraint(
+            "status IN ('pending','running','complete','partial','failed')",
+            name="analysis_replay_job_status_allowed",
+        ),
         sa.CheckConstraint("end_date >= start_date", name="analysis_replay_job_date_order"),
         sa.CheckConstraint("horizon_sessions BETWEEN 1 AND 20", name="analysis_replay_job_horizon_range"),
         sa.CheckConstraint("min_train_size >= 60", name="analysis_replay_job_train_minimum"),
         sa.CheckConstraint("neutral_band_bp >= 0", name="analysis_replay_job_band_non_negative"),
         sa.CheckConstraint("parallelism BETWEEN 1 AND 5", name="analysis_replay_job_parallelism_range"),
-        sa.ForeignKeyConstraint(["requested_by"], ["users.id"], name="fk_analysis_replay_jobs_requested_by_users", ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["requested_by"],
+            ["users.id"],
+            name="fk_analysis_replay_jobs_requested_by_users",
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_analysis_replay_jobs"),
         sa.UniqueConstraint("request_key", name="uq_analysis_replay_jobs_request_key"),
     )
@@ -83,8 +91,16 @@ def upgrade() -> None:
         sa.Column("error_code", sa.String(length=64), nullable=True),
         sa.Column("error_message", sa.String(length=500), nullable=True),
         *_timestamps(),
-        sa.CheckConstraint("status IN ('pending','running','complete','partial','failed')", name="analysis_replay_ticker_status_allowed"),
-        sa.ForeignKeyConstraint(["job_id"], ["analysis_replay_jobs.id"], name="fk_analysis_replay_tickers_job_id_jobs", ondelete="CASCADE"),
+        sa.CheckConstraint(
+            "status IN ('pending','running','complete','partial','failed')",
+            name="analysis_replay_ticker_status_allowed",
+        ),
+        sa.ForeignKeyConstraint(
+            ["job_id"],
+            ["analysis_replay_jobs.id"],
+            name="fk_analysis_replay_tickers_job_id_jobs",
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_analysis_replay_tickers"),
         sa.UniqueConstraint("job_id", "ticker", name="uq_analysis_replay_tickers_job_ticker"),
     )
@@ -122,13 +138,33 @@ def upgrade() -> None:
         sa.Column("error_code", sa.String(length=64), nullable=True),
         sa.Column("error_message", sa.String(length=500), nullable=True),
         *_timestamps(),
-        sa.CheckConstraint("status IN ('evaluated','pending_evaluation','skipped','failed')", name="analysis_replay_row_status_allowed"),
-        sa.CheckConstraint("score_bp IS NULL OR score_bp BETWEEN 0 AND 10000", name="analysis_replay_row_score_range"),
-        sa.CheckConstraint("confidence_bp IS NULL OR confidence_bp BETWEEN 0 AND 10000", name="analysis_replay_row_confidence_range"),
-        sa.ForeignKeyConstraint(["job_id"], ["analysis_replay_jobs.id"], name="fk_analysis_replay_rows_job_id_jobs", ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["ticker_task_id"], ["analysis_replay_tickers.id"], name="fk_analysis_replay_rows_ticker_task_id_tickers", ondelete="CASCADE"),
+        sa.CheckConstraint(
+            "status IN ('evaluated','pending_evaluation','skipped','failed')",
+            name="analysis_replay_row_status_allowed",
+        ),
+        sa.CheckConstraint(
+            "score_bp IS NULL OR score_bp BETWEEN 0 AND 10000", name="analysis_replay_row_score_range"
+        ),
+        sa.CheckConstraint(
+            "confidence_bp IS NULL OR confidence_bp BETWEEN 0 AND 10000",
+            name="analysis_replay_row_confidence_range",
+        ),
+        sa.ForeignKeyConstraint(
+            ["job_id"],
+            ["analysis_replay_jobs.id"],
+            name="fk_analysis_replay_rows_job_id_jobs",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["ticker_task_id"],
+            ["analysis_replay_tickers.id"],
+            name="fk_analysis_replay_rows_ticker_task_id_tickers",
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_analysis_replay_rows"),
-        sa.UniqueConstraint("job_id", "ticker", "analysis_date", name="uq_analysis_replay_rows_job_ticker_date"),
+        sa.UniqueConstraint(
+            "job_id", "ticker", "analysis_date", name="uq_analysis_replay_rows_job_ticker_date"
+        ),
     )
     op.create_index("ix_analysis_replay_rows_job_id", "analysis_replay_rows", ["job_id"])
     op.create_index("ix_analysis_replay_rows_ticker", "analysis_replay_rows", ["ticker"])

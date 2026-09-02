@@ -205,17 +205,11 @@ def test_replay_worker_processes_five_tickers_and_exports_engine_details(
     assert job.total_tickers >= 5
     assert job.processed_tickers == 5
     assert job.total_rows > 0
-    rows = db_session.scalars(
-        select(AnalysisReplayRow).where(AnalysisReplayRow.job_id == job.id)
-    ).all()
+    rows = db_session.scalars(select(AnalysisReplayRow).where(AnalysisReplayRow.job_id == job.id)).all()
     assert rows
     analyzed = [row for row in rows if row.signal is not None]
     assert analyzed
-    assert all(
-        row.data_as_of.date() < row.analysis_date
-        for row in analyzed
-        if row.data_as_of
-    )
+    assert all(row.data_as_of.date() < row.analysis_date for row in analyzed if row.data_as_of)
     assert "quantitative" in analyzed[0].engines
     assert analyzed[0].engine_version == "core-v2.5"
 

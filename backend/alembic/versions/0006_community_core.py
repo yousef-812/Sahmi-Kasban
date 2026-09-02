@@ -37,9 +37,7 @@ def _timestamps() -> list[sa.Column]:
 def upgrade() -> None:
     with op.batch_alter_table("discussions") as batch:
         batch.add_column(sa.Column("submission_key", sa.String(length=64), nullable=True))
-        batch.add_column(
-            sa.Column("content_fingerprint", sa.String(length=64), nullable=True)
-        )
+        batch.add_column(sa.Column("content_fingerprint", sa.String(length=64), nullable=True))
         batch.add_column(
             sa.Column(
                 "wallet_hold_transaction_id",
@@ -48,9 +46,7 @@ def upgrade() -> None:
             )
         )
         batch.add_column(sa.Column("rejection_code", sa.String(length=64), nullable=True))
-        batch.add_column(
-            sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True)
-        )
+        batch.add_column(sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True))
         batch.add_column(sa.Column("hidden_at", sa.DateTime(timezone=True), nullable=True))
         batch.create_unique_constraint(
             "uq_discussions_user_submission",

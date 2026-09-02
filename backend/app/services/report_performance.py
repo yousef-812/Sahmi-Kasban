@@ -219,9 +219,7 @@ def _start_evaluation(
     moment: datetime,
 ) -> tuple[MarketReportEvaluation, bool]:
     evaluation = db.scalar(
-        select(MarketReportEvaluation)
-        .where(MarketReportEvaluation.report_id == report.id)
-        .with_for_update()
+        select(MarketReportEvaluation).where(MarketReportEvaluation.report_id == report.id).with_for_update()
     )
     if evaluation is not None and evaluation.status == "complete":
         return evaluation, True
@@ -262,18 +260,12 @@ def _start_evaluation(
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raced = db.scalar(
-            select(MarketReportEvaluation).where(
-                MarketReportEvaluation.report_id == report.id
-            )
-        )
+        raced = db.scalar(select(MarketReportEvaluation).where(MarketReportEvaluation.report_id == report.id))
         if raced is None:
             raise
         if raced.status == "complete":
             return raced, True
-        raise ReportEvaluationAlreadyRunningError(
-            "Report evaluation was started concurrently"
-        ) from exc
+        raise ReportEvaluationAlreadyRunningError("Report evaluation was started concurrently") from exc
     return evaluation, False
 
 
@@ -409,7 +401,7 @@ def _apply_complete(
         session_high=session_high,
         session_low=session_low,
     )
-    
+
     # Core v2.5 Target 1 Trailing Lock: if Target 1 was reached during the session, mark direction as correct!
     if outcome.expected_direction == "up" and outcome.target_one_hit is True:
         outcome.direction_correct = True
@@ -470,23 +462,15 @@ async def evaluate_market_report(
     existing = {
         item.report_item_id: item
         for item in db.scalars(
-            select(MarketReportItemOutcome).where(
-                MarketReportItemOutcome.report_id == report.id
-            )
+            select(MarketReportItemOutcome).where(MarketReportItemOutcome.report_id == report.id)
         ).all()
     }
     pending_items = [
-        item
-        for item in items
-        if existing.get(item.id) is None
-        or existing[item.id].status != "complete"
+        item for item in items if existing.get(item.id) is None or existing[item.id].status != "complete"
     ]
     semaphore = asyncio.Semaphore(4)
     fetched = await asyncio.gather(
-        *(
-            _fetch_series(provider, item.ticker, semaphore=semaphore)
-            for item in pending_items
-        ),
+        *(_fetch_series(provider, item.ticker, semaphore=semaphore) for item in pending_items),
         return_exceptions=True,
     )
 
@@ -599,9 +583,7 @@ async def evaluate_due_market_reports(
             skipped += 1
             continue
         current_evaluation = db.scalar(
-            select(MarketReportEvaluation).where(
-                MarketReportEvaluation.report_id == report.id
-            )
+            select(MarketReportEvaluation).where(MarketReportEvaluation.report_id == report.id)
         )
         if current_evaluation is not None and current_evaluation.status == "complete":
             skipped += 1
@@ -644,9 +626,7 @@ def list_report_evaluations(
     filters = []
     if evaluation_status:
         filters.append(MarketReportEvaluation.status == evaluation_status)
-    total = int(
-        db.scalar(select(func.count(MarketReportEvaluation.id)).where(*filters)) or 0
-    )
+    total = int(db.scalar(select(func.count(MarketReportEvaluation.id)).where(*filters)) or 0)
     items = db.scalars(
         select(MarketReportEvaluation)
         .where(*filters)

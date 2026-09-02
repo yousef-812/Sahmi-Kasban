@@ -116,9 +116,7 @@ def test_prediction_window_uses_future_cairo_sessions(db_session: Session) -> No
         "2026-01-14",
         "2026-01-15",
     ]
-    assert window.eligible_at.astimezone(calendar().timezone).isoformat() == (
-        "2026-01-15T15:00:00+02:00"
-    )
+    assert window.eligible_at.astimezone(calendar().timezone).isoformat() == ("2026-01-15T15:00:00+02:00")
 
 
 def test_specific_prediction_can_reach_very_strong_level(db_session: Session) -> None:
@@ -295,17 +293,16 @@ def test_reward_and_verification_are_idempotent(db_session: Session) -> None:
     assert first.verification.id == repeated.verification.id
     assert get_wallet_account(db_session, user.id).balance_points == 600
     rewards = db_session.scalars(
-        select(WalletEntry).where(
-            WalletEntry.entry_type == "prediction_verification_reward"
-        )
+        select(WalletEntry).where(WalletEntry.entry_type == "prediction_verification_reward")
     ).all()
     assert len(rewards) == 1
     assert rewards[0].amount_points == 100
-    assert db_session.scalar(
-        select(PredictionVerification).where(
-            PredictionVerification.discussion_id == discussion.id
+    assert (
+        db_session.scalar(
+            select(PredictionVerification).where(PredictionVerification.discussion_id == discussion.id)
         )
-    ) is not None
+        is not None
+    )
 
     stats = get_prediction_stats(db_session, user_id=user.id)
     assert stats.verified_predictions == 1

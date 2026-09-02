@@ -93,9 +93,7 @@ class AuthRateLimit(TimestampMixin, Base):
 
 class WalletAccount(TimestampMixin, Base):
     __tablename__ = "wallet_accounts"
-    __table_args__ = (
-        CheckConstraint("balance_points >= 0", name="wallet_balance_non_negative"),
-    )
+    __table_args__ = (CheckConstraint("balance_points >= 0", name="wallet_balance_non_negative"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(

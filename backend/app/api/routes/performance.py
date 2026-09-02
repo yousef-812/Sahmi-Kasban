@@ -30,9 +30,7 @@ def performance_summary(
     window: int = Query(default=7),
 ) -> PerformanceSummaryResponse:
     try:
-        return PerformanceSummaryResponse(
-            **safe_get_performance_summary(db, window_sessions=window)
-        )
+        return PerformanceSummaryResponse(**safe_get_performance_summary(db, window_sessions=window))
     except PerformanceExperienceError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -66,9 +64,7 @@ def performance_report_detail(
     _current_user: CurrentUser,
 ) -> PerformanceReportDetailResponse:
     try:
-        return PerformanceReportDetailResponse(
-            **safe_get_performance_report_detail(db, report_id=report_id)
-        )
+        return PerformanceReportDetailResponse(**safe_get_performance_report_detail(db, report_id=report_id))
     except PerformanceReportNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

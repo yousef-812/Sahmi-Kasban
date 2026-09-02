@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse
+from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentAdmin, DatabaseSession
 from app.market_data.provider import get_market_data_provider
@@ -65,7 +66,6 @@ from app.services.report_performance import (
     evaluate_market_report,
     list_report_evaluations,
 )
-from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(prefix="/admin/operations", tags=["admin-operations"])
 AdminMarketProvider = Annotated[
@@ -160,10 +160,7 @@ def admin_settings(
     _admin: CurrentAdmin,
 ) -> OperationalSettingsResponse:
     return OperationalSettingsResponse(
-        items=[
-            _setting_response(definition, stored)
-            for definition, stored in list_operational_settings(db)
-        ]
+        items=[_setting_response(definition, stored) for definition, stored in list_operational_settings(db)]
     )
 
 
@@ -378,11 +375,7 @@ def export_report_performance(
     return PlainTextResponse(
         content=content,
         media_type="text/csv; charset=utf-8",
-        headers={
-            "Content-Disposition": (
-                f'attachment; filename="sahmi-performance-{window}-sessions.csv"'
-            )
-        },
+        headers={"Content-Disposition": (f'attachment; filename="sahmi-performance-{window}-sessions.csv"')},
     )
 
 
@@ -495,4 +488,3 @@ async def regenerate_daily_report(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"فشل إعادة إنشاء التقرير: {str(exc)}",
         ) from exc
-

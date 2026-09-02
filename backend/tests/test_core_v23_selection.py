@@ -37,9 +37,7 @@ def _payload(*, profile: str, volatility: float) -> dict:
                     "details": {
                         "model_version": "market-regime-v2.3",
                         "regime": "bullish",
-                        "regime_profile": (
-                            "speculative_bullish" if volatility >= 65 else "trend_bullish"
-                        ),
+                        "regime_profile": ("speculative_bullish" if volatility >= 65 else "trend_bullish"),
                         "annualized_volatility_pct": volatility,
                     }
                 }
@@ -98,9 +96,7 @@ def test_v23_report_disables_unvalidated_public_elite_profiles(
     enriched = enrich_daily_report_selection(db_session, report_id=report.id)
     rows = {
         item.ticker: item.payload
-        for item in db_session.query(MarketReportItem)
-        .filter(MarketReportItem.report_id == report.id)
-        .all()
+        for item in db_session.query(MarketReportItem).filter(MarketReportItem.report_id == report.id).all()
     }
 
     assert enriched.market_summary["selection_regime"]["profile"] == "speculative_bullish"

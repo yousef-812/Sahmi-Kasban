@@ -42,8 +42,6 @@ def test_production_rejects_stub_verifiers_and_google_demo_ids() -> None:
             smtp_host="smtp.example.com",
             google_play_verification_mode="stub",
             google_play_service_account_json='{"type":"service_account"}',
-            billing_token_encryption_key=(
-                "dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3Q="
-            ),
+            billing_token_encryption_key=("dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXRlc3Q="),
             admob_ssv_verification_mode="stub",
         )

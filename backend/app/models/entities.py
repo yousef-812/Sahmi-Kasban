@@ -45,9 +45,7 @@ class User(TimestampMixin, Base):
 
 class WalletEntry(TimestampMixin, Base):
     __tablename__ = "wallet_entries"
-    __table_args__ = (
-        CheckConstraint("amount_points <> 0", name="wallet_amount_non_zero"),
-    )
+    __table_args__ = (CheckConstraint("amount_points <> 0", name="wallet_amount_non_zero"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(

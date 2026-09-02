@@ -72,9 +72,7 @@ def _admin_discussion_response(view: AdminDiscussionView) -> AdminDiscussionResp
 
 
 def _raise_admin_error(exc: Exception) -> Never:
-    if isinstance(exc, DiscussionNotFoundError) or isinstance(
-        exc, CommunityAdminTargetNotFoundError
-    ):
+    if isinstance(exc, DiscussionNotFoundError) or isinstance(exc, CommunityAdminTargetNotFoundError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
@@ -125,9 +123,7 @@ def admin_discussion_action(
             action=payload.action,
             reason_code=payload.reason_code,
             details=payload.details,
-            prediction=payload.prediction.model_dump()
-            if payload.prediction is not None
-            else None,
+            prediction=payload.prediction.model_dump() if payload.prediction is not None else None,
         )
         db.commit()
     except (

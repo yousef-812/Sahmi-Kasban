@@ -79,13 +79,9 @@ def register_push_device(
 ) -> PushDeviceRegistrationResult:
     current = moment or datetime.now(UTC)
     digest = _token_hash(token)
-    device = db.scalar(
-        select(PushDevice).where(PushDevice.token_hash == digest).with_for_update()
-    )
+    device = db.scalar(select(PushDevice).where(PushDevice.token_hash == digest).with_for_update())
     if device is not None:
-        idempotent = (
-            device.user_id == user_id and device.platform == platform and device.enabled
-        )
+        idempotent = device.user_id == user_id and device.platform == platform and device.enabled
         device.user_id = user_id
         device.platform = platform
         device.encrypted_token = _encrypt_token(token)
@@ -229,9 +225,7 @@ class FCMPushSender:
     def __init__(self) -> None:
         self.mode = os.getenv("FCM_DELIVERY_MODE", "disabled").strip().lower()
         self.project_id = os.getenv("FCM_PROJECT_ID", "").strip()
-        self.service_account_json = os.getenv(
-            "FCM_SERVICE_ACCOUNT_JSON", ""
-        ).strip()
+        self.service_account_json = os.getenv("FCM_SERVICE_ACCOUNT_JSON", "").strip()
 
     def _credentials(self):
         scopes = ["https://www.googleapis.com/auth/firebase.messaging"]
@@ -273,8 +267,7 @@ class FCMPushSender:
                 return "failed", None, "missing_fcm_project_id"
             session = AuthorizedSession(credentials)
             response = session.post(
-                "https://fcm.googleapis.com/v1/projects/"
-                f"{self.project_id}/messages:send",
+                f"https://fcm.googleapis.com/v1/projects/{self.project_id}/messages:send",
                 json={
                     "message": {
                         "token": token,

@@ -165,9 +165,7 @@ def test_shared_analysis_cache_charges_once_per_account(
     debits = db_session.scalars(
         select(WalletEntry).where(WalletEntry.entry_type == "stock_analysis_debit")
     ).all()
-    wallets = db_session.scalars(
-        select(WalletAccount).order_by(WalletAccount.balance_points)
-    ).all()
+    wallets = db_session.scalars(select(WalletAccount).order_by(WalletAccount.balance_points)).all()
     assert len(debits) == 2
     assert [wallet.balance_points for wallet in wallets] == [950, 950]
 

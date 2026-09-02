@@ -26,18 +26,14 @@ def credit_user_coins(
     if target is None or target.status == "deleted":
         raise AdminWalletUserNotFoundError("Target user was not found")
 
-    account = db.scalar(
-        select(WalletAccount).where(WalletAccount.user_id == target_user_id)
-    )
+    account = db.scalar(select(WalletAccount).where(WalletAccount.user_id == target_user_id))
     if account is None:
         db.add(WalletAccount(user_id=target_user_id, balance_points=0))
         db.flush()
 
     amount_points = amount_coins * POINTS_PER_COIN
     transaction_id = f"admin-credit:{request_id}"
-    existing = db.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == transaction_id)
-    )
+    existing = db.scalar(select(WalletEntry).where(WalletEntry.transaction_id == transaction_id))
 
     account = get_wallet_account(db, target_user_id, lock=True)
     balance_before = int(account.balance_points)

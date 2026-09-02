@@ -143,9 +143,7 @@ def test_admin_access_manual_review_hide_and_restore(
     assert get_wallet_account(db_session, author.id).balance_points == 950
 
     hold = db_session.scalar(
-        select(WalletEntry).where(
-            WalletEntry.transaction_id == discussion.wallet_hold_transaction_id
-        )
+        select(WalletEntry).where(WalletEntry.transaction_id == discussion.wallet_hold_transaction_id)
     )
     assert hold is not None
     assert hold.status == "confirmed"
@@ -200,9 +198,7 @@ def test_admin_access_manual_review_hide_and_restore(
     assert restored.json()["hidden_at"] is None
 
     actions = db_session.scalars(
-        select(CommunityAdminEvent.action).where(
-            CommunityAdminEvent.discussion_id == discussion.id
-        )
+        select(CommunityAdminEvent.action).where(CommunityAdminEvent.discussion_id == discussion.id)
     ).all()
     assert len(actions) == 3
     assert set(actions) == {

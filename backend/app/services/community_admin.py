@@ -202,11 +202,7 @@ def administer_discussion(
     moment: datetime | None = None,
 ) -> AdminDiscussionView:
     current = moment or datetime.now(UTC)
-    discussion = db.scalar(
-        select(Discussion)
-        .where(Discussion.id == discussion_id)
-        .with_for_update()
-    )
+    discussion = db.scalar(select(Discussion).where(Discussion.id == discussion_id).with_for_update())
     if discussion is None:
         raise DiscussionNotFoundError("Discussion does not exist")
 
@@ -217,14 +213,10 @@ def administer_discussion(
         if discussion.status == "published":
             idempotent = True
         elif discussion.status != "pending_review":
-            raise CommunityAdminActionError(
-                "Only pending discussions can be manually approved"
-            )
+            raise CommunityAdminActionError("Only pending discussions can be manually approved")
         else:
             if prediction is None:
-                raise CommunityAdminActionError(
-                    "Manual approval requires a structured prediction"
-                )
+                raise CommunityAdminActionError("Manual approval requires a structured prediction")
             try:
                 frozen_prediction = normalize_frozen_prediction(
                     discussion,
@@ -250,9 +242,7 @@ def administer_discussion(
         if discussion.status == "rejected":
             idempotent = True
         elif discussion.status != "pending_review":
-            raise CommunityAdminActionError(
-                "Only pending discussions can be manually rejected"
-            )
+            raise CommunityAdminActionError("Only pending discussions can be manually rejected")
         else:
             if not reason_code:
                 raise CommunityAdminActionError("Manual rejection requires a reason code")
@@ -345,9 +335,7 @@ def block_community_user(
         raise CommunityAdminActionError("Administrators cannot block themselves")
 
     current = moment or datetime.now(UTC)
-    target = db.scalar(
-        select(User).where(User.id == target_user_id).with_for_update()
-    )
+    target = db.scalar(select(User).where(User.id == target_user_id).with_for_update())
     if target is None:
         raise CommunityAdminTargetNotFoundError("User does not exist")
     if target.status == "suspended":
@@ -445,9 +433,7 @@ def unblock_community_user(
     if admin.id == target_user_id:
         raise CommunityAdminActionError("Administrators cannot change their own status")
 
-    target = db.scalar(
-        select(User).where(User.id == target_user_id).with_for_update()
-    )
+    target = db.scalar(select(User).where(User.id == target_user_id).with_for_update())
     if target is None:
         raise CommunityAdminTargetNotFoundError("User does not exist")
     if target.status == "active":

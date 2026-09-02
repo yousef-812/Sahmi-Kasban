@@ -35,6 +35,4 @@ def test_soft_delete_removes_registered_push_devices(db_session: Session) -> Non
     assert user.status == "deleted"
     assert user.email.endswith("@deleted.invalid")
     assert db_session.get(PushDevice, device_id) is None
-    assert db_session.scalar(
-        select(PushDevice).where(PushDevice.user_id == user.id)
-    ) is None
+    assert db_session.scalar(select(PushDevice).where(PushDevice.user_id == user.id)) is None
