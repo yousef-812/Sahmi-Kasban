@@ -264,31 +264,50 @@ class _PlanCard extends StatelessWidget {
                 if (current) const Chip(label: Text('الخطة الحالية')),
               ],
             ),
-            Text('${plan.weeklyCoins} عملة أسبوعيًا'),
-            Text(plan.adsEnabled ? 'مع الإعلانات' : 'بدون إعلانات'),
-            Text('سجل التقارير: ${plan.reportHistoryDays} يوم'),
-            if (plan.maxComparisonStocks > 0)
-              Text('مقارنة حتى ${plan.maxComparisonStocks} أسهم'),
-            if (plan.comparisonMonthlyAllowance > 0)
-              Text('${plan.comparisonMonthlyAllowance} مقارنة متضمنة شهريًا'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                Chip(
+                  avatar: const Icon(Icons.monetization_on_outlined, size: 16),
+                  label: Text('${plan.weeklyCoins} عملة/أسبوع'),
+                ),
+                Chip(
+                  avatar: Icon(
+                    plan.adsEnabled
+                        ? Icons.ad_units_outlined
+                        : Icons.block_outlined,
+                    size: 16,
+                  ),
+                  label: Text(plan.adsEnabled ? 'مع الإعلانات' : 'بدون إعلانات'),
+                ),
+                Chip(
+                  avatar: const Icon(Icons.history_rounded, size: 16),
+                  label: Text('سجل ${plan.reportHistoryDays} يوم'),
+                ),
+              ],
+            ),
             if (plan.features.isNotEmpty) ...[
               const SizedBox(height: 12),
               for (final feature in plan.features)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(feature)),
-                    ],
+                if (!feature.contains('عملة أسبوعيًا') &&
+                    !feature.contains('عملات أسبوعيًا'))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(feature)),
+                      ],
+                    ),
                   ),
-                ),
             ],
             const SizedBox(height: 12),
             FilledButton.tonal(
