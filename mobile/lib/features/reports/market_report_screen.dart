@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
@@ -465,6 +466,11 @@ class _SafeReportItemCard extends StatelessWidget {
           leading: CircleAvatar(child: Text('${item.rank}')),
           title: Text(item.ticker, textDirection: TextDirection.ltr),
           subtitle: const Text('تعذر عرض بعض تفاصيل هذا السهم.'),
+          trailing: OutlinedButton.icon(
+            onPressed: () => context.push('/stocks/${item.ticker}'),
+            icon: const Icon(Icons.show_chart_rounded, size: 16),
+            label: const Text('معلومات السهم'),
+          ),
         ),
       );
     }
@@ -547,6 +553,15 @@ class _ReportItemCard extends StatelessWidget {
                 ),
                 Chip(label: Text('${item.score.toStringAsFixed(1)} / 100')),
               ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/stocks/${item.ticker}'),
+                icon: const Icon(Icons.show_chart_rounded, size: 18),
+                label: const Text('معلومات السهم'),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -685,6 +700,11 @@ class _SafeExtendedItemCard extends StatelessWidget {
           leading: CircleAvatar(child: Text('${item.rank}')),
           title: Text(item.ticker, textDirection: TextDirection.ltr),
           subtitle: const Text('تعذر عرض بعض تفاصيل هذا السهم.'),
+          trailing: OutlinedButton.icon(
+            onPressed: () => context.push('/stocks/${item.ticker}'),
+            icon: const Icon(Icons.show_chart_rounded, size: 16),
+            label: const Text('معلومات السهم'),
+          ),
         ),
       );
     }
@@ -740,6 +760,15 @@ class _ExtendedItemCard extends StatelessWidget {
                 ),
                 Chip(label: Text('${item.score.toStringAsFixed(1)} / 100')),
               ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/stocks/${item.ticker}'),
+                icon: const Icon(Icons.show_chart_rounded, size: 18),
+                label: const Text('معلومات السهم'),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
