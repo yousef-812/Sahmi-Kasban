@@ -234,8 +234,7 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
           .read(freePlanInterstitialProvider)
           .recordMeaningfulAction(
             enabled:
-                ref.read(sessionControllerProvider).profile?.adsEnabled ==
-                true,
+                ref.read(sessionControllerProvider).profile?.adsEnabled == true,
           );
     } on ApiException catch (error) {
       if (mounted) {
@@ -847,7 +846,11 @@ class _InvestmentStockComparisonCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.flag_rounded, size: 16, color: Colors.green),
+                      const Icon(
+                        Icons.flag_rounded,
+                        size: 16,
+                        color: Colors.green,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'المستهدف: ${item.expectedTargetPrice != null ? "${item.expectedTargetPrice!.toStringAsFixed(2)} ج.م" : (item.fairValue != null ? "${item.fairValue!.toStringAsFixed(2)} ج.م" : "—")}',
@@ -861,7 +864,11 @@ class _InvestmentStockComparisonCard extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.schedule_rounded, size: 14, color: Colors.green),
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 14,
+                        color: Colors.green,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         item.expectedTimeframe ?? '6 - 12 شهراً',

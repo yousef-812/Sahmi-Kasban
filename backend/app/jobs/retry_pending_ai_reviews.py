@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime, timedelta
 
+from sahmi_kasban.ai import AIClientConfig
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
@@ -11,7 +12,6 @@ from app.services.community_ai import (
     get_community_ai_service,
     review_pending_discussion,
 )
-from sahmi_kasban.ai import AIClientConfig
 
 logger = logging.getLogger(__name__)
 

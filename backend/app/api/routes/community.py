@@ -4,6 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.schemas.community import (
@@ -43,7 +44,6 @@ from app.services.wallet import (
     get_wallet_account,
     points_to_coins,
 )
-from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(prefix="/community", tags=["community"])
 CommunityAIService = Annotated[SahmiAIService, Depends(get_community_ai_service)]

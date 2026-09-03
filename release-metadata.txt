@@ -1,5 +1,5 @@
 package_id=com.sahmikasban.sahmi_kasban_mobile
-version_name=0.9.8
-version_code=23
+version_name=0.9.9
+version_code=25
 certificate_sha256=1102e68ce24f7ba959f9c49d702f6c49b0c8a6e33d6b9b83f8ef14b8e0b48b25
 source_commit=7457eb6e5ca49367b5c33a5d442c8e627e02a444

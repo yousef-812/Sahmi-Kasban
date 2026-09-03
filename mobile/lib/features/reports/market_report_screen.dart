@@ -1124,9 +1124,9 @@ class _InvestmentReportTabs extends StatelessWidget {
                       Text(
                         '${group.label} (${group.items.length})',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       for (var i = 0; i < group.items.length; i++) ...[
@@ -1355,7 +1355,11 @@ class _InvestmentStockCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.flag_rounded, size: 18, color: Colors.green),
+                      const Icon(
+                        Icons.flag_rounded,
+                        size: 18,
+                        color: Colors.green,
+                      ),
                       const SizedBox(width: 6),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1380,7 +1384,10 @@ class _InvestmentStockCard extends StatelessWidget {
                   ),
                   if (expectedReturn != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
@@ -1390,13 +1397,19 @@ class _InvestmentStockCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: expectedReturn >= 0 ? Colors.green.shade800 : Colors.red,
+                          color: expectedReturn >= 0
+                              ? Colors.green.shade800
+                              : Colors.red,
                         ),
                       ),
                     ),
                   Row(
                     children: [
-                      const Icon(Icons.schedule_rounded, size: 16, color: Colors.green),
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 16,
+                        color: Colors.green,
+                      ),
                       const SizedBox(width: 4),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

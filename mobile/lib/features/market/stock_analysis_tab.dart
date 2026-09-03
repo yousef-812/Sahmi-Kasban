@@ -619,7 +619,10 @@ class _StockInvestmentAnalysisView extends StatelessWidget {
                       ),
                       Column(
                         children: [
-                          Text('السعر الحالي', style: theme.textTheme.bodySmall),
+                          Text(
+                            'السعر الحالي',
+                            style: theme.textTheme.bodySmall,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             '${analysis.currentPrice.toStringAsFixed(2)} ج.م',
@@ -636,7 +639,10 @@ class _StockInvestmentAnalysisView extends StatelessWidget {
                       ),
                       Column(
                         children: [
-                          Text('التوصية الاستثمارية', style: theme.textTheme.bodySmall),
+                          Text(
+                            'التوصية الاستثمارية',
+                            style: theme.textTheme.bodySmall,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             analysis.recommendation ?? 'شراء استثماري',
@@ -655,7 +661,10 @@ class _StockInvestmentAnalysisView extends StatelessWidget {
                 if (analysis.valuationStatus != null) ...[
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isPositiveMargin
                           ? Colors.green.withValues(alpha: 0.1)
@@ -674,7 +683,9 @@ class _StockInvestmentAnalysisView extends StatelessWidget {
                               ? Icons.check_circle_outline_rounded
                               : Icons.info_outline_rounded,
                           size: 18,
-                          color: isPositiveMargin ? Colors.green : Colors.orange,
+                          color: isPositiveMargin
+                              ? Colors.green
+                              : Colors.orange,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -890,7 +901,8 @@ class _StockInvestmentAnalysisView extends StatelessWidget {
                       value: analysis.peRatio != null
                           ? '${analysis.peRatio!.toStringAsFixed(1)}x'
                           : '—',
-                      isPositive: analysis.peRatio != null && analysis.peRatio! <= 10,
+                      isPositive:
+                          analysis.peRatio != null && analysis.peRatio! <= 10,
                     ),
                     _InvestmentMetricChip(
                       label: 'مضاعف القيمة الدفترية P/B',

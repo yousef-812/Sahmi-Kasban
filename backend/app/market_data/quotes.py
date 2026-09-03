@@ -694,6 +694,7 @@ async def _bg_refresh_quotes() -> None:
     _quotes_bg_busy = True
     try:
         from app.db.session import SessionLocal
+
         with SessionLocal() as db:
             await fetch_market_quotes(db, force_refresh=True)
     except Exception as exc:

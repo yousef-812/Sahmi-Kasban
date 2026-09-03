@@ -163,7 +163,9 @@ async def test_fundamental_engine_integration_with_db(db_session: Session):
         ),
     }
 
-    with patch("app.market_data.fundamental._fetch_fundamental_scanner_data", new=AsyncMock(return_value=mock_quotes)):
+    with patch(
+        "app.market_data.fundamental._fetch_fundamental_scanner_data", new=AsyncMock(return_value=mock_quotes)
+    ):
         rankings = await get_egx_investment_rankings(db_session, force_refresh=True)
         assert len(rankings) == 1
         assert rankings[0]["ticker"] == "ETEL"
@@ -174,4 +176,3 @@ async def test_fundamental_engine_integration_with_db(db_session: Session):
         assert metric is not None
         assert metric["ticker"] == "ETEL"
         assert metric["company_name"] == "المصرية للاتصالات"
-

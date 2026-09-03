@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 
+from sahmi_kasban.ai import AIProviderError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.jobs import retry_pending_ai_reviews as retry_job
@@ -11,7 +12,6 @@ from app.services.auth import register_user
 from app.services.community import create_discussion
 from app.services.community_ai import review_pending_discussion
 from app.services.wallet import get_wallet_account
-from sahmi_kasban.ai import AIProviderError
 
 PASSWORD = "StrongPass123"
 

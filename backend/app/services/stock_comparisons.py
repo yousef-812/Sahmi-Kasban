@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
+from sahmi_kasban.ai import SahmiAIService
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -19,7 +20,6 @@ from app.services.stock_analysis import (
     execute_stock_analysis,
 )
 from app.services.wallet import debit_points, get_wallet_account
-from sahmi_kasban.ai import SahmiAIService
 
 COMPARISON_COST_POINTS = 50
 CAIRO = ZoneInfo("Africa/Cairo")

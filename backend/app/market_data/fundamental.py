@@ -159,9 +159,7 @@ async def get_egx_investment_rankings(
 
         # Get catalog items for company name
         catalog_rows = (
-            db.query(MarketInstrumentCatalog)
-            .filter(MarketInstrumentCatalog.active.is_(True))
-            .all()
+            db.query(MarketInstrumentCatalog).filter(MarketInstrumentCatalog.active.is_(True)).all()
         )
         catalog_map = {row.ticker: row for row in catalog_rows}
 
@@ -220,7 +218,9 @@ async def get_egx_investment_rankings(
                 if metrics.fair_value is not None and metrics.fair_value > 0
                 else round(metrics.current_price * 1.15, 2)
             )
-            expected_return = round(((expected_target - metrics.current_price) / metrics.current_price) * 100.0, 1)
+            expected_return = round(
+                ((expected_target - metrics.current_price) / metrics.current_price) * 100.0, 1
+            )
 
             if metrics.margin_of_safety_pct is not None and metrics.margin_of_safety_pct >= 25.0:
                 expected_timeframe = "6 - 12 شهراً"
@@ -233,31 +233,33 @@ async def get_egx_investment_rankings(
 
             # Filter out extreme penny stocks or zero volume anomalies if needed
             if metrics.investment_score >= 45.0:
-                ranked_items.append({
-                    "ticker": ticker,
-                    "company_name": company_name,
-                    "sector": sector,
-                    "current_price": metrics.current_price,
-                    "investment_score": metrics.investment_score,
-                    "pe_ratio": metrics.pe_ratio,
-                    "pb_ratio": metrics.pb_ratio,
-                    "dividend_yield_pct": metrics.dividend_yield_pct,
-                    "roe_pct": metrics.roe_pct,
-                    "fair_value": metrics.fair_value,
-                    "margin_of_safety_pct": metrics.margin_of_safety_pct,
-                    "investment_category": metrics.investment_category,
-                    "market_cap": metrics.market_cap,
-                    "eps": metrics.eps,
-                    "net_income": metrics.net_income,
-                    "total_debt": metrics.total_debt,
-                    "valuation_status": valuation_status,
-                    "recommendation": recommendation,
-                    "expected_target_price": expected_target,
-                    "expected_timeframe": expected_timeframe,
-                    "expected_return_pct": expected_return,
-                    "strengths": list(metrics.strengths),
-                    "risks": list(metrics.risks),
-                })
+                ranked_items.append(
+                    {
+                        "ticker": ticker,
+                        "company_name": company_name,
+                        "sector": sector,
+                        "current_price": metrics.current_price,
+                        "investment_score": metrics.investment_score,
+                        "pe_ratio": metrics.pe_ratio,
+                        "pb_ratio": metrics.pb_ratio,
+                        "dividend_yield_pct": metrics.dividend_yield_pct,
+                        "roe_pct": metrics.roe_pct,
+                        "fair_value": metrics.fair_value,
+                        "margin_of_safety_pct": metrics.margin_of_safety_pct,
+                        "investment_category": metrics.investment_category,
+                        "market_cap": metrics.market_cap,
+                        "eps": metrics.eps,
+                        "net_income": metrics.net_income,
+                        "total_debt": metrics.total_debt,
+                        "valuation_status": valuation_status,
+                        "recommendation": recommendation,
+                        "expected_target_price": expected_target,
+                        "expected_timeframe": expected_timeframe,
+                        "expected_return_pct": expected_return,
+                        "strengths": list(metrics.strengths),
+                        "risks": list(metrics.risks),
+                    }
+                )
 
         # Sort by investment_score descending, then by margin of safety
         ranked_items.sort(
@@ -340,7 +342,9 @@ async def get_stock_investment_metric(db: Session, ticker: str) -> dict[str, Any
             if metrics.fair_value is not None and metrics.fair_value > 0
             else round(metrics.current_price * 1.15, 2)
         )
-        expected_return = round(((expected_target - metrics.current_price) / metrics.current_price) * 100.0, 1)
+        expected_return = round(
+            ((expected_target - metrics.current_price) / metrics.current_price) * 100.0, 1
+        )
 
         if metrics.margin_of_safety_pct is not None and metrics.margin_of_safety_pct >= 25.0:
             expected_timeframe = "6 - 12 شهراً"

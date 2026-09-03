@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 
+from sahmi_kasban.index_resolver import resolve_index_for_ticker
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
-from sahmi_kasban.index_resolver import resolve_index_for_ticker
 
 logger = logging.getLogger(__name__)
 
