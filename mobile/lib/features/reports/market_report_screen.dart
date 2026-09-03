@@ -161,8 +161,15 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isInvestment =
+        _report?.reportType == 'investment' ||
+        widget.preview?.reportType == 'investment';
     return Scaffold(
-      appBar: AppBar(title: const Text('تقرير أفضل 10')),
+      appBar: AppBar(
+        title: Text(
+          isInvestment ? 'تقرير الاستثمار والقيمة العادلة' : 'تقرير أفضل 10',
+        ),
+      ),
       body: SafeArea(child: _buildBody(context)),
     );
   }
@@ -179,23 +186,29 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.lock_outline_rounded, size: 52),
+                  const Icon(Icons.lock_rounded, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'أسماء الأسهم وتفاصيلها محمية حتى فتح التقرير.',
+                    'تقرير جلسة ${_formatArabicDate(widget.preview?.targetSessionDate ?? DateTime.now())}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'التكلفة: ${widget.preview?.unlockCostCoins ?? '1.00'} عملة',
+                    'يحتوي التقرير على ${widget.preview?.itemCount ?? 10} فرص استثمارية وتحليلية مرتبة ومفصلة.',
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
                     onPressed: _loading ? null : _unlock,
                     icon: const Icon(Icons.lock_open_rounded),
-                    label: const Text('فتح التقرير'),
+                    label: Text(
+                      'فتح التقرير (${widget.preview?.unlockCostCoins ?? '1.00'} عملة)',
+                    ),
                   ),
                 ],
               ),
@@ -218,6 +231,10 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           ),
         ],
       );
+    }
+
+    if (report.reportType == 'investment') {
+      return _InvestmentReportView(report: report);
     }
 
     return _ReportTabs(report: report);
@@ -921,6 +938,8 @@ double _number(Object? value) {
   return double.tryParse('$value') ?? 0;
 }
 
+List<dynamic> _list(Object? value) => value is List ? value : const <dynamic>[];
+
 int _integer(Object? value) => _number(value).round();
 
 String _price(double value) => value > 0 ? value.toStringAsFixed(2) : '—';
@@ -988,4 +1007,404 @@ String _reasonLabel(String reason) {
     'Timeframe alignment: bullish': 'الأطر الزمنية متوافقة على اتجاه صاعد',
   };
   return labels[reason] ?? reason;
+}
+
+class _InvestmentReportView extends StatelessWidget {
+  const _InvestmentReportView({required this.report});
+
+  final MarketReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _InvestmentSummaryCard(summary: report.marketSummary),
+        const SizedBox(height: 12),
+        Text(
+          'أفضل الشركات المؤهلة استثمارياً (${report.items.length})',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        for (final item in report.items)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _InvestmentStockCard(item: item),
+          ),
+        const FreePlanNativeAd(),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _InvestmentSummaryCard extends StatelessWidget {
+  const _InvestmentSummaryCard({required this.summary});
+
+  final Map<String, dynamic> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _text(summary['title']);
+    final description = _text(summary['description']);
+    final horizon = _text(summary['horizon']);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.account_balance_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title.isEmpty ? 'تقرير الاستثمار والقيمة العادلة' : title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(description, style: Theme.of(context).textTheme.bodySmall),
+            ],
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _MetricChip(
+                  label: 'الأفق الزمني',
+                  value: horizon.isEmpty ? '6 - 36 شهراً' : horizon,
+                ),
+                const _MetricChip(
+                  label: 'المصدر',
+                  value: 'TradingView المالية',
+                ),
+                const _MetricChip(
+                  label: 'نوع التحليل',
+                  value: 'قيمة مالية وأرباح',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InvestmentStockCard extends StatelessWidget {
+  const _InvestmentStockCard({required this.item});
+
+  final MarketReportItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final payload = item.payload;
+    final ticker = item.ticker;
+    final rawCompanyName = _text(payload['company_name']);
+    final companyName = rawCompanyName.isEmpty ? ticker : rawCompanyName;
+    final sector = _text(payload['sector']);
+    final currentPrice = _number(payload['current_price']);
+    final fairValue = payload['fair_value'] != null
+        ? _number(payload['fair_value'])
+        : null;
+    final marginOfSafety = payload['margin_of_safety_pct'] != null
+        ? _number(payload['margin_of_safety_pct'])
+        : null;
+    final peRatio = payload['pe_ratio'] != null
+        ? _number(payload['pe_ratio'])
+        : null;
+    final divYield = payload['dividend_yield_pct'] != null
+        ? _number(payload['dividend_yield_pct'])
+        : null;
+    final roe = payload['roe_pct'] != null ? _number(payload['roe_pct']) : null;
+    final category = _text(payload['investment_category']);
+    final strengths = _list(payload['strengths']);
+
+    final (categoryLabel, categoryColor, categoryIcon) = switch (category) {
+      'dividend' => ('سهم توزيعات كاش', Colors.teal, Icons.payments_rounded),
+      'growth' => ('سهم نمو واعد', Colors.blue, Icons.trending_up_rounded),
+      'value' => ('سهم قيمة وهامش أمان', Colors.purple, Icons.security_rounded),
+      _ => ('سهم متوازن', Colors.indigo, Icons.balance_rounded),
+    };
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  child: Text(
+                    '#${item.rank}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ticker,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        companyName,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${item.score.toStringAsFixed(1)} / 100',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.green,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(
+                  avatar: Icon(categoryIcon, size: 16, color: categoryColor),
+                  label: Text(
+                    categoryLabel,
+                    style: TextStyle(
+                      color: categoryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  backgroundColor: categoryColor.withValues(alpha: 0.1),
+                ),
+                if (sector.isNotEmpty) Chip(label: Text(sector)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      const Text(
+                        'السعر الحالي',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${currentPrice.toStringAsFixed(2)} ج',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (fairValue != null)
+                    Column(
+                      children: [
+                        const Text(
+                          'القيمة العادلة',
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${fairValue.toStringAsFixed(2)} ج',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (marginOfSafety != null)
+                    Column(
+                      children: [
+                        const Text(
+                          'هامش الأمان',
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${marginOfSafety >= 0 ? '+' : ''}${marginOfSafety.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            color: marginOfSafety >= 0
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (peRatio != null)
+                  Expanded(
+                    child: _InvestmentMetricTile(
+                      label: 'مكرر الربحية',
+                      value: '${peRatio.toStringAsFixed(1)}x',
+                    ),
+                  ),
+                if (divYield != null)
+                  Expanded(
+                    child: _InvestmentMetricTile(
+                      label: 'عائد التوزيعات',
+                      value: '${divYield.toStringAsFixed(1)}%',
+                      highlight: divYield >= 7.0,
+                    ),
+                  ),
+                if (roe != null)
+                  Expanded(
+                    child: _InvestmentMetricTile(
+                      label: 'عائد حقوق الملكية',
+                      value: '${roe.toStringAsFixed(1)}%',
+                    ),
+                  ),
+              ],
+            ),
+            if (strengths.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final s in strengths.take(2))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            size: 15,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _text(s),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () => context.push('/stocks/$ticker'),
+              icon: const Icon(Icons.show_chart_rounded, size: 18),
+              label: const Text('معلومات وتحليل السهم'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InvestmentMetricTile extends StatelessWidget {
+  const _InvestmentMetricTile({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  final String label;
+  final String value;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      decoration: BoxDecoration(
+        color: highlight
+            ? Colors.green.withValues(alpha: 0.1)
+            : Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: highlight ? Colors.green : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -362,6 +362,7 @@ class MarketReportPreview {
     required this.targetSessionDate,
     required this.generatedAt,
     required this.status,
+    this.reportType = 'trading',
     required this.itemCount,
     required this.unlocked,
     required this.unlockCostPoints,
@@ -374,6 +375,7 @@ class MarketReportPreview {
   final DateTime targetSessionDate;
   final DateTime generatedAt;
   final String status;
+  final String reportType;
   final int itemCount;
   final bool unlocked;
   final int unlockCostPoints;
@@ -387,6 +389,7 @@ class MarketReportPreview {
       targetSessionDate: DateTime.parse(json['target_session_date'] as String),
       generatedAt: DateTime.parse(json['generated_at'] as String),
       status: json['status'] as String,
+      reportType: json['report_type'] as String? ?? 'trading',
       itemCount: json['item_count'] as int,
       unlocked: json['unlocked'] as bool,
       unlockCostPoints: json['unlock_cost_points'] as int,
@@ -447,6 +450,7 @@ class MarketReport {
     required this.sourceSessionDate,
     required this.targetSessionDate,
     required this.generatedAt,
+    this.reportType = 'trading',
     required this.marketSummary,
     required this.items,
     required this.extendedItems,
@@ -456,6 +460,7 @@ class MarketReport {
   final DateTime sourceSessionDate;
   final DateTime targetSessionDate;
   final DateTime generatedAt;
+  final String reportType;
   final Map<String, dynamic> marketSummary;
   final List<MarketReportItem> items;
   final List<MarketReportItem> extendedItems;
@@ -466,6 +471,7 @@ class MarketReport {
       sourceSessionDate: DateTime.parse(json['source_session_date'] as String),
       targetSessionDate: DateTime.parse(json['target_session_date'] as String),
       generatedAt: DateTime.parse(json['generated_at'] as String),
+      reportType: json['report_type'] as String? ?? 'trading',
       marketSummary: _map(json['market_summary']),
       items: _list(json['items'])
           .map((item) => MarketReportItem.fromJson(_map(item)))

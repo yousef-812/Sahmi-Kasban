@@ -5,12 +5,20 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models.dart';
 import 'report_providers.dart';
 
-class ReportsScreen extends ConsumerWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final historyState = ref.watch(reportHistoryProvider);
+    final investmentState = ref.watch(investmentReportPreviewProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('تقارير السوق')),
@@ -18,6 +26,7 @@ class ReportsScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(reportHistoryProvider);
           ref.invalidate(latestReportPreviewProvider);
+          ref.invalidate(investmentReportPreviewProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -28,92 +37,160 @@ class ReportsScreen extends ConsumerWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 12),
-            historyState.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Center(
+            const SizedBox(height: 14),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(
+                  value: 0,
+                  icon: Icon(Icons.bolt_rounded),
+                  label: Text('تداول ومضاربة'),
+                ),
+                ButtonSegment(
+                  value: 1,
+                  icon: Icon(Icons.account_balance_rounded),
+                  label: Text('استثمار وقيمة عادلة'),
+                ),
+              ],
+              selected: {_selectedTab},
+              onSelectionChanged: (selection) {
+                setState(() => _selectedTab = selection.first);
+              },
+            ),
+            const SizedBox(height: 16),
+            if (_selectedTab == 1) ...[
+              Card(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded),
-                      const SizedBox(height: 12),
-                      const Text('تعذر تحميل التقارير.'),
-                      TextButton(
-                        onPressed: () => ref.invalidate(reportHistoryProvider),
-                        child: const Text('إعادة المحاولة'),
+                      Icon(
+                        Icons.shield_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'تحليل مالي أساسي للشركات الرابحة ذات هوامش الأمان والتوزيعات النقدية ومكررات الربحية الجذابة (أفق 6 - 36 شهراً).',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              data: (history) {
-                final reports = history.reports;
-                final days = history.historyDaysAllowed;
-                final daysText = days >= 365
-                    ? '${(days / 365).round()} سنة'
-                    : '$days يوماً';
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Card(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+              const SizedBox(height: 16),
+              investmentState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline_rounded),
+                        const SizedBox(height: 12),
+                        const Text('تعذر تحميل تقرير الاستثمار.'),
+                        TextButton(
+                          onPressed: () =>
+                              ref.invalidate(investmentReportPreviewProvider),
+                          child: const Text('إعادة المحاولة'),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.history_toggle_off_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'سجل خطتك الحالية: $daysText',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                      ],
+                    ),
+                  ),
+                ),
+                data: (preview) {
+                  if (preview == null) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Text('لا توجد بيانات استثمارية متاحة حالياً.'),
+                      ),
+                    );
+                  }
+                  return _ReportPreviewCard(report: preview);
+                },
+              ),
+            ] else ...[
+              historyState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stackTrace) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline_rounded),
+                        const SizedBox(height: 12),
+                        const Text('تعذر تحميل التقارير.'),
+                        TextButton(
+                          onPressed: () =>
+                              ref.invalidate(reportHistoryProvider),
+                          child: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                data: (history) {
+                  final reports = history.reports;
+                  final days = history.historyDaysAllowed;
+                  final daysText = days >= 365
+                      ? '${(days / 365).round()} سنة'
+                      : '$days يوماً';
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Card(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.5),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.history_toggle_off_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'سجل خطتك الحالية: $daysText',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () => context.push('/monetization'),
-                              child: const Text('ترقية الخطة'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (reports.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(40),
-                          child: Text(
-                            'لا توجد تقارير متاحة في نطاق خطتك حالياً.',
+                              TextButton(
+                                onPressed: () => context.push('/monetization'),
+                                child: const Text('ترقية الخطة'),
+                              ),
+                            ],
                           ),
                         ),
-                      )
-                    else ...[
-                      Text(
-                        'أحدث تقرير',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
                       ),
-                      const SizedBox(height: 8),
-                      _ReportPreviewCard(report: reports.first),
-                      if (reports.length > 1) ...[
-                        const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+                      if (reports.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Text(
+                              'لا توجد تقارير متاحة في نطاق خطتك حالياً.',
+                            ),
+                          ),
+                        )
+                      else ...[
                         Text(
-                          'أرشيف التقارير السابقة (${reports.length - 1})',
+                          'أحدث تقرير',
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -121,17 +198,30 @@ class ReportsScreen extends ConsumerWidget {
                               ),
                         ),
                         const SizedBox(height: 8),
-                        for (final pastReport in reports.skip(1))
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _ReportPreviewCard(report: pastReport),
+                        _ReportPreviewCard(report: reports.first),
+                        if (reports.length > 1) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            'أرشيف التقارير السابقة (${reports.length - 1})',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                           ),
+                          const SizedBox(height: 8),
+                          for (final pastReport in reports.skip(1))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _ReportPreviewCard(report: pastReport),
+                            ),
+                        ],
                       ],
                     ],
-                  ],
-                );
-              },
-            ),
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: 24),
             const Text(
               'ملاحظة: يتم إصدار تقارير السوق بشكل دوري بناءً على مسح شامل لجميع الأسهم.',

@@ -13,3 +13,8 @@ final reportHistoryProvider = FutureProvider.autoDispose<MarketReportHistory>((
 ) {
   return ref.watch(backendRepositoryProvider).getReportHistory();
 });
+
+final investmentReportPreviewProvider =
+    FutureProvider.autoDispose<MarketReportPreview?>((ref) {
+      return ref.watch(backendRepositoryProvider).getInvestmentReportPreview();
+    });

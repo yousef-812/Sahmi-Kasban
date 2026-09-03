@@ -3,7 +3,6 @@ from __future__ import annotations
 import time
 from datetime import UTC, datetime
 
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -20,6 +19,7 @@ from app.models import (
     User,
     WalletAccount,
 )
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 
 def get_admin_overview(db: Session, *, moment: datetime | None = None) -> dict:

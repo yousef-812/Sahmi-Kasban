@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
-from sahmi_kasban.ai import AIProviderError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,6 +12,7 @@ from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
 from app.models import MarketDataSnapshot, StockAnalysis, WalletAccount, WalletEntry
 from app.services.stock_analysis import get_stock_ai_service
+from sahmi_kasban.ai import AIProviderError
 
 PASSWORD = "StrongPass123"
 

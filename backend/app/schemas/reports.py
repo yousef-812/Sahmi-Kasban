@@ -12,6 +12,7 @@ class MarketReportPreviewResponse(BaseModel):
     target_session_date: date
     generated_at: datetime
     status: str
+    report_type: str = "trading"
     item_count: int = Field(ge=0, le=10)
     unlocked: bool
     unlock_cost_points: int = Field(ge=0)
@@ -31,6 +32,7 @@ class MarketReportResponse(BaseModel):
     source_session_date: date
     target_session_date: date
     generated_at: datetime
+    report_type: str = "trading"
     market_summary: dict
     items: list[MarketReportItemResponse]
     extended_items: list[MarketReportItemResponse] = Field(default_factory=list)

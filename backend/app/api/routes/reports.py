@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.config import get_settings
+from app.market_data.fundamental import get_egx_investment_rankings
 from app.models import MarketReport, MarketReportItem, Subscription
 from app.schemas.reports import (
     MarketReportHistoryResponse,
@@ -30,6 +31,8 @@ from app.services.monetization_catalog import get_plan
 from app.services.wallet import InsufficientBalanceError, points_to_coins
 
 router = APIRouter(prefix="/market/reports", tags=["market-reports"])
+
+INVESTMENT_REPORT_ID = UUID("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d")
 
 
 def _user_plan_code(db: DatabaseSession, user_id: UUID) -> str:
@@ -217,7 +220,69 @@ def get_market_reports_history(
     )
 
 
+@router.get("/investment/preview", response_model=MarketReportPreviewResponse)
+async def get_investment_report_preview(
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> MarketReportPreviewResponse:
+    rankings = await get_egx_investment_rankings(db, limit=10)
+    today = date.today()
+    return MarketReportPreviewResponse(
+        report_id=INVESTMENT_REPORT_ID,
+        source_session_date=today,
+        target_session_date=today,
+        generated_at=datetime.now(UTC),
+        status="complete",
+        report_type="investment",
+        item_count=len(rankings),
+        unlocked=True,
+        unlock_cost_points=0,
+        unlock_cost_coins="0.00",
+        market_summary={
+            "title": "تقرير أفضل الفرص الاستثمارية والقيمة العادلة",
+            "description": "تحليل مالي أساسي للشركات الرابحة ذات هوامش الأمان والتوزيعات النقدية ومكررات الربحية الجذابة.",
+            "horizon": "6 - 36 شهراً",
+            "report_type": "investment",
+        },
+    )
+
+
+@router.get("/investment/latest", response_model=MarketReportResponse)
+async def get_investment_report_latest(
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> MarketReportResponse:
+    rankings = await get_egx_investment_rankings(db, limit=10)
+    today = date.today()
+    items = [
+        MarketReportItemResponse(
+            ticker=item["ticker"],
+            rank=index + 1,
+            score=float(item["investment_score"]),
+            payload=item,
+        )
+        for index, item in enumerate(rankings)
+    ]
+    return MarketReportResponse(
+        report_id=INVESTMENT_REPORT_ID,
+        source_session_date=today,
+        target_session_date=today,
+        generated_at=datetime.now(UTC),
+        report_type="investment",
+        market_summary={
+            "title": "تقرير أفضل الفرص الاستثمارية والقيمة العادلة",
+            "description": "تحليل مالي أساسي للشركات الرابحة ذات هوامش الأمان والتوزيعات النقدية ومكررات الربحية الجذابة.",
+            "horizon": "6 - 36 شهراً",
+            "report_type": "investment",
+        },
+        items=items,
+        extended_items=[],
+    )
+
+
 def _is_latest_report(db: DatabaseSession, report_id: UUID) -> bool:
+    if report_id == INVESTMENT_REPORT_ID:
+        return True
     try:
         latest = latest_complete_report(db)
         return latest.id == report_id
@@ -226,11 +291,14 @@ def _is_latest_report(db: DatabaseSession, report_id: UUID) -> bool:
 
 
 @router.get("/{report_id}", response_model=MarketReportResponse)
-def get_unlocked_market_report(
+async def get_unlocked_market_report(
     report_id: UUID,
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> MarketReportResponse:
+    if report_id == INVESTMENT_REPORT_ID:
+        return await get_investment_report_latest(db, current_user)
+
     if not _is_latest_report(db, report_id):
         plan_code = _user_plan_code(db, current_user.id)
         plan = get_plan(plan_code)
@@ -264,11 +332,21 @@ def get_unlocked_market_report(
 
 
 @router.post("/{report_id}/unlock", response_model=MarketReportUnlockResponse)
-def unlock_report(
+async def unlock_report(
     report_id: UUID,
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> MarketReportUnlockResponse:
+    if report_id == INVESTMENT_REPORT_ID:
+        full_report = await get_investment_report_latest(db, current_user)
+        return MarketReportUnlockResponse(
+            charged_points=0,
+            charged_coins="0.00",
+            balance_points=0,
+            balance_coins="0.00",
+            report=full_report,
+        )
+
     if not _is_latest_report(db, report_id):
         plan_code = _user_plan_code(db, current_user.id)
         plan = get_plan(plan_code)

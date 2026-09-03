@@ -260,6 +260,33 @@ class BackendRepository {
     }
   }
 
+  Future<MarketReportPreview?> getInvestmentReportPreview() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/reports/investment/preview',
+      );
+      return MarketReportPreview.fromJson(_requiredData(response));
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      throw _apiClient.mapError(error);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<MarketReport> getInvestmentReport() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/reports/investment/latest',
+      );
+      return MarketReport.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReportHistory> getReportHistory() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
