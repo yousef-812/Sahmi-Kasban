@@ -168,3 +168,32 @@ class CommunityAdminEvent(TimestampMixin, Base):
     action: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
     reason_code: Mapped[str | None] = mapped_column(String(64))
     details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class AIPersonaLog(TimestampMixin, Base):
+    __tablename__ = "ai_persona_logs"
+    __table_args__ = (
+        UniqueConstraint(
+            "persona_code",
+            "target_session_date",
+            name="uq_ai_persona_logs_persona_session",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    persona_code: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    discussion_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("discussions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    ticker: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
+    target_session_date: Mapped[str] = mapped_column(String(10), index=True, nullable=False)
+    details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)

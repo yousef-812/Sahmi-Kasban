@@ -12,6 +12,7 @@ from app.models.backtests import (
     AnalysisBacktestRun,
 )
 from app.models.community import (
+    AIPersonaLog,
     CommunityAdminEvent,
     DiscussionAppeal,
     DiscussionModerationEvent,
@@ -54,6 +55,7 @@ from app.models.replays import AnalysisReplayJob, AnalysisReplayRow, AnalysisRep
 from app.models.watchlist import WatchlistItem
 
 __all__ = [
+    "AIPersonaLog",
     "AccountToken",
     "AdEventLog",
     "AnalysisBacktestObservation",

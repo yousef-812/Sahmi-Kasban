@@ -7,6 +7,7 @@ from typing import Any
 from sahmi_kasban.ai.client import AIChatClient, AIProviderError
 from sahmi_kasban.ai.prompts import (
     DISCUSSION_MODERATION_SYSTEM_PROMPT,
+    PERSONA_POST_GENERATION_SYSTEM_PROMPT,
     PREDICTION_EXTRACTION_SYSTEM_PROMPT,
     PREDICTION_VERIFICATION_SYSTEM_PROMPT,
     STOCK_ANALYSIS_SYSTEM_PROMPT,
@@ -92,6 +93,28 @@ class SahmiAIService:
         result.setdefault("matched_claims", [])
         result.setdefault("failed_claims", [])
         result.setdefault("reason", "")
+        return result
+
+    async def generate_community_persona_post(
+        self,
+        *,
+        persona_name: str,
+        persona_traits: str,
+        ticker: str,
+        stock_analysis: dict[str, Any],
+    ) -> dict[str, Any]:
+        result = await self._chat_json(
+            system_prompt=PERSONA_POST_GENERATION_SYSTEM_PROMPT,
+            payload={
+                "persona_name": persona_name,
+                "persona_traits": persona_traits,
+                "ticker": ticker.upper(),
+                "stock_analysis": stock_analysis,
+            },
+        )
+        result.setdefault("title", f"رأيي في سهم {ticker.upper()}")
+        result.setdefault("content", f"شايف حركة جيدة في سهم {ticker.upper()} الفترة دي.")
+        result.setdefault("direction", "up")
         return result
 
     async def _chat_json(

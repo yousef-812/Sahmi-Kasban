@@ -5,6 +5,7 @@ import logging
 import os
 
 from app.jobs.generate_daily_top10 import run_daily_top10_scan
+from app.jobs.persona_scheduler import trigger_persona_discussions_job
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ def _poll_seconds() -> int:
 
 
 async def run_daily_scan_scheduler() -> None:
-    """Poll the idempotent daily scan so restarts do not miss the 15:00 run."""
+    """Poll the idempotent daily scan and AI persona discussions."""
     if not _enabled():
         logger.info("Daily EGX scan scheduler is disabled")
         return
@@ -44,4 +45,14 @@ async def run_daily_scan_scheduler() -> None:
             raise
         except Exception:
             logger.exception("Scheduled daily EGX scan failed")
+
+        try:
+            persona_res = await trigger_persona_discussions_job()
+            if persona_res.get("created_count", 0) > 0:
+                logger.info("AI personas discussions created by scheduler: %s", persona_res)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Scheduled AI persona discussions job failed")
+
         await asyncio.sleep(interval)
