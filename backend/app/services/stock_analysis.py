@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -363,7 +364,8 @@ async def execute_stock_analysis(
     )
     analyzer = SahmiKasbanAnalyzer(config)
     try:
-        report = analyzer.analyze(
+        report = await asyncio.to_thread(
+            analyzer.analyze,
             series.ticker,
             pd.DataFrame(series.candles),
             index=(
