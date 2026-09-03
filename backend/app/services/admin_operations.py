@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import UTC, datetime
+from uuid import UUID
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -236,3 +237,98 @@ async def probe_service_health(
         )
     db.flush()
     return list_latest_service_health(db)
+
+
+def upgrade_user_plan(
+    db: Session,
+    *,
+    admin_user: User,
+    user_id: UUID,
+    plan_code: str,
+    duration_days: int | None = None,
+    bonus_points: int = 0,
+) -> dict:
+    from datetime import timedelta
+
+    from app.services.monetization_catalog import get_plan
+    from app.services.wallet import credit_points, get_wallet_account
+
+    target_user = db.get(User, user_id)
+    if target_user is None:
+        raise ValueError("المستخدم غير موجود.")
+
+    plan = get_plan(plan_code)
+    now = datetime.now(UTC)
+    expires_at = now + timedelta(days=duration_days) if duration_days and duration_days > 0 else None
+
+    # Supersede active subscriptions for this user
+    active_subs = (
+        db.query(Subscription)
+        .filter(
+            Subscription.user_id == target_user.id,
+            Subscription.status == "active",
+        )
+        .all()
+    )
+    for sub in active_subs:
+        sub.status = "superseded"
+
+    # Create new subscription
+    new_sub = Subscription(
+        user_id=target_user.id,
+        plan_code=plan.code,
+        status="active",
+        weekly_points=plan.weekly_points,
+        ads_enabled=plan.ads_enabled,
+        started_at=now,
+        expires_at=expires_at,
+    )
+    db.add(new_sub)
+    db.flush()
+
+    # Credit bonus points if specified
+    if bonus_points > 0:
+        credit_points(
+            db,
+            user_id=target_user.id,
+            amount_points=bonus_points,
+            transaction_id=f"admin_upgrade_{new_sub.id}_{int(now.timestamp())}",
+            entry_type="admin_grant",
+            reference_type="admin_plan_upgrade",
+            reference_id=str(new_sub.id),
+            details={
+                "admin_id": str(admin_user.id),
+                "plan_code": plan_code,
+                "duration_days": duration_days,
+            },
+        )
+
+    # Record community admin event
+    event = CommunityAdminEvent(
+        actor_user_id=admin_user.id,
+        action="user_plan_upgraded",
+        target_user_id=target_user.id,
+        details={
+            "plan_code": plan_code,
+            "duration_days": duration_days,
+            "bonus_points": bonus_points,
+            "subscription_id": str(new_sub.id),
+        },
+    )
+    db.add(event)
+    db.commit()
+
+    wallet = get_wallet_account(db, target_user.id)
+    return {
+        "user_id": target_user.id,
+        "display_name": target_user.display_name,
+        "email": target_user.email,
+        "plan_code": new_sub.plan_code,
+        "status": new_sub.status,
+        "weekly_points": new_sub.weekly_points,
+        "ads_enabled": new_sub.ads_enabled,
+        "started_at": new_sub.started_at,
+        "expires_at": new_sub.expires_at,
+        "balance_points": wallet.balance_points,
+        "message": f"تمت ترقية خطة المستخدم إلى '{plan.display_name_ar}' بنجاح.",
+    }

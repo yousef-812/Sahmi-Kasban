@@ -532,3 +532,78 @@ Map<String, dynamic> _map(Object? value) {
 List<dynamic> _list(Object? value) {
   return value is List ? value : const <dynamic>[];
 }
+
+class StockInvestmentAnalysis {
+  const StockInvestmentAnalysis({
+    required this.ticker,
+    required this.companyName,
+    required this.sector,
+    required this.currentPrice,
+    required this.investmentScore,
+    this.peRatio,
+    this.pbRatio,
+    this.dividendYieldPct,
+    this.roePct,
+    this.fairValue,
+    this.marginOfSafetyPct,
+    required this.investmentCategory,
+    this.strengths = const [],
+    this.risks = const [],
+  });
+
+  final String ticker;
+  final String companyName;
+  final String sector;
+  final double currentPrice;
+  final double investmentScore;
+  final double? peRatio;
+  final double? pbRatio;
+  final double? dividendYieldPct;
+  final double? roePct;
+  final double? fairValue;
+  final double? marginOfSafetyPct;
+  final String investmentCategory;
+  final List<String> strengths;
+  final List<String> risks;
+
+  factory StockInvestmentAnalysis.fromJson(Map<String, dynamic> json) {
+    return StockInvestmentAnalysis(
+      ticker: json['ticker'] as String? ?? '',
+      companyName: json['company_name'] as String? ?? '',
+      sector: json['sector'] as String? ?? 'عام',
+      currentPrice: _asDouble(json['current_price']) ?? 0.0,
+      investmentScore: _asDouble(json['investment_score']) ?? 0.0,
+      peRatio: _asDouble(json['pe_ratio']),
+      pbRatio: _asDouble(json['pb_ratio']),
+      dividendYieldPct: _asDouble(json['dividend_yield_pct']),
+      roePct: _asDouble(json['roe_pct']),
+      fairValue: _asDouble(json['fair_value']),
+      marginOfSafetyPct: _asDouble(json['margin_of_safety_pct']),
+      investmentCategory: json['investment_category'] as String? ?? 'balanced',
+      strengths: _list(json['strengths']).map((e) => e.toString()).toList(),
+      risks: _list(json['risks']).map((e) => e.toString()).toList(),
+    );
+  }
+}
+
+class StockInvestmentComparisonResult {
+  const StockInvestmentComparisonResult({
+    required this.items,
+    required this.bestTicker,
+    required this.summary,
+  });
+
+  final List<StockInvestmentAnalysis> items;
+  final String bestTicker;
+  final String summary;
+
+  factory StockInvestmentComparisonResult.fromJson(Map<String, dynamic> json) {
+    return StockInvestmentComparisonResult(
+      items: _list(json['items'])
+          .map((e) => StockInvestmentAnalysis.fromJson(_map(e)))
+          .toList(growable: false),
+      bestTicker: json['best_ticker'] as String? ?? '',
+      summary: json['summary'] as String? ?? '',
+    );
+  }
+}

@@ -133,3 +133,38 @@ class MarketQuotesResponse(BaseModel):
     market_open: bool
     next_session_open: datetime | None = None
     items: list[MarketQuoteResponse]
+
+
+class StockInvestmentAnalysisResponse(BaseModel):
+    ticker: str
+    company_name: str
+    sector: str
+    current_price: float
+    investment_score: float
+    pe_ratio: float | None = None
+    pb_ratio: float | None = None
+    dividend_yield_pct: float | None = None
+    roe_pct: float | None = None
+    fair_value: float | None = None
+    margin_of_safety_pct: float | None = None
+    investment_category: str
+    strengths: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
+
+
+class StockInvestmentComparisonRequest(BaseModel):
+    tickers: list[str] = Field(min_length=2, max_length=5)
+
+    @field_validator("tickers")
+    @classmethod
+    def normalize_tickers(cls, value: list[str]) -> list[str]:
+        normalized = [ticker.strip().upper() for ticker in value if ticker.strip()]
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("اختر رموز أسهم مختلفة للمقارنة")
+        return normalized
+
+
+class StockInvestmentComparisonResponse(BaseModel):
+    items: list[StockInvestmentAnalysisResponse]
+    best_ticker: str
+    summary: str

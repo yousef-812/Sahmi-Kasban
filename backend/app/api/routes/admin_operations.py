@@ -15,6 +15,8 @@ from app.schemas.operations import (
     AdminBroadcastRequest,
     AdminBroadcastResponse,
     AdminOverviewResponse,
+    AdminUpgradeUserPlanRequest,
+    AdminUpgradeUserPlanResponse,
     AdminUserListItem,
     AdminUserListResponse,
     OperationalSettingResponse,
@@ -38,6 +40,7 @@ from app.services.admin_operations import (
     list_admin_users,
     list_latest_service_health,
     probe_service_health,
+    upgrade_user_plan,
 )
 from app.services.community_ai import get_community_ai_service
 from app.services.notifications import NotificationError, broadcast_notifications
@@ -487,4 +490,55 @@ async def regenerate_daily_report(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"فشل إعادة إنشاء التقرير: {str(exc)}",
+        ) from exc
+
+
+@router.post("/reports/investment/regenerate")
+async def regenerate_investment_report(
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+):
+    from app.market_data.fundamental import get_egx_investment_rankings
+
+    try:
+        rankings = await get_egx_investment_rankings(db, limit=10, force_refresh=True)
+        return {
+            "status": "success",
+            "item_count": len(rankings),
+            "message": f"تم إعادة فحص وتحديث تقارير الأسهم الاستثمارية بنجاح ({len(rankings)} فرصة مؤهلة).",
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"فشل إعادة إنشاء تقرير الاستثمار: {str(exc)}",
+        ) from exc
+
+
+@router.post("/users/{user_id}/upgrade-plan", response_model=AdminUpgradeUserPlanResponse)
+async def upgrade_user_plan_route(
+    user_id: UUID,
+    request: AdminUpgradeUserPlanRequest,
+    db: DatabaseSession,
+    admin: CurrentAdmin,
+) -> AdminUpgradeUserPlanResponse:
+    try:
+        res = upgrade_user_plan(
+            db,
+            admin_user=admin,
+            user_id=user_id,
+            plan_code=request.plan_code,
+            duration_days=request.duration_days,
+            bonus_points=request.bonus_points,
+        )
+        return AdminUpgradeUserPlanResponse(**res)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"فشلت ترقية الخطة: {str(exc)}",
         ) from exc

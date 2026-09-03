@@ -287,6 +287,33 @@ class BackendRepository {
     }
   }
 
+  Future<StockInvestmentAnalysis> getStockInvestmentAnalysis(
+    String ticker,
+  ) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/stocks/$ticker/investment',
+      );
+      return StockInvestmentAnalysis.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<StockInvestmentComparisonResult> compareStocksInvestment(
+    List<String> tickers,
+  ) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/market/comparisons/investment',
+        data: <String, dynamic>{'tickers': tickers},
+      );
+      return StockInvestmentComparisonResult.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReportHistory> getReportHistory() async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(

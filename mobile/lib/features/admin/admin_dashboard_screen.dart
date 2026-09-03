@@ -17,7 +17,7 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 8,
+      length: 9,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الإدارة'),
@@ -34,6 +34,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Tab(text: 'نظرة عامة'),
               Tab(text: 'المراجعة'),
               Tab(text: 'المستخدمون'),
+              Tab(text: 'ترقية الخطط'),
               Tab(text: 'الإعدادات'),
               Tab(text: 'الإشعارات'),
               Tab(text: 'التدقيق'),
@@ -47,6 +48,7 @@ class AdminDashboardScreen extends StatelessWidget {
             _OverviewTab(),
             _ModerationTab(),
             _UsersTab(),
+            _UserPlanUpgradeTab(),
             _SettingsTab(),
             _BroadcastTab(),
             _AuditTab(),
@@ -924,6 +926,10 @@ class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
   String? _statusMessage;
   bool _isSuccess = false;
 
+  bool _loadingInvestment = false;
+  String? _investmentStatusMessage;
+  bool _isInvestmentSuccess = false;
+
   Future<void> _regenerate() async {
     setState(() {
       _loading = true;
@@ -950,81 +956,493 @@ class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
     }
   }
 
+  Future<void> _regenerateInvestment() async {
+    setState(() {
+      _loadingInvestment = true;
+      _investmentStatusMessage = null;
+    });
+
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      final result = await repo.regenerateInvestmentReport();
+      setState(() {
+        _loadingInvestment = false;
+        _isInvestmentSuccess = true;
+        _investmentStatusMessage =
+            result['message']?.toString() ?? 'تم تحديث تقارير الاستثمار بنجاح.';
+      });
+    } catch (error) {
+      setState(() {
+        _loadingInvestment = false;
+        _isInvestmentSuccess = false;
+        _investmentStatusMessage = error is ApiException
+            ? error.message
+            : 'حدث خطأ أثناء إعادة تقرير الاستثمار.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Icon(
-            Icons.published_with_changes_rounded,
-            size: 64,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'إعادة إنشاء تقرير اليوم الحقيقي',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'استخدم هذا الخيار لإعادة تشغيل محرك التقارير فور إدخال تحديثات جديدة على خوارزميات المحرك (VWAP, Sector Momentum, Adaptive ATR).',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          if (_statusMessage != null) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _isSuccess
-                    ? Colors.green.withValues(alpha: 0.1)
-                    : theme.colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _statusMessage!,
-                style: TextStyle(
-                  color: _isSuccess
-                      ? Colors.green
-                      : theme.colorScheme.onErrorContainer,
-                  fontWeight: FontWeight.bold,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                  Icons.published_with_changes_rounded,
+                  size: 48,
+                  color: theme.colorScheme.primary,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-          FilledButton.icon(
-            onPressed: _loading ? null : _regenerate,
-            icon: _loading
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+                const SizedBox(height: 12),
+                Text(
+                  'إعادة إنشاء تقرير المضاربة اليومي',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'استخدم هذا الخيار لإعادة تشغيل محرك التقارير فور إدخال تحديثات جديدة على خوارزميات المحرك (VWAP, Momentum).',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (_statusMessage != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _isSuccess
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  )
-                : const Icon(Icons.refresh_rounded),
-            label: Text(
-              _loading
-                  ? 'جاري إعادة إنشاء التقرير...'
-                  : 'تشغيل إعادة التقرير الآن',
-            ),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      _statusMessage!,
+                      style: TextStyle(
+                        color: _isSuccess
+                            ? Colors.green
+                            : theme.colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _loading ? null : _regenerate,
+                  icon: _loading
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded),
+                  label: Text(
+                    _loading
+                        ? 'جاري إعادة الإنشاء...'
+                        : 'تشغيل إعادة تقرير المضاربة',
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                  Icons.account_balance_rounded,
+                  size: 48,
+                  color: theme.colorScheme.secondary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'إعادة إنشاء تقارير الأسهم الاستثمارية',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'استخدم هذا الخيار لإعادة مسح مؤشرات TradingView الأساسية وحساب القيمة العادلة وهامش الأمان وتحديث الفرص فوراً.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (_investmentStatusMessage != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _isInvestmentSuccess
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      _investmentStatusMessage!,
+                      style: TextStyle(
+                        color: _isInvestmentSuccess
+                            ? Colors.green
+                            : theme.colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                FilledButton.tonalIcon(
+                  onPressed: _loadingInvestment ? null : _regenerateInvestment,
+                  icon: _loadingInvestment
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.sync_rounded),
+                  label: Text(
+                    _loadingInvestment
+                        ? 'جاري تحديث تقارير الاستثمار...'
+                        : 'إعادة إنشاء تقارير الاستثمار الآن',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UserPlanUpgradeTab extends ConsumerStatefulWidget {
+  const _UserPlanUpgradeTab();
+
+  @override
+  ConsumerState<_UserPlanUpgradeTab> createState() =>
+      _UserPlanUpgradeTabState();
+}
+
+class _UserPlanUpgradeTabState extends ConsumerState<_UserPlanUpgradeTab> {
+  AdminUserItem? _selectedUser;
+  String _searchQuery = '';
+  String _selectedPlan = 'pro';
+  int _durationDays = 30;
+  final _bonusPointsController = TextEditingController(text: '0');
+  bool _loading = false;
+  String? _statusMessage;
+  bool _isSuccess = false;
+
+  @override
+  void dispose() {
+    _bonusPointsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _upgradePlan() async {
+    final user = _selectedUser;
+    if (user == null) {
+      setState(() {
+        _statusMessage = 'يرجى اختيار مستخدم أولاً.';
+        _isSuccess = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _statusMessage = null;
+    });
+
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      final bonus = int.tryParse(_bonusPointsController.text.trim()) ?? 0;
+      final res = await repo.upgradeUserPlan(
+        userId: user.id,
+        planCode: _selectedPlan,
+        durationDays: _durationDays > 0 ? _durationDays : null,
+        bonusPoints: bonus,
+      );
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _isSuccess = true;
+        _statusMessage =
+            res['message']?.toString() ?? 'تمت ترقية خطة المستخدم بنجاح.';
+      });
+      ref.invalidate(adminUsersProvider);
+      ref.invalidate(adminOverviewProvider);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _isSuccess = false;
+        _statusMessage = error is ApiException
+            ? error.message
+            : 'فشلت ترقية الخطة.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final usersAsync = ref.watch(adminUsersProvider);
+
+    return usersAsync.when(
+      loading: () => const _Loading(),
+      error: (_, __) => const _Failure('تعذر تحميل المستخدمين.'),
+      data: (users) {
+        final filteredUsers = users.where((u) {
+          if (_searchQuery.isEmpty) return true;
+          return u.displayName.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ||
+              u.email.toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              'ترقية خطة مستخدم يدويًا',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'اختر المستخدم والمدة والخطة المطلوبة لترقيته فوريًا.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'بحث عن مستخدم بالاسم أو الإيميل',
+                        prefixIcon: Icon(Icons.search_rounded),
+                      ),
+                      onChanged: (val) =>
+                          setState(() => _searchQuery = val.trim()),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_selectedUser != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.person_rounded,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedUser!.displayName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_selectedUser!.email} • خطته الحالية: ${_selectedUser!.planCode}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: theme
+                                          .colorScheme
+                                          .onPrimaryContainer
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () =>
+                                  setState(() => _selectedUser = null),
+                              icon: const Icon(Icons.close_rounded),
+                              tooltip: 'إلغاء التحديد',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'اختر مستخدمًا من القائمة (${filteredUsers.length}):',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 180),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.dividerColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredUsers.take(20).length,
+                          itemBuilder: (context, idx) {
+                            final u = filteredUsers[idx];
+                            return ListTile(
+                              dense: true,
+                              title: Text(u.displayName),
+                              subtitle: Text('${u.email} (${u.planCode})'),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                              ),
+                              onTap: () => setState(() => _selectedUser = u),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'الخطة المستهدفة:',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'free', label: Text('المجانية')),
+                        ButtonSegment(value: 'basic', label: Text('الأساسية')),
+                        ButtonSegment(
+                          value: 'advanced',
+                          label: Text('المتقدمة'),
+                        ),
+                        ButtonSegment(value: 'pro', label: Text('الاحترافية')),
+                      ],
+                      selected: {_selectedPlan},
+                      onSelectionChanged: (set) =>
+                          setState(() => _selectedPlan = set.first),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'مدة الاشتراك:',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SegmentedButton<int>(
+                      segments: const [
+                        ButtonSegment(value: 30, label: Text('شهر')),
+                        ButtonSegment(value: 90, label: Text('3 أشهر')),
+                        ButtonSegment(value: 365, label: Text('سنة')),
+                        ButtonSegment(value: 0, label: Text('دائم')),
+                      ],
+                      selected: {_durationDays},
+                      onSelectionChanged: (set) =>
+                          setState(() => _durationDays = set.first),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _bonusPointsController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'نقاط إضافية للمحفظة (اختياري)',
+                        hintText: '0',
+                        prefixIcon: Icon(Icons.monetization_on_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_statusMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _isSuccess
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : theme.colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _statusMessage!,
+                          style: TextStyle(
+                            color: _isSuccess
+                                ? Colors.green
+                                : theme.colorScheme.onErrorContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    FilledButton.icon(
+                      onPressed: _loading || _selectedUser == null
+                          ? null
+                          : _upgradePlan,
+                      icon: _loading
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.verified_user_rounded),
+                      label: Text(
+                        _loading
+                            ? 'جاري ترقية الخطة...'
+                            : 'تنفيذ ترقية الخطة الآن',
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

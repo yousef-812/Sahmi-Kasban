@@ -26,9 +26,11 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
   List<MarketInstrument> _results = const [];
   MarketInstrument? _selected;
   StockAnalysisResult? _analysis;
+  StockInvestmentAnalysis? _investmentAnalysis;
   bool _searching = false;
   bool _loadingSaved = false;
   bool _analyzing = false;
+  bool _analyzingInvestment = false;
   String? _error;
 
   @override
@@ -47,6 +49,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
       _results = const [];
       _error = null;
       _analysis = null;
+      _investmentAnalysis = null;
       _loadingSaved = false;
       _searching = normalizedQuery.isNotEmpty;
     });
@@ -125,6 +128,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     setState(() {
       _selected = instrument;
       _analysis = null;
+      _investmentAnalysis = null;
       _error = null;
     });
     unawaited(_loadSavedAnalysis(instrument, revision));
@@ -218,6 +222,39 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     } finally {
       if (mounted) {
         setState(() => _analyzing = false);
+      }
+    }
+  }
+
+  Future<void> _analyzeInvestment() async {
+    final instrument = _selected;
+    if (instrument == null || _analyzingInvestment) {
+      return;
+    }
+    setState(() {
+      _analyzingInvestment = true;
+      _error = null;
+    });
+    try {
+      final inv = await ref
+          .read(backendRepositoryProvider)
+          .getStockInvestmentAnalysis(instrument.ticker);
+      if (mounted) {
+        setState(() => _investmentAnalysis = inv);
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() => _error = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = 'تعذر إجراء التحليل الاستثماري لهذا السهم حالياً.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _analyzingInvestment = false);
       }
     }
   }
@@ -319,23 +356,91 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _selected == null || _analyzing ? null : _analyze,
-                  icon: _analyzing
-                      ? const SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        )
-                      : const Icon(Icons.auto_graph_rounded),
-                  label: const Text('تحليل السهم — 0.5 عملة'),
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(
+                  _selected == null
+                      ? 'اختر سهمًا من نتائج البحث أولاً للبدء في التحليل أو المقارنة:'
+                      : 'خيارات التحليل والمقارنة لـ (${_selected!.ticker}):',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed:
+                            _selected == null ||
+                                _analyzing ||
+                                _analyzingInvestment
+                            ? null
+                            : () {
+                                setState(() => _investmentAnalysis = null);
+                                _analyze();
+                              },
+                        icon: _analyzing
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.bolt_rounded),
+                        label: const Text('تحليل كسهم مضاربة'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed:
+                            _selected == null ||
+                                _analyzing ||
+                                _analyzingInvestment
+                            ? null
+                            : () {
+                                setState(() => _analysis = null);
+                                _analyzeInvestment();
+                              },
+                        icon: _analyzingInvestment
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.account_balance_rounded),
+                        label: const Text('تحليل كسهم استثماري'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: _analyzing
-                      ? null
-                      : () => context.push('/market/compare'),
-                  icon: const Icon(Icons.compare_arrows_rounded),
-                  label: const Text('مقارنة سهمين أو أكثر'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _analyzing || _analyzingInvestment
+                            ? null
+                            : () => context.push('/market/compare?mode=swing'),
+                        icon: const Icon(Icons.compare_arrows_rounded),
+                        label: const Text('مقارنة أسهم مضاربة'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _analyzing || _analyzingInvestment
+                            ? null
+                            : () => context.push(
+                                '/market/compare?mode=investment',
+                              ),
+                        icon: const Icon(Icons.analytics_outlined),
+                        label: const Text('مقارنة أسهم استثمارية'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -357,7 +462,266 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
           const SizedBox(height: 16),
           StockAnalysisReport(analysis: analysis),
         ],
+        if (_investmentAnalysis case final inv?) ...[
+          const SizedBox(height: 16),
+          _StockInvestmentAnalysisView(analysis: inv),
+        ],
       ],
+    );
+  }
+}
+
+class _StockInvestmentAnalysisView extends StatelessWidget {
+  const _StockInvestmentAnalysisView({required this.analysis});
+
+  final StockInvestmentAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isValue = analysis.investmentCategory == 'value';
+    final isDividend = analysis.investmentCategory == 'dividend';
+    final categoryTitle = isValue
+        ? '🛡️ سهم قيمة وهامش أمان'
+        : isDividend
+        ? '💰 سهم توزيعات نقدية'
+        : '💎 سهم نمو واعد';
+
+    final margin = analysis.marginOfSafetyPct;
+    final isPositiveMargin = margin != null && margin > 0;
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        analysis.ticker,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textDirection: TextDirection.ltr,
+                      ),
+                      Text(
+                        '${analysis.companyName} • ${analysis.sector}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    categoryTitle,
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        'التقييم الاستثماري',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${analysis.investmentScore.toStringAsFixed(1)} / 100',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(height: 30, width: 1, color: theme.dividerColor),
+                  Column(
+                    children: [
+                      Text('هامش الأمان', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 4),
+                      Text(
+                        margin != null
+                            ? '${isPositiveMargin ? '+' : ''}${margin.toStringAsFixed(1)}%'
+                            : '—',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isPositiveMargin ? Colors.green : Colors.red,
+                        ),
+                        textDirection: TextDirection.ltr,
+                      ),
+                    ],
+                  ),
+                  Container(height: 30, width: 1, color: theme.dividerColor),
+                  Column(
+                    children: [
+                      Text('السعر الحالي', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${analysis.currentPrice.toStringAsFixed(2)} ج.م',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (analysis.fairValue != null)
+                  _InvestmentMetricChip(
+                    label: 'القيمة العادلة',
+                    value: '${analysis.fairValue!.toStringAsFixed(2)} ج.م',
+                    isHighlight: true,
+                  ),
+                if (analysis.peRatio != null)
+                  _InvestmentMetricChip(
+                    label: 'مكرر الربحية P/E',
+                    value: analysis.peRatio!.toStringAsFixed(1),
+                  ),
+                if (analysis.dividendYieldPct != null)
+                  _InvestmentMetricChip(
+                    label: 'عائد التوزيعات',
+                    value: '${analysis.dividendYieldPct!.toStringAsFixed(1)}%',
+                    isPositive: analysis.dividendYieldPct! > 5,
+                  ),
+                if (analysis.roePct != null)
+                  _InvestmentMetricChip(
+                    label: 'العائد على حقوق الملكية ROE',
+                    value: '${analysis.roePct!.toStringAsFixed(1)}%',
+                    isPositive: analysis.roePct! > 15,
+                  ),
+              ],
+            ),
+            if (analysis.strengths.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'نقاط القوة الاستثمارية:',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              for (final s in analysis.strengths)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(s, style: theme.textTheme.bodySmall),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: () => context.push('/stocks/${analysis.ticker}'),
+              icon: const Icon(Icons.candlestick_chart_rounded, size: 20),
+              label: const Text(
+                'معلومات وشارت السهم',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InvestmentMetricChip extends StatelessWidget {
+  const _InvestmentMetricChip({
+    required this.label,
+    required this.value,
+    this.isHighlight = false,
+    this.isPositive = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isHighlight;
+  final bool isPositive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isHighlight
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
+            : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+        border: isHighlight
+            ? Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              )
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isPositive ? Colors.green : null,
+            ),
+            textDirection: TextDirection.ltr,
+          ),
+        ],
+      ),
     );
   }
 }

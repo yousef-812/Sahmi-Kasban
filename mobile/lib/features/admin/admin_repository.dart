@@ -355,6 +355,38 @@ class AdminRepository {
     }
   }
 
+  Future<Map<String, dynamic>> regenerateInvestmentReport() async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/reports/investment/regenerate',
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> upgradeUserPlan({
+    required String userId,
+    required String planCode,
+    int? durationDays,
+    int bonusPoints = 0,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/users/$userId/upgrade-plan',
+        data: <String, dynamic>{
+          'plan_code': planCode,
+          if (durationDays != null) 'duration_days': durationDays,
+          'bonus_points': bonusPoints,
+        },
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   String _dateOnly(DateTime value) {
     return '${value.year.toString().padLeft(4, '0')}-'
         '${value.month.toString().padLeft(2, '0')}-'

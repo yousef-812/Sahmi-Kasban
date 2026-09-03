@@ -98,7 +98,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/market/compare',
-        builder: (context, state) => const StockComparisonScreen(),
+        builder: (context, state) => StockComparisonScreen(
+          initialMode: state.uri.queryParameters['mode'],
+        ),
       ),
       GoRoute(
         path: '/market/analyze/:ticker',

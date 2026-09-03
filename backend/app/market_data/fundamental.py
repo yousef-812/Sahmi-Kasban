@@ -208,3 +208,112 @@ async def get_egx_investment_rankings(
         _fundamental_cache_at = now
         logger.info("Generated %s EGX fundamental investment rankings", len(ranked_items))
         return ranked_items[:limit]
+
+
+async def get_stock_investment_metric(db: Session, ticker: str) -> dict[str, Any] | None:
+    normalized = normalize_egx_ticker(ticker)
+    rankings = await get_egx_investment_rankings(db, limit=None)
+    for item in rankings:
+        if item["ticker"] == normalized:
+            return item
+
+    # If not in top rankings, compute directly from scanner data
+    try:
+        data = await _fetch_fundamental_scanner_data()
+        quote = data.get(normalized)
+        if quote is None:
+            return None
+
+        catalog_item = (
+            db.query(MarketInstrumentCatalog)
+            .filter(
+                MarketInstrumentCatalog.ticker == normalized,
+            )
+            .first()
+        )
+        company_name = (
+            catalog_item.name_arabic
+            if catalog_item and catalog_item.name_arabic
+            else EGX_ARABIC_NAMES.get(normalized, normalized)
+        )
+        sector = catalog_item.sector if catalog_item else "عام"
+
+        metrics = FundamentalInvestmentEngine.calculate_metrics(
+            ticker=normalized,
+            current_price=quote.close,
+            pe_ratio=quote.pe_ratio,
+            pb_ratio=quote.pb_ratio,
+            dividend_yield_pct=quote.dividend_yield_pct,
+            roe_pct=quote.roe_pct,
+            total_debt=quote.total_debt,
+            market_cap=quote.market_cap,
+            net_income=quote.net_income,
+            eps=quote.eps,
+        )
+
+        return {
+            "ticker": normalized,
+            "company_name": company_name,
+            "sector": sector,
+            "current_price": metrics.current_price,
+            "investment_score": metrics.investment_score,
+            "pe_ratio": metrics.pe_ratio,
+            "pb_ratio": metrics.pb_ratio,
+            "dividend_yield_pct": metrics.dividend_yield_pct,
+            "roe_pct": metrics.roe_pct,
+            "fair_value": metrics.fair_value,
+            "margin_of_safety_pct": metrics.margin_of_safety_pct,
+            "investment_category": metrics.investment_category,
+            "strengths": list(metrics.strengths),
+            "risks": list(metrics.risks),
+        }
+    except Exception as exc:
+        logger.warning("Failed to calculate single investment metric for %s: %s", normalized, exc)
+        return None
+
+
+async def compare_stocks_investment(db: Session, tickers: list[str]) -> dict[str, Any]:
+    items: list[dict[str, Any]] = []
+    for ticker in tickers:
+        metric = await get_stock_investment_metric(db, ticker)
+        if metric:
+            items.append(metric)
+
+    if not items:
+        return {
+            "items": [],
+            "best_ticker": "",
+            "summary": "تعذر العثور على بيانات استثمارية للأسهم المحددة.",
+        }
+
+    # Sort items by investment score descending
+    items.sort(
+        key=lambda x: (
+            x["investment_score"],
+            x["margin_of_safety_pct"] or 0.0,
+            x["dividend_yield_pct"] or 0.0,
+        ),
+        reverse=True,
+    )
+
+    best = items[0]
+    best_ticker = best["ticker"]
+    best_name = best["company_name"]
+    best_score = best["investment_score"]
+
+    summary = (
+        f"وفقاً للتحليل المالي الأساسي ومكررات الربحية وهامش الأمان، تتصدر شركة {best_name} ({best_ticker}) "
+        f"المقارنة بتقييم استثماري {best_score:.1f}/100 "
+    )
+    if best.get("margin_of_safety_pct") and best["margin_of_safety_pct"] > 0:
+        summary += f"مع هامش أمان يقدر بـ +{best['margin_of_safety_pct']:.1f}% عن القيمة العادلة."
+    elif best.get("dividend_yield_pct") and best["dividend_yield_pct"] > 5:
+        summary += f"وعائد توزيعات نقدية مغري يصل إلى {best['dividend_yield_pct']:.1f}%."
+    else:
+        summary += "مع استقرار في المؤشرات المالية والربحية."
+
+    return {
+        "items": items,
+        "best_ticker": best_ticker,
+        "summary": summary,
+    }

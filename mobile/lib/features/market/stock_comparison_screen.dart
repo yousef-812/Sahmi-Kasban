@@ -14,7 +14,9 @@ import 'stock_comparison_models.dart';
 import 'stock_comparison_repository.dart';
 
 class StockComparisonScreen extends ConsumerStatefulWidget {
-  const StockComparisonScreen({super.key});
+  const StockComparisonScreen({super.key, this.initialMode});
+
+  final String? initialMode;
 
   @override
   ConsumerState<StockComparisonScreen> createState() =>
@@ -23,15 +25,24 @@ class StockComparisonScreen extends ConsumerStatefulWidget {
 
 class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
   final _queryController = TextEditingController();
+  late String _mode;
   Timer? _debounce;
   int _searchRevision = 0;
   List<MarketInstrument> _results = const [];
   final List<MarketInstrument> _selected = [];
   bool _searching = false;
   bool _comparing = false;
+  bool _comparingInvestment = false;
   String? _error;
   String? _requestKey;
   StockComparisonResult? _result;
+  StockInvestmentComparisonResult? _investmentResult;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.initialMode == 'investment' ? 'investment' : 'swing';
+  }
 
   @override
   void dispose() {
@@ -202,16 +213,71 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
     }
   }
 
+  Future<void> _compareInvestment() async {
+    if (_selected.length < 2 || _comparingInvestment) {
+      return;
+    }
+    setState(() {
+      _comparingInvestment = true;
+      _error = null;
+    });
+    try {
+      final res = await ref
+          .read(backendRepositoryProvider)
+          .compareStocksInvestment(
+            _selected.map((item) => item.ticker).toList(),
+          );
+      if (!mounted) return;
+      setState(() => _investmentResult = res);
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() => _error = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'تعذر مقارنة الأسهم استثمارياً حالياً.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _comparingInvestment = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final planCode =
         ref.watch(sessionControllerProvider).profile?.planCode ?? 'free';
+    final isLoading = _mode == 'swing' ? _comparing : _comparingInvestment;
+
     return Scaffold(
       appBar: AppBar(title: const Text('مقارنة الأسهم')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'swing',
+                  icon: Icon(Icons.bolt_rounded),
+                  label: Text('مقارنة المضاربة'),
+                ),
+                ButtonSegment(
+                  value: 'investment',
+                  icon: Icon(Icons.account_balance_rounded),
+                  label: Text('مقارنة الاستثمار'),
+                ),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (set) {
+                setState(() {
+                  _mode = set.first;
+                  _error = null;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
@@ -226,9 +292,11 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      planCode == 'free'
-                          ? 'المقارنة نفسها تكلف 0.5 عملة، والتحليلات المحفوظة لا تُخصم مرة أخرى.'
-                          : 'يتم استخدام المقارنات الشهرية المتضمنة في خطتك قبل الخصم.',
+                      _mode == 'swing'
+                          ? (planCode == 'free'
+                                ? 'المقارنة الفنية تكلف 0.5 عملة، والتحليلات المحفوظة لا تُخصم مرة أخرى.'
+                                : 'يتم استخدام المقارنات الشهرية المتضمنة في خطتك قبل الخصم.')
+                          : 'مقارنة استثمارية شاملة للقيمة العادلة، مكررات الربحية، وعوائد التوزيعات.',
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -284,23 +352,37 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                   for (final instrument in _selected)
                     InputChip(
                       label: Text(instrument.ticker),
-                      onDeleted: _comparing ? null : () => _remove(instrument),
+                      onDeleted: isLoading ? null : () => _remove(instrument),
                     ),
                 ],
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
-                onPressed: _selected.length < 2 || _comparing ? null : _compare,
-                icon: _comparing
+                onPressed: _selected.length < 2 || isLoading
+                    ? null
+                    : () {
+                        if (_mode == 'swing') {
+                          _compare();
+                        } else {
+                          _compareInvestment();
+                        }
+                      },
+                icon: isLoading
                     ? const SizedBox.square(
                         dimension: 20,
                         child: CircularProgressIndicator(strokeWidth: 2.5),
                       )
-                    : const Icon(Icons.compare_arrows_rounded),
+                    : Icon(
+                        _mode == 'swing'
+                            ? Icons.compare_arrows_rounded
+                            : Icons.analytics_outlined,
+                      ),
                 label: Text(
-                  _comparing
+                  isLoading
                       ? 'جاري تحليل المقارنة...'
-                      : 'قارن الأسهم المختارة',
+                      : (_mode == 'swing'
+                            ? 'قارن الأسهم للمضاربة'
+                            : 'قارن الأسهم للاستثمار والقيمة'),
                 ),
               ),
             ],
@@ -316,8 +398,11 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
             ],
             const SizedBox(height: 12),
             const FreePlanNativeAd(),
-            if (_result case final result?)
+            if (_mode == 'swing' && _result case final result?)
               _ComparisonResultView(result: result),
+            if (_mode == 'investment' && _investmentResult
+                case final invResult?)
+              _InvestmentComparisonResultView(result: invResult),
           ],
         ),
       ),
@@ -513,4 +598,323 @@ String _risk(String value) {
     'high' => 'مرتفعة',
     _ => 'متوسطة',
   };
+}
+
+class _InvestmentComparisonResultView extends StatelessWidget {
+  const _InvestmentComparisonResultView({required this.result});
+
+  final StockInvestmentComparisonResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        Card(
+          color: theme.colorScheme.primaryContainer,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.stars_rounded,
+                      color: theme.colorScheme.onPrimaryContainer,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'أفضل خيار استثماري: ${result.bestTicker}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  result.summary,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (var i = 0; i < result.items.length; i++) ...[
+          _InvestmentStockComparisonCard(
+            item: result.items[i],
+            rank: i + 1,
+            isBest: result.items[i].ticker == result.bestTicker,
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _InvestmentStockComparisonCard extends StatelessWidget {
+  const _InvestmentStockComparisonCard({
+    required this.item,
+    required this.rank,
+    required this.isBest,
+  });
+
+  final StockInvestmentAnalysis item;
+  final int rank;
+  final bool isBest;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isValue = item.investmentCategory == 'value';
+    final isDividend = item.investmentCategory == 'dividend';
+    final categoryText = isValue
+        ? '🛡️ سهم قيمة'
+        : isDividend
+        ? '💰 توزيعات كاش'
+        : '💎 نمو واعد';
+
+    final margin = item.marginOfSafetyPct;
+    final isPositiveMargin = margin != null && margin > 0;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: isBest
+            ? BorderSide(color: theme.colorScheme.primary, width: 2)
+            : BorderSide.none,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: isBest
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.surfaceContainerHighest,
+                  foregroundColor: isBest
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurfaceVariant,
+                  child: Text(
+                    '$rank',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            item.ticker,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textDirection: TextDirection.ltr,
+                          ),
+                          if (isBest) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'الخيار الأفضل',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        '${item.companyName} • ${item.sector}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    categoryText,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      Text('التقييم', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${item.investmentScore.toStringAsFixed(1)} / 100',
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text('هامش الأمان', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 2),
+                      Text(
+                        margin != null
+                            ? '${isPositiveMargin ? '+' : ''}${margin.toStringAsFixed(1)}%'
+                            : '—',
+                        style: TextStyle(
+                          color: isPositiveMargin ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textDirection: TextDirection.ltr,
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text('السعر الحالي', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${item.currentPrice.toStringAsFixed(2)} ج.م',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (item.fairValue != null)
+                  _InvChip(
+                    label: 'القيمة العادلة',
+                    value: '${item.fairValue!.toStringAsFixed(2)} ج.م',
+                  ),
+                if (item.peRatio != null)
+                  _InvChip(
+                    label: 'مكرر P/E',
+                    value: item.peRatio!.toStringAsFixed(1),
+                  ),
+                if (item.dividendYieldPct != null)
+                  _InvChip(
+                    label: 'عائد توزيعات',
+                    value: '${item.dividendYieldPct!.toStringAsFixed(1)}%',
+                    isPositive: item.dividendYieldPct! > 5,
+                  ),
+                if (item.roePct != null)
+                  _InvChip(
+                    label: 'عائد ROE',
+                    value: '${item.roePct!.toStringAsFixed(1)}%',
+                    isPositive: item.roePct! > 15,
+                  ),
+              ],
+            ),
+            if (item.strengths.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              for (final s in item.strengths.take(2))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check, size: 14, color: Colors.green),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          s,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () => context.push('/stocks/${item.ticker}'),
+              icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+              label: const Text(
+                'معلومات وشارت السهم',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InvChip extends StatelessWidget {
+  const _InvChip({
+    required this.label,
+    required this.value,
+    this.isPositive = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isPositive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: isPositive ? Colors.green : null,
+        ),
+      ),
+    );
+  }
 }

@@ -216,3 +216,23 @@ class ReportEvaluationBackfillResponse(BaseModel):
     failed_reports: int = Field(ge=0)
     skipped_reports: int = Field(ge=0)
     evaluation_ids: list[UUID]
+
+
+class AdminUpgradeUserPlanRequest(BaseModel):
+    plan_code: Literal["free", "basic", "advanced", "pro"]
+    duration_days: int | None = Field(default=None, ge=1, le=3650)
+    bonus_points: int = Field(default=0, ge=0, le=1_000_000)
+
+
+class AdminUpgradeUserPlanResponse(BaseModel):
+    user_id: UUID
+    display_name: str
+    email: str
+    plan_code: str
+    status: str
+    weekly_points: int
+    ads_enabled: bool
+    started_at: datetime
+    expires_at: datetime | None = None
+    balance_points: int
+    message: str

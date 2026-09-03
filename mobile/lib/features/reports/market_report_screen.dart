@@ -483,10 +483,13 @@ class _SafeReportItemCard extends StatelessWidget {
           leading: CircleAvatar(child: Text('${item.rank}')),
           title: Text(item.ticker, textDirection: TextDirection.ltr),
           subtitle: const Text('تعذر عرض بعض تفاصيل هذا السهم.'),
-          trailing: OutlinedButton.icon(
+          trailing: FilledButton.tonalIcon(
             onPressed: () => context.push('/stocks/${item.ticker}'),
-            icon: const Icon(Icons.show_chart_rounded, size: 16),
-            label: const Text('معلومات السهم'),
+            icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+            label: const Text(
+              'معلومات وشارت السهم',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       );
@@ -574,10 +577,13 @@ class _ReportItemCard extends StatelessWidget {
             const SizedBox(height: 10),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
+              child: FilledButton.tonalIcon(
                 onPressed: () => context.push('/stocks/${item.ticker}'),
-                icon: const Icon(Icons.show_chart_rounded, size: 18),
-                label: const Text('معلومات السهم'),
+                icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+                label: const Text(
+                  'معلومات وشارت السهم',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -781,10 +787,13 @@ class _ExtendedItemCard extends StatelessWidget {
             const SizedBox(height: 10),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
+              child: FilledButton.tonalIcon(
                 onPressed: () => context.push('/stocks/${item.ticker}'),
-                icon: const Icon(Icons.show_chart_rounded, size: 18),
-                label: const Text('معلومات السهم'),
+                icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+                label: const Text(
+                  'معلومات وشارت السهم',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -1353,8 +1362,11 @@ class _InvestmentStockCard extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
               onPressed: () => context.push('/stocks/$ticker'),
-              icon: const Icon(Icons.show_chart_rounded, size: 18),
-              label: const Text('معلومات وتحليل السهم'),
+              icon: const Icon(Icons.candlestick_chart_rounded, size: 20),
+              label: const Text(
+                'معلومات وشارت السهم',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),

@@ -9,6 +9,7 @@ from app.db.session import SessionLocal
 from app.market_data.broadcaster import get_quote_broadcaster
 from app.market_data.catalog import market_instrument_exists, search_market_instruments
 from app.market_data.egx_symbols import normalize_egx_ticker
+from app.market_data.fundamental import compare_stocks_investment, get_stock_investment_metric
 from app.market_data.provider import get_market_data_provider
 from app.market_data.quotes import fetch_market_quotes, fetch_single_quote
 from app.market_data.types import (
@@ -28,6 +29,9 @@ from app.schemas.market import (
     StockComparisonItemResponse,
     StockComparisonRequest,
     StockComparisonResponse,
+    StockInvestmentAnalysisResponse,
+    StockInvestmentComparisonRequest,
+    StockInvestmentComparisonResponse,
 )
 from app.services.stock_analysis import (
     StockAnalysisExecution,
@@ -363,3 +367,32 @@ async def analyze_stock(
         ) from exc
 
     return _analysis_response(execution)
+
+
+@router.get("/stocks/{ticker}/investment", response_model=StockInvestmentAnalysisResponse)
+async def get_stock_investment_analysis(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> StockInvestmentAnalysisResponse:
+    metric = await get_stock_investment_metric(db, ticker)
+    if not metric:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="بيانات التحليل الاستثماري غير متاحة لهذا السهم حالياً.",
+        )
+    return StockInvestmentAnalysisResponse(**metric)
+
+
+@router.post("/market/comparisons/investment", response_model=StockInvestmentComparisonResponse)
+async def compare_stocks_investment_route(
+    request: StockInvestmentComparisonRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> StockInvestmentComparisonResponse:
+    res = await compare_stocks_investment(db, request.tickers)
+    return StockInvestmentComparisonResponse(
+        items=[StockInvestmentAnalysisResponse(**item) for item in res["items"]],
+        best_ticker=res["best_ticker"],
+        summary=res["summary"],
+    )
