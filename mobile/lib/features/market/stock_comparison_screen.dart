@@ -821,6 +821,49 @@ class _InvestmentStockComparisonCard extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            // صندوق القيمة المستهدفة والمدة المتوقعة
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.flag_rounded, size: 16, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Text(
+                        'المستهدف: ${item.expectedTargetPrice != null ? "${item.expectedTargetPrice!.toStringAsFixed(2)} ج.م" : (item.fairValue != null ? "${item.fairValue!.toStringAsFixed(2)} ج.م" : "—")}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded, size: 14, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.expectedTimeframe ?? '6 - 12 شهراً',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 6,
@@ -834,7 +877,13 @@ class _InvestmentStockComparisonCard extends StatelessWidget {
                 if (item.peRatio != null)
                   _InvChip(
                     label: 'مكرر P/E',
-                    value: item.peRatio!.toStringAsFixed(1),
+                    value: '${item.peRatio!.toStringAsFixed(1)}x',
+                    isPositive: item.peRatio! <= 10,
+                  ),
+                if (item.pbRatio != null)
+                  _InvChip(
+                    label: 'مضاعف P/B',
+                    value: '${item.pbRatio!.toStringAsFixed(1)}x',
                   ),
                 if (item.dividendYieldPct != null)
                   _InvChip(
@@ -847,6 +896,11 @@ class _InvestmentStockComparisonCard extends StatelessWidget {
                     label: 'عائد ROE',
                     value: '${item.roePct!.toStringAsFixed(1)}%',
                     isPositive: item.roePct! > 15,
+                  ),
+                if (item.eps != null)
+                  _InvChip(
+                    label: 'ربحية السهم EPS',
+                    value: '${item.eps!.toStringAsFixed(2)} ج.م',
                   ),
               ],
             ),

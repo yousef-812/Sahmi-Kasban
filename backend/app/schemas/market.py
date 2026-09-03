@@ -148,6 +148,15 @@ class StockInvestmentAnalysisResponse(BaseModel):
     fair_value: float | None = None
     margin_of_safety_pct: float | None = None
     investment_category: str
+    market_cap: float | None = None
+    eps: float | None = None
+    net_income: float | None = None
+    total_debt: float | None = None
+    valuation_status: str | None = None
+    recommendation: str | None = None
+    expected_target_price: float | None = None
+    expected_timeframe: str | None = None
+    expected_return_pct: float | None = None
     strengths: list[str] = Field(default_factory=list)
     risks: list[str] = Field(default_factory=list)
 

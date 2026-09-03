@@ -234,7 +234,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
     }
 
     if (report.reportType == 'investment') {
-      return _InvestmentReportView(report: report);
+      return _InvestmentReportTabs(report: report);
     }
 
     return _ReportTabs(report: report);
@@ -1018,34 +1018,131 @@ String _reasonLabel(String reason) {
   return labels[reason] ?? reason;
 }
 
-class _InvestmentReportView extends StatelessWidget {
-  const _InvestmentReportView({required this.report});
+class _InvestmentTabGroup {
+  const _InvestmentTabGroup({
+    required this.label,
+    required this.icon,
+    required this.items,
+  });
+
+  final String label;
+  final IconData icon;
+  final List<MarketReportItem> items;
+}
+
+List<_InvestmentTabGroup> _buildInvestmentTabGroups(MarketReport report) {
+  final allItems = report.items;
+  final valueItems = allItems.where((item) {
+    final cat = _text(item.payload['investment_category']);
+    final margin = _number(item.payload['margin_of_safety_pct']);
+    return cat == 'value' || margin >= 20.0;
+  }).toList();
+
+  final divItems = allItems.where((item) {
+    final cat = _text(item.payload['investment_category']);
+    final div = _number(item.payload['dividend_yield_pct']);
+    return cat == 'dividend' || div >= 5.0;
+  }).toList();
+
+  final growthItems = allItems.where((item) {
+    final cat = _text(item.payload['investment_category']);
+    final roe = _number(item.payload['roe_pct']);
+    return cat == 'growth' || roe >= 15.0;
+  }).toList();
+
+  final safetyItems = allItems.where((item) {
+    final margin = _number(item.payload['margin_of_safety_pct']);
+    return margin >= 25.0;
+  }).toList();
+
+  final groups = <_InvestmentTabGroup>[
+    _InvestmentTabGroup(
+      label: 'أفضل الفرص',
+      icon: Icons.stars_rounded,
+      items: allItems,
+    ),
+    if (valueItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'أسهم القيمة',
+        icon: Icons.security_rounded,
+        items: valueItems,
+      ),
+    if (divItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'توزيعات كاش',
+        icon: Icons.payments_rounded,
+        items: divItems,
+      ),
+    if (growthItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'أسهم النمو',
+        icon: Icons.trending_up_rounded,
+        items: growthItems,
+      ),
+    if (safetyItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'أعلى هامش أمان',
+        icon: Icons.verified_user_rounded,
+        items: safetyItems,
+      ),
+  ];
+  return groups;
+}
+
+class _InvestmentReportTabs extends StatelessWidget {
+  const _InvestmentReportTabs({required this.report});
 
   final MarketReport report;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _InvestmentSummaryCard(summary: report.marketSummary),
-        const SizedBox(height: 12),
-        Text(
-          'أفضل الشركات المؤهلة استثمارياً (${report.items.length})',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
+    final groups = _buildInvestmentTabGroups(report);
+    return DefaultTabController(
+      length: groups.length,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              for (final group in groups)
+                Tab(
+                  icon: Icon(group.icon, size: 20),
+                  text: '${group.label} (${group.items.length})',
+                ),
+            ],
           ),
-        ),
-        const SizedBox(height: 10),
-        for (final item in report.items)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: _InvestmentStockCard(item: item),
+          Expanded(
+            child: TabBarView(
+              children: [
+                for (final group in groups)
+                  ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _InvestmentSummaryCard(summary: report.marketSummary),
+                      const SizedBox(height: 14),
+                      Text(
+                        '${group.label} (${group.items.length})',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 10),
+                      for (final item in group.items)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _InvestmentStockCard(item: item),
+                        ),
+                      const FreePlanNativeAd(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+              ],
+            ),
           ),
-        const FreePlanNativeAd(),
-        const SizedBox(height: 24),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1143,6 +1240,15 @@ class _InvestmentStockCard extends StatelessWidget {
     final category = _text(payload['investment_category']);
     final strengths = _list(payload['strengths']);
 
+    final targetPrice = payload['expected_target_price'] != null
+        ? _number(payload['expected_target_price'])
+        : fairValue;
+    final timeframe = _text(payload['expected_timeframe']);
+    final expectedTimeframe = timeframe.isNotEmpty ? timeframe : '6 - 12 شهراً';
+    final expectedReturn = payload['expected_return_pct'] != null
+        ? _number(payload['expected_return_pct'])
+        : marginOfSafety;
+
     final (categoryLabel, categoryColor, categoryIcon) = switch (category) {
       'dividend' => ('سهم توزيعات كاش', Colors.teal, Icons.payments_rounded),
       'growth' => ('سهم نمو واعد', Colors.blue, Icons.trending_up_rounded),
@@ -1230,6 +1336,84 @@ class _InvestmentStockCard extends StatelessWidget {
                 ),
                 if (sector.isNotEmpty) Chip(label: Text(sector)),
               ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.flag_rounded, size: 18, color: Colors.green),
+                      const SizedBox(width: 6),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'القيمة المتوقعة (المستهدف)',
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                          Text(
+                            targetPrice != null
+                                ? '${targetPrice.toStringAsFixed(2)} ج'
+                                : '—',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                              color: Colors.green.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (expectedReturn != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${expectedReturn >= 0 ? '+' : ''}${expectedReturn.toStringAsFixed(1)}% عائد',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: expectedReturn >= 0 ? Colors.green.shade800 : Colors.red,
+                        ),
+                      ),
+                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded, size: 16, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'المدة المتوقعة',
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                          Text(
+                            expectedTimeframe,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.green.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             Container(

@@ -547,6 +547,15 @@ class StockInvestmentAnalysis {
     this.fairValue,
     this.marginOfSafetyPct,
     required this.investmentCategory,
+    this.marketCap,
+    this.eps,
+    this.netIncome,
+    this.totalDebt,
+    this.valuationStatus,
+    this.recommendation,
+    this.expectedTargetPrice,
+    this.expectedTimeframe,
+    this.expectedReturnPct,
     this.strengths = const [],
     this.risks = const [],
   });
@@ -563,6 +572,15 @@ class StockInvestmentAnalysis {
   final double? fairValue;
   final double? marginOfSafetyPct;
   final String investmentCategory;
+  final double? marketCap;
+  final double? eps;
+  final double? netIncome;
+  final double? totalDebt;
+  final String? valuationStatus;
+  final String? recommendation;
+  final double? expectedTargetPrice;
+  final String? expectedTimeframe;
+  final double? expectedReturnPct;
   final List<String> strengths;
   final List<String> risks;
 
@@ -580,6 +598,15 @@ class StockInvestmentAnalysis {
       fairValue: _asDouble(json['fair_value']),
       marginOfSafetyPct: _asDouble(json['margin_of_safety_pct']),
       investmentCategory: json['investment_category'] as String? ?? 'balanced',
+      marketCap: _asDouble(json['market_cap']),
+      eps: _asDouble(json['eps']),
+      netIncome: _asDouble(json['net_income']),
+      totalDebt: _asDouble(json['total_debt']),
+      valuationStatus: json['valuation_status'] as String?,
+      recommendation: json['recommendation'] as String?,
+      expectedTargetPrice: _asDouble(json['expected_target_price']),
+      expectedTimeframe: json['expected_timeframe'] as String?,
+      expectedReturnPct: _asDouble(json['expected_return_pct']),
       strengths: _list(json['strengths']).map((e) => e.toString()).toList(),
       risks: _list(json['risks']).map((e) => e.toString()).toList(),
     );

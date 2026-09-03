@@ -168,6 +168,13 @@ async def get_egx_investment_rankings(
         ranked_items: list[dict[str, Any]] = []
         for ticker, quote in data.items():
             catalog_item = catalog_map.get(ticker)
+            # Only include genuine equities present in the catalog
+            if catalog_item is None:
+                continue
+            # Filter out non-equity symbols or ISINs (e.g. EGS... with length > 4 or any ticker > 6 chars)
+            if len(ticker) > 6 or (ticker.startswith("EGS") and len(ticker) > 4):
+                continue
+
             company_name = (
                 catalog_item.description
                 if catalog_item and catalog_item.description
@@ -188,6 +195,42 @@ async def get_egx_investment_rankings(
                 eps=quote.eps,
             )
 
+            valuation_status = "سعر عادل ومتوازن"
+            if metrics.margin_of_safety_pct is not None:
+                if metrics.margin_of_safety_pct >= 25.0:
+                    valuation_status = "مقومة بأقل من قيمتها (فرصة شراء)"
+                elif metrics.margin_of_safety_pct >= 10.0:
+                    valuation_status = "تتداول بخصم عن القيمة العادلة"
+                elif metrics.margin_of_safety_pct <= -20.0:
+                    valuation_status = "مبالغ في تقييمها السعري حالياً"
+                elif metrics.margin_of_safety_pct < 0:
+                    valuation_status = "أعلى قليلاً من القيمة العادلة"
+
+            recommendation = "احتفاظ ومتابعة"
+            if metrics.investment_score >= 80.0:
+                recommendation = "شراء وتجميع قوي للمدى الطويل"
+            elif metrics.investment_score >= 65.0:
+                recommendation = "شراء استثماري على دفعات"
+            elif metrics.investment_score <= 45.0:
+                recommendation = "تريث وتجنب الشراء حالياً"
+
+            # Expected Target Price & Timeframe
+            expected_target = (
+                metrics.fair_value
+                if metrics.fair_value is not None and metrics.fair_value > 0
+                else round(metrics.current_price * 1.15, 2)
+            )
+            expected_return = round(((expected_target - metrics.current_price) / metrics.current_price) * 100.0, 1)
+
+            if metrics.margin_of_safety_pct is not None and metrics.margin_of_safety_pct >= 25.0:
+                expected_timeframe = "6 - 12 شهراً"
+            elif metrics.dividend_yield_pct is not None and metrics.dividend_yield_pct >= 7.0:
+                expected_timeframe = "12 - 18 شهراً (مع عوائد دورية)"
+            elif metrics.roe_pct is not None and metrics.roe_pct >= 20.0:
+                expected_timeframe = "9 - 15 شهراً"
+            else:
+                expected_timeframe = "12 - 24 شهراً"
+
             # Filter out extreme penny stocks or zero volume anomalies if needed
             if metrics.investment_score >= 45.0:
                 ranked_items.append({
@@ -203,6 +246,15 @@ async def get_egx_investment_rankings(
                     "fair_value": metrics.fair_value,
                     "margin_of_safety_pct": metrics.margin_of_safety_pct,
                     "investment_category": metrics.investment_category,
+                    "market_cap": metrics.market_cap,
+                    "eps": metrics.eps,
+                    "net_income": metrics.net_income,
+                    "total_debt": metrics.total_debt,
+                    "valuation_status": valuation_status,
+                    "recommendation": recommendation,
+                    "expected_target_price": expected_target,
+                    "expected_timeframe": expected_timeframe,
+                    "expected_return_pct": expected_return,
                     "strengths": list(metrics.strengths),
                     "risks": list(metrics.risks),
                 })
@@ -264,6 +316,41 @@ async def get_stock_investment_metric(db: Session, ticker: str) -> dict[str, Any
             eps=quote.eps,
         )
 
+        valuation_status = "سعر عادل ومتوازن"
+        if metrics.margin_of_safety_pct is not None:
+            if metrics.margin_of_safety_pct >= 25.0:
+                valuation_status = "مقومة بأقل من قيمتها (فرصة شراء)"
+            elif metrics.margin_of_safety_pct >= 10.0:
+                valuation_status = "تتداول بخصم عن القيمة العادلة"
+            elif metrics.margin_of_safety_pct <= -20.0:
+                valuation_status = "مبالغ في تقييمها السعري حالياً"
+            elif metrics.margin_of_safety_pct < 0:
+                valuation_status = "أعلى قليلاً من القيمة العادلة"
+
+        recommendation = "احتفاظ ومتابعة"
+        if metrics.investment_score >= 80.0:
+            recommendation = "شراء وتجميع قوي للمدى الطويل"
+        elif metrics.investment_score >= 65.0:
+            recommendation = "شراء استثماري على دفعات"
+        elif metrics.investment_score <= 45.0:
+            recommendation = "تريث وتجنب الشراء حالياً"
+
+        expected_target = (
+            metrics.fair_value
+            if metrics.fair_value is not None and metrics.fair_value > 0
+            else round(metrics.current_price * 1.15, 2)
+        )
+        expected_return = round(((expected_target - metrics.current_price) / metrics.current_price) * 100.0, 1)
+
+        if metrics.margin_of_safety_pct is not None and metrics.margin_of_safety_pct >= 25.0:
+            expected_timeframe = "6 - 12 شهراً"
+        elif metrics.dividend_yield_pct is not None and metrics.dividend_yield_pct >= 7.0:
+            expected_timeframe = "12 - 18 شهراً (مع عوائد دورية)"
+        elif metrics.roe_pct is not None and metrics.roe_pct >= 20.0:
+            expected_timeframe = "9 - 15 شهراً"
+        else:
+            expected_timeframe = "12 - 24 شهراً"
+
         return {
             "ticker": normalized,
             "company_name": company_name,
@@ -277,6 +364,15 @@ async def get_stock_investment_metric(db: Session, ticker: str) -> dict[str, Any
             "fair_value": metrics.fair_value,
             "margin_of_safety_pct": metrics.margin_of_safety_pct,
             "investment_category": metrics.investment_category,
+            "market_cap": metrics.market_cap,
+            "eps": metrics.eps,
+            "net_income": metrics.net_income,
+            "total_debt": metrics.total_debt,
+            "valuation_status": valuation_status,
+            "recommendation": recommendation,
+            "expected_target_price": expected_target,
+            "expected_timeframe": expected_timeframe,
+            "expected_return_pct": expected_return,
             "strengths": list(metrics.strengths),
             "risks": list(metrics.risks),
         }
