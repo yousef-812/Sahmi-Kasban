@@ -116,3 +116,19 @@ class RewardedAdClaim(TimestampMixin, Base):
     wallet_transaction_id: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     raw_payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class AdEventLog(TimestampMixin, Base):
+    __tablename__ = "ad_event_logs"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+    )
+    ad_type: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    ad_unit_id: Mapped[str | None] = mapped_column(String(160))
+    platform: Mapped[str] = mapped_column(String(24), default="android", nullable=False)
+    error_message: Mapped[str | None] = mapped_column(Text)

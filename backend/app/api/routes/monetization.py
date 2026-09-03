@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import UTC, datetime
 from urllib.parse import parse_qsl
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.config import Environment, get_settings
 from app.models import RewardedAdSession
 from app.schemas.monetization import (
+    AdEventLogItem,
+    AdTelemetryEventRequest,
+    AdTelemetrySummaryResponse,
     GooglePlayPurchaseRequest,
     GooglePlayPurchaseResponse,
     MonetizationCatalogResponse,
@@ -31,8 +36,11 @@ from app.services.monetization import (
     UnsupportedProductError,
     catalog_payload,
     create_rewarded_ad_session,
+    export_ad_telemetry_report,
+    get_ad_telemetry_summary,
     process_google_play_purchase,
     process_rewarded_ad_callback,
+    record_ad_event,
     rewarded_ad_eligibility,
 )
 from app.services.monetization_catalog import get_plan
@@ -289,4 +297,80 @@ def _eligibility_response(
         rewards_used_today=eligibility.used_today,
         rewards_remaining_today=eligibility.remaining_today,
         next_available_at=eligibility.next_available_at,
+    )
+
+
+@router.post("/ads/telemetry", status_code=status.HTTP_201_CREATED)
+def record_ad_telemetry(
+    payload: AdTelemetryEventRequest,
+    db: DatabaseSession,
+    request: Request,
+) -> dict[str, bool]:
+    user_id: UUID | None = None
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        with suppress(Exception):
+            from uuid import UUID as PyUUID
+
+            from app.core.security import decode_access_token
+
+            token = auth_header.split(" ", 1)[1]
+            data = decode_access_token(token)
+            user_id = PyUUID(data["sub"])
+
+    record_ad_event(
+        db,
+        user_id=user_id,
+        ad_type=payload.ad_type,
+        event_type=payload.event_type,
+        ad_unit_id=payload.ad_unit_id,
+        platform=payload.platform,
+        error_message=payload.error_message,
+    )
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/ads/logs", response_model=AdTelemetrySummaryResponse)
+def get_ad_telemetry_logs(
+    db: DatabaseSession,
+    limit: int = 100,
+) -> AdTelemetrySummaryResponse:
+    summary = get_ad_telemetry_summary(db, limit=limit)
+    logs_raw: list = summary["recent_logs"]  # type: ignore[assignment]
+    logs_items = [
+        AdEventLogItem(
+            id=item.id,
+            user_id=item.user_id,
+            ad_type=item.ad_type,
+            event_type=item.event_type,
+            ad_unit_id=item.ad_unit_id,
+            platform=item.platform,
+            error_message=item.error_message,
+            created_at=item.created_at,
+        )
+        for item in logs_raw
+    ]
+    return AdTelemetrySummaryResponse(
+        total_events=summary["total_events"],  # type: ignore[arg-type]
+        impressions=summary["impressions"],  # type: ignore[arg-type]
+        load_failures=summary["load_failures"],  # type: ignore[arg-type]
+        clicks=summary["clicks"],  # type: ignore[arg-type]
+        breakdown_by_type=summary["breakdown_by_type"],  # type: ignore[arg-type]
+        recent_logs=logs_items,
+    )
+
+
+@router.get("/ads/log.txt", response_class=PlainTextResponse)
+def export_ad_telemetry_log_file(
+    db: DatabaseSession,
+    limit: int = 500,
+) -> PlainTextResponse:
+    content = export_ad_telemetry_report(db, limit=limit)
+    return PlainTextResponse(
+        content=content,
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": "inline; filename=admob_telemetry_log.txt",
+        },
     )

@@ -32,7 +32,12 @@ from app.models.entities import (
 from app.models.labs import LabsBacktestJob
 from app.models.market_data import MarketDataSnapshot, MarketInstrumentCatalog
 from app.models.market_reports import MarketReportUnlock, MarketScanRun
-from app.models.monetization import BillingPurchase, RewardedAdClaim, RewardedAdSession
+from app.models.monetization import (
+    AdEventLog,
+    BillingPurchase,
+    RewardedAdClaim,
+    RewardedAdSession,
+)
 from app.models.operations import (
     AppSetting,
     Notification,
@@ -50,6 +55,7 @@ from app.models.watchlist import WatchlistItem
 
 __all__ = [
     "AccountToken",
+    "AdEventLog",
     "AnalysisBacktestObservation",
     "AnalysisBacktestResult",
     "AnalysisBacktestRun",

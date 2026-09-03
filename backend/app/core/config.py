@@ -113,7 +113,7 @@ class Settings(BaseSettings):
 
     admob_ssv_verification_mode: str = "disabled"
     admob_ssv_keys_url: str = "https://www.gstatic.com/admob/reward/verifier-keys.json"
-    admob_android_rewarded_ad_unit_id: str = "ca-app-pub-3940256099942544/5224354917"
+    admob_android_rewarded_ad_unit_id: str = "ca-app-pub-4624889874966809/5205210272"
     admob_ios_rewarded_ad_unit_id: str = "ca-app-pub-3940256099942544/1712485313"
     admob_reward_item: str = "coins"
     ad_reward_points: int = 75

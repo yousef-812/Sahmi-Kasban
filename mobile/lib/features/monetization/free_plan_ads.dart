@@ -7,6 +7,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../core/config/app_config.dart';
 import '../auth/session_controller.dart';
+import 'monetization_repository.dart';
 import 'plan_banner_ad.dart';
 
 class FreePlanAdShell extends ConsumerWidget {
@@ -86,6 +87,13 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
             return;
           }
           setState(() => _loaded = true);
+          ref
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'native',
+                eventType: 'impression',
+                adUnitId: adUnitId,
+              );
         },
         onAdFailedToLoad: (failedAd, error) {
           failedAd.dispose();
@@ -94,7 +102,24 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
               _ad = null;
               _loaded = false;
             });
+            ref
+                .read(monetizationRepositoryProvider)
+                .recordAdTelemetry(
+                  adType: 'native',
+                  eventType: 'failed_to_load',
+                  adUnitId: adUnitId,
+                  errorMessage: 'code ${error.code}: ${error.message}',
+                );
           }
+        },
+        onAdClicked: (ad) {
+          ref
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'native',
+                eventType: 'clicked',
+                adUnitId: adUnitId,
+              );
         },
       ),
       nativeTemplateStyle: NativeTemplateStyle(

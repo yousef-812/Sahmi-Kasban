@@ -175,7 +175,11 @@ class MonetizationController extends StateNotifier<MonetizationState> {
       }
     } on Object catch (error) {
       if (mounted) {
-        state = state.copyWith(adBusy: false, error: error.toString());
+        final rawStr = error.toString();
+        final displayErr = rawStr.contains('403')
+            ? 'تعذر بدء جلسة الإعلان (رمز 403). يرجى التأكد من تفعيل البريد الإلكتروني أو إعادة تسجيل الدخول.'
+            : rawStr;
+        state = state.copyWith(adBusy: false, error: displayErr);
       }
     }
   }

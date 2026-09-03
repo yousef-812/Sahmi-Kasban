@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.models import (
+    AdEventLog,
     BillingPurchase,
     RewardedAdClaim,
     RewardedAdSession,
@@ -533,3 +534,92 @@ def _coin_pack_payload(pack: CoinPackDefinition) -> dict[str, object]:
         "points": pack.points,
         "coins": points_to_coins(pack.points),
     }
+
+
+def record_ad_event(
+    db: Session,
+    *,
+    user_id: UUID | None = None,
+    ad_type: str,
+    event_type: str,
+    ad_unit_id: str | None = None,
+    platform: str = "android",
+    error_message: str | None = None,
+) -> AdEventLog:
+    log_entry = AdEventLog(
+        user_id=user_id,
+        ad_type=ad_type,
+        event_type=event_type,
+        ad_unit_id=ad_unit_id,
+        platform=platform,
+        error_message=error_message,
+    )
+    db.add(log_entry)
+    db.flush()
+    return log_entry
+
+
+def get_ad_telemetry_summary(
+    db: Session,
+    *,
+    limit: int = 100,
+) -> dict[str, object]:
+    logs = list(db.scalars(select(AdEventLog).order_by(AdEventLog.created_at.desc()).limit(limit)))
+    total_events = len(logs)
+    impressions = sum(1 for log in logs if log.event_type == "impression")
+    load_failures = sum(1 for log in logs if log.event_type == "failed_to_load")
+    clicks = sum(1 for log in logs if log.event_type == "clicked")
+
+    breakdown: dict[str, int] = {}
+    for log in logs:
+        breakdown[log.ad_type] = breakdown.get(log.ad_type, 0) + 1
+
+    return {
+        "total_events": total_events,
+        "impressions": impressions,
+        "load_failures": load_failures,
+        "clicks": clicks,
+        "breakdown_by_type": breakdown,
+        "recent_logs": logs,
+    }
+
+
+def export_ad_telemetry_report(
+    db: Session,
+    *,
+    limit: int = 500,
+) -> str:
+    summary = get_ad_telemetry_summary(db, limit=limit)
+    logs: list[AdEventLog] = summary["recent_logs"]  # type: ignore[assignment]
+    now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    lines = [
+        "================================================================================",
+        "                       سجل وتتبع إعلانات سهمi كسبان (AdMob Live Telemetry Log)",
+        "================================================================================",
+        f"تاريخ التقرير: {now_str}",
+        f"إجمالي الأحداث المسجلة: {summary['total_events']}",
+        f"عدد المشاهدات الفعلية (Impressions): {summary['impressions']}",
+        f"عدد النقرات (Clicks): {summary['clicks']}",
+        f"عدد إخفاقات التحميل (Load Failures): {summary['load_failures']}",
+        f"التوزيع حسب النوع: {summary['breakdown_by_type']}",
+        "--------------------------------------------------------------------------------",
+        "التاريخ والوقت | النوع | الحدث | المنصة | معرف الوحدة | المستخدم | التفاصيل / الأخطاء",
+        "--------------------------------------------------------------------------------",
+    ]
+
+    if not logs:
+        lines.append("لا توجد أحداث إعلانية مسجلة حتى الآن.")
+    else:
+        for log in logs:
+            dt_str = log.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            user_str = str(log.user_id)[:8] if log.user_id else "مجهول"
+            unit_str = log.ad_unit_id or "غير محدد"
+            err_str = f" | خطأ: {log.error_message}" if log.error_message else ""
+            lines.append(
+                f"[{dt_str}] [{log.platform}] [{log.ad_type.upper()}] [{log.event_type}] | "
+                f"الوحدة: {unit_str} | المستخدم: {user_str}{err_str}"
+            )
+
+    lines.append("================================================================================")
+    return "\n".join(lines)

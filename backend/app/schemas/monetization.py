@@ -96,3 +96,31 @@ class MonetizationStatusResponse(BaseModel):
     weekly_coins: str
     ads_enabled: bool
     rewarded_ad: RewardedAdEligibilityResponse
+
+
+class AdTelemetryEventRequest(BaseModel):
+    ad_type: Literal["banner", "native", "interstitial", "rewarded"]
+    event_type: Literal["loaded", "impression", "clicked", "failed_to_load", "reward_granted"]
+    ad_unit_id: str | None = None
+    platform: str = "android"
+    error_message: str | None = None
+
+
+class AdEventLogItem(BaseModel):
+    id: UUID
+    user_id: UUID | None
+    ad_type: str
+    event_type: str
+    ad_unit_id: str | None
+    platform: str
+    error_message: str | None
+    created_at: datetime
+
+
+class AdTelemetrySummaryResponse(BaseModel):
+    total_events: int = Field(ge=0)
+    impressions: int = Field(ge=0)
+    load_failures: int = Field(ge=0)
+    clicks: int = Field(ge=0)
+    breakdown_by_type: dict[str, int] = Field(default_factory=dict)
+    recent_logs: list[AdEventLogItem] = Field(default_factory=list)

@@ -47,8 +47,11 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
         },
         onAdFailedToLoad: (error) {
           if (!completer.isCompleted) {
+            final reason = error.code == 3
+                ? 'لا يوجد إعلان متوفر حالياً من AdMob (في انتظار تفعيل الوحدات الجديدة واعتماد المتجر).'
+                : error.message;
             completer.completeError(
-              StateError('تعذر تحميل الإعلان: ${error.message}'),
+              StateError('تعذر تحميل إعلان الفيديو: $reason'),
             );
           }
         },

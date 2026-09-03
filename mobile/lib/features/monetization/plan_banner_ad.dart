@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../core/config/app_config.dart';
+import 'monetization_repository.dart';
 
 class PlanBannerAd extends ConsumerStatefulWidget {
   const PlanBannerAd({required this.enabled, super.key});
@@ -69,6 +70,13 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
             _loading = false;
             _bannerAd = ad as BannerAd;
           });
+          ref
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'banner',
+                eventType: 'impression',
+                adUnitId: adUnitId,
+              );
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
@@ -77,7 +85,24 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
               _loading = false;
               _bannerAd = null;
             });
+            ref
+                .read(monetizationRepositoryProvider)
+                .recordAdTelemetry(
+                  adType: 'banner',
+                  eventType: 'failed_to_load',
+                  adUnitId: adUnitId,
+                  errorMessage: 'code ${error.code}: ${error.message}',
+                );
           }
+        },
+        onAdClicked: (ad) {
+          ref
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'banner',
+                eventType: 'clicked',
+                adUnitId: adUnitId,
+              );
         },
       ),
     );

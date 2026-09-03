@@ -80,6 +80,29 @@ class MonetizationRepository {
     }
   }
 
+  Future<void> recordAdTelemetry({
+    required String adType,
+    required String eventType,
+    String? adUnitId,
+    String platform = 'android',
+    String? errorMessage,
+  }) async {
+    try {
+      await _apiClient.dio.post<void>(
+        '/monetization/ads/telemetry',
+        data: <String, dynamic>{
+          'ad_type': adType,
+          'event_type': eventType,
+          if (adUnitId != null) 'ad_unit_id': adUnitId,
+          'platform': platform,
+          if (errorMessage != null) 'error_message': errorMessage,
+        },
+      );
+    } on Object {
+      // Telemetry is non-blocking
+    }
+  }
+
   Map<String, dynamic> _requiredData(Map<String, dynamic>? data) {
     if (data == null) {
       throw StateError('Monetization response is empty.');
