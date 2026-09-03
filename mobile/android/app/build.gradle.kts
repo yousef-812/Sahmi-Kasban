@@ -27,7 +27,7 @@ val productionBuild =
     providers.environmentVariable("SAHMI_PRODUCTION_BUILD").orNull == "true"
 val admobAndroidAppId =
     providers.environmentVariable("ADMOB_ANDROID_APP_ID").orNull
-        ?: "ca-app-pub-3940256099942544~3347511713"
+        ?: "ca-app-pub-4624889874966809~5979235898"
 
 if (productionBuild) {
     if (!releaseSigningConfigured) {
