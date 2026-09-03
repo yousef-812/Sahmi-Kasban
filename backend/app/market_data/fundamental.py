@@ -7,12 +7,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
+from sahmi_kasban.engines.investment import FundamentalInvestmentEngine, InvestmentMetrics
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.market_data.egx_symbols import EGX_ARABIC_NAMES, normalize_egx_ticker
+from app.market_data.egx_symbols import EGX_ARABIC_NAMES, UnknownTickerError, normalize_egx_ticker
 from app.models import MarketInstrumentCatalog
-from sahmi_kasban.engines.investment import FundamentalInvestmentEngine, InvestmentMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -83,12 +83,24 @@ async def _fetch_fundamental_scanner_data() -> dict[str, FundamentalQuote]:
 
     result: dict[str, FundamentalQuote] = {}
     for item in raw_data:
+        symbol_str = str(item.get("s", "")).strip().upper()
+        if ":" in symbol_str:
+            _, raw_ticker = symbol_str.split(":", 1)
+        else:
+            d = item.get("d", [])
+            raw_ticker = str(d[0]).strip().upper() if d else ""
+
+        try:
+            ticker = normalize_egx_ticker(raw_ticker)
+        except (UnknownTickerError, ValueError):
+            continue
+        except Exception:
+            continue
+
         d = item.get("d", [])
         if len(d) < len(_FUNDAMENTAL_COLUMNS):
             continue
 
-        raw_name = str(d[0]).strip().upper()
-        ticker = normalize_egx_ticker(raw_name)
         close = _parse_float(d[1])
         if not ticker or close is None or close <= 0:
             continue
@@ -113,7 +125,7 @@ async def _fetch_fundamental_scanner_data() -> dict[str, FundamentalQuote]:
 async def get_egx_investment_rankings(
     db: Session,
     *,
-    limit: int = 10,
+    limit: int | None = 10,
     force_refresh: bool = False,
 ) -> list[dict[str, Any]]:
     """Calculates fundamental investment rankings for EGX active stocks."""
@@ -126,7 +138,7 @@ async def get_egx_investment_rankings(
         and _fundamental_cache_at is not None
         and now - _fundamental_cache_at < timedelta(hours=1)
     ):
-        return _fundamental_cache[:limit]
+        return _fundamental_cache[:limit] if limit is not None else _fundamental_cache
 
     async with _fundamental_cache_lock:
         if (
@@ -135,32 +147,33 @@ async def get_egx_investment_rankings(
             and _fundamental_cache_at is not None
             and now - _fundamental_cache_at < timedelta(hours=1)
         ):
-            return _fundamental_cache[:limit]
+            return _fundamental_cache[:limit] if limit is not None else _fundamental_cache
 
         try:
             data = await _fetch_fundamental_scanner_data()
         except Exception as exc:
             logger.warning("Failed to fetch TradingView fundamental data: %s", exc)
             if _fundamental_cache is not None:
-                return _fundamental_cache[:limit]
+                return _fundamental_cache[:limit] if limit is not None else _fundamental_cache
             return []
 
-        # Get catalog items for company name and sector
-        catalog_rows = db.query(MarketInstrumentCatalog).filter(
-            MarketInstrumentCatalog.is_active.is_(True),
-            MarketInstrumentCatalog.is_tradable.is_(True),
-        ).all()
+        # Get catalog items for company name
+        catalog_rows = (
+            db.query(MarketInstrumentCatalog)
+            .filter(MarketInstrumentCatalog.active.is_(True))
+            .all()
+        )
         catalog_map = {row.ticker: row for row in catalog_rows}
 
         ranked_items: list[dict[str, Any]] = []
         for ticker, quote in data.items():
             catalog_item = catalog_map.get(ticker)
             company_name = (
-                catalog_item.name_arabic
-                if catalog_item and catalog_item.name_arabic
+                catalog_item.description
+                if catalog_item and catalog_item.description
                 else EGX_ARABIC_NAMES.get(ticker, ticker)
             )
-            sector = catalog_item.sector if catalog_item else "عام"
+            sector = "عام"
 
             metrics: InvestmentMetrics = FundamentalInvestmentEngine.calculate_metrics(
                 ticker=ticker,
@@ -207,7 +220,7 @@ async def get_egx_investment_rankings(
         _fundamental_cache = ranked_items
         _fundamental_cache_at = now
         logger.info("Generated %s EGX fundamental investment rankings", len(ranked_items))
-        return ranked_items[:limit]
+        return ranked_items[:limit] if limit is not None else ranked_items
 
 
 async def get_stock_investment_metric(db: Session, ticker: str) -> dict[str, Any] | None:
@@ -232,11 +245,11 @@ async def get_stock_investment_metric(db: Session, ticker: str) -> dict[str, Any
             .first()
         )
         company_name = (
-            catalog_item.name_arabic
-            if catalog_item and catalog_item.name_arabic
+            catalog_item.description
+            if catalog_item and catalog_item.description
             else EGX_ARABIC_NAMES.get(normalized, normalized)
         )
-        sector = catalog_item.sector if catalog_item else "عام"
+        sector = "عام"
 
         metrics = FundamentalInvestmentEngine.calculate_metrics(
             ticker=normalized,
@@ -268,7 +281,7 @@ async def get_stock_investment_metric(db: Session, ticker: str) -> dict[str, Any
             "risks": list(metrics.risks),
         }
     except Exception as exc:
-        logger.warning("Failed to calculate single investment metric for %s: %s", normalized, exc)
+        logger.warning("Failed to compute fundamental metric for %s: %s", ticker, exc)
         return None
 
 

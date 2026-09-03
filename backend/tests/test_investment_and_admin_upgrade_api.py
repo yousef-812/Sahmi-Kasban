@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
-from app.models import Subscription, User, WalletAccount
+from app.market_data.fundamental import (
+    FundamentalQuote,
+    get_egx_investment_rankings,
+    get_stock_investment_metric,
+)
+from app.models import MarketInstrumentCatalog, Subscription, User, WalletAccount
 
 
 def _seed_user(db: Session, *, is_admin: bool = False) -> tuple[User, dict[str, str]]:
@@ -124,3 +131,47 @@ def test_admin_regenerate_investment_and_upgrade_plan(client: TestClient, db_ses
         sub = db_session.query(Subscription).filter_by(user_id=target_user.id, status="active").first()
         assert sub is not None
         assert sub.plan_code == "pro"
+
+
+@pytest.mark.anyio
+async def test_fundamental_engine_integration_with_db(db_session: Session):
+    db_session.add(
+        MarketInstrumentCatalog(
+            ticker="ETEL",
+            provider_symbol="EGX:ETEL",
+            exchange="EGX",
+            description="المصرية للاتصالات",
+            source="test",
+            active=True,
+            last_seen_at=datetime.now(UTC),
+        )
+    )
+    db_session.commit()
+
+    mock_quotes = {
+        "ETEL": FundamentalQuote(
+            ticker="ETEL",
+            close=115.99,
+            pe_ratio=8.78,
+            pb_ratio=2.69,
+            dividend_yield_pct=1.30,
+            roe_pct=None,
+            total_debt=72832461000,
+            market_cap=196313240356,
+            eps=13.21,
+            net_income=22554632000,
+        ),
+    }
+
+    with patch("app.market_data.fundamental._fetch_fundamental_scanner_data", new=AsyncMock(return_value=mock_quotes)):
+        rankings = await get_egx_investment_rankings(db_session, force_refresh=True)
+        assert len(rankings) == 1
+        assert rankings[0]["ticker"] == "ETEL"
+        assert rankings[0]["company_name"] == "المصرية للاتصالات"
+        assert rankings[0]["fair_value"] is not None
+
+        metric = await get_stock_investment_metric(db_session, "ETEL")
+        assert metric is not None
+        assert metric["ticker"] == "ETEL"
+        assert metric["company_name"] == "المصرية للاتصالات"
+
