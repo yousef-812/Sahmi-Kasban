@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models.dart';
+import '../monetization/free_plan_ads.dart';
 import 'report_providers.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -222,7 +223,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 },
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            const FreePlanNativeAd(),
+            const SizedBox(height: 16),
             const Text(
               'ملاحظة: يتم إصدار تقارير السوق بشكل دوري بناءً على مسح شامل لجميع الأسهم.',
               style: TextStyle(fontSize: 12, color: Colors.grey),

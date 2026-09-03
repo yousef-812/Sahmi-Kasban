@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,6 +18,11 @@ class FreePlanAdShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(sessionControllerProvider).profile;
     final enabled = profile?.adsEnabled == true;
+    if (enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(freePlanInterstitialProvider).preload(enabled: true);
+      });
+    }
     return Column(
       children: [
         Expanded(child: child),
@@ -149,8 +155,8 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
 
 class InterstitialFrequencyPolicy {
   const InterstitialFrequencyPolicy({
-    this.actionsPerAd = 3,
-    this.minimumInterval = const Duration(minutes: 4),
+    this.actionsPerAd = 2,
+    this.minimumInterval = const Duration(seconds: 90),
   });
 
   final int actionsPerAd;
@@ -184,6 +190,7 @@ class FreePlanInterstitialCoordinator {
   bool _loading = false;
   int _meaningfulActions = 0;
   DateTime? _lastShownAt;
+  Timer? _retryTimer;
 
   Future<void> recordMeaningfulAction({required bool enabled}) async {
     if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
@@ -248,12 +255,17 @@ class FreePlanInterstitialCoordinator {
         },
         onAdFailedToLoad: (error) {
           _loading = false;
+          _retryTimer?.cancel();
+          _retryTimer = Timer(const Duration(seconds: 15), () {
+            _loadIfNeeded();
+          });
         },
       ),
     );
   }
 
   void dispose() {
+    _retryTimer?.cancel();
     _ad?.dispose();
     _ad = null;
   }

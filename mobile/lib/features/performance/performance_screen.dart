@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../monetization/free_plan_ads.dart';
 import 'performance_models.dart';
 import 'performance_providers.dart';
 import 'performance_widgets.dart';
@@ -87,6 +88,8 @@ class PerformanceScreen extends ConsumerWidget {
                             .toList(growable: false),
                       ),
               ),
+              const SizedBox(height: 16),
+              const FreePlanNativeAd(),
             ],
           ),
         ),

@@ -241,6 +241,13 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
           .getStockInvestmentAnalysis(instrument.ticker);
       if (mounted) {
         setState(() => _investmentAnalysis = inv);
+        await ref
+            .read(freePlanInterstitialProvider)
+            .recordMeaningfulAction(
+              enabled:
+                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                  true,
+            );
       }
     } on ApiException catch (error) {
       if (mounted) {
@@ -1094,6 +1101,8 @@ class _StockInvestmentAnalysisView extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
+        const SizedBox(height: 16),
+        const FreePlanNativeAd(),
       ],
     );
   }

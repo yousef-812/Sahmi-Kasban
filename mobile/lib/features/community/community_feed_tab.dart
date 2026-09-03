@@ -117,9 +117,13 @@ class _CommunityFeedTabState extends ConsumerState<CommunityFeedTab> {
               }
               return Column(
                 children: [
-                  for (final discussion in page.items) ...[
-                    CommunityDiscussionCard(discussion: discussion),
+                  for (var i = 0; i < page.items.length; i++) ...[
+                    CommunityDiscussionCard(discussion: page.items[i]),
                     const SizedBox(height: 12),
+                    if ((i + 1) % 4 == 0) ...[
+                      const FreePlanNativeAd(),
+                      const SizedBox(height: 12),
+                    ],
                   ],
                   if (page.hasMore)
                     const Padding(

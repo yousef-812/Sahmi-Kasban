@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
+import '../monetization/free_plan_ads.dart';
 import 'market_quotes_providers.dart';
 import 'stock_quote_card.dart';
 
@@ -184,6 +185,11 @@ class _DetailContentState extends State<_DetailContent> {
         TradingViewWidget(
           symbol: widget.ticker,
           hideSideToolbar: _hideSideToolbar,
+        ),
+        const SizedBox(height: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: FreePlanNativeAd(),
         ),
         const SizedBox(height: 8),
       ],

@@ -1129,11 +1129,16 @@ class _InvestmentReportTabs extends StatelessWidget {
                             ),
                       ),
                       const SizedBox(height: 10),
-                      for (final item in group.items)
+                      for (var i = 0; i < group.items.length; i++) ...[
                         Padding(
                           padding: const EdgeInsets.only(bottom: 14),
-                          child: _InvestmentStockCard(item: item),
+                          child: _InvestmentStockCard(item: group.items[i]),
                         ),
+                        if (i == 1 && group.items.length > 2) ...[
+                          const FreePlanNativeAd(),
+                          const SizedBox(height: 14),
+                        ],
+                      ],
                       const FreePlanNativeAd(),
                       const SizedBox(height: 24),
                     ],
