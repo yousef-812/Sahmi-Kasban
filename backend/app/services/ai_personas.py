@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+import random
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
@@ -17,7 +18,7 @@ from app.market_data.catalog import ensure_market_instrument_catalog
 from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
 from app.market_data.universe import apply_market_health_quarantine
-from app.models import AIPersonaLog, Discussion, User, WalletAccount
+from app.models import AIPersonaLog, User, WalletAccount
 from app.services.community import apply_moderation_decision, create_discussion
 
 logger = logging.getLogger(__name__)
@@ -196,6 +197,8 @@ async def run_ai_persona_discussions(
             content = f"{spec.sample_phrase} شايف حركة إيجابية متوقعة في سهم {ticker} للجلسة الجاية."
 
         submission_key = f"persona_{spec.code}_{target_session_date}"
+        stagger_minutes = (len(remaining_specs) - 1 - index) * random.randint(20, 45) + random.randint(3, 12)
+        post_time = now - timedelta(minutes=stagger_minutes)
 
         try:
             sub_res = create_discussion(
@@ -206,14 +209,14 @@ async def run_ai_persona_discussions(
                 title=title,
                 content=content,
                 period_type="next_session",
-                moment=now,
+                moment=post_time,
             )
             discussion = apply_moderation_decision(
                 db,
                 discussion_id=sub_res.discussion.id,
                 decision="accept",
                 actor_type="system",
-                moment=now,
+                moment=post_time,
             )
 
             log_entry = AIPersonaLog(
