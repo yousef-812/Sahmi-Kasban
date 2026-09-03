@@ -84,7 +84,7 @@ void main() {
     expect(find.text('الأربعاء 29 يوليو 2026'), findsOneWidget);
     expect(find.text('ملخص السوق'), findsOneWidget);
     expect(find.text('COMI'), findsOneWidget);
-    expect(find.text('معلومات السهم'), findsOneWidget);
+    expect(find.text('معلومات وشارت السهم'), findsOneWidget);
     expect(find.text('خطة التداول'), findsOneWidget);
     expect(find.textContaining('السعر أعلى من متوسط 20 جلسة'), findsOneWidget);
     expect(find.textContaining('{'), findsNothing);

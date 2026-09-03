@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
@@ -398,11 +399,10 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
             ],
             const SizedBox(height: 12),
             const FreePlanNativeAd(),
-            if (_mode == 'swing' && _result case final result?)
-              _ComparisonResultView(result: result),
-            if (_mode == 'investment' && _investmentResult
-                case final invResult?)
-              _InvestmentComparisonResultView(result: invResult),
+            if (_mode == 'swing' && _result != null)
+              _ComparisonResultView(result: _result!),
+            if (_mode == 'investment' && _investmentResult != null)
+              _InvestmentComparisonResultView(result: _investmentResult!),
           ],
         ),
       ),
