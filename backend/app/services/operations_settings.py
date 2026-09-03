@@ -120,6 +120,14 @@ def _definitions() -> tuple[SettingDefinition, ...]:
             "bool",
             True,
         ),
+        SettingDefinition(
+            "ai_personas_enabled",
+            "automation",
+            "تفعيل شخصيات الذكاء الاصطناعي",
+            "السماح بتشغيل الشخصيات الخمسة لإنشاء مناقشات آلية في المجتمع.",
+            "bool",
+            True,
+        ),
     )
 
 

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 async def trigger_persona_discussions_job(moment: datetime | None = None) -> dict[str, Any]:
     with SessionLocal() as db:
-        if not get_bool_setting(db, "ai_personas_enabled", default=True):
+        if not get_bool_setting(db, "ai_personas_enabled"):
             logger.info("AI personas discussions job is disabled via setting")
             return {"status": "disabled", "created_count": 0}
 
