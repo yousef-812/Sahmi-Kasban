@@ -361,6 +361,7 @@ def get_ad_telemetry_logs(
     )
 
 
+@router.get("/ads/log", response_class=PlainTextResponse)
 @router.get("/ads/log.txt", response_class=PlainTextResponse)
 def export_ad_telemetry_log_file(
     db: DatabaseSession,

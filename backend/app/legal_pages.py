@@ -298,7 +298,6 @@ catch(error){result.className='error';result.textContent=error.message||'حدث 
 
 
 @router.get("/ads-log", response_class=PlainTextResponse)
-@router.get("/admob-log", response_class=PlainTextResponse)
 def ad_telemetry_live_log(db: DatabaseSession) -> PlainTextResponse:
     from app.services.monetization import export_ad_telemetry_report
 
@@ -310,3 +309,8 @@ def ad_telemetry_live_log(db: DatabaseSession) -> PlainTextResponse:
             "Content-Disposition": "inline; filename=admob_telemetry_log.txt",
         },
     )
+
+
+@router.get("/admob-log", response_class=PlainTextResponse)
+def admob_telemetry_live_log(db: DatabaseSession) -> PlainTextResponse:
+    return ad_telemetry_live_log(db)

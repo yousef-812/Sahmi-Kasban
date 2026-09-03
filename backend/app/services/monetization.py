@@ -612,7 +612,7 @@ def export_ad_telemetry_report(
         lines.append("لا توجد أحداث إعلانية مسجلة حتى الآن.")
     else:
         for log in logs:
-            dt_str = log.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            dt_str = log.created_at.strftime("%Y-%m-%d %H:%M:%S") if log.created_at else "الآن"
             user_str = str(log.user_id)[:8] if log.user_id else "مجهول"
             unit_str = log.ad_unit_id or "غير محدد"
             err_str = f" | خطأ: {log.error_message}" if log.error_message else ""
