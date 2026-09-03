@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.market_data.provider import get_market_data_provider
@@ -30,7 +31,6 @@ from app.services.prediction_evaluation import (
     select_window_candles,
 )
 from app.services.wallet import get_wallet_account, points_to_coins
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 router = APIRouter(prefix="/community", tags=["prediction-verification"])
 PredictionMarketProvider = Annotated[

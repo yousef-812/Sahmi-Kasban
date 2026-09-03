@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import logging
@@ -11,6 +10,8 @@ from typing import Any
 from uuid import UUID
 
 import pandas as pd
+from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -26,8 +27,6 @@ from app.services.wallet import (
     debit_points,
     get_wallet_account,
 )
-from sahmi_kasban import AnalysisConfig, SahmiKasbanAnalyzer
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -364,8 +363,7 @@ async def execute_stock_analysis(
     )
     analyzer = SahmiKasbanAnalyzer(config)
     try:
-        report = await asyncio.to_thread(
-            analyzer.analyze,
+        report = analyzer.analyze(
             series.ticker,
             pd.DataFrame(series.candles),
             index=(

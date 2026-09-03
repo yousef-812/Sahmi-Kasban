@@ -119,7 +119,7 @@ class QuoteBroadcaster:
             try:
                 has_subscribers = len(self._active_connections) > 0
                 with SessionLocal() as db:
-                    snapshot = await fetch_market_quotes(db, force_refresh=False)
+                    snapshot = await fetch_market_quotes(db, force_refresh=has_subscribers)
                     self._last_snapshot = snapshot
 
                     new_map = {q.ticker: q for q in snapshot.items}

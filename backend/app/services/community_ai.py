@@ -7,6 +7,7 @@ from functools import lru_cache
 from typing import Any
 from uuid import UUID
 
+from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,7 +17,6 @@ from app.services.community import (
     DiscussionNotFoundError,
     apply_moderation_decision,
 )
-from sahmi_kasban.ai import AIProviderError, SahmiAIService
 
 _ALLOWED_DIRECTIONS = {"up", "down", "neutral"}
 _AI_REASON_CODES = {

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse
+from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentAdmin, DatabaseSession
 from app.market_data.provider import get_market_data_provider
@@ -65,7 +66,6 @@ from app.services.report_performance import (
     evaluate_market_report,
     list_report_evaluations,
 )
-from sahmi_kasban.ai import SahmiAIService
 
 router = APIRouter(prefix="/admin/operations", tags=["admin-operations"])
 AdminMarketProvider = Annotated[

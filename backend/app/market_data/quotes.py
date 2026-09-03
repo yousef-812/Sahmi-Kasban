@@ -684,13 +684,35 @@ async def _fetch_scanner_rows() -> dict[str, MarketQuote]:
         return _parse_scanner_quotes(response.json())
 
 
+_quotes_bg_busy = False
+
+
+async def _bg_refresh_quotes() -> None:
+    global _quotes_bg_busy
+    if _quotes_bg_busy:
+        return
+    _quotes_bg_busy = True
+    try:
+        from app.db.session import SessionLocal
+        with SessionLocal() as db:
+            await fetch_market_quotes(db, force_refresh=True)
+    except Exception as exc:
+        logger.warning("Background market quotes refresh warning: %s", exc)
+    finally:
+        _quotes_bg_busy = False
+
+
 async def fetch_market_quotes(db: Session, *, force_refresh: bool = False) -> MarketQuotesSnapshot:
     global _quotes_cache_at, _quotes_cache
 
     settings = get_settings()
     now = datetime.now(UTC)
     if not force_refresh and _quotes_cache is not None and _quotes_cache_at is not None:
-        if now - _quotes_cache_at < timedelta(seconds=settings.market_quotes_refresh_seconds):
+        cache_age = now - _quotes_cache_at
+        if cache_age < timedelta(seconds=settings.market_quotes_refresh_seconds):
+            return _quotes_cache
+        if cache_age < timedelta(minutes=30):
+            asyncio.create_task(_bg_refresh_quotes())
             return _quotes_cache
 
     async with _quotes_cache_lock:
