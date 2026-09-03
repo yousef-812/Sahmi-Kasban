@@ -10,9 +10,9 @@ import 'token_store.dart';
 BaseOptions _apiOptions(String baseUrl) {
   return BaseOptions(
     baseUrl: '$baseUrl/api/v1',
-    connectTimeout: const Duration(seconds: 12),
-    sendTimeout: const Duration(seconds: 20),
-    receiveTimeout: const Duration(seconds: 30),
+    connectTimeout: const Duration(seconds: 25),
+    sendTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 45),
     headers: const <String, String>{'Accept': 'application/json'},
   );
 }
