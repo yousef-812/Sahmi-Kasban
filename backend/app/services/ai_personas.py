@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import random
 from dataclasses import dataclass
@@ -182,6 +183,7 @@ async def run_ai_persona_discussions(
         except Exception as exc:
             logger.debug("Could not fetch market series for %s: %s", ticker, exc)
 
+        direction = "up"
         try:
             generated = await ai_service.generate_community_persona_post(
                 persona_name=spec.display_name,
@@ -191,6 +193,9 @@ async def run_ai_persona_discussions(
             )
             title = str(generated.get("title", f"رأيي في سهم {ticker}"))[:120]
             content = str(generated.get("content", spec.sample_phrase))[:2000]
+            raw_dir = str(generated.get("direction", "up")).lower()
+            if raw_dir in {"up", "down", "sideways"}:
+                direction = raw_dir
         except Exception as exc:
             logger.warning("AI generation failed for persona %s on ticker %s: %s", spec.code, ticker, exc)
             title = f"رأيي التحليلي في سهم {ticker}"
@@ -199,6 +204,20 @@ async def run_ai_persona_discussions(
         submission_key = f"persona_{spec.code}_{target_session_date}"
         stagger_minutes = (len(remaining_specs) - 1 - index) * random.randint(20, 45) + random.randint(3, 12)
         post_time = now - timedelta(minutes=stagger_minutes)
+
+        source_text = f"{title}\n{content}"
+        frozen_prediction = {
+            "version": 1,
+            "ticker": ticker,
+            "direction": direction,
+            "target_price": None,
+            "period_type": "next_session",
+            "deadline": "next_session",
+            "claims": [title],
+            "specificity": 0.5,
+            "source_text_sha256": hashlib.sha256(source_text.encode("utf-8")).hexdigest(),
+            "frozen_at": post_time.isoformat(),
+        }
 
         try:
             sub_res = create_discussion(
@@ -216,6 +235,7 @@ async def run_ai_persona_discussions(
                 discussion_id=sub_res.discussion.id,
                 decision="accept",
                 actor_type="system",
+                frozen_prediction=frozen_prediction,
                 moment=post_time,
             )
 
