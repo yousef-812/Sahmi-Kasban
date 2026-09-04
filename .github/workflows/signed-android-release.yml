@@ -59,9 +59,9 @@ jobs:
           keyAlias=$ANDROID_KEY_ALIAS
           storeFile=upload-keystore.jks
           EOF
-          keytool -list -keystore mobile/android/app/upload-keystore.jks \
+          keytool -list -v -keystore mobile/android/app/upload-keystore.jks \
             -storepass "$ANDROID_KEYSTORE_PASSWORD" \
-            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+            -alias "$ANDROID_KEY_ALIAS"
 
       - name: Install Flutter
         shell: bash
