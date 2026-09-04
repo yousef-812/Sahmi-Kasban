@@ -44,6 +44,22 @@ class MonetizationRepository {
     }
   }
 
+  Future<RewardedAdSimulationResultModel> claimRewardedAdSession({
+    required RewardedAdSessionModel session,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/monetization/rewarded-ads/sessions/${session.sessionId}/claim',
+        data: <String, dynamic>{'custom_data': session.customData},
+      );
+      return RewardedAdSimulationResultModel.fromJson(
+        _requiredData(response.data),
+      );
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<RewardedAdSimulationResultModel> simulateRewardedAd({
     required RewardedAdSessionModel session,
   }) async {

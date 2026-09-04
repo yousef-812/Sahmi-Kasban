@@ -287,3 +287,43 @@ def test_stub_ssv_verifier_requires_explicit_stub_signature() -> None:
         match="Invalid stub AdMob signature",
     ):
         asyncio.run(verifier.verify(valid.replace("stub-valid", "invalid")))
+
+
+def test_claim_rewarded_ad_session_instant_verification(db_session: Session) -> None:
+    from app.services.monetization import claim_rewarded_ad_session
+
+    settings = _settings()
+    user = _provision_user(db_session, "instant-claim@example.com")
+    now = datetime.now(UTC)
+
+    started = create_rewarded_ad_session(
+        db_session,
+        user_id=user.id,
+        platform="android",
+        moment=now,
+        settings=settings,
+    )
+
+    result = claim_rewarded_ad_session(
+        db_session,
+        user_id=user.id,
+        session_id=started.session.id,
+        custom_data=started.custom_data,
+        moment=now,
+        settings=settings,
+    )
+
+    assert result.idempotent is False
+    assert result.balance_points == 75
+    assert started.session.status == "completed"
+
+    duplicate = claim_rewarded_ad_session(
+        db_session,
+        user_id=user.id,
+        session_id=started.session.id,
+        custom_data=started.custom_data,
+        moment=now,
+        settings=settings,
+    )
+    assert duplicate.idempotent is True
+    assert duplicate.balance_points == 75

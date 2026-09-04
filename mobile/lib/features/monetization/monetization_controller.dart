@@ -160,14 +160,23 @@ class MonetizationController extends StateNotifier<MonetizationState> {
         return;
       }
 
-      if (session.testMode) {
-        await _repository.simulateRewardedAd(session: session);
+      var verified = false;
+      try {
+        await _repository.claimRewardedAdSession(session: session);
+        verified = true;
+      } catch (_) {
+        if (session.testMode) {
+          await _repository.simulateRewardedAd(session: session);
+        }
+        verified = await _waitForReward(beforeCount);
       }
-      final verified = await _waitForReward(beforeCount);
+
       await _onEntitlementChanged();
+      final updatedStatus = await _repository.getStatus();
       if (mounted) {
         state = state.copyWith(
           adBusy: false,
+          status: updatedStatus,
           message: verified
               ? 'تم التحقق من الإعلان وإضافة المكافأة إلى المحفظة.'
               : 'اكتمل الإعلان، والتحقق من Google ما زال قيد المعالجة. حدّث الصفحة بعد قليل.',
@@ -257,7 +266,9 @@ class MonetizationController extends StateNotifier<MonetizationState> {
       if (current.rewardedAd.rewardsUsedToday > beforeCount) {
         return true;
       }
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(
+        Duration(milliseconds: attempt == 0 ? 500 : 1200),
+      );
     }
     return false;
   }

@@ -432,6 +432,103 @@ async def process_rewarded_ad_callback(
     )
 
 
+def claim_rewarded_ad_session(
+    db: Session,
+    *,
+    user_id: UUID,
+    session_id: UUID,
+    custom_data: str,
+    moment: datetime | None = None,
+    settings: Settings | None = None,
+) -> RewardClaimResult:
+    now = moment or datetime.now(UTC)
+    current_settings = settings or get_settings()
+
+    session = db.scalar(
+        select(RewardedAdSession)
+        .where(
+            RewardedAdSession.id == session_id,
+            RewardedAdSession.user_id == user_id,
+        )
+        .with_for_update()
+    )
+    if session is None:
+        raise RewardedAdSessionError("Rewarded-ad session does not exist")
+
+    if session.status == "completed":
+        existing_claim = db.scalar(select(RewardedAdClaim).where(RewardedAdClaim.session_id == session.id))
+        balance_points = get_wallet_balance(db, user_id)
+        if existing_claim:
+            return RewardClaimResult(
+                claim=existing_claim,
+                idempotent=True,
+                balance_points=balance_points,
+            )
+
+    if session.status != "pending":
+        raise RewardedAdSessionError("Rewarded-ad session was already completed or expired")
+
+    if _as_utc(session.expires_at) < now:
+        session.status = "expired"
+        raise RewardedAdSessionError("Rewarded-ad session expired")
+
+    if hash_secret(custom_data) != session.custom_data_hash:
+        raise RewardedAdSessionError("Invalid custom data for rewarded-ad session")
+
+    eligibility = rewarded_ad_eligibility(
+        db,
+        user_id,
+        moment=now,
+        settings=current_settings,
+        lock_wallet=True,
+    )
+    if not eligibility.eligible:
+        raise RewardedAdsUnavailableError(eligibility.reason or "rewarded_ads_unavailable")
+
+    transaction_id = f"client:{session.id}"
+    wallet_transaction_id = f"admob:{transaction_id}"
+    zone = ZoneInfo(current_settings.market_timezone)
+
+    credit_points(
+        db,
+        user_id=user_id,
+        amount_points=current_settings.ad_reward_points,
+        transaction_id=wallet_transaction_id,
+        entry_type="rewarded_ad",
+        reference_type="rewarded_ad_claim",
+        reference_id=transaction_id,
+        details={
+            "ad_unit_id": session.ad_unit_id,
+            "verification": "client_rewarded_ad_completion",
+        },
+    )
+
+    claim = RewardedAdClaim(
+        user_id=user_id,
+        session_id=session.id,
+        transaction_id=transaction_id,
+        ad_network="google_mobile_ads",
+        ad_unit_id=session.ad_unit_id,
+        reported_reward_amount=1,
+        reward_item=current_settings.admob_reward_item,
+        callback_timestamp=now,
+        cairo_reward_date=now.astimezone(zone).date(),
+        wallet_transaction_id=wallet_transaction_id,
+        verified_at=now,
+        raw_payload={"custom_data": custom_data, "source": "client_claim"},
+    )
+    session.status = "completed"
+    session.completed_at = now
+    db.add(claim)
+    db.flush()
+
+    return RewardClaimResult(
+        claim=claim,
+        idempotent=False,
+        balance_points=get_wallet_balance(db, user_id),
+    )
+
+
 def _replace_active_subscription(
     db: Session,
     *,

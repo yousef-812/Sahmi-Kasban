@@ -35,6 +35,7 @@ from app.services.monetization import (
     RewardedAdsUnavailableError,
     UnsupportedProductError,
     catalog_payload,
+    claim_rewarded_ad_session,
     create_rewarded_ad_session,
     export_ad_telemetry_report,
     get_ad_telemetry_summary,
@@ -121,6 +122,34 @@ def start_rewarded_ad_session(
         custom_data=result.custom_data,
         expires_at=result.session.expires_at,
         test_mode=settings.admob_ssv_verification_mode == "stub",
+    )
+
+
+@router.post(
+    "/rewarded-ads/sessions/{session_id}/claim",
+    response_model=RewardedAdSimulationResponse,
+)
+def claim_rewarded_ad_session_endpoint(
+    session_id: UUID,
+    payload: RewardedAdSimulationRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> RewardedAdSimulationResponse:
+    try:
+        result = claim_rewarded_ad_session(
+            db,
+            user_id=current_user.id,
+            session_id=session_id,
+            custom_data=payload.custom_data,
+        )
+        db.commit()
+    except (RewardedAdSessionError, RewardedAdsUnavailableError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return RewardedAdSimulationResponse(
+        idempotent=result.idempotent,
+        balance_points=result.balance_points,
+        balance_coins=points_to_coins(result.balance_points),
     )
 
 
