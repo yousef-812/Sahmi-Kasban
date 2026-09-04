@@ -355,11 +355,14 @@ async def execute_stock_analysis(
         db.rollback()
         raise InsufficientBalanceError("Insufficient balance for stock analysis")
 
+    available_candles = len(series.candles)
+    adaptive_min_history = max(min(available_candles, settings.market_data_min_candles), 15)
+
     config = AnalysisConfig(
         capital=settings.analysis_default_capital,
         risk_per_trade=settings.analysis_risk_per_trade,
         max_position_value=settings.analysis_max_position_value,
-        min_history=settings.market_data_min_candles,
+        min_history=adaptive_min_history,
     )
     analyzer = SahmiKasbanAnalyzer(config)
     try:

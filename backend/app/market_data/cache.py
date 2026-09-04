@@ -68,7 +68,7 @@ async def get_cached_or_fresh_history(
     requested_cache_minutes = (
         cache_minutes if cache_minutes is not None else settings.market_data_cache_minutes
     )
-    requested_min_candles = min_candles if min_candles is not None else settings.market_data_min_candles
+    requested_min_candles = min_candles if min_candles is not None else 15
     if requested_cache_minutes <= 0:
         raise ValueError("cache_minutes must be positive")
     if requested_min_candles < 1:

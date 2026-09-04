@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     market_data_interval: str = "1d"
     market_data_cache_minutes: int = 30
     market_data_timeout_seconds: float = 20.0
-    market_data_min_candles: int = 60
+    market_data_min_candles: int = 200
 
     tradingview_websocket_url: str = "wss://data.tradingview.com/socket.io/websocket"
     tradingview_scanner_url: str = "https://scanner.tradingview.com/egypt/scan"
