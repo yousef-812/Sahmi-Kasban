@@ -20,6 +20,7 @@ from app.db.session import get_db
 from app.models import User
 from app.schemas.accounts import (
     ForgotPasswordRequest,
+    GoogleAuthRequest,
     LoginRequest,
     LogoutRequest,
     MessageResponse,
@@ -37,6 +38,7 @@ from app.services.auth import (
     EmailVerificationRequiredError,
     InvalidAccountCodeError,
     InvalidAccountTokenError,
+    authenticate_or_register_with_google,
     authenticate_user,
     create_email_verification_code,
     create_password_reset_code,
@@ -324,6 +326,40 @@ def login(
             detail="Invalid email or password",
         ) from exc
     return _token_response(token_pair)
+
+
+@router.post("/google", response_model=TokenResponse)
+def google_auth(
+    payload: GoogleAuthRequest,
+    request: Request,
+    db: DatabaseSession,
+    user_agent: UserAgent = None,
+) -> TokenResponse:
+    _enforce_auth_limit(
+        request,
+        db,
+        action="login",
+        discriminator="google_auth",
+    )
+    try:
+        user, token_pair = authenticate_or_register_with_google(
+            db,
+            id_token=payload.id_token,
+            referral_code=payload.referral_code,
+            user_agent=user_agent,
+        )
+        grant_welcome_bonus_if_eligible(db, user)
+        db.commit()
+        return _token_response(token_pair)
+    except AuthenticationError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        db.rollback()
+        raise _validation_error(exc) from exc
 
 
 @router.post("/refresh", response_model=TokenResponse)

@@ -103,6 +103,31 @@ class BackendRepository {
     }
   }
 
+  Future<TokenPair> loginWithGoogle({
+    required String idToken,
+    String? referralCode,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/auth/google',
+        data: <String, dynamic>{
+          'id_token': idToken,
+          if (referralCode != null && referralCode.trim().isNotEmpty)
+            'referral_code': referralCode.trim(),
+        },
+        options: Options(extra: <String, dynamic>{'anonymous': true}),
+      );
+      final tokens = TokenPair.fromJson(_requiredData(response));
+      await _tokenStore.save(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      );
+      return tokens;
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<void> logout() async {
     final refreshToken = await _tokenStore.readRefreshToken();
     try {

@@ -83,6 +83,24 @@ class SessionController extends StateNotifier<SessionState> {
     }
   }
 
+  Future<void> loginWithGoogle({
+    required String idToken,
+    String? referralCode,
+  }) async {
+    state = const SessionState.loading();
+    try {
+      await _repository.loginWithGoogle(
+        idToken: idToken,
+        referralCode: referralCode,
+      );
+      final profile = await _repository.getProfile();
+      state = SessionState.authenticated(profile);
+    } on ApiException catch (error) {
+      state = SessionState.unauthenticated(errorMessage: error.message);
+      rethrow;
+    }
+  }
+
   void loginAsDemo() {
     state = const SessionState.authenticated(
       UserProfile(

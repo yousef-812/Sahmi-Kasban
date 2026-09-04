@@ -41,6 +41,11 @@ class RegisterResponse(BaseModel):
     weekly_points_granted: int = 500
 
 
+class GoogleAuthRequest(BaseModel):
+    id_token: str = Field(min_length=10)
+    referral_code: str | None = None
+
+
 class VerifyEmailRequest(BaseModel):
     email: EmailStr | None = None
     code: str | None = Field(default=None, pattern=r"^\d{6}$")

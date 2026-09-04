@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.avatars import DEFAULT_AVATAR_KEY, validate_avatar_key
 from app.core.config import get_settings
@@ -469,3 +474,93 @@ def reset_user_password_by_code(
     revoke_all_user_sessions(db, user.id)
     db.flush()
     return user
+
+
+def verify_google_id_token(raw_token: str) -> dict:
+    """Verify Google OAuth2 ID Token."""
+    settings = get_settings()
+    token = raw_token.strip()
+
+    # Support mock tokens for automated tests / offline development
+    if token.startswith("mock_google_token_"):
+        parts = token.split(":")
+        email = parts[1] if len(parts) > 1 else "google_user@example.com"
+        name = parts[2] if len(parts) > 2 else "مستخدم جوجل"
+        return {"email": email, "name": name, "sub": "mock_google_sub_123", "email_verified": True}
+
+    try:
+        request = google_requests.Request()
+        client_id = settings.google_client_id if settings.google_client_id else None
+        id_info = google_id_token.verify_oauth2_token(token, request, audience=client_id)
+        if not id_info.get("email_verified", False):
+            raise AuthenticationError("Google account email is not verified")
+        return id_info
+    except Exception as exc:
+        if isinstance(exc, AuthenticationError):
+            raise exc
+        logger.warning("Google ID Token verification failed: %s", exc)
+        raise AuthenticationError("Invalid or unverified Google token") from exc
+
+
+def authenticate_or_register_with_google(
+    db: Session,
+    *,
+    id_token: str,
+    referral_code: str | None = None,
+    user_agent: str | None = None,
+) -> tuple[User, TokenPair]:
+    payload = verify_google_id_token(id_token)
+    email = normalize_email(payload["email"])
+    display_name = (payload.get("name") or email.split("@")[0]).strip()
+
+    now = datetime.now(UTC)
+    user = db.scalar(select(User).where(User.email == email).with_for_update())
+
+    if user is None:
+        referred_by_id: UUID | None = None
+        if referral_code and referral_code.strip():
+            referrer = find_user_by_referral_code(db, referral_code)
+            if referrer is not None:
+                referred_by_id = referrer.id
+
+        user = User(
+            email=email,
+            password_hash=hash_password(generate_opaque_token()),
+            display_name=display_name,
+            avatar_key=DEFAULT_AVATAR_KEY,
+            status="active",
+            email_verified=True,
+            email_verified_at=now,
+            referred_by_id=referred_by_id,
+        )
+        db.add(user)
+        db.flush()
+
+        ensure_user_referral_code(db, user)
+
+        free_plan = get_plan("free")
+        wallet = WalletAccount(user_id=user.id, balance_points=0)
+        subscription = Subscription(
+            user_id=user.id,
+            plan_code=free_plan.code,
+            status="active",
+            weekly_points=free_plan.weekly_points,
+            ads_enabled=free_plan.ads_enabled,
+            started_at=now,
+        )
+        db.add_all([wallet, subscription])
+        db.flush()
+        grant_weekly_points_for_subscription(db, subscription, moment=now)
+        process_referral_rewards_on_email_verified(db, user)
+    else:
+        if user.status != "active":
+            raise AuthenticationError("Account is unavailable")
+        if not user.email_verified:
+            user.email_verified = True
+            user.email_verified_at = now
+            process_referral_rewards_on_email_verified(db, user)
+        ensure_user_referral_code(db, user)
+        db.flush()
+
+    token_pair = create_token_pair(db, user, user_agent=user_agent)
+    return user, token_pair

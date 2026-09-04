@@ -6,6 +6,65 @@ import '../../core/network/api_exception.dart';
 import '../../core/ui/app_notice.dart';
 import 'session_controller.dart';
 
+import 'package:google_sign_in/google_sign_in.dart';
+
+Future<void> _handleGoogleSignIn(
+  BuildContext context,
+  WidgetRef ref, {
+  String? referralCode,
+}) async {
+  try {
+    final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+    final account = await googleSignIn.signIn();
+    if (account == null) {
+      return;
+    }
+    final auth = await account.authentication;
+    final idToken = auth.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      if (context.mounted) {
+        AppNotice.show(
+          context,
+          title: 'تعذر الدخول بجوجل',
+          message: 'لم نتمكن من الحصول على توكن المصادقة الخاص بجوجل.',
+          tone: AppNoticeTone.error,
+        );
+      }
+      return;
+    }
+    await ref
+        .read(sessionControllerProvider.notifier)
+        .loginWithGoogle(idToken: idToken, referralCode: referralCode);
+    if (context.mounted) {
+      AppNotice.show(
+        context,
+        title: 'مرحباً بك!',
+        message: 'تم تسجيل الدخول بنجاح بواسطة Google.',
+        tone: AppNoticeTone.success,
+      );
+      context.go('/home');
+    }
+  } on ApiException catch (error) {
+    if (context.mounted) {
+      AppNotice.show(
+        context,
+        title: 'تعذر تسجيل الدخول',
+        message: error.message,
+        tone: AppNoticeTone.error,
+      );
+    }
+  } catch (error) {
+    if (context.mounted) {
+      AppNotice.show(
+        context,
+        title: 'تعذر الاتصال بـ Google',
+        message: 'حدث خطأ أثناء الاتصال بحساب Google.',
+        tone: AppNoticeTone.error,
+      );
+    }
+  }
+}
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -124,6 +183,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
                   : const Text('تسجيل الدخول'),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('أو', style: TextStyle(color: Colors.grey)),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _submitting
+                  ? null
+                  : () => _handleGoogleSignIn(context, ref),
+              icon: const Icon(
+                Icons.g_mobiledata_rounded,
+                size: 28,
+                color: Colors.redAccent,
+              ),
+              label: const Text('تسجيل الدخول بواسطة Google 🚀'),
             ),
             const SizedBox(height: 12),
             TextButton(
@@ -282,6 +364,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
                   : const Text('إنشاء الحساب'),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('أو', style: TextStyle(color: Colors.grey)),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _submitting
+                  ? null
+                  : () {
+                      final code = _referralCodeController.text.trim();
+                      _handleGoogleSignIn(
+                        context,
+                        ref,
+                        referralCode: code.isEmpty ? null : code,
+                      );
+                    },
+              icon: const Icon(
+                Icons.g_mobiledata_rounded,
+                size: 28,
+                color: Colors.redAccent,
+              ),
+              label: const Text('التسجيل المباشر بواسطة Google 🚀'),
             ),
             const SizedBox(height: 12),
             TextButton(

@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     email_verification_hours: int = 24
     password_reset_minutes: int = 30
     jwt_algorithm: str = "HS256"
+    google_client_id: str = ""
 
     smtp_host: str = ""
     smtp_port: int = 587
