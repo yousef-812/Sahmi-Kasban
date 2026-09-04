@@ -48,7 +48,19 @@ def find_user_by_referral_code(db: Session, code: str) -> User | None:
     clean_code = code.strip().upper()
     if not clean_code:
         return None
-    return db.scalar(select(User).where(User.referral_code == clean_code))
+    user = db.scalar(select(User).where(User.referral_code == clean_code))
+    if user is not None:
+        return user
+    if not clean_code.startswith("SK-"):
+        user = db.scalar(select(User).where(User.referral_code == f"SK-{clean_code}"))
+        if user is not None:
+            return user
+    if clean_code.startswith("SK-"):
+        without_prefix = clean_code[3:]
+        user = db.scalar(select(User).where(User.referral_code == without_prefix))
+        if user is not None:
+            return user
+    return None
 
 
 def process_referral_rewards_on_email_verified(db: Session, user: User) -> bool:
@@ -103,10 +115,14 @@ def process_referral_rewards_on_email_verified(db: Session, user: User) -> bool:
 def get_user_referral_stats(db: Session, user: User) -> dict[str, Any]:
     referral_code = ensure_user_referral_code(db, user)
 
-    # Query all users referred by this user
+    # Auto-reconcile any pending referral rewards for verified users
     referred_users = list(
         db.scalars(select(User).where(User.referred_by_id == user.id).order_by(User.created_at.desc())).all()
     )
+    for referee in referred_users:
+        if referee.email_verified:
+            process_referral_rewards_on_email_verified(db, referee)
+    db.flush()
 
     total_referrals_count = len(referred_users)
 

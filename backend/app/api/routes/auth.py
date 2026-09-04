@@ -58,6 +58,7 @@ from app.services.auth_rate_limit import (
 )
 from app.services.email import AccountEmailService, get_account_email_service
 from app.services.monetization_catalog import get_plan
+from app.services.referral import process_referral_rewards_on_email_verified
 from app.services.welcome_bonus import grant_welcome_bonus_if_eligible
 
 logger = logging.getLogger(__name__)
@@ -248,6 +249,7 @@ def verify_email(
         else:
             user = verify_user_email(db, payload.token or "")
         grant_welcome_bonus_if_eligible(db, user)
+        process_referral_rewards_on_email_verified(db, user)
         db.commit()
     except InvalidAccountCodeError as exc:
         # The failed-attempt counter is a security record and must survive the 400 response.
