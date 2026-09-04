@@ -14,7 +14,11 @@ Future<void> _handleGoogleSignIn(
   String? referralCode,
 }) async {
   try {
-    final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+    final googleSignIn = GoogleSignIn(
+      serverClientId:
+          '48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com',
+      scopes: ['email', 'profile'],
+    );
     final account = await googleSignIn.signIn();
     if (account == null) {
       return;
