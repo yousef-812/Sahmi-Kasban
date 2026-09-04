@@ -12,7 +12,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.market_data.egx_symbols import _TICKER_PATTERN, EGX_ARABIC_NAMES, normalize_egx_ticker
+from app.market_data.egx_symbols import (
+    _TICKER_PATTERN,
+    EGX_ARABIC_NAMES,
+    normalize_egx_ticker,
+    sanitize_arabic_description,
+)
 from app.models import MarketDataSnapshot, MarketInstrumentCatalog
 
 logger = logging.getLogger(__name__)
@@ -625,12 +630,8 @@ def _merge_with_catalog(
     items: list[MarketQuote] = []
     for ticker, quote in quotes.items():
         row = catalog_rows.get(ticker)
-        description = quote.description
-        if row is not None and row.description.strip():
-            description = row.description.strip()
-        curated = EGX_ARABIC_NAMES.get(ticker)
-        if curated:
-            description = curated
+        raw_desc = row.description.strip() if row is not None and row.description.strip() else quote.description
+        description = sanitize_arabic_description(raw_desc, ticker)
         high52, low52 = daily_bounds.get(ticker, (None, None))
         session_change = None
         if not reset_change_percent:

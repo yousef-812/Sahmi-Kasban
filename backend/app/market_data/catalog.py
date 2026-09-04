@@ -14,6 +14,7 @@ from app.market_data.egx_symbols import (
     EGX_ARABIC_NAMES,
     EGX_SEED_SYMBOLS,
     EGX_SYMBOL_SET,
+    sanitize_arabic_description,
 )
 from app.market_data.types import MarketInstrument
 from app.models import MarketInstrumentCatalog
@@ -38,6 +39,21 @@ def _as_utc(value: datetime | None) -> datetime | None:
     return value.astimezone(UTC)
 
 
+def sanitize_db_catalog_descriptions(db: Session) -> int:
+    """Clean catalog entries in the database that contain mangled question mark strings."""
+    rows = list(db.scalars(select(MarketInstrumentCatalog)).all())
+    updated = 0
+    for row in rows:
+        cleaned = sanitize_arabic_description(row.description or "", row.ticker)
+        if cleaned != row.description:
+            row.description = cleaned
+            updated += 1
+    if updated:
+        db.commit()
+        logger.info("Sanitized %s market instrument catalog descriptions in DB", updated)
+    return updated
+
+
 def seed_market_instrument_catalog(db: Session) -> None:
     now = _utcnow()
     existing_map = {
@@ -55,7 +71,7 @@ def seed_market_instrument_catalog(db: Session) -> None:
                     ticker=ticker,
                     provider_symbol=f"EGX:{ticker}",
                     exchange="EGX",
-                    description=EGX_ARABIC_NAMES.get(ticker, ""),
+                    description=sanitize_arabic_description("", ticker),
                     source="legacy_seed",
                     active=True,
                     last_seen_at=now,
@@ -68,6 +84,7 @@ def seed_market_instrument_catalog(db: Session) -> None:
             changed = True
     if changed:
         db.commit()
+    sanitize_db_catalog_descriptions(db)
 
 
 def _parse_scanner_rows(payload: object) -> list[MarketInstrumentCatalog]:
@@ -97,6 +114,7 @@ def _parse_scanner_rows(payload: object) -> list[MarketInstrumentCatalog]:
             description = values[1].strip()[:255]
         if not description and len(values) > 0 and isinstance(values[0], str):
             description = values[0].strip()[:255]
+        description = sanitize_arabic_description(description, ticker, use_curated_fallback=False)
         parsed[ticker] = MarketInstrumentCatalog(
             ticker=ticker,
             provider_symbol=f"EGX:{ticker}",
@@ -115,13 +133,17 @@ def _preferred_description(
     *,
     ticker: str,
 ) -> str:
-    """Prefer Arabic descriptions, keeping curated blue-chip names authoritative."""
+    """Prefer clean Arabic descriptions, keeping curated blue-chip names authoritative."""
     curated = EGX_ARABIC_NAMES.get(ticker, "")
     if curated:
         return curated[:255]
-    if incoming.strip():
-        return incoming.strip()[:255]
-    return existing[:255]
+    clean_incoming = sanitize_arabic_description(incoming, ticker)
+    clean_existing = sanitize_arabic_description(existing, ticker)
+    if clean_incoming != ticker:
+        return clean_incoming[:255]
+    if clean_existing != ticker:
+        return clean_existing[:255]
+    return ticker[:255]
 
 
 def _reconcile_scanner_rows(
@@ -213,6 +235,7 @@ async def refresh_market_instrument_catalog(db: Session) -> int:
         "Origin": settings.tradingview_origin,
         "Referer": f"{settings.tradingview_origin}/",
         "User-Agent": settings.tradingview_user_agent,
+        "Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8,en;q=0.7",
     }
     timeout = httpx.Timeout(settings.market_instrument_catalog_timeout_seconds)
     async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:

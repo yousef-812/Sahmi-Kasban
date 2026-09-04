@@ -189,12 +189,36 @@ EGX_ARABIC_NAMES: dict[str, str] = {
     "ADIB": "بنك أبوظبي الإسلامي مصر",
     "WEGY": "وادي كوم أمبو لاستصلاح الأراضي",
     "RAYA": "راية القابضة للاستثمارات المالية",
-    "KORA": "كورة كورا كورة للإدارة والحسابات Korra",
+    "KORA": "كوررا لتنمية الاستثمار (Korra)",
 }
 
 
 def has_arabic_text(value: str) -> bool:
     return any("\u0600" <= character <= "\u06ff" for character in value)
+
+
+def sanitize_arabic_description(
+    description: str,
+    ticker: str,
+    *,
+    use_curated_fallback: bool = True,
+) -> str:
+    normalized_ticker = ticker.strip().upper()
+    if use_curated_fallback:
+        curated = EGX_ARABIC_NAMES.get(normalized_ticker)
+        if curated:
+            return curated
+    if not description or not description.strip():
+        curated = EGX_ARABIC_NAMES.get(normalized_ticker)
+        return curated if curated else normalized_ticker
+    if "?" in description or "\ufffd" in description:
+        cleaned = re.sub(r"[\?\ufffd]+", " ", description).strip()
+        cleaned = re.sub(r"\s+", " ", cleaned)
+        if cleaned and (has_arabic_text(cleaned) or len(cleaned) >= 3):
+            return cleaned
+        curated = EGX_ARABIC_NAMES.get(normalized_ticker)
+        return curated if curated else normalized_ticker
+    return description.strip()
 
 
 def normalize_egx_ticker(ticker: str) -> str:
@@ -203,6 +227,7 @@ def normalize_egx_ticker(ticker: str) -> str:
     if not _TICKER_PATTERN.fullmatch(normalized):
         raise UnknownTickerError(f"Invalid EGX ticker: {normalized or ticker}")
     return normalized
+
 
 
 def to_yahoo_symbol(ticker: str) -> str:
