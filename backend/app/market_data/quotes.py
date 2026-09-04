@@ -14,7 +14,6 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.market_data.egx_symbols import (
     _TICKER_PATTERN,
-    EGX_ARABIC_NAMES,
     normalize_egx_ticker,
     sanitize_arabic_description,
 )
@@ -630,7 +629,9 @@ def _merge_with_catalog(
     items: list[MarketQuote] = []
     for ticker, quote in quotes.items():
         row = catalog_rows.get(ticker)
-        raw_desc = row.description.strip() if row is not None and row.description.strip() else quote.description
+        raw_desc = (
+            row.description.strip() if row is not None and row.description.strip() else quote.description
+        )
         description = sanitize_arabic_description(raw_desc, ticker)
         high52, low52 = daily_bounds.get(ticker, (None, None))
         session_change = None

@@ -585,11 +585,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
                 child: const Center(child: CircularProgressIndicator()),
               ),
             ),
-            Positioned.fill(
-              child: WebViewWidget(
-                controller: _controller,
-              ),
-            ),
+            Positioned.fill(child: WebViewWidget(controller: _controller)),
           ],
         ),
       ),

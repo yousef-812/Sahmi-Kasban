@@ -48,6 +48,7 @@ def test_referral_flow_registration_rewards_and_stats(client: TestClient, db_ses
 
     # Process rewards manually or via email verification
     from app.services.referral import process_referral_rewards_on_email_verified
+
     rewarded = process_referral_rewards_on_email_verified(db, referee_user)
     assert rewarded is True
     db.commit()

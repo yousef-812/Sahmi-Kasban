@@ -23,7 +23,7 @@ def test_google_registration_and_login(client: TestClient, db_session: Session) 
     db.commit()
 
     # 2. Register new user via Google with referral code
-    mock_token = f"mock_google_token_:google_newuser@example.com:مستخدم جوجل الجديد"
+    mock_token = "mock_google_token_:google_newuser@example.com:مستخدم جوجل الجديد"
     resp_google = client.post(
         "/api/v1/auth/google",
         json={"id_token": mock_token, "referral_code": ref_code},

@@ -4,7 +4,6 @@ import logging
 import random
 import string
 from typing import Any
-from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -19,7 +18,9 @@ REFERRAL_REWARD_POINTS = 1000  # Equal to 10.00 coins
 
 
 def _random_code(length: int = 6) -> str:
-    chars = string.ascii_uppercase + string.digits.replace("0", "").replace("O", "").replace("1", "").replace("I", "")
+    chars = string.ascii_uppercase + string.digits.replace("0", "").replace("O", "").replace("1", "").replace(
+        "I", ""
+    )
     return "SK-" + "".join(random.choices(chars, k=length))
 
 
@@ -93,7 +94,9 @@ def process_referral_rewards_on_email_verified(db: Session, user: User) -> bool:
         reference_id=str(referrer.id),
     )
 
-    logger.info("Granted referral rewards (10 coins each) for referrer %s and referee %s", referrer.id, user.id)
+    logger.info(
+        "Granted referral rewards (10 coins each) for referrer %s and referee %s", referrer.id, user.id
+    )
     return True
 
 
@@ -102,22 +105,21 @@ def get_user_referral_stats(db: Session, user: User) -> dict[str, Any]:
 
     # Query all users referred by this user
     referred_users = list(
-        db.scalars(
-            select(User)
-            .where(User.referred_by_id == user.id)
-            .order_by(User.created_at.desc())
-        ).all()
+        db.scalars(select(User).where(User.referred_by_id == user.id).order_by(User.created_at.desc())).all()
     )
 
     total_referrals_count = len(referred_users)
 
     # Calculate total earned points from referrals
-    earned_points = db.scalar(
-        select(func.coalesce(func.sum(WalletEntry.amount_points), 0)).where(
-            WalletEntry.user_id == user.id,
-            WalletEntry.entry_type == "referral_reward_referrer",
+    earned_points = (
+        db.scalar(
+            select(func.coalesce(func.sum(WalletEntry.amount_points), 0)).where(
+                WalletEntry.user_id == user.id,
+                WalletEntry.entry_type == "referral_reward_referrer",
+            )
         )
-    ) or 0
+        or 0
+    )
 
     total_earned_points = int(earned_points)
     total_earned_coins_str = f"{total_earned_points / POINTS_PER_COIN:.2f}"

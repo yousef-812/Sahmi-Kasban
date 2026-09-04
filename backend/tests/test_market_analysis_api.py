@@ -8,7 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
 from app.models import MarketDataSnapshot, StockAnalysis, WalletAccount, WalletEntry

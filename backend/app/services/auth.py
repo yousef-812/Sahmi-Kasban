@@ -10,8 +10,6 @@ from google.oauth2 import id_token as google_id_token
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
-
 from app.core.avatars import DEFAULT_AVATAR_KEY, validate_avatar_key
 from app.core.config import get_settings
 from app.core.security import (
@@ -34,6 +32,8 @@ from app.services.referral import (
     process_referral_rewards_on_email_verified,
 )
 from app.services.wallet import grant_weekly_points_for_subscription
+
+logger = logging.getLogger(__name__)
 
 EMAIL_VERIFICATION = "email_verification"
 PASSWORD_RESET = "password_reset"

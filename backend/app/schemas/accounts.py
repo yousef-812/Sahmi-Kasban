@@ -178,7 +178,6 @@ class ReferralStatsResponse(BaseModel):
     referred_users: list[ReferredUserItem]
 
 
-
 class WalletSummaryResponse(BaseModel):
     balance_points: int
     balance_coins: str

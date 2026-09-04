@@ -60,12 +60,8 @@ class SahmiTheme {
         surfaceTintColor: Colors.transparent,
         iconTheme: IconThemeData(color: Color(0xFFF1F5F9)),
       ),
-      drawerTheme: const DrawerThemeData(
-        backgroundColor: Color(0xFF161A22),
-      ),
-      dialogTheme: const DialogThemeData(
-        backgroundColor: Color(0xFF1B2028),
-      ),
+      drawerTheme: const DrawerThemeData(backgroundColor: Color(0xFF161A22)),
+      dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1B2028)),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Color(0xFF1B2028),
       ),

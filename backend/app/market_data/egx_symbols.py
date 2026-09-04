@@ -229,7 +229,6 @@ def normalize_egx_ticker(ticker: str) -> str:
     return normalized
 
 
-
 def to_yahoo_symbol(ticker: str) -> str:
     return f"{normalize_egx_ticker(ticker)}.CA"
 
