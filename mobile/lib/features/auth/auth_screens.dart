@@ -60,13 +60,19 @@ Future<void> _handleGoogleSignIn(
   } catch (error) {
     if (context.mounted) {
       final detail = error.toString();
-      final displayMessage = detail.length > 120
-          ? '${detail.substring(0, 120)}...'
-          : detail;
+      String message;
+      if (detail.contains('10:')) {
+        message =
+            'بصمة SHA-1 للنسخة غير متطابقة في Google Cloud Console ($detail)';
+      } else if (detail.length > 120) {
+        message = 'خطأ من Google: ${detail.substring(0, 120)}...';
+      } else {
+        message = 'خطأ من Google: $detail';
+      }
       AppNotice.show(
         context,
         title: 'تعذر الاتصال بـ Google',
-        message: 'خطأ من Google: $displayMessage',
+        message: message,
         tone: AppNoticeTone.error,
       );
     }
