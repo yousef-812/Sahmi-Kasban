@@ -15,6 +15,8 @@ Future<void> _handleGoogleSignIn(
 }) async {
   try {
     final googleSignIn = GoogleSignIn(
+      clientId:
+          '48076310012-ofah5gism48e3bi13qr7hc8i8dbsrrts.apps.googleusercontent.com',
       serverClientId:
           '48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com',
       scopes: ['email', 'profile'],
@@ -59,10 +61,14 @@ Future<void> _handleGoogleSignIn(
     }
   } catch (error) {
     if (context.mounted) {
+      final detail = error.toString();
+      final displayMessage = detail.length > 120
+          ? '${detail.substring(0, 120)}...'
+          : detail;
       AppNotice.show(
         context,
         title: 'تعذر الاتصال بـ Google',
-        message: 'حدث خطأ أثناء الاتصال بحساب Google.',
+        message: 'خطأ من Google: $displayMessage',
         tone: AppNoticeTone.error,
       );
     }
@@ -209,7 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 size: 28,
                 color: Colors.redAccent,
               ),
-              label: const Text('تسجيل الدخول بواسطة Google 🚀'),
+              label: const Text('تسجيل الدخول بواسطة Google'),
             ),
             const SizedBox(height: 12),
             TextButton(
@@ -397,7 +403,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 size: 28,
                 color: Colors.redAccent,
               ),
-              label: const Text('التسجيل المباشر بواسطة Google 🚀'),
+              label: const Text('التسجيل المباشر بواسطة Google'),
             ),
             const SizedBox(height: 12),
             TextButton(

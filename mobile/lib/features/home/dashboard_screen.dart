@@ -294,7 +294,7 @@ class ProfileTab extends ConsumerWidget {
                     const Icon(Icons.palette_outlined, color: Colors.teal),
                     const SizedBox(width: 10),
                     Text(
-                      'مظهر التطبيق 🎨',
+                      'مظهر التطبيق',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
