@@ -405,7 +405,7 @@ async def _analyze_ticker(
         return CandidateOutcome(ticker=ticker, excluded_reason="stale_close")
 
     frame = pd.DataFrame(series.candles)
-    if len(frame) < settings.market_data_min_candles:
+    if len(frame) < 200:
         return CandidateOutcome(ticker=ticker, excluded_reason="insufficient_history")
 
     recent = frame.tail(20).copy()
