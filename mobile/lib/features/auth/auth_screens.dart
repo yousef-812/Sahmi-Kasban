@@ -15,8 +15,6 @@ Future<void> _handleGoogleSignIn(
 }) async {
   try {
     final googleSignIn = GoogleSignIn(
-      clientId:
-          '48076310012-ofah5gism48e3bi13qr7hc8i8dbsrrts.apps.googleusercontent.com',
       serverClientId:
           '48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com',
       scopes: ['email', 'profile'],
