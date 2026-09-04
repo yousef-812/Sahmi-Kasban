@@ -47,7 +47,13 @@ def upgrade() -> None:
             nullable=False,
             server_default="{}",
         ),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False, index=True),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.UniqueConstraint("persona_code", "target_session_date", name="uq_ai_persona_logs_persona_session"),
     )

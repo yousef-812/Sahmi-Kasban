@@ -36,7 +36,13 @@ def upgrade() -> None:
         sa.Column("ad_unit_id", sa.String(160), nullable=True),
         sa.Column("platform", sa.String(24), nullable=False, server_default="android"),
         sa.Column("error_message", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False, index=True),
+        sa.Column(
+            "created_at",
+            sa.TIMESTAMP(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("updated_at", sa.TIMESTAMP(timezone=True), server_default=sa.func.now(), nullable=False),
     )
 

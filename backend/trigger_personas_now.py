@@ -1,5 +1,6 @@
 import asyncio
 import logging
+
 from app.jobs.persona_scheduler import trigger_persona_discussions_job
 
 logging.basicConfig(level=logging.INFO)
