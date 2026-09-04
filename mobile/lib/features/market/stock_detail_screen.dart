@@ -22,6 +22,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
   bool _fullscreenOpen = false;
   bool _autoFullscreen = false;
   bool _rotationCheckScheduled = false;
+  bool _hideSideToolbar = true;
 
   @override
   void didChangeDependencies() {
@@ -54,16 +55,43 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     _autoFullscreen = auto;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => Scaffold(
-          backgroundColor: const Color(0xFFF7F7F7),
-          body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) => TradingViewWidget(
-                symbol: widget.ticker,
-                height: constraints.maxHeight,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setModalState) {
+            return Scaffold(
+              backgroundColor: const Color(0xFFF7F7F7),
+              appBar: AppBar(
+                title: Text(widget.ticker, textDirection: TextDirection.ltr),
+                actions: [
+                  IconButton(
+                    tooltip: _hideSideToolbar
+                        ? 'إظهار أدوات الرسم'
+                        : 'إخفاء أدوات الرسم',
+                    onPressed: () {
+                      setState(() {
+                        _hideSideToolbar = !_hideSideToolbar;
+                      });
+                      setModalState(() {});
+                    },
+                    icon: Icon(
+                      _hideSideToolbar
+                          ? Icons.edit_note_rounded
+                          : Icons.edit_off_rounded,
+                    ),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ],
               ),
-            ),
-          ),
+              body: SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) => TradingViewWidget(
+                    symbol: widget.ticker,
+                    height: constraints.maxHeight,
+                    hideSideToolbar: _hideSideToolbar,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -103,6 +131,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
         data: (quote) => _DetailContent(
           quote: quote,
           ticker: widget.ticker,
+          hideSideToolbar: _hideSideToolbar,
+          onToggleSideToolbar: (hide) =>
+              setState(() => _hideSideToolbar = hide),
           onOpenFullscreen: _openFullscreenChart,
         ),
       ),
@@ -110,23 +141,20 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
   }
 }
 
-class _DetailContent extends StatefulWidget {
+class _DetailContent extends StatelessWidget {
   const _DetailContent({
     required this.quote,
     required this.ticker,
+    required this.hideSideToolbar,
+    required this.onToggleSideToolbar,
     required this.onOpenFullscreen,
   });
 
   final MarketQuote quote;
   final String ticker;
+  final bool hideSideToolbar;
+  final ValueChanged<bool> onToggleSideToolbar;
   final VoidCallback onOpenFullscreen;
-
-  @override
-  State<_DetailContent> createState() => _DetailContentState();
-}
-
-class _DetailContentState extends State<_DetailContent> {
-  bool _hideSideToolbar = true;
 
   @override
   Widget build(BuildContext context) {
@@ -135,16 +163,16 @@ class _DetailContentState extends State<_DetailContent> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _Header(quote: widget.quote),
+          child: _Header(quote: quote),
         ),
         const SizedBox(height: 12),
-        _StatsRow(quote: widget.quote),
+        _StatsRow(quote: quote),
         const SizedBox(height: 8),
-        _AnnualRange(quote: widget.quote),
+        _AnnualRange(quote: quote),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _QuickActions(ticker: widget.ticker, quote: widget.quote),
+          child: _QuickActions(ticker: ticker, quote: quote),
         ),
         const SizedBox(height: 16),
         Padding(
@@ -160,13 +188,12 @@ class _DetailContentState extends State<_DetailContent> {
                 ),
               ),
               IconButton(
-                tooltip: _hideSideToolbar
+                tooltip: hideSideToolbar
                     ? 'إظهار أدوات الرسم'
                     : 'إخفاء أدوات الرسم',
-                onPressed: () =>
-                    setState(() => _hideSideToolbar = !_hideSideToolbar),
+                onPressed: () => onToggleSideToolbar(!hideSideToolbar),
                 icon: Icon(
-                  _hideSideToolbar
+                  hideSideToolbar
                       ? Icons.edit_note_rounded
                       : Icons.edit_off_rounded,
                 ),
@@ -174,7 +201,7 @@ class _DetailContentState extends State<_DetailContent> {
               ),
               IconButton(
                 tooltip: 'ملء الشاشة',
-                onPressed: widget.onOpenFullscreen,
+                onPressed: onOpenFullscreen,
                 icon: const Icon(Icons.fullscreen_rounded),
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -183,8 +210,8 @@ class _DetailContentState extends State<_DetailContent> {
         ),
         const SizedBox(height: 8),
         TradingViewWidget(
-          symbol: widget.ticker,
-          hideSideToolbar: _hideSideToolbar,
+          symbol: ticker,
+          hideSideToolbar: hideSideToolbar,
         ),
         const SizedBox(height: 12),
         const Padding(
