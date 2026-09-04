@@ -17,6 +17,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=10, max_length=128)
     display_name: str = Field(min_length=2, max_length=80)
     avatar_key: str = DEFAULT_AVATAR_KEY
+    referral_code: str | None = Field(default=None, max_length=32)
 
     @field_validator("display_name")
     @classmethod
@@ -131,6 +132,7 @@ class ProfileResponse(BaseModel):
     email: EmailStr
     display_name: str
     avatar_key: str
+    referral_code: str | None = None
     email_verified: bool
     status: str
     is_admin: bool
@@ -145,6 +147,31 @@ class ProfileResponse(BaseModel):
     discussions_count: int
     verified_predictions_count: int
     total_reward_points: int
+
+
+class ReferredUserItem(BaseModel):
+    display_name: str
+    avatar_key: str
+    joined_at: str = ""
+    registered_at: str | None = None
+    status: str
+    earned_points: int = 0
+    earned_coins: str = "0.00"
+
+
+class ReferralStatsResponse(BaseModel):
+    referral_code: str
+    play_store_url: str
+    share_text: str
+    reward_coins_per_referral: float
+    reward_points_per_referral: int
+    total_referrals_count: int
+    total_referred_count: int
+    total_earned_points: int
+    total_earned_coins: str
+    recent_referrals: list[ReferredUserItem]
+    referred_users: list[ReferredUserItem]
+
 
 
 class WalletSummaryResponse(BaseModel):

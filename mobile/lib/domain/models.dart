@@ -50,6 +50,7 @@ class UserProfile {
     required this.avatarKey,
     required this.emailVerified,
     this.isAdmin = false,
+    this.referralCode,
     required this.planCode,
     required this.balancePoints,
     required this.balanceCoins,
@@ -63,6 +64,7 @@ class UserProfile {
   final String avatarKey;
   final bool emailVerified;
   final bool isAdmin;
+  final String? referralCode;
   final String planCode;
   final int balancePoints;
   final String balanceCoins;
@@ -77,11 +79,74 @@ class UserProfile {
       avatarKey: json['avatar_key'] as String,
       emailVerified: json['email_verified'] as bool,
       isAdmin: json['is_admin'] as bool? ?? false,
+      referralCode: json['referral_code'] as String?,
       planCode: json['plan_code'] as String,
       balancePoints: json['balance_points'] as int,
       balanceCoins: json['balance_coins'] as String,
       weeklyCoins: json['weekly_coins'] as String,
       adsEnabled: json['ads_enabled'] as bool,
+    );
+  }
+}
+
+class ReferredUserItem {
+  const ReferredUserItem({
+    required this.displayName,
+    required this.avatarKey,
+    required this.joinedAt,
+    required this.status,
+    required this.earnedCoins,
+  });
+
+  final String displayName;
+  final String avatarKey;
+  final String joinedAt;
+  final String status; // "verified" | "pending"
+  final String earnedCoins;
+
+  factory ReferredUserItem.fromJson(Map<String, dynamic> json) {
+    return ReferredUserItem(
+      displayName: json['display_name'] as String,
+      avatarKey: json['avatar_key'] as String,
+      joinedAt: json['joined_at'] as String,
+      status: json['status'] as String,
+      earnedCoins: json['earned_coins'] as String,
+    );
+  }
+}
+
+class ReferralStats {
+  const ReferralStats({
+    required this.referralCode,
+    required this.playStoreUrl,
+    required this.totalReferredCount,
+    required this.totalEarnedPoints,
+    required this.totalEarnedCoins,
+    required this.referredUsers,
+  });
+
+  final String referralCode;
+  final String playStoreUrl;
+  final int totalReferredCount;
+  final int totalEarnedPoints;
+  final String totalEarnedCoins;
+  final List<ReferredUserItem> referredUsers;
+
+  factory ReferralStats.fromJson(Map<String, dynamic> json) {
+    final rawList = json['referred_users'];
+    final users = rawList is List
+        ? rawList
+            .map((e) => ReferredUserItem.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false)
+        : <ReferredUserItem>[];
+
+    return ReferralStats(
+      referralCode: json['referral_code'] as String? ?? '',
+      playStoreUrl: json['play_store_url'] as String? ?? '',
+      totalReferredCount: json['total_referred_count'] as int? ?? 0,
+      totalEarnedPoints: json['total_earned_points'] as int? ?? 0,
+      totalEarnedCoins: json['total_earned_coins'] as String? ?? '0.00',
+      referredUsers: users,
     );
   }
 }

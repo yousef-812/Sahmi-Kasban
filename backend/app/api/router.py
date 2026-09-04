@@ -23,6 +23,7 @@ from app.api.routes.performance import router as performance_router
 from app.api.routes.profile import router as profile_router
 from app.api.routes.quality import admin_router as quality_admin_router
 from app.api.routes.quality import public_router as quality_public_router
+from app.api.routes.referrals import router as referrals_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.wallet import router as wallet_router
 from app.api.routes.watchlist import router as watchlist_router
@@ -33,6 +34,7 @@ api_router.include_router(quality_public_router)
 api_router.include_router(auth_router)
 api_router.include_router(profile_router)
 api_router.include_router(wallet_router)
+api_router.include_router(referrals_router)
 api_router.include_router(market_router)
 api_router.include_router(watchlist_router)
 api_router.include_router(analysis_history_router)

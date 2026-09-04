@@ -27,6 +27,7 @@ import '../features/performance/performance_admin_screen.dart';
 import '../features/performance/performance_report_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
+import '../features/referral/referral_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
@@ -114,6 +115,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/wallet/history',
         builder: (context, state) => const WalletHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/referrals',
+        builder: (context, state) => const ReferralScreen(),
       ),
       GoRoute(
         path: '/monetization',

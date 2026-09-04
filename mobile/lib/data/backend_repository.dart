@@ -25,6 +25,7 @@ class BackendRepository {
     required String password,
     required String displayName,
     String avatarKey = 'avatar_01',
+    String? referralCode,
   }) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
@@ -34,6 +35,8 @@ class BackendRepository {
           'password': password,
           'display_name': displayName.trim(),
           'avatar_key': avatarKey,
+          if (referralCode != null && referralCode.trim().isNotEmpty)
+            'referral_code': referralCode.trim(),
         },
         options: Options(extra: <String, dynamic>{'anonymous': true}),
       );
@@ -453,6 +456,17 @@ class BackendRepository {
       );
       return (_requiredData(response)['message'] as String?) ??
           'تم تنفيذ الطلب.';
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<ReferralStats> getReferralStats() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/referrals/me',
+      );
+      return ReferralStats.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }

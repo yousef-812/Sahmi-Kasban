@@ -188,6 +188,7 @@ def register(
             password=payload.password,
             display_name=payload.display_name,
             avatar_key=payload.avatar_key,
+            referral_code=payload.referral_code,
         )
         db.commit()
     except DuplicateEmailError as exc:

@@ -149,6 +149,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _referralCodeController = TextEditingController();
   bool _obscurePassword = true;
   bool _submitting = false;
 
@@ -157,6 +158,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -166,12 +168,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     setState(() => _submitting = true);
     try {
+      final codeText = _referralCodeController.text.trim();
       final result = await ref
           .read(sessionControllerProvider.notifier)
           .register(
             email: _emailController.text,
             password: _passwordController.text,
             displayName: _nameController.text,
+            referralCode: codeText.isEmpty ? null : codeText,
           );
       if (!mounted) {
         return;
@@ -257,6 +261,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
               ),
               validator: _validatePassword,
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _referralCodeController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'كود الدعوة / الإحالة (اختياري)',
+                hintText: 'مثال: SK-7A39B8',
+                prefixIcon: Icon(Icons.card_giftcard_rounded),
+              ),
             ),
             const SizedBox(height: 22),
             FilledButton(

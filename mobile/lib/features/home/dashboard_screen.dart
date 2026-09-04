@@ -84,6 +84,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Navigator.pop(context);
                 },
               ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.card_giftcard_rounded, color: Colors.orangeAccent),
+              title: const Text('دعوة الأصدقاء 🎁'),
+              subtitle: const Text('احصل على 10 عملات لك ولصديقك'),
+              onTap: () {
+                context.push('/referrals');
+                Navigator.pop(context);
+              },
+            ),
             if (profile?.isAdmin == true) ...[
               const Divider(),
               ListTile(

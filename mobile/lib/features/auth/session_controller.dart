@@ -104,11 +104,13 @@ class SessionController extends StateNotifier<SessionState> {
     required String email,
     required String password,
     required String displayName,
+    String? referralCode,
   }) {
     return _repository.register(
       email: email,
       password: password,
       displayName: displayName,
+      referralCode: referralCode,
     );
   }
 

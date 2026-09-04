@@ -23,6 +23,11 @@ from app.core.security import (
 )
 from app.models import AccountToken, AuthSession, Subscription, User, WalletAccount
 from app.services.monetization_catalog import get_plan
+from app.services.referral import (
+    ensure_user_referral_code,
+    find_user_by_referral_code,
+    process_referral_rewards_on_email_verified,
+)
 from app.services.wallet import grant_weekly_points_for_subscription
 
 EMAIL_VERIFICATION = "email_verification"
@@ -213,11 +218,18 @@ def register_user(
     password: str,
     display_name: str,
     avatar_key: str = DEFAULT_AVATAR_KEY,
+    referral_code: str | None = None,
 ) -> tuple[User, str]:
     normalized_email = normalize_email(email)
     existing = db.scalar(select(User.id).where(User.email == normalized_email))
     if existing is not None:
         raise DuplicateEmailError("Email is already registered")
+
+    referred_by_id: UUID | None = None
+    if referral_code and referral_code.strip():
+        referrer = find_user_by_referral_code(db, referral_code)
+        if referrer is not None:
+            referred_by_id = referrer.id
 
     avatar = validate_avatar_key(avatar_key)
     now = datetime.now(UTC)
@@ -227,9 +239,12 @@ def register_user(
         display_name=display_name.strip(),
         avatar_key=avatar,
         status="active",
+        referred_by_id=referred_by_id,
     )
     db.add(user)
     db.flush()
+
+    ensure_user_referral_code(db, user)
 
     free_plan = get_plan("free")
     wallet = WalletAccount(user_id=user.id, balance_points=0)
@@ -267,6 +282,7 @@ def verify_user_email(db: Session, raw_token: str) -> User:
     if not user.email_verified:
         user.email_verified = True
         user.email_verified_at = datetime.now(UTC)
+        process_referral_rewards_on_email_verified(db, user)
     db.flush()
     return user
 
@@ -276,6 +292,7 @@ def verify_user_email_code(db: Session, *, email: str, code: str) -> User:
     if not user.email_verified:
         user.email_verified = True
         user.email_verified_at = datetime.now(UTC)
+        process_referral_rewards_on_email_verified(db, user)
     db.flush()
     return user
 

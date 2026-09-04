@@ -36,6 +36,12 @@ class User(TimestampMixin, Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     auth_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    referral_code: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
+    referred_by_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     watchlist_items: Mapped[list[WatchlistItem]] = relationship(

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import os
+
+os.environ["APP_ENV"] = "test"
+
 from collections.abc import Generator
 
 import pytest
@@ -49,6 +53,7 @@ class FakeAccountEmailService:
 
 @pytest.fixture(scope="session", autouse=True)
 def database_schema() -> Generator[None, None, None]:
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     yield
     Base.metadata.drop_all(engine)
