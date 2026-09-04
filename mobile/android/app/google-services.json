@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "48076310012",
+    "project_id": "sahmi-kasban-app",
+    "storage_bucket": "sahmi-kasban-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48076310012:android:5a7702ec4478148b",
+        "android_client_info": {
+          "package_name": "com.sahmikasban.sahmi_kasban_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "48076310012-ofah5gism48e3bi13qr7hc8i8dbsrrts.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sahmikasban.sahmi_kasban_mobile",
+            "certificate_hash": "4b3005f923d1d9af686efbf29b7fbc350da17063"
+          }
+        },
+        {
+          "client_id": "48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA00000000000000000000000000000000"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

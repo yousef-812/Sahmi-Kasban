@@ -10,7 +10,7 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 val googleServicesFile = file("google-services.json")
 val ciPreviewBuild =
     providers.environmentVariable("SAHMI_CI_PREVIEW_BUILD").orNull == "true"
-if (googleServicesFile.exists() && !ciPreviewBuild) {
+if (googleServicesFile.exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
 
