@@ -286,10 +286,13 @@ async def search_market_instruments(
     statement = select(MarketInstrumentCatalog).where(MarketInstrumentCatalog.active.is_(True))
     if normalized_query:
         pattern = f"%{normalized_query}%"
+        raw_query = query.strip()
+        raw_pattern = f"%{raw_query}%"
         statement = statement.where(
             or_(
-                func.upper(MarketInstrumentCatalog.ticker).like(pattern),
-                func.upper(MarketInstrumentCatalog.description).like(pattern),
+                MarketInstrumentCatalog.ticker.ilike(pattern),
+                MarketInstrumentCatalog.description.ilike(pattern),
+                MarketInstrumentCatalog.description.ilike(raw_pattern),
             )
         ).order_by(
             case(
