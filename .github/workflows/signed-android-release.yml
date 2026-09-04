@@ -85,16 +85,10 @@ jobs:
             "--dart-define=DEMO_MODE=false"
             "--dart-define=APP_ENV=production"
             "--dart-define=RELEASE_PLATFORM=android"
+            "--dart-define=ADMOB_ANDROID_BANNER_ID=ca-app-pub-4624889874966809/2715711480"
+            "--dart-define=ADMOB_ANDROID_NATIVE_ID=ca-app-pub-4624889874966809/3665725872"
+            "--dart-define=ADMOB_ANDROID_INTERSTITIAL_ID=ca-app-pub-4624889874966809/7776466476"
           )
-          if [ -n "${ADMOB_ANDROID_BANNER_ID:-}" ]; then
-            defines+=("--dart-define=ADMOB_ANDROID_BANNER_ID=$ADMOB_ANDROID_BANNER_ID")
-          fi
-          if [ -n "${ADMOB_ANDROID_NATIVE_ID:-}" ]; then
-            defines+=("--dart-define=ADMOB_ANDROID_NATIVE_ID=$ADMOB_ANDROID_NATIVE_ID")
-          fi
-          if [ -n "${ADMOB_ANDROID_INTERSTITIAL_ID:-}" ]; then
-            defines+=("--dart-define=ADMOB_ANDROID_INTERSTITIAL_ID=$ADMOB_ANDROID_INTERSTITIAL_ID")
-          fi
           $FLUTTER_HOME/bin/flutter build apk --release "${defines[@]}"
           $FLUTTER_HOME/bin/flutter build appbundle --release "${defines[@]}"
 
