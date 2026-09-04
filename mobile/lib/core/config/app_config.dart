@@ -78,7 +78,7 @@ class AppConfig {
     );
     const androidBannerId = String.fromEnvironment(
       'ADMOB_ANDROID_BANNER_ID',
-      defaultValue: 'ca-app-pub-4624889874966809/7448230232',
+      defaultValue: 'ca-app-pub-4624889874966809/2715711480',
     );
     const iosBannerId = String.fromEnvironment(
       'ADMOB_IOS_BANNER_ID',
@@ -86,7 +86,7 @@ class AppConfig {
     );
     const androidNativeId = String.fromEnvironment(
       'ADMOB_ANDROID_NATIVE_ID',
-      defaultValue: 'ca-app-pub-4624889874966809/8772920194',
+      defaultValue: 'ca-app-pub-4624889874966809/3665725872',
     );
     const iosNativeId = String.fromEnvironment(
       'ADMOB_IOS_NATIVE_ID',
@@ -94,7 +94,7 @@ class AppConfig {
     );
     const androidInterstitialId = String.fromEnvironment(
       'ADMOB_ANDROID_INTERSTITIAL_ID',
-      defaultValue: 'ca-app-pub-4624889874966809/7935581322',
+      defaultValue: 'ca-app-pub-4624889874966809/7776466476',
     );
     const iosInterstitialId = String.fromEnvironment(
       'ADMOB_IOS_INTERSTITIAL_ID',
