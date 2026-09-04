@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/app_theme_provider.dart';
 import '../../core/avatar_assets.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
@@ -232,6 +233,8 @@ class ProfileTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(sessionControllerProvider).profile;
+    final themeMode = ref.watch(themeModeProvider);
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -274,6 +277,65 @@ class ProfileTab extends ConsumerWidget {
                       ref.read(sessionControllerProvider.notifier).logout(),
                   icon: const Icon(Icons.logout_rounded),
                   label: const Text('تسجيل الخروج'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.palette_outlined, color: Colors.teal),
+                    const SizedBox(width: 10),
+                    Text(
+                      'مظهر التطبيق 🎨',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'الوضع الداكن هو الوضع الأساسي لتجربة قراءة مريحة للمؤشرات والأسهم.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<ThemeMode>(
+                    segments: const [
+                      ButtonSegment<ThemeMode>(
+                        value: ThemeMode.dark,
+                        label: Text('داكن'),
+                        icon: Icon(Icons.dark_mode_rounded),
+                      ),
+                      ButtonSegment<ThemeMode>(
+                        value: ThemeMode.light,
+                        label: Text('فاتح'),
+                        icon: Icon(Icons.light_mode_rounded),
+                      ),
+                      ButtonSegment<ThemeMode>(
+                        value: ThemeMode.system,
+                        label: Text('تلقائي'),
+                        icon: Icon(Icons.settings_suggest_rounded),
+                      ),
+                    ],
+                    selected: {themeMode},
+                    onSelectionChanged: (Set<ThemeMode> newSelection) {
+                      ref
+                          .read(themeModeProvider.notifier)
+                          .setThemeMode(newSelection.first);
+                    },
+                  ),
                 ),
               ],
             ),

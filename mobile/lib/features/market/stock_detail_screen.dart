@@ -58,7 +58,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
         builder: (context) => StatefulBuilder(
           builder: (context, setModalState) {
             return Scaffold(
-              backgroundColor: const Color(0xFFF7F7F7),
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               appBar: AppBar(
                 title: Text(widget.ticker, textDirection: TextDirection.ltr),
                 actions: [
@@ -485,20 +485,23 @@ class TradingViewWidget extends StatefulWidget {
 
 class _TradingViewWidgetState extends State<TradingViewWidget> {
   late final WebViewController _controller;
-  late String _html;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    _html = _buildHtml();
     _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFFFFFFFF));
+      ..setJavaScriptMode(JavaScriptMode.unrestricted);
   }
 
-  String _buildHtml() {
+  String _buildHtml(bool isDark) {
     final symbol = widget.symbol.toUpperCase();
     final hideTools = widget.hideSideToolbar ? 'true' : 'false';
+    final themeStr = isDark ? 'dark' : 'light';
+    final bgHex = isDark ? '#101418' : '#ffffff';
+    final toolbarBgHex = isDark ? '#161a22' : '#f1f3f6';
+    final spinnerBgHex = isDark ? '#262c36' : '#e0e0e0';
+
     return '''
 <!DOCTYPE html>
 <html>
@@ -506,13 +509,13 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   html, body {
-    margin: 0; padding: 0; height: 100%; background: #ffffff;
+    margin: 0; padding: 0; height: 100%; background: $bgHex;
     font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   #tv { width: 100%; height: 100%; }
   body.loading #tv { visibility: hidden; }
   .center { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #e0e0e0; border-top-color: #1f6feb; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid $spinnerBgHex; border-top-color: #2fa87b; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -529,10 +532,10 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     "symbol": "EGX:$symbol",
     "interval": "D",
     "timezone": "Africa/Cairo",
-    "theme": "light",
+    "theme": "$themeStr",
     "style": "1",
     "locale": "ar_AE",
-    "toolbar_bg": "#f1f3f6",
+    "toolbar_bg": "$toolbarBgHex",
     "enable_publishing": false,
     "hide_side_toolbar": $hideTools,
     "allow_symbol_change": true,
@@ -555,34 +558,36 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   }
 
   @override
-  void didUpdateWidget(covariant TradingViewWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.symbol != widget.symbol ||
-        oldWidget.hideSideToolbar != widget.hideSideToolbar) {
-      _html = _buildHtml();
-      _controller
-        ..loadHtmlString(_html)
-        ..reload();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final html = _buildHtml(isDark);
+
+    if (!_initialized) {
+      _initialized = true;
+      _controller
+        ..setBackgroundColor(
+          isDark ? const Color(0xFF101418) : const Color(0xFFFFFFFF),
+        )
+        ..loadHtmlString(html);
+    }
+
     return SizedBox(
       height: widget.height,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            const Positioned.fill(
+            Positioned.fill(
               child: DecoratedBox(
-                decoration: BoxDecoration(color: Color(0xFFF7F7F7)),
-                child: Center(child: CircularProgressIndicator()),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                child: const Center(child: CircularProgressIndicator()),
               ),
             ),
             Positioned.fill(
               child: WebViewWidget(
-                controller: _controller..loadHtmlString(_html),
+                controller: _controller,
               ),
             ),
           ],
