@@ -136,8 +136,8 @@ class ReferralStats {
     final rawList = json['referred_users'];
     final users = rawList is List
         ? rawList
-            .map((e) => ReferredUserItem.fromJson(e as Map<String, dynamic>))
-            .toList(growable: false)
+              .map((e) => ReferredUserItem.fromJson(e as Map<String, dynamic>))
+              .toList(growable: false)
         : <ReferredUserItem>[];
 
     return ReferralStats(

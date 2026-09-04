@@ -7,23 +7,22 @@ import '../../core/ui/app_notice.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 
-final referralStatsProvider =
-    FutureProvider.autoDispose<ReferralStats>((ref) async {
-      final repository = ref.watch(backendRepositoryProvider);
-      return repository.getReferralStats();
-    });
+final referralStatsProvider = FutureProvider.autoDispose<ReferralStats>((
+  ref,
+) async {
+  final repository = ref.watch(backendRepositoryProvider);
+  return repository.getReferralStats();
+});
 
 class ReferralScreen extends ConsumerWidget {
   const ReferralScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(referralStatsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('دعوة الأصدقاء 🎁'),
-      ),
+      appBar: AppBar(title: const Text('دعوة الأصدقاء 🎁')),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(referralStatsProvider),
         child: statsAsync.when(
@@ -32,7 +31,11 @@ class ReferralScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: Colors.red,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'تعذر تحميل بيانات الإحالات.',
@@ -69,7 +72,9 @@ class ReferralScreen extends ConsumerWidget {
                 if (stats.referredUsers.isEmpty)
                   _buildEmptyState(context)
                 else
-                  ...stats.referredUsers.map((user) => _buildReferredUserTile(context, user)),
+                  ...stats.referredUsers.map(
+                    (user) => _buildReferredUserTile(context, user),
+                  ),
               ],
             ),
           ),
@@ -81,7 +86,9 @@ class ReferralScreen extends ConsumerWidget {
   Widget _buildHeroBanner(BuildContext context) {
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
@@ -95,7 +102,9 @@ class ReferralScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -108,9 +117,9 @@ class ReferralScreen extends ConsumerWidget {
             Text(
               'ادعُ أصدقاءك واكسب 10 عملات!',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -157,20 +166,24 @@ class ReferralScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       stats.referralCode,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                     ),
                   ),
                   IconButton.filledTonal(
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: stats.referralCode));
+                      Clipboard.setData(
+                        ClipboardData(text: stats.referralCode),
+                      );
                       AppNotice.show(
                         context,
                         title: 'تم النسخ',
-                        message: 'تم نسخ كود الدعوة إلى الحافظة: ${stats.referralCode}',
+                        message:
+                            'تم نسخ كود الدعوة إلى الحافظة: ${stats.referralCode}',
                         tone: AppNoticeTone.success,
                       );
                     },
@@ -189,7 +202,8 @@ class ReferralScreen extends ConsumerWidget {
                 AppNotice.show(
                   context,
                   title: 'تم نسخ رابط الدعوة',
-                  message: 'تم نسخ نص ورابط الدعوة إلى الحافظة جاهزاً للمشاركة مع أصدقائك!',
+                  message:
+                      'تم نسخ نص ورابط الدعوة إلى الحافظة جاهزاً للمشاركة مع أصدقائك!',
                   tone: AppNoticeTone.success,
                 );
               },
@@ -232,15 +246,17 @@ class ReferralScreen extends ConsumerWidget {
       color: Theme.of(context).colorScheme.surfaceContainerLowest,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: const Padding(
         padding: EdgeInsets.symmetric(vertical: 32, horizontal: 16),
         child: Column(
           children: [
-            Icon(Icons.person_add_disabled_outlined, size: 48, color: Colors.grey),
+            Icon(
+              Icons.person_add_disabled_outlined,
+              size: 48,
+              color: Colors.grey,
+            ),
             SizedBox(height: 12),
             Text(
               'لم تقم بدعوة أصدقاء بعد',
@@ -273,7 +289,9 @@ class ReferralScreen extends ConsumerWidget {
         subtitle: Text('انضم في: ${user.joinedAt}'),
         trailing: Chip(
           avatar: Icon(
-            isVerified ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+            isVerified
+                ? Icons.check_circle_rounded
+                : Icons.hourglass_top_rounded,
             size: 16,
             color: isVerified ? Colors.green : Colors.orange,
           ),
@@ -329,9 +347,9 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),

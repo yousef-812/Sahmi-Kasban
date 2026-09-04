@@ -86,7 +86,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.card_giftcard_rounded, color: Colors.orangeAccent),
+              leading: const Icon(
+                Icons.card_giftcard_rounded,
+                color: Colors.orangeAccent,
+              ),
               title: const Text('دعوة الأصدقاء 🎁'),
               subtitle: const Text('احصل على 10 عملات لك ولصديقك'),
               onTap: () {

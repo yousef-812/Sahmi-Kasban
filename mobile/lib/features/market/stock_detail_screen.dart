@@ -209,10 +209,7 @@ class _DetailContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TradingViewWidget(
-          symbol: ticker,
-          hideSideToolbar: hideSideToolbar,
-        ),
+        TradingViewWidget(symbol: ticker, hideSideToolbar: hideSideToolbar),
         const SizedBox(height: 12),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
