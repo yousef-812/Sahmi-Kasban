@@ -163,6 +163,7 @@ EGX_SEED_SYMBOLS: tuple[str, ...] = (
     "WTCA",
     "ZAIM",
     "EKHO",
+    "KORA",
 )
 
 EGX_SYMBOL_SET = frozenset(EGX_SEED_SYMBOLS)
@@ -188,6 +189,7 @@ EGX_ARABIC_NAMES: dict[str, str] = {
     "ADIB": "بنك أبوظبي الإسلامي مصر",
     "WEGY": "وادي كوم أمبو لاستصلاح الأراضي",
     "RAYA": "راية القابضة للاستثمارات المالية",
+    "KORA": "كورة للإدارة والحسابات (كورّة)",
 }
 
 

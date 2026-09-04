@@ -13,6 +13,7 @@ from app.core.config import Environment, get_settings
 from app.market_data.egx_symbols import (
     EGX_ARABIC_NAMES,
     EGX_SEED_SYMBOLS,
+    EGX_SYMBOL_SET,
 )
 from app.market_data.types import MarketInstrument
 from app.models import MarketInstrumentCatalog
@@ -39,26 +40,33 @@ def _as_utc(value: datetime | None) -> datetime | None:
 
 def seed_market_instrument_catalog(db: Session) -> None:
     now = _utcnow()
-    existing = set(
-        db.scalars(
-            select(MarketInstrumentCatalog.ticker).where(MarketInstrumentCatalog.ticker.in_(EGX_SEED_SYMBOLS))
+    existing_map = {
+        item.ticker: item
+        for item in db.scalars(
+            select(MarketInstrumentCatalog).where(MarketInstrumentCatalog.ticker.in_(EGX_SEED_SYMBOLS))
         ).all()
-    )
+    }
+    changed = False
     for ticker in EGX_SEED_SYMBOLS:
-        if ticker in existing:
-            continue
-        db.add(
-            MarketInstrumentCatalog(
-                ticker=ticker,
-                provider_symbol=f"EGX:{ticker}",
-                exchange="EGX",
-                description=EGX_ARABIC_NAMES.get(ticker, ""),
-                source="legacy_seed",
-                active=True,
-                last_seen_at=now,
+        existing = existing_map.get(ticker)
+        if existing is None:
+            db.add(
+                MarketInstrumentCatalog(
+                    ticker=ticker,
+                    provider_symbol=f"EGX:{ticker}",
+                    exchange="EGX",
+                    description=EGX_ARABIC_NAMES.get(ticker, ""),
+                    source="legacy_seed",
+                    active=True,
+                    last_seen_at=now,
+                )
             )
-        )
-    if len(existing) != len(EGX_SEED_SYMBOLS):
+            changed = True
+        elif not existing.active:
+            existing.active = True
+            existing.last_seen_at = now
+            changed = True
+    if changed:
         db.commit()
 
 
@@ -144,7 +152,12 @@ def _reconcile_scanner_rows(
     deactivated = 0
     if authoritative:
         for existing in existing_rows.values():
-            if existing.exchange == "EGX" and existing.ticker not in seen and existing.active:
+            if (
+                existing.exchange == "EGX"
+                and existing.ticker not in seen
+                and existing.ticker not in EGX_SYMBOL_SET
+                and existing.active
+            ):
                 existing.active = False
                 deactivated += 1
     return len(rows), deactivated
@@ -173,6 +186,7 @@ def _deactivate_unseen_legacy_seed_rows(db: Session) -> int:
             )
         ).all()
     )
+    stale = [row for row in stale if row.ticker not in EGX_SYMBOL_SET]
     for row in stale:
         row.active = False
     if stale:
