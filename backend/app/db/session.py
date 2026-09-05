@@ -17,6 +17,8 @@ def build_engine(database_url: str | None = None) -> Engine:
     else:
         common["pool_size"] = settings.database_pool_size
         common["max_overflow"] = settings.database_max_overflow
+        common["pool_recycle"] = 300
+        common["pool_timeout"] = 10
     return create_engine(url, **common)
 
 

@@ -44,8 +44,8 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+pysqlite:///./sahmi_kasban_dev.db"
     migration_database_url: str = ""
-    database_pool_size: int = 10
-    database_max_overflow: int = 20
+    database_pool_size: int = 20
+    database_max_overflow: int = 30
 
     access_token_minutes: int = 15
     refresh_token_days: int = 30
