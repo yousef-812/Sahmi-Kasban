@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
 
-const int currentAppVersionCode = 28;
+const int currentAppVersionCode = 29;
 
 class AppVersionInfo {
   const AppVersionInfo({
