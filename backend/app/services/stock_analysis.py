@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -387,13 +388,16 @@ async def execute_stock_analysis(
     explanation = _deterministic_explanation(report_payload)
     explanation_source = "deterministic"
     try:
-        explanation = await ai_service.explain_stock_analysis(
-            ticker=series.ticker,
-            analysis_payload=report_payload,
-            language=language,
+        explanation = await asyncio.wait_for(
+            ai_service.explain_stock_analysis(
+                ticker=series.ticker,
+                analysis_payload=report_payload,
+                language=language,
+            ),
+            timeout=10.0,
         )
         explanation_source = "ai"
-    except AIProviderError as exc:
+    except (AIProviderError, asyncio.TimeoutError) as exc:
         logger.info("AI explanation fallback for %s: %s", series.ticker, exc)
 
     from app.services.sector_quality import compute_sector_quality
