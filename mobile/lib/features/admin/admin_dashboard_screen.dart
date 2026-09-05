@@ -1578,45 +1578,71 @@ class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
                             (fb['user'] as Map?)?['display_name'] ?? 'مستخدم',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: fb['status'] == 'new'
-                                  ? Colors.amber.withOpacity(0.15)
-                                  : fb['status'] == 'reviewed'
-                                      ? Colors.blue.withOpacity(0.15)
-                                      : fb['status'] == 'resolved'
-                                          ? Colors.green.withOpacity(0.15)
-                                          : Colors.grey.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
+                          PopupMenuButton<String>(
+                            onSelected: (String status) => _updateStatus(fb['id'] as String, status),
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(value: 'new', child: Text('جديدة 🟡')),
+                              PopupMenuItem(value: 'reviewed', child: Text('تمت المراجعة 🔵')),
+                              PopupMenuItem(value: 'resolved', child: Text('تم الحل 🟢')),
+                              PopupMenuItem(value: 'archived', child: Text('مؤرشفة ⚪')),
+                            ],
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
                                 color: fb['status'] == 'new'
-                                    ? Colors.amber
+                                    ? Colors.amber.withOpacity(0.15)
                                     : fb['status'] == 'reviewed'
-                                        ? Colors.blue
+                                        ? Colors.blue.withOpacity(0.15)
                                         : fb['status'] == 'resolved'
-                                            ? Colors.green
-                                            : Colors.grey,
+                                            ? Colors.green.withOpacity(0.15)
+                                            : Colors.grey.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: fb['status'] == 'new'
+                                      ? Colors.amber
+                                      : fb['status'] == 'reviewed'
+                                          ? Colors.blue
+                                          : fb['status'] == 'resolved'
+                                              ? Colors.green
+                                              : Colors.grey,
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              fb['status'] == 'new'
-                                  ? 'جديدة'
-                                  : fb['status'] == 'reviewed'
-                                      ? 'تمت المراجعة'
-                                      : fb['status'] == 'resolved'
-                                          ? 'تم الحل'
-                                          : 'مؤرشفة',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: fb['status'] == 'new'
-                                    ? Colors.amber.shade300
-                                    : fb['status'] == 'reviewed'
-                                        ? Colors.blue.shade300
-                                        : fb['status'] == 'resolved'
-                                            ? Colors.green.shade300
-                                            : Colors.grey.shade300,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    fb['status'] == 'new'
+                                        ? 'جديدة'
+                                        : fb['status'] == 'reviewed'
+                                            ? 'تمت المراجعة'
+                                            : fb['status'] == 'resolved'
+                                                ? 'تم الحل'
+                                                : 'مؤرشفة',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: fb['status'] == 'new'
+                                          ? Colors.amber.shade300
+                                          : fb['status'] == 'reviewed'
+                                              ? Colors.blue.shade300
+                                              : fb['status'] == 'resolved'
+                                                  ? Colors.green.shade300
+                                                  : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_drop_down_rounded,
+                                    size: 18,
+                                    color: fb['status'] == 'new'
+                                        ? Colors.amber.shade300
+                                        : fb['status'] == 'reviewed'
+                                            ? Colors.blue.shade300
+                                            : fb['status'] == 'resolved'
+                                                ? Colors.green.shade300
+                                                : Colors.grey.shade300,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
