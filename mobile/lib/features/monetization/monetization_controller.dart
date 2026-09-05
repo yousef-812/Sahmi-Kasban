@@ -380,7 +380,7 @@ final inAppPurchaseProvider = Provider<InAppPurchase>((ref) {
 });
 
 final rewardedAdGatewayProvider = Provider<RewardedAdGateway>((ref) {
-  return const GoogleRewardedAdGateway();
+  return GoogleRewardedAdGateway(ref.watch(monetizationRepositoryProvider));
 });
 
 final monetizationControllerProvider =

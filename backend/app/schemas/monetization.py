@@ -103,7 +103,7 @@ class MonetizationStatusResponse(BaseModel):
 
 class AdTelemetryEventRequest(BaseModel):
     ad_type: Literal["banner", "native", "interstitial", "rewarded", "app_open", "rewarded_interstitial"]
-    event_type: Literal["loaded", "impression", "clicked", "failed_to_load", "failed_to_show", "reward_granted", "earned_reward"]
+    event_type: Literal["loaded", "impression", "clicked", "failed_to_load", "failed_to_show", "reward_granted"]
     ad_unit_id: str | None = None
     platform: str = "android"
     error_message: str | None = None

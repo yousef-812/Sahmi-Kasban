@@ -282,6 +282,13 @@ class FreePlanInterstitialCoordinator {
         ? _config.admobAndroidInterstitialId
         : _config.admobIosInterstitialId;
     ad.fullScreenContentCallback = FullScreenContentCallback<InterstitialAd>(
+      onAdImpression: (impressionAd) {
+        _repository?.recordAdTelemetry(
+          adType: 'interstitial',
+          eventType: 'impression',
+          adUnitId: adUnitId,
+        );
+      },
       onAdDismissedFullScreenContent: (closedAd) {
         closedAd.dispose();
         _gate.markDismissed();
@@ -328,7 +335,7 @@ class FreePlanInterstitialCoordinator {
           _ad = ad;
           _repository?.recordAdTelemetry(
             adType: 'interstitial',
-            eventType: 'impression',
+            eventType: 'loaded',
             adUnitId: adUnitId,
           );
         },

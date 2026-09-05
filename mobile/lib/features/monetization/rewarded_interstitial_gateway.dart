@@ -51,10 +51,22 @@ class GoogleRewardedInterstitialGateway implements RewardedInterstitialGateway {
         onAdLoaded: (ad) async {
           var earned = false;
           _gate.markShowing();
+          _repository.recordAdTelemetry(
+            adType: 'rewarded_interstitial',
+            eventType: 'loaded',
+            adUnitId: session.adUnitId,
+          );
           await ad.setServerSideOptions(
             ServerSideVerificationOptions(customData: session.customData),
           );
           ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdImpression: (impressionAd) {
+              _repository.recordAdTelemetry(
+                adType: 'rewarded_interstitial',
+                eventType: 'impression',
+                adUnitId: session.adUnitId,
+              );
+            },
             onAdDismissedFullScreenContent: (shownAd) {
               shownAd.dispose();
               _gate.markDismissed();
@@ -85,7 +97,7 @@ class GoogleRewardedInterstitialGateway implements RewardedInterstitialGateway {
               earned = true;
               _repository.recordAdTelemetry(
                 adType: 'rewarded_interstitial',
-                eventType: 'earned_reward',
+                eventType: 'reward_granted',
                 adUnitId: session.adUnitId,
               );
             },

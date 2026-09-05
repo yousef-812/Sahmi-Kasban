@@ -96,7 +96,7 @@ class AppOpenAdManager with WidgetsBindingObserver {
           _adLoadedAt = DateTime.now();
           repository?.recordAdTelemetry(
             adType: 'app_open',
-            eventType: 'impression',
+            eventType: 'loaded',
             adUnitId: adUnitId,
           );
         },
@@ -130,6 +130,13 @@ class AppOpenAdManager with WidgetsBindingObserver {
         Platform.isAndroid ? config.admobAndroidAppOpenId : config.admobIosAppOpenId;
     gate.markShowing();
     ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdImpression: (impressionAd) {
+        repository?.recordAdTelemetry(
+          adType: 'app_open',
+          eventType: 'impression',
+          adUnitId: adUnitId,
+        );
+      },
       onAdDismissedFullScreenContent: (dismissedAd) {
         dismissedAd.dispose();
         _ad = null;

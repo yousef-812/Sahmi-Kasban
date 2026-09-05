@@ -24,10 +24,10 @@ Color changeColor(BuildContext context, double? value) {
     return Theme.of(context).colorScheme.onSurfaceVariant;
   }
   if (value > 0) {
-    return Colors.green;
+    return const Color(0xFF008955);
   }
   if (value < 0) {
-    return Colors.redAccent;
+    return const Color(0xFFDC2626);
   }
   return Theme.of(context).colorScheme.onSurfaceVariant;
 }
@@ -49,9 +49,9 @@ class StockQuoteCard extends StatelessWidget {
     final isUp = (quote.changePercent ?? 0) > 0;
     final isDown = (quote.changePercent ?? 0) < 0;
     final accent = isUp
-        ? Colors.green
+        ? const Color(0xFF008955)
         : isDown
-        ? Colors.redAccent
+        ? const Color(0xFFDC2626)
         : Theme.of(context).colorScheme.primary;
 
     return Card(
