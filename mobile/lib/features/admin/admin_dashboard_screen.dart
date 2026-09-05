@@ -1578,8 +1578,28 @@ class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
                             (fb['user'] as Map?)?['display_name'] ?? 'مستخدم',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          Chip(
-                            label: Text(
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: fb['status'] == 'new'
+                                  ? Colors.amber.withOpacity(0.15)
+                                  : fb['status'] == 'reviewed'
+                                      ? Colors.blue.withOpacity(0.15)
+                                      : fb['status'] == 'resolved'
+                                          ? Colors.green.withOpacity(0.15)
+                                          : Colors.grey.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: fb['status'] == 'new'
+                                    ? Colors.amber
+                                    : fb['status'] == 'reviewed'
+                                        ? Colors.blue
+                                        : fb['status'] == 'resolved'
+                                            ? Colors.green
+                                            : Colors.grey,
+                              ),
+                            ),
+                            child: Text(
                               fb['status'] == 'new'
                                   ? 'جديدة'
                                   : fb['status'] == 'reviewed'
@@ -1587,6 +1607,17 @@ class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
                                       : fb['status'] == 'resolved'
                                           ? 'تم الحل'
                                           : 'مؤرشفة',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: fb['status'] == 'new'
+                                    ? Colors.amber.shade300
+                                    : fb['status'] == 'reviewed'
+                                        ? Colors.blue.shade300
+                                        : fb['status'] == 'resolved'
+                                            ? Colors.green.shade300
+                                            : Colors.grey.shade300,
+                              ),
                             ),
                           ),
                         ],
