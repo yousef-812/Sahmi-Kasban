@@ -286,3 +286,41 @@ def test_discussion_views_and_reactions_flow(
     assert rx3.json()["agree_count"] == 0
     assert rx3.json()["disagree_count"] == 0
 
+
+def test_unauthenticated_community_discussions_list(
+    client: TestClient,
+    fake_email_service,
+    db_session: Session,
+) -> None:
+    author_tokens = register_and_login(
+        client,
+        fake_email_service,
+        email="public-author@example.com",
+        display_name="Public Author",
+    )
+    submitted = client.post(
+        "/api/v1/community/discussions",
+        headers=headers(author_tokens),
+        json=discussion_payload("api-public-001"),
+    )
+    assert submitted.status_code == 201
+    disc_id = submitted.json()["discussion"]["id"]
+
+    apply_moderation_decision(
+        db_session,
+        discussion_id=UUID(disc_id),
+        decision="accept",
+        actor_type="admin",
+        moment=None,
+    )
+    db_session.commit()
+
+    # Unauthenticated request without Authorization header
+    resp = client.get("/api/v1/community/discussions")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] >= 1
+    item = next(i for i in data["items"] if i["id"] == disc_id)
+    assert item["ticker"] == "COMI"
+    assert item["author"]["display_name"] == "Public Author"
+

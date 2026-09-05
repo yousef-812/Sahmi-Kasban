@@ -377,16 +377,15 @@ def get_discussion_view(db: Session, discussion_id: UUID) -> DiscussionView:
 def list_published_discussions(
     db: Session,
     *,
-    viewer_user_id: UUID,
+    viewer_user_id: UUID | None = None,
     ticker: str | None = None,
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[DiscussionView], int]:
-    muted_user_ids = select(UserMute.muted_user_id).where(UserMute.muter_user_id == viewer_user_id)
-    filters = [
-        Discussion.status == "published",
-        Discussion.user_id.not_in(muted_user_ids),
-    ]
+    filters = [Discussion.status == "published"]
+    if viewer_user_id is not None:
+        muted_user_ids = select(UserMute.muted_user_id).where(UserMute.muter_user_id == viewer_user_id)
+        filters.append(Discussion.user_id.not_in(muted_user_ids))
     if ticker:
         filters.append(Discussion.ticker == ticker.strip().upper())
 

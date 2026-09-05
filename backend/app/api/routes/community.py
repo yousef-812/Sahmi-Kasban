@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sahmi_kasban.ai import SahmiAIService
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from app.api.dependencies import CurrentUser, DatabaseSession, OptionalUser
 from app.schemas.community import (
     DiscussionAuthorResponse,
     DiscussionCreateRequest,
@@ -166,20 +166,21 @@ async def submit_discussion(
 @router.get("/discussions", response_model=DiscussionListResponse)
 def community_discussions(
     db: DatabaseSession,
-    current_user: CurrentUser,
+    current_user: OptionalUser = None,
     ticker: str | None = Query(default=None, min_length=2, max_length=24),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> DiscussionListResponse:
+    viewer_user_id = current_user.id if current_user else None
     items, total = list_published_discussions(
         db,
-        viewer_user_id=current_user.id,
+        viewer_user_id=viewer_user_id,
         ticker=ticker,
         limit=limit,
         offset=offset,
     )
     return DiscussionListResponse(
-        items=[_discussion_response(item, db=db, current_user_id=current_user.id, include_moderation=False) for item in items],
+        items=[_discussion_response(item, db=db, current_user_id=viewer_user_id, include_moderation=False) for item in items],
         total=total,
         limit=limit,
         offset=offset,
@@ -214,7 +215,7 @@ def my_discussions(
 def community_discussion(
     discussion_id: UUID,
     db: DatabaseSession,
-    current_user: CurrentUser,
+    current_user: OptionalUser = None,
 ) -> DiscussionResponse:
     try:
         view = get_discussion_view(db, discussion_id)
@@ -224,7 +225,8 @@ def community_discussion(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    if view.discussion.status != "published" and view.discussion.user_id != current_user.id:
+    viewer_user_id = current_user.id if current_user else None
+    if view.discussion.status != "published" and (viewer_user_id is None or view.discussion.user_id != viewer_user_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Discussion does not exist",
@@ -232,8 +234,8 @@ def community_discussion(
     return _discussion_response(
         view,
         db=db,
-        current_user_id=current_user.id,
-        include_moderation=view.discussion.user_id == current_user.id,
+        current_user_id=viewer_user_id,
+        include_moderation=view.discussion.user_id == viewer_user_id if viewer_user_id else False,
     )
 
 
