@@ -18,6 +18,10 @@ AppConfig buildConfig({
     admobIosNativeId: 'ca-app-pub-$iosPublisher/1000000004',
     admobAndroidInterstitialId: 'ca-app-pub-$androidPublisher/1000000005',
     admobIosInterstitialId: 'ca-app-pub-$iosPublisher/1000000006',
+    admobAndroidAppOpenId: 'ca-app-pub-$androidPublisher/1000000007',
+    admobIosAppOpenId: 'ca-app-pub-$iosPublisher/1000000008',
+    admobAndroidRewardedInterstitialId: 'ca-app-pub-$androidPublisher/1000000009',
+    admobIosRewardedInterstitialId: 'ca-app-pub-$iosPublisher/1000000010',
   );
 }
 

@@ -9,6 +9,10 @@ class AppConfig {
     required this.admobIosNativeId,
     required this.admobAndroidInterstitialId,
     required this.admobIosInterstitialId,
+    required this.admobAndroidAppOpenId,
+    required this.admobIosAppOpenId,
+    required this.admobAndroidRewardedInterstitialId,
+    required this.admobIosRewardedInterstitialId,
     this.appEnvironment = 'development',
     this.releasePlatform = 'android',
   });
@@ -22,6 +26,10 @@ class AppConfig {
   final String admobIosNativeId;
   final String admobAndroidInterstitialId;
   final String admobIosInterstitialId;
+  final String admobAndroidAppOpenId;
+  final String admobIosAppOpenId;
+  final String admobAndroidRewardedInterstitialId;
+  final String admobIosRewardedInterstitialId;
   final String appEnvironment;
   final String releasePlatform;
 
@@ -44,11 +52,15 @@ class AppConfig {
         admobAndroidBannerId,
         admobAndroidNativeId,
         admobAndroidInterstitialId,
+        admobAndroidAppOpenId,
+        admobAndroidRewardedInterstitialId,
       ],
       'ios' => <String>[
         admobIosBannerId,
         admobIosNativeId,
         admobIosInterstitialId,
+        admobIosAppOpenId,
+        admobIosRewardedInterstitialId,
       ],
       _ => throw StateError(
         'Production builds require RELEASE_PLATFORM=android or ios.',
@@ -58,7 +70,7 @@ class AppConfig {
       (id) => id.trim().isEmpty || id.contains(googleTestPublisherId),
     )) {
       throw StateError(
-        'Production builds require non-test AdMob banner, native, and interstitial IDs for the selected release platform.',
+        'Production builds require non-test AdMob ad unit IDs for the selected release platform.',
       );
     }
   }
@@ -100,6 +112,22 @@ class AppConfig {
       'ADMOB_IOS_INTERSTITIAL_ID',
       defaultValue: 'ca-app-pub-3940256099942544/4411468910',
     );
+    const androidAppOpenId = String.fromEnvironment(
+      'ADMOB_ANDROID_APP_OPEN_ID',
+      defaultValue: 'ca-app-pub-4624889874966809/8718742008',
+    );
+    const iosAppOpenId = String.fromEnvironment(
+      'ADMOB_IOS_APP_OPEN_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/5575463023',
+    );
+    const androidRewardedInterstitialId = String.fromEnvironment(
+      'ADMOB_ANDROID_REWARDED_INTERSTITIAL_ID',
+      defaultValue: 'ca-app-pub-4624889874966809/7604970887',
+    );
+    const iosRewardedInterstitialId = String.fromEnvironment(
+      'ADMOB_IOS_REWARDED_INTERSTITIAL_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/6978759866',
+    );
     const config = AppConfig(
       apiBaseUrl: configuredUrl,
       admobAndroidBannerId: androidBannerId,
@@ -108,6 +136,10 @@ class AppConfig {
       admobIosNativeId: iosNativeId,
       admobAndroidInterstitialId: androidInterstitialId,
       admobIosInterstitialId: iosInterstitialId,
+      admobAndroidAppOpenId: androidAppOpenId,
+      admobIosAppOpenId: iosAppOpenId,
+      admobAndroidRewardedInterstitialId: androidRewardedInterstitialId,
+      admobIosRewardedInterstitialId: iosRewardedInterstitialId,
       appEnvironment: environment,
       releasePlatform: configuredReleasePlatform,
     );

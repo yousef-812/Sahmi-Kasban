@@ -64,6 +64,10 @@ class RewardedAdSession(TimestampMixin, Base):
             "custom_data_hash",
             name="uq_rewarded_ad_sessions_custom_data_hash",
         ),
+        CheckConstraint(
+            "ad_format IN ('rewarded', 'rewarded_interstitial')",
+            name="rewarded_ad_sessions_ad_format_valid",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -75,6 +79,7 @@ class RewardedAdSession(TimestampMixin, Base):
     )
     custom_data_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     ad_unit_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    ad_format: Mapped[str] = mapped_column(String(32), default="rewarded", nullable=False)
     status: Mapped[str] = mapped_column(String(24), default="pending", index=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -116,8 +116,11 @@ class Settings(BaseSettings):
     admob_ssv_keys_url: str = "https://www.gstatic.com/admob/reward/verifier-keys.json"
     admob_android_rewarded_ad_unit_id: str = "ca-app-pub-4624889874966809/2344905348"
     admob_ios_rewarded_ad_unit_id: str = "ca-app-pub-3940256099942544/1712485313"
+    admob_android_rewarded_interstitial_ad_unit_id: str = "ca-app-pub-4624889874966809/7604970887"
+    admob_ios_rewarded_interstitial_ad_unit_id: str = "ca-app-pub-3940256099942544/6978759866"
     admob_reward_item: str = "coins"
     ad_reward_points: int = 75
+    ad_reward_points_rewarded_interstitial: int = 30
     ad_reward_daily_limit: int = 4
     ad_reward_cooldown_seconds: int = 900
     ad_reward_session_minutes: int = 15
@@ -235,6 +238,8 @@ class Settings(BaseSettings):
             raise ValueError("ADMOB_SSV_KEYS_URL must use https://")
         if self.ad_reward_points <= 0:
             raise ValueError("AD_REWARD_POINTS must be positive")
+        if self.ad_reward_points_rewarded_interstitial <= 0:
+            raise ValueError("AD_REWARD_POINTS_REWARDED_INTERSTITIAL must be positive")
         if not 1 <= self.ad_reward_daily_limit <= 20:
             raise ValueError("AD_REWARD_DAILY_LIMIT must be between 1 and 20")
         if self.ad_reward_cooldown_seconds < 0:

@@ -181,9 +181,13 @@ def create_rewarded_ad_session(
     *,
     user_id: UUID,
     platform: str,
+    ad_format: str = "rewarded",
     moment: datetime | None = None,
     settings: Settings | None = None,
 ) -> RewardedAdSessionResult:
+    if ad_format not in {"rewarded", "rewarded_interstitial"}:
+        raise ValueError("Unsupported rewarded ad format")
+
     current_settings = settings or runtime_monetization_settings(db)
     if current_settings.admob_ssv_verification_mode == "disabled":
         raise RewardedAdsUnavailableError("verification_disabled")
@@ -199,9 +203,17 @@ def create_rewarded_ad_session(
         raise RewardedAdsUnavailableError(eligibility.reason or "rewarded_ads_unavailable")
 
     if platform == "android":
-        ad_unit_id = current_settings.admob_android_rewarded_ad_unit_id
+        ad_unit_id = (
+            current_settings.admob_android_rewarded_interstitial_ad_unit_id
+            if ad_format == "rewarded_interstitial"
+            else current_settings.admob_android_rewarded_ad_unit_id
+        )
     elif platform == "ios":
-        ad_unit_id = current_settings.admob_ios_rewarded_ad_unit_id
+        ad_unit_id = (
+            current_settings.admob_ios_rewarded_interstitial_ad_unit_id
+            if ad_format == "rewarded_interstitial"
+            else current_settings.admob_ios_rewarded_ad_unit_id
+        )
     else:
         raise ValueError("Unsupported rewarded-ad platform")
 
@@ -210,6 +222,7 @@ def create_rewarded_ad_session(
         user_id=user_id,
         custom_data_hash=hash_secret(custom_data),
         ad_unit_id=ad_unit_id,
+        ad_format=ad_format,
         status="pending",
         expires_at=now + timedelta(minutes=current_settings.ad_reward_session_minutes),
     )
@@ -392,10 +405,15 @@ async def process_rewarded_ad_callback(
     zone = ZoneInfo(current_settings.market_timezone)
     reported_amount = int(_required(raw_payload, "reward_amount"))
     wallet_transaction_id = f"admob:{transaction_id}"
+    awarded_points = (
+        current_settings.ad_reward_points_rewarded_interstitial
+        if session.ad_format == "rewarded_interstitial"
+        else current_settings.ad_reward_points
+    )
     credit_points(
         db,
         user_id=session.user_id,
-        amount_points=current_settings.ad_reward_points,
+        amount_points=awarded_points,
         transaction_id=wallet_transaction_id,
         entry_type="rewarded_ad",
         reference_type="rewarded_ad_claim",
@@ -403,6 +421,7 @@ async def process_rewarded_ad_callback(
         details={
             "ad_unit_id": ad_unit_id,
             "ad_network": raw_payload.get("ad_network"),
+            "ad_format": session.ad_format,
             "reported_reward_amount": reported_amount,
             "reward_item": reward_item,
         },

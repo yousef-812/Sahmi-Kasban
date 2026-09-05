@@ -52,7 +52,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('discussion creation screen explains wallet hold', (
+  testWidgets('discussion creation screen explains free community posts', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -60,7 +60,7 @@ void main() {
     );
 
     expect(find.text('إنشاء مناقشة'), findsOneWidget);
-    expect(find.textContaining('حجز 0.5 عملة مؤقتًا'), findsOneWidget);
+    expect(find.textContaining('المناقشات والتوقعات مجانية بالكامل'), findsOneWidget);
     expect(find.text('اختر السهم'), findsOneWidget);
 
     await tester.drag(find.byType(ListView), const Offset(0, -700));

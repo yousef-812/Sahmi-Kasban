@@ -32,11 +32,12 @@ class MonetizationRepository {
 
   Future<RewardedAdSessionModel> createRewardedAdSession({
     required String platform,
+    String adFormat = 'rewarded',
   }) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
         '/monetization/rewarded-ads/session',
-        data: <String, dynamic>{'platform': platform},
+        data: <String, dynamic>{'platform': platform, 'ad_format': adFormat},
       );
       return RewardedAdSessionModel.fromJson(_requiredData(response.data));
     } on Object catch (error) {

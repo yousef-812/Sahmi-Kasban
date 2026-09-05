@@ -7,6 +7,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../core/config/app_config.dart';
 import '../auth/session_controller.dart';
+import 'ad_frequency_gate.dart';
 import 'monetization_repository.dart';
 import 'plan_banner_ad.dart';
 
@@ -234,44 +235,29 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
 class InterstitialFrequencyPolicy {
   const InterstitialFrequencyPolicy({
     this.actionsPerAd = 2,
-    this.minimumInterval = const Duration(seconds: 90),
   });
 
   final int actionsPerAd;
-  final Duration minimumInterval;
-
-  bool canShow({
-    required int meaningfulActions,
-    required DateTime now,
-    required DateTime? lastShownAt,
-  }) {
-    if (meaningfulActions < actionsPerAd) {
-      return false;
-    }
-    if (lastShownAt == null) {
-      return true;
-    }
-    return now.difference(lastShownAt) >= minimumInterval;
-  }
 }
 
 class FreePlanInterstitialCoordinator {
   FreePlanInterstitialCoordinator({
     required AppConfig config,
+    required AdFrequencyGate gate,
     MonetizationRepository? repository,
     InterstitialFrequencyPolicy policy = const InterstitialFrequencyPolicy(),
   }) : _config = config,
+       _gate = gate,
        _repository = repository,
        _policy = policy;
 
   final AppConfig _config;
+  final AdFrequencyGate _gate;
   final MonetizationRepository? _repository;
   final InterstitialFrequencyPolicy _policy;
   InterstitialAd? _ad;
   bool _loading = false;
   int _meaningfulActions = 0;
-  DateTime? _lastShownAt;
-  Timer? _retryTimer;
 
   Future<void> recordMeaningfulAction({required bool enabled}) async {
     if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
@@ -281,11 +267,7 @@ class FreePlanInterstitialCoordinator {
     _loadIfNeeded();
 
     final now = DateTime.now();
-    if (!_policy.canShow(
-      meaningfulActions: _meaningfulActions,
-      now: now,
-      lastShownAt: _lastShownAt,
-    )) {
+    if (_meaningfulActions < _policy.actionsPerAd || !_gate.canShow(now)) {
       return;
     }
 
@@ -295,17 +277,19 @@ class FreePlanInterstitialCoordinator {
     }
     _ad = null;
     _meaningfulActions = 0;
-    _lastShownAt = now;
+    _gate.markShowing();
     final adUnitId = Platform.isAndroid
         ? _config.admobAndroidInterstitialId
         : _config.admobIosInterstitialId;
     ad.fullScreenContentCallback = FullScreenContentCallback<InterstitialAd>(
       onAdDismissedFullScreenContent: (closedAd) {
         closedAd.dispose();
+        _gate.markDismissed();
         _loadIfNeeded();
       },
       onAdFailedToShowFullScreenContent: (failedAd, error) {
         failedAd.dispose();
+        _gate.markDismissed();
         _repository?.recordAdTelemetry(
           adType: 'interstitial',
           eventType: 'failed_to_show',
@@ -362,7 +346,6 @@ class FreePlanInterstitialCoordinator {
   }
 
   void dispose() {
-    _retryTimer?.cancel();
     _ad?.dispose();
     _ad = null;
   }
@@ -373,6 +356,7 @@ final freePlanInterstitialProvider = Provider<FreePlanInterstitialCoordinator>((
 ) {
   final coordinator = FreePlanInterstitialCoordinator(
     config: ref.watch(appConfigProvider),
+    gate: ref.watch(adFrequencyGateProvider),
     repository: ref.watch(monetizationRepositoryProvider),
   );
   ref.onDispose(coordinator.dispose);

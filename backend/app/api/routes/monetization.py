@@ -111,6 +111,7 @@ def start_rewarded_ad_session(
             db,
             user_id=current_user.id,
             platform=payload.platform,
+            ad_format=payload.ad_format,
         )
         db.commit()
     except RewardedAdsUnavailableError as exc:

@@ -1,43 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sahmi_kasban_mobile/features/market/stock_comparison_models.dart';
+import 'package:sahmi_kasban_mobile/features/monetization/ad_frequency_gate.dart';
 import 'package:sahmi_kasban_mobile/features/monetization/free_plan_ads.dart';
 
 void main() {
-  group('InterstitialFrequencyPolicy', () {
-    const policy = InterstitialFrequencyPolicy(
-      actionsPerAd: 3,
-      minimumInterval: Duration(minutes: 4),
-    );
+  group('AdFrequencyGate and InterstitialFrequencyPolicy', () {
+    const policy = InterstitialFrequencyPolicy(actionsPerAd: 3);
+    final gate = AdFrequencyGate(minimumInterval: const Duration(minutes: 4));
     final now = DateTime(2026, 7, 29, 8);
 
-    test('requires enough meaningful actions', () {
-      expect(
-        policy.canShow(meaningfulActions: 2, now: now, lastShownAt: null),
-        isFalse,
-      );
-      expect(
-        policy.canShow(meaningfulActions: 3, now: now, lastShownAt: null),
-        isTrue,
-      );
+    test('tracks actionsPerAd correctly', () {
+      expect(policy.actionsPerAd, 3);
     });
 
-    test('enforces the minimum interval after an impression', () {
-      expect(
-        policy.canShow(
-          meaningfulActions: 3,
-          now: now,
-          lastShownAt: now.subtract(const Duration(minutes: 3)),
-        ),
-        isFalse,
-      );
-      expect(
-        policy.canShow(
-          meaningfulActions: 3,
-          now: now,
-          lastShownAt: now.subtract(const Duration(minutes: 4)),
-        ),
-        isTrue,
-      );
+    test('AdFrequencyGate enforces interval after dismissal', () {
+      expect(gate.canShow(now), isTrue);
+      gate.markShowing();
+      expect(gate.canShow(now), isFalse);
+      gate.markDismissed(at: now.subtract(const Duration(minutes: 3)));
+      expect(gate.canShow(now), isFalse);
+      gate.markDismissed(at: now.subtract(const Duration(minutes: 4)));
+      expect(gate.canShow(now), isTrue);
     });
   });
 

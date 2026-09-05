@@ -45,10 +45,13 @@ class RewardedAdEligibilityResponse(BaseModel):
     rewards_used_today: int = Field(ge=0)
     rewards_remaining_today: int = Field(ge=0)
     next_available_at: datetime | None
+    reward_points: int = Field(default=75, ge=0)
+    reward_points_rewarded_interstitial: int = Field(default=30, ge=0)
 
 
 class RewardedAdSessionRequest(BaseModel):
     platform: Literal["android", "ios"]
+    ad_format: Literal["rewarded", "rewarded_interstitial"] = "rewarded"
 
 
 class RewardedAdSessionResponse(BaseModel):
@@ -99,8 +102,8 @@ class MonetizationStatusResponse(BaseModel):
 
 
 class AdTelemetryEventRequest(BaseModel):
-    ad_type: Literal["banner", "native", "interstitial", "rewarded"]
-    event_type: Literal["loaded", "impression", "clicked", "failed_to_load", "reward_granted"]
+    ad_type: Literal["banner", "native", "interstitial", "rewarded", "app_open", "rewarded_interstitial"]
+    event_type: Literal["loaded", "impression", "clicked", "failed_to_load", "failed_to_show", "reward_granted", "earned_reward"]
     ad_unit_id: str | None = None
     platform: str = "android"
     error_message: str | None = None
