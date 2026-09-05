@@ -83,25 +83,38 @@ def database_health_check(db: DatabaseSession) -> DatabaseHealthResponse:
 @router.get("/online_stats")
 def get_online_stats(db: DatabaseSession) -> dict:
     from datetime import datetime, timedelta, UTC
-    from app.models import User, AdTelemetry, AnalysisExecution
+    from app.models.accounts import AuthSession
+    from app.models.entities import StockAnalysis, User
+    from app.models.monetization import AdEventLog
+
     now = datetime.now(UTC)
-    m15 = now - timedelta(minutes=15)
     h1 = now - timedelta(hours=1)
     h24 = now - timedelta(hours=24)
-    
+
     total_users = db.query(User).count()
     verified_users = db.query(User).filter(User.email_verified.is_(True)).count()
-    users_updated_1h = db.query(User).filter(User.updated_at >= h1).count()
-    users_updated_24h = db.query(User).filter(User.updated_at >= h24).count()
-    
-    recent_impressions_1h = db.query(AdTelemetry).filter(AdTelemetry.created_at >= h1, AdTelemetry.event_type == 'impression').count()
-    recent_analyses_1h = db.query(AnalysisExecution).filter(AnalysisExecution.created_at >= h1).count()
-    
+
+    active_sessions_1h = db.query(AuthSession.user_id).filter(
+        AuthSession.last_seen_at >= h1, AuthSession.is_revoked.is_(False)
+    ).distinct().count()
+
+    active_sessions_24h = db.query(AuthSession.user_id).filter(
+        AuthSession.last_seen_at >= h24, AuthSession.is_revoked.is_(False)
+    ).distinct().count()
+
+    ad_impressions_1h = db.query(AdEventLog).filter(
+        AdEventLog.created_at >= h1, AdEventLog.event_type == 'impression'
+    ).count()
+
+    analyses_1h = db.query(StockAnalysis).filter(
+        StockAnalysis.created_at >= h1
+    ).count()
+
     return {
         "total_registered_users": total_users,
         "verified_users": verified_users,
-        "users_updated_last_1h": users_updated_1h,
-        "users_updated_last_24h": users_updated_24h,
-        "ad_impressions_last_1h": recent_impressions_1h,
-        "analyses_executed_last_1h": recent_analyses_1h,
+        "active_users_last_1h": active_sessions_1h,
+        "active_users_last_24h": active_sessions_24h,
+        "ad_impressions_last_1h": ad_impressions_1h,
+        "analyses_created_last_1h": analyses_1h,
     }
