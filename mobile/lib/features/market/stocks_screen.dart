@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
 import '../home/dashboard_screen.dart';
+import '../monetization/free_plan_ads.dart';
 import 'market_quotes_providers.dart';
 import 'stock_quote_card.dart';
 
@@ -548,6 +549,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
               ref.read(dashboardTabProvider.notifier).state = 3;
             },
           ),
+          const FreePlanNativeAd(),
           Expanded(child: _buildGrid(items)),
         ],
       );
