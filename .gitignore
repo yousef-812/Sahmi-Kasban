@@ -21,3 +21,5 @@ mobile/android/key.properties
 mobile/android/app/*.jks
 mobile/android/app/*.keystore
 .vercel
+*-firebase-adminsdk-*.json
+firebase-service-account.json
