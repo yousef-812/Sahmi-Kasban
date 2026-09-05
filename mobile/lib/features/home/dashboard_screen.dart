@@ -16,6 +16,8 @@ import '../notifications/notification_providers.dart';
 import '../reports/reports_screen.dart';
 import '../wallet/wallet_providers.dart';
 
+final dashboardTabProvider = StateProvider<int>((ref) => 0);
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -24,8 +26,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int _selectedIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -48,10 +48,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(sessionControllerProvider).profile;
+    final selectedIndex = ref.watch(dashboardTabProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_navItems[_selectedIndex].$3),
+        title: Text(_navItems[selectedIndex].$3),
         actions: [
           if (profile?.isAdmin == true)
             IconButton(
@@ -92,9 +93,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ListTile(
                 leading: Icon(item.$2),
                 title: Text(item.$3),
-                selected: _selectedIndex == _navItems.indexOf(item),
+                selected: selectedIndex == _navItems.indexOf(item),
                 onTap: () {
-                  setState(() => _selectedIndex = _navItems.indexOf(item));
+                  ref.read(dashboardTabProvider.notifier).state =
+                      _navItems.indexOf(item);
                   Navigator.pop(context);
                 },
               ),
@@ -104,7 +106,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Icons.card_giftcard_rounded,
                 color: Colors.orangeAccent,
               ),
-              title: const Text('دعوة الأصدقاء 🎁'),
+              title: const Text('دعوة الأصدقاء'),
               subtitle: const Text('احصل على 10 عملات لك ولصديقك'),
               onTap: () {
                 context.push('/referrals');
@@ -125,12 +127,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ),
-      body: _buildBody(),
+      body: _buildBody(selectedIndex),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: selectedIndex > 4 ? 0 : selectedIndex,
+        onDestinationSelected: (index) {
+          ref.read(dashboardTabProvider.notifier).state = index;
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'الرئيسية',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.assessment_outlined),
+            selectedIcon: Icon(Icons.assessment_rounded),
+            label: 'التقارير',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.query_stats_outlined),
+            selectedIcon: Icon(Icons.query_stats_rounded),
+            label: 'تحليل سهم',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.forum_outlined),
+            selectedIcon: Icon(Icons.forum_rounded),
+            label: 'المجتمع',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+            label: 'المحفظة',
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildBody() {
-    switch (_selectedIndex) {
+  Widget _buildBody(int selectedIndex) {
+    switch (selectedIndex) {
       case 0:
         return const StocksScreen();
       case 1:

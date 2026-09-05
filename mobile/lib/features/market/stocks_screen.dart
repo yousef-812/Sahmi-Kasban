@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
+import '../home/dashboard_screen.dart';
 import 'market_quotes_providers.dart';
 import 'stock_quote_card.dart';
 
@@ -540,7 +541,16 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     if (_currentTabIndex == 0) {
       // Tab 0: All stocks
       final items = _filterQuotes(allQuotes);
-      return _buildGrid(items);
+      return Column(
+        children: [
+          _CommunityBannerCard(
+            onTap: () {
+              ref.read(dashboardTabProvider.notifier).state = 3;
+            },
+          ),
+          Expanded(child: _buildGrid(items)),
+        ],
+      );
     } else if (_currentTabIndex == 1) {
       // Tab 1: Sectors filter
       final items = _filterQuotes(allQuotes);
@@ -1150,6 +1160,76 @@ class _ErrorView extends StatelessWidget {
               label: const Text('إعادة المحاولة'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CommunityBannerCard extends StatelessWidget {
+  const _CommunityBannerCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.forum_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'توقعات ومناقشات المتداولين',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'استكشف آراء مجتمع المتداولين وشارك توقعك للأسهم مجاناً',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: theme.colorScheme.primary,
+              ),
+            ],
+          ),
         ),
       ),
     );

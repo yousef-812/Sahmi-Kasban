@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/models.dart';
 import '../../widgets/structured_data_card.dart';
@@ -85,6 +86,8 @@ class StockAnalysisReport extends StatelessWidget {
             body: disclaimer,
           ),
         ],
+        const SizedBox(height: 12),
+        _StockCommunityCard(ticker: analysis.ticker),
         const SizedBox(height: 12),
         StructuredDataCard(
           title: 'البيانات التقنية الخام',
@@ -1080,6 +1083,73 @@ class _SectorQualityCard extends StatelessWidget {
                     label: 'عائد السهم (20 يوم)',
                     value: '${_formatNumber(return20d)}%',
                   ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StockCommunityCard extends StatelessWidget {
+  const _StockCommunityCard({required this.ticker});
+  final String ticker;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.forum_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'رأي وتوقعات المتداولين حول $ticker',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'شارك رؤيتك وتوقعاتك لسهم $ticker مع مجتمع المتداولين مجاناً واطلع على تحليلاتهم.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      context.push('/community/new');
+                    },
+                    icon: const Icon(Icons.add_comment_outlined, size: 18),
+                    label: Text('أضف توقعك لسهم $ticker'),
+                  ),
+                ),
               ],
             ),
           ],
