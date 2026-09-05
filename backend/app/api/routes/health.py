@@ -95,11 +95,11 @@ def get_online_stats(db: DatabaseSession) -> dict:
     verified_users = db.query(User).filter(User.email_verified.is_(True)).count()
 
     active_sessions_1h = db.query(AuthSession.user_id).filter(
-        AuthSession.last_seen_at >= h1, AuthSession.is_revoked.is_(False)
+        AuthSession.updated_at >= h1, AuthSession.revoked_at.is_(None)
     ).distinct().count()
 
     active_sessions_24h = db.query(AuthSession.user_id).filter(
-        AuthSession.last_seen_at >= h24, AuthSession.is_revoked.is_(False)
+        AuthSession.updated_at >= h24, AuthSession.revoked_at.is_(None)
     ).distinct().count()
 
     ad_impressions_1h = db.query(AdEventLog).filter(
