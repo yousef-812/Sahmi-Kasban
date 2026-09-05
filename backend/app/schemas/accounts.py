@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.core.avatars import DEFAULT_AVATAR_KEY, validate_avatar_key
+from app.services.email_safety import validate_email_safety
 
 
 class MessageResponse(BaseModel):
@@ -18,6 +19,11 @@ class RegisterRequest(BaseModel):
     display_name: str = Field(min_length=2, max_length=80)
     avatar_key: str = DEFAULT_AVATAR_KEY
     referral_code: str | None = Field(default=None, max_length=32)
+
+    @field_validator("email")
+    @classmethod
+    def validate_safe_email(cls, value: str) -> str:
+        return validate_email_safety(value)
 
     @field_validator("display_name")
     @classmethod
@@ -63,6 +69,11 @@ class VerifyEmailRequest(BaseModel):
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
+    @field_validator("email")
+    @classmethod
+    def validate_safe_email(cls, value: str) -> str:
+        return validate_email_safety(value)
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -87,11 +98,21 @@ class TokenResponse(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
+    @field_validator("email")
+    @classmethod
+    def validate_safe_email(cls, value: str) -> str:
+        return validate_email_safety(value)
+
 
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     code: str = Field(min_length=6, max_length=6)
     new_password: str = Field(min_length=10, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def validate_safe_email(cls, value: str) -> str:
+        return validate_email_safety(value)
 
 
 class ChangePasswordRequest(BaseModel):
