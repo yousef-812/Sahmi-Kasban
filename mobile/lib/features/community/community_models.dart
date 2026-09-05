@@ -33,6 +33,10 @@ class CommunityDiscussion {
     required this.reviewedAt,
     required this.publishedAt,
     required this.author,
+    this.viewsCount = 0,
+    this.agreeCount = 0,
+    this.disagreeCount = 0,
+    this.userReaction,
   });
 
   final String id;
@@ -48,6 +52,10 @@ class CommunityDiscussion {
   final DateTime? reviewedAt;
   final DateTime? publishedAt;
   final CommunityAuthor author;
+  final int viewsCount;
+  final int agreeCount;
+  final int disagreeCount;
+  final String? userReaction;
 
   bool get canAppeal => status == 'rejected' || status == 'hidden';
 
@@ -81,6 +89,10 @@ class CommunityDiscussion {
       reviewedAt: _optionalDate(json['reviewed_at']),
       publishedAt: _optionalDate(json['published_at']),
       author: CommunityAuthor.fromJson(_requiredMap(json['author'])),
+      viewsCount: (json['views_count'] as num?)?.toInt() ?? 0,
+      agreeCount: (json['agree_count'] as num?)?.toInt() ?? 0,
+      disagreeCount: (json['disagree_count'] as num?)?.toInt() ?? 0,
+      userReaction: json['user_reaction'] as String?,
     );
   }
 }

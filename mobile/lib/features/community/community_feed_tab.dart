@@ -209,9 +209,48 @@ class CommunityDiscussionCard extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Chip(label: Text(discussion.periodLabel)),
                   if (showStatus) Chip(label: Text(discussion.statusLabel)),
+                  const SizedBox(width: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.remove_red_eye_outlined, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${discussion.viewsCount}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '👍 ${discussion.agreeCount}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: discussion.userReaction == 'agree'
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: discussion.userReaction == 'agree'
+                          ? Colors.green
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '👎 ${discussion.disagreeCount}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: discussion.userReaction == 'disagree'
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: discussion.userReaction == 'disagree'
+                          ? Colors.red
+                          : null,
+                    ),
+                  ),
                 ],
               ),
             ],

@@ -14,6 +14,7 @@ from app.api.routes.community_admin import router as community_admin_router
 from app.api.routes.community_admin_appeals import router as community_admin_appeals_router
 from app.api.routes.community_appeals import router as community_appeals_router
 from app.api.routes.community_verification import router as community_verification_router
+from app.api.routes.feedback import router as feedback_router
 from app.api.routes.health import router as health_router
 from app.api.routes.labs import router as labs_router
 from app.api.routes.market import router as market_router
@@ -25,14 +26,17 @@ from app.api.routes.quality import admin_router as quality_admin_router
 from app.api.routes.quality import public_router as quality_public_router
 from app.api.routes.referrals import router as referrals_router
 from app.api.routes.reports import router as reports_router
+from app.api.routes.version_check import router as version_check_router
 from app.api.routes.wallet import router as wallet_router
 from app.api.routes.watchlist import router as watchlist_router
 
 api_router = APIRouter()
 api_router.include_router(health_router)
+api_router.include_router(version_check_router)
 api_router.include_router(quality_public_router)
 api_router.include_router(auth_router)
 api_router.include_router(profile_router)
+api_router.include_router(feedback_router)
 api_router.include_router(wallet_router)
 api_router.include_router(referrals_router)
 api_router.include_router(market_router)

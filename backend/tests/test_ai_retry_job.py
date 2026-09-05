@@ -102,4 +102,4 @@ def test_retry_job_publishes_provider_failed_discussion(
     assert discussion is not None
     assert discussion.status == "published"
     assert discussion.moderation_result["review_stage"] == "completed"
-    assert get_wallet_account(db_session, user.id).balance_points == 450
+    assert get_wallet_account(db_session, user.id).balance_points == 500

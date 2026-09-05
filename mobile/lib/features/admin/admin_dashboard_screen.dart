@@ -17,7 +17,7 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 9,
+      length: 10,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الإدارة'),
@@ -40,6 +40,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Tab(text: 'التدقيق'),
               Tab(text: 'وظائف إعادة اللعب'),
               Tab(text: 'إعادة التقرير'),
+              Tab(text: 'ملاحظات المستخدمين'),
             ],
           ),
         ),
@@ -54,6 +55,7 @@ class AdminDashboardScreen extends StatelessWidget {
             _AuditTab(),
             _ReplayJobsTab(),
             _RegenerateReportTab(),
+            _UserFeedbacksTab(),
           ],
         ),
       ),
@@ -1443,6 +1445,194 @@ class _UserPlanUpgradeTabState extends ConsumerState<_UserPlanUpgradeTab> {
           ],
         );
       },
+    );
+  }
+}
+
+class _UserFeedbacksTab extends ConsumerStatefulWidget {
+  const _UserFeedbacksTab();
+
+  @override
+  ConsumerState<_UserFeedbacksTab> createState() => _UserFeedbacksTabState();
+}
+
+class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
+  bool _loading = false;
+  String? _error;
+  List<Map<String, dynamic>> _items = [];
+  int _total = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeedbacks();
+  }
+
+  Future<void> _loadFeedbacks() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final repository = ref.read(adminRepositoryProvider);
+      final data = await repository.fetchUserFeedbacks();
+      if (mounted) {
+        setState(() {
+          _items = List<Map<String, dynamic>>.from(data['items'] as List);
+          _total = (data['total'] as num?)?.toInt() ?? _items.length;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _error = e.message);
+      }
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _updateStatus(String feedbackId, String newStatus) async {
+    try {
+      final repository = ref.read(adminRepositoryProvider);
+      await repository.updateFeedbackStatus(feedbackId, newStatus);
+      await _loadFeedbacks();
+    } on Object catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تحديث الحالة: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading && _items.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null && _items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_error!),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _loadFeedbacks,
+              child: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadFeedbacks,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'إجمالي الملاحظات: $_total',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                onPressed: _loadFeedbacks,
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: 'تحديث',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_items.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(28),
+                child: Center(
+                  child: Text('لا توجد ملاحظات من المستخدمين حالياً.'),
+                ),
+              ),
+            )
+          else
+            for (final fb in _items) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            (fb['user'] as Map?)?['display_name'] ?? 'مستخدم',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Chip(
+                            label: Text(
+                              fb['status'] == 'new'
+                                  ? 'جديدة'
+                                  : fb['status'] == 'reviewed'
+                                      ? 'تمت المراجعة'
+                                      : fb['status'] == 'resolved'
+                                          ? 'تم الحل'
+                                          : 'مؤرشفة',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        (fb['user'] as Map?)?['email'] ?? '',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        fb['message'] as String? ?? '',
+                        style: const TextStyle(fontSize: 15, height: 1.4),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (fb['status'] != 'reviewed')
+                            OutlinedButton.icon(
+                              onPressed: () => _updateStatus(
+                                fb['id'] as String,
+                                'reviewed',
+                              ),
+                              icon: const Icon(Icons.check_circle_outline, size: 16),
+                              label: const Text('تعليم كمراجعة'),
+                            ),
+                          const SizedBox(width: 8),
+                          if (fb['status'] != 'resolved')
+                            FilledButton.icon(
+                              onPressed: () => _updateStatus(
+                                fb['id'] as String,
+                                'resolved',
+                              ),
+                              icon: const Icon(Icons.done_all_rounded, size: 16),
+                              label: const Text('تم التعامل معها'),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+        ],
+      ),
     );
   }
 }

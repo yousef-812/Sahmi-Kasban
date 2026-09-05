@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../app/app_theme_provider.dart';
 import '../../core/avatar_assets.dart';
 import '../../domain/models.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_exception.dart';
+import '../app_version/version_check_manager.dart';
 import '../auth/session_controller.dart';
 import '../community/community_feed_tab.dart';
 import '../market/stock_analysis_tab.dart';
@@ -22,6 +25,16 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(() {
+      if (mounted) {
+        ref.read(versionCheckManagerProvider).checkAndShowPrompt(context);
+      }
+    });
+  }
 
   static const _navItems = <(String, IconData, String)>[
     ('stocks', Icons.home_rounded, 'الرئيسية'),
@@ -341,7 +354,135 @@ class ProfileTab extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        const _DeveloperFeedbackCard(),
       ],
     );
   }
 }
+
+class _DeveloperFeedbackCard extends ConsumerStatefulWidget {
+  const _DeveloperFeedbackCard();
+
+  @override
+  ConsumerState<_DeveloperFeedbackCard> createState() =>
+      __DeveloperFeedbackCardState();
+}
+
+class __DeveloperFeedbackCardState
+    extends ConsumerState<_DeveloperFeedbackCard> {
+  final _messageController = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitFeedback() async {
+    final message = _messageController.text.trim();
+    if (message.length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى كتابة ملاحظة واضحة لا تقل عن 5 أحرف.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _sending = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post<Map<String, dynamic>>(
+        '/user/feedback',
+        data: {'message': message},
+      );
+      _messageController.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('شكراً لك! تم إرسال ملاحظتك للمطورين بنجاح.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _sending = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.feedback_outlined, color: Colors.amber),
+                const SizedBox(width: 10),
+                Text(
+                  'إرسال ملاحظة للمطورين',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'أفكارك واقتراحاتك تهمنا مستقبلاً لتطوير التطبيق وتحسين تجربة الاستخدام.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _messageController,
+              minLines: 3,
+              maxLines: 6,
+              maxLength: 4000,
+              decoration: const InputDecoration(
+                hintText: 'اكتب اقتراحك، استفسارك أو مشكلتك هنا...',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _sending ? null : _submitFeedback,
+                icon: _sending
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_rounded),
+                label: const Text('إرسال للمطورين'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

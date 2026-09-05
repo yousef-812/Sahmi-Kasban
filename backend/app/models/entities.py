@@ -193,6 +193,7 @@ class Discussion(TimestampMixin, Base):
         index=True,
     )
     hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    views_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
 class PredictionVerification(TimestampMixin, Base):

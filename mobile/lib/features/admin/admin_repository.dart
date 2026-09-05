@@ -387,6 +387,41 @@ class AdminRepository {
     }
   }
 
+  Future<Map<String, dynamic>> fetchUserFeedbacks({
+    String? status,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/admin/feedbacks',
+        queryParameters: <String, dynamic>{
+          if (status != null) 'status': status,
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateFeedbackStatus(
+    String feedbackId,
+    String status,
+  ) async {
+    try {
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+        '/admin/feedbacks/$feedbackId',
+        data: <String, dynamic>{'status': status},
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   String _dateOnly(DateTime value) {
     return '${value.year.toString().padLeft(4, '0')}-'
         '${value.month.toString().padLeft(2, '0')}-'

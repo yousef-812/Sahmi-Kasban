@@ -11,6 +11,8 @@ from app.schemas.community import (
     DiscussionAuthorResponse,
     DiscussionCreateRequest,
     DiscussionListResponse,
+    DiscussionReactionRequest,
+    DiscussionReactionResponse,
     DiscussionReportRequest,
     DiscussionReportResponse,
     DiscussionResponse,
@@ -24,11 +26,14 @@ from app.services.community import (
     DiscussionReportError,
     DiscussionView,
     UserMuteError,
+    get_discussion_reaction_counts,
     get_discussion_view,
+    increment_discussion_view,
     list_published_discussions,
     list_user_discussions,
     mute_user,
     report_discussion,
+    toggle_discussion_reaction,
     unmute_user,
 )
 from app.services.community_ai import (
@@ -52,9 +57,16 @@ CommunityAIService = Annotated[SahmiAIService, Depends(get_community_ai_service)
 def _discussion_response(
     view: DiscussionView,
     *,
+    db: DatabaseSession,
+    current_user_id: UUID | None = None,
     include_moderation: bool,
 ) -> DiscussionResponse:
     discussion = view.discussion
+    agree_count, disagree_count, user_reaction = get_discussion_reaction_counts(
+        db,
+        discussion.id,
+        user_id=current_user_id,
+    )
     return DiscussionResponse(
         id=discussion.id,
         ticker=discussion.ticker,
@@ -68,6 +80,10 @@ def _discussion_response(
         created_at=discussion.created_at,
         reviewed_at=discussion.reviewed_at,
         published_at=discussion.published_at,
+        views_count=discussion.views_count or 0,
+        agree_count=agree_count,
+        disagree_count=disagree_count,
+        user_reaction=user_reaction,
         author=DiscussionAuthorResponse(
             user_id=view.author.id,
             display_name=view.author.display_name,
@@ -138,7 +154,7 @@ async def submit_discussion(
     view = DiscussionView(discussion=discussion, author=result.author)
     held_points = DISCUSSION_COST_POINTS if discussion.status == "pending_review" else 0
     return DiscussionSubmissionResponse(
-        discussion=_discussion_response(view, include_moderation=True),
+        discussion=_discussion_response(view, db=db, current_user_id=current_user.id, include_moderation=True),
         held_points=held_points,
         held_coins=points_to_coins(held_points),
         balance_points=account.balance_points,
@@ -163,7 +179,7 @@ def community_discussions(
         offset=offset,
     )
     return DiscussionListResponse(
-        items=[_discussion_response(item, include_moderation=False) for item in items],
+        items=[_discussion_response(item, db=db, current_user_id=current_user.id, include_moderation=False) for item in items],
         total=total,
         limit=limit,
         offset=offset,
@@ -184,7 +200,7 @@ def my_discussions(
         offset=offset,
     )
     return DiscussionListResponse(
-        items=[_discussion_response(item, include_moderation=True) for item in items],
+        items=[_discussion_response(item, db=db, current_user_id=current_user.id, include_moderation=True) for item in items],
         total=total,
         limit=limit,
         offset=offset,
@@ -202,6 +218,7 @@ def community_discussion(
 ) -> DiscussionResponse:
     try:
         view = get_discussion_view(db, discussion_id)
+        increment_discussion_view(db, discussion_id)
     except DiscussionNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -214,7 +231,39 @@ def community_discussion(
         )
     return _discussion_response(
         view,
+        db=db,
+        current_user_id=current_user.id,
         include_moderation=view.discussion.user_id == current_user.id,
+    )
+
+
+@router.post(
+    "/discussions/{discussion_id}/reactions",
+    response_model=DiscussionReactionResponse,
+)
+def react_to_discussion(
+    discussion_id: UUID,
+    payload: DiscussionReactionRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> DiscussionReactionResponse:
+    try:
+        agree_count, disagree_count, user_reaction = toggle_discussion_reaction(
+            db,
+            user_id=current_user.id,
+            discussion_id=discussion_id,
+            reaction_type=payload.reaction_type,
+        )
+    except DiscussionNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    return DiscussionReactionResponse(
+        discussion_id=discussion_id,
+        agree_count=agree_count,
+        disagree_count=disagree_count,
+        user_reaction=user_reaction,
     )
 
 

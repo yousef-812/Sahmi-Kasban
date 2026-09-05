@@ -55,14 +55,7 @@ def test_submission_holds_points_and_is_idempotent(db_session: Session) -> None:
     assert first.discussion.id == repeated.discussion.id
     assert repeated.idempotent is True
     assert first.discussion.status == "pending_review"
-    assert get_wallet_account(db_session, user.id).balance_points == 450
-
-    holds = db_session.scalars(
-        select(WalletEntry).where(WalletEntry.entry_type == "discussion_submission_hold")
-    ).all()
-    assert len(holds) == 1
-    assert holds[0].amount_points == -50
-    assert holds[0].status == "held"
+    assert get_wallet_account(db_session, user.id).balance_points == 500
 
 
 def test_accepting_discussion_confirms_hold_once(db_session: Session) -> None:
@@ -93,14 +86,7 @@ def test_accepting_discussion_confirms_hold_once(db_session: Session) -> None:
     assert accepted.status == "published"
     assert accepted.published_at is not None
     assert accepted.frozen_prediction["direction"] == "up"
-    assert get_wallet_account(db_session, user.id).balance_points == 450
-
-    hold = db_session.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == accepted.wallet_hold_transaction_id)
-    )
-    assert hold is not None
-    assert hold.status == "confirmed"
-    assert hold.confirmed_at is not None
+    assert get_wallet_account(db_session, user.id).balance_points == 500
 
 
 def test_static_rejection_releases_full_hold_once(db_session: Session) -> None:
@@ -118,18 +104,6 @@ def test_static_rejection_releases_full_hold_once(db_session: Session) -> None:
     assert first.discussion.rejection_code in {"phone_number", "contact_details"}
     assert repeated.idempotent is True
     assert get_wallet_account(db_session, user.id).balance_points == 500
-
-    hold = db_session.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == first.discussion.wallet_hold_transaction_id)
-    )
-    assert hold is not None
-    assert hold.status == "released"
-
-    refunds = db_session.scalars(
-        select(WalletEntry).where(WalletEntry.entry_type == "discussion_submission_release")
-    ).all()
-    assert len(refunds) == 1
-    assert refunds[0].amount_points == 50
 
     events = db_session.scalars(
         select(DiscussionModerationEvent).where(

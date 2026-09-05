@@ -139,13 +139,7 @@ def test_ai_acceptance_publishes_and_freezes_server_authoritative_prediction(
     assert prediction["specificity"] == 1.0
     assert prediction["claims"] == ["اختراق المقاومة", "تحسن الحجم"]
     assert len(prediction["source_text_sha256"]) == 64
-    assert get_wallet_account(db_session, user.id).balance_points == 450
-
-    hold = db_session.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == discussion.wallet_hold_transaction_id)
-    )
-    assert hold is not None
-    assert hold.status == "confirmed"
+    assert get_wallet_account(db_session, user.id).balance_points == 500
 
 
 def test_ai_rejection_releases_hold_and_records_reason(db_session: Session) -> None:
@@ -168,12 +162,6 @@ def test_ai_rejection_releases_hold_and_records_reason(db_session: Session) -> N
     assert result.discussion.status == "rejected"
     assert result.discussion.rejection_code == "off_topic"
     assert get_wallet_account(db_session, user.id).balance_points == 500
-
-    hold = db_session.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == discussion.wallet_hold_transaction_id)
-    )
-    assert hold is not None
-    assert hold.status == "released"
 
 
 def test_ai_provider_failure_keeps_pending_hold_and_allows_safe_retry(
@@ -198,13 +186,7 @@ def test_ai_provider_failure_keeps_pending_hold_and_allows_safe_retry(
     assert failed.discussion.status == "pending_review"
     assert failed.discussion.moderation_result["review_stage"] == "awaiting_ai_retry"
     assert failed.discussion.moderation_result["ai"]["attempts"] == 1
-    assert get_wallet_account(db_session, user.id).balance_points == 450
-
-    hold = db_session.scalar(
-        select(WalletEntry).where(WalletEntry.transaction_id == discussion.wallet_hold_transaction_id)
-    )
-    assert hold is not None
-    assert hold.status == "held"
+    assert get_wallet_account(db_session, user.id).balance_points == 500
 
     retried = asyncio.run(
         review_pending_discussion(
@@ -217,7 +199,7 @@ def test_ai_provider_failure_keeps_pending_hold_and_allows_safe_retry(
 
     assert retried.ai_status == "published"
     assert retried.discussion.status == "published"
-    assert get_wallet_account(db_session, user.id).balance_points == 450
+    assert get_wallet_account(db_session, user.id).balance_points == 500
 
     failure_events = db_session.scalars(
         select(DiscussionModerationEvent).where(

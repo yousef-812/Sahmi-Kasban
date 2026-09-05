@@ -122,3 +122,28 @@ class NotificationDelivery(TimestampMixin, Base):
     provider_message_id: Mapped[str | None] = mapped_column(String(300))
     error_code: Mapped[str | None] = mapped_column(String(120))
     attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class DeveloperFeedback(TimestampMixin, Base):
+    __tablename__ = "developer_feedbacks"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('new', 'reviewed', 'resolved', 'archived')",
+            name="developer_feedback_status_allowed",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    message: Mapped[str] = mapped_column(String(4000), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), default="new", index=True, nullable=False)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+    )

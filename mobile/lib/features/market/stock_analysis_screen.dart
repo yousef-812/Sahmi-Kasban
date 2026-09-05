@@ -6,6 +6,7 @@ import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
 import '../monetization/free_plan_ads.dart';
+import '../rating/rating_prompt_manager.dart';
 import '../wallet/wallet_providers.dart';
 import 'stock_analysis_report.dart';
 
@@ -105,6 +106,11 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
                   ref.read(sessionControllerProvider).profile?.adsEnabled ==
                   true,
             );
+        if (mounted) {
+          await ref
+              .read(ratingPromptManagerProvider)
+              .recordCompletedAnalysis(context);
+        }
       }
     } on ApiException catch (error) {
       if (mounted) {

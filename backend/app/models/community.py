@@ -197,3 +197,33 @@ class AIPersonaLog(TimestampMixin, Base):
     ticker: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
     target_session_date: Mapped[str] = mapped_column(String(10), index=True, nullable=False)
     details: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class DiscussionReaction(TimestampMixin, Base):
+    __tablename__ = "discussion_reactions"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "discussion_id",
+            name="uq_discussion_reactions_user_discussion",
+        ),
+        CheckConstraint(
+            "reaction_type IN ('agree', 'disagree')",
+            name="discussion_reaction_type_allowed",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    discussion_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("discussions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    reaction_type: Mapped[str] = mapped_column(String(24), nullable=False)

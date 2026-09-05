@@ -113,6 +113,23 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
     );
   }
 
+  Future<void> _toggleReaction(
+    CommunityDiscussion discussion,
+    String reactionType,
+  ) async {
+    await _runAction(
+      () => ref.read(communityRepositoryProvider).toggleReaction(
+        discussionId: discussion.id,
+        reactionType: reactionType,
+      ),
+      successMessage: 'تم تحديث تفاعلك مع المناقشة.',
+      afterSuccess: () {
+        ref.invalidate(communityDiscussionProvider(discussion.id));
+        ref.invalidate(communityFeedProvider);
+      },
+    );
+  }
+
   Future<void> _runAction(
     Future<Object?> Function() action, {
     required String successMessage,
@@ -242,9 +259,64 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Chip(label: Text(item.periodLabel)),
                             Chip(label: Text(item.statusLabel)),
+                            const SizedBox(width: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.remove_red_eye_outlined, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${item.viewsCount} مشاهدة',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: item.userReaction == 'agree'
+                                  ? FilledButton.icon(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'agree'),
+                                      icon: const Icon(Icons.thumb_up_alt),
+                                      label: Text('متفق (${item.agreeCount})'),
+                                    )
+                                  : OutlinedButton.icon(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'agree'),
+                                      icon: const Icon(Icons.thumb_up_alt_outlined),
+                                      label: Text('متفق (${item.agreeCount})'),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: item.userReaction == 'disagree'
+                                  ? FilledButton.icon(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'disagree'),
+                                      icon: const Icon(Icons.thumb_down_alt),
+                                      label: Text('غير متفق (${item.disagreeCount})'),
+                                    )
+                                  : OutlinedButton.icon(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'disagree'),
+                                      icon: const Icon(Icons.thumb_down_alt_outlined),
+                                      label: Text('غير متفق (${item.disagreeCount})'),
+                                    ),
+                            ),
                           ],
                         ),
                         if (item.rejectionCode != null) ...[

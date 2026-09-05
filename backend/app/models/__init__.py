@@ -16,6 +16,7 @@ from app.models.community import (
     CommunityAdminEvent,
     DiscussionAppeal,
     DiscussionModerationEvent,
+    DiscussionReaction,
     DiscussionReport,
     UserMute,
 )
@@ -41,6 +42,7 @@ from app.models.monetization import (
 )
 from app.models.operations import (
     AppSetting,
+    DeveloperFeedback,
     Notification,
     NotificationDelivery,
     PushDevice,
@@ -69,9 +71,11 @@ __all__ = [
     "AuthSession",
     "BillingPurchase",
     "CommunityAdminEvent",
+    "DeveloperFeedback",
     "Discussion",
     "DiscussionAppeal",
     "DiscussionModerationEvent",
+    "DiscussionReaction",
     "DiscussionReport",
     "LabsBacktestJob",
     "MarketDataSnapshot",

@@ -49,6 +49,10 @@ def _discussion_response(view: DiscussionView) -> DiscussionResponse:
         created_at=discussion.created_at,
         reviewed_at=discussion.reviewed_at,
         published_at=discussion.published_at,
+        views_count=getattr(discussion, "views_count", 0),
+        agree_count=0,
+        disagree_count=0,
+        user_reaction=None,
         author=DiscussionAuthorResponse(
             user_id=view.author.id,
             display_name=view.author.display_name,

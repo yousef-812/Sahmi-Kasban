@@ -59,7 +59,22 @@ class DiscussionResponse(BaseModel):
     created_at: datetime
     reviewed_at: datetime | None
     published_at: datetime | None
+    views_count: int = Field(default=0, ge=0)
+    agree_count: int = Field(default=0, ge=0)
+    disagree_count: int = Field(default=0, ge=0)
+    user_reaction: str | None = None
     author: DiscussionAuthorResponse
+
+
+class DiscussionReactionRequest(BaseModel):
+    reaction_type: Literal["agree", "disagree"]
+
+
+class DiscussionReactionResponse(BaseModel):
+    discussion_id: UUID
+    agree_count: int = Field(ge=0)
+    disagree_count: int = Field(ge=0)
+    user_reaction: str | None = None
 
 
 class DiscussionSubmissionResponse(BaseModel):

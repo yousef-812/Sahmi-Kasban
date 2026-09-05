@@ -137,6 +137,21 @@ class CommunityRepository {
     }
   }
 
+  Future<CommunityDiscussion> toggleReaction({
+    required String discussionId,
+    required String reactionType,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/discussions/$discussionId/reactions',
+        data: <String, dynamic>{'reaction_type': reactionType},
+      );
+      return CommunityDiscussion.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<CommunityAppealPage> listMyAppeals({
     int limit = 20,
     int offset = 0,

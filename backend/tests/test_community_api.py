@@ -87,8 +87,8 @@ def test_community_submission_list_report_and_mute_flow(
     submitted_payload = submitted.json()
     assert submitted_payload["discussion"]["ticker"] == "COMI"
     assert submitted_payload["discussion"]["status"] == "pending_review"
-    assert submitted_payload["held_points"] == 50
-    assert submitted_payload["balance_points"] == 950
+    assert submitted_payload["held_points"] == 0
+    assert submitted_payload["balance_points"] == 1000
     assert submitted_payload["idempotent"] is False
 
     repeated = client.post(
@@ -98,7 +98,7 @@ def test_community_submission_list_report_and_mute_flow(
     )
     assert repeated.status_code == 201
     assert repeated.json()["idempotent"] is True
-    assert repeated.json()["balance_points"] == 950
+    assert repeated.json()["balance_points"] == 1000
 
     discussion_id = submitted_payload["discussion"]["id"]
     discussion_uuid = UUID(discussion_id)
@@ -207,3 +207,82 @@ def test_static_rejection_returns_full_balance(
 
     user = db_session.scalar(select(User).where(User.email == "api-rejected@example.com"))
     assert user is not None
+
+
+def test_discussion_views_and_reactions_flow(
+    client: TestClient,
+    fake_email_service,
+    db_session: Session,
+) -> None:
+    author_tokens = register_and_login(
+        client,
+        fake_email_service,
+        email="views-author@example.com",
+        display_name="Views Author",
+    )
+    voter_tokens = register_and_login(
+        client,
+        fake_email_service,
+        email="voter@example.com",
+        display_name="Voter User",
+    )
+
+    submitted = client.post(
+        "/api/v1/community/discussions",
+        headers=headers(author_tokens),
+        json=discussion_payload("api-community-views-001"),
+    )
+    disc_id = submitted.json()["discussion"]["id"]
+
+    # Publish discussion
+    apply_moderation_decision(
+        db_session,
+        discussion_id=UUID(disc_id),
+        decision="accept",
+        actor_type="ai",
+        moderation_details={"provider": "test"},
+        frozen_prediction={"ticker": "COMI", "direction": "up", "period_type": "week"},
+    )
+    db_session.commit()
+
+    # Get single discussion increments view count
+    detail = client.get(f"/api/v1/community/discussions/{disc_id}", headers=headers(voter_tokens))
+    assert detail.status_code == 200
+    assert detail.json()["views_count"] == 1
+    assert detail.json()["agree_count"] == 0
+    assert detail.json()["disagree_count"] == 0
+    assert detail.json()["user_reaction"] is None
+
+    # Vote agree
+    rx1 = client.post(
+        f"/api/v1/community/discussions/{disc_id}/reactions",
+        headers=headers(voter_tokens),
+        json={"reaction_type": "agree"},
+    )
+    assert rx1.status_code == 200
+    assert rx1.json()["user_reaction"] == "agree"
+    assert rx1.json()["agree_count"] == 1
+    assert rx1.json()["disagree_count"] == 0
+
+    # Toggle to disagree
+    rx2 = client.post(
+        f"/api/v1/community/discussions/{disc_id}/reactions",
+        headers=headers(voter_tokens),
+        json={"reaction_type": "disagree"},
+    )
+    assert rx2.status_code == 200
+    assert rx2.json()["user_reaction"] == "disagree"
+    assert rx2.json()["agree_count"] == 0
+    assert rx2.json()["disagree_count"] == 1
+
+    # Remove reaction by toggling same reaction
+    rx3 = client.post(
+        f"/api/v1/community/discussions/{disc_id}/reactions",
+        headers=headers(voter_tokens),
+        json={"reaction_type": "disagree"},
+    )
+    assert rx3.status_code == 200
+    assert rx3.json()["user_reaction"] is None
+    assert rx3.json()["agree_count"] == 0
+    assert rx3.json()["disagree_count"] == 0
+

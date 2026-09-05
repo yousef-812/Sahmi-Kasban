@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.models import (
     Discussion,
     DiscussionModerationEvent,
+    DiscussionReaction,
     DiscussionReport,
     User,
     UserMute,
@@ -23,7 +24,7 @@ from app.services.wallet import (
     release_hold,
 )
 
-DISCUSSION_COST_POINTS = 50
+DISCUSSION_COST_POINTS = 0
 DISCUSSION_HOLD_ENTRY_TYPE = "discussion_submission_hold"
 DISCUSSION_RELEASE_ENTRY_TYPE = "discussion_submission_release"
 ALLOWED_PERIOD_TYPES = {"next_session", "week", "month"}
@@ -225,16 +226,17 @@ def create_discussion(
     db.add(discussion)
     db.flush()
 
-    hold_points(
-        db,
-        user_id=user.id,
-        amount_points=DISCUSSION_COST_POINTS,
-        transaction_id=hold_transaction_id,
-        entry_type=DISCUSSION_HOLD_ENTRY_TYPE,
-        reference_type="discussion",
-        reference_id=str(discussion.id),
-        details={"stage": "moderation"},
-    )
+    if DISCUSSION_COST_POINTS > 0:
+        hold_points(
+            db,
+            user_id=user.id,
+            amount_points=DISCUSSION_COST_POINTS,
+            transaction_id=hold_transaction_id,
+            entry_type=DISCUSSION_HOLD_ENTRY_TYPE,
+            reference_type="discussion",
+            reference_id=str(discussion.id),
+            details={"stage": "moderation"},
+        )
 
     rules_result = static_moderation_result(normalized_title, normalized_content)
     discussion.moderation_result = {
@@ -316,32 +318,34 @@ def apply_moderation_decision(
     discussion.reviewed_at = reviewed_at
 
     if decision == "accept":
-        confirm_hold(
-            db,
-            user_id=discussion.user_id,
-            amount_points=DISCUSSION_COST_POINTS,
-            transaction_id=discussion.wallet_hold_transaction_id,
-            entry_type=DISCUSSION_HOLD_ENTRY_TYPE,
-            moment=reviewed_at,
-        )
+        if DISCUSSION_COST_POINTS > 0:
+            confirm_hold(
+                db,
+                user_id=discussion.user_id,
+                amount_points=DISCUSSION_COST_POINTS,
+                transaction_id=discussion.wallet_hold_transaction_id,
+                entry_type=DISCUSSION_HOLD_ENTRY_TYPE,
+                moment=reviewed_at,
+            )
         discussion.status = "published"
         discussion.published_at = reviewed_at
         discussion.rejection_code = None
         discussion.frozen_prediction = frozen_prediction or {}
         action = "published"
     else:
-        release_hold(
-            db,
-            user_id=discussion.user_id,
-            amount_points=DISCUSSION_COST_POINTS,
-            transaction_id=discussion.wallet_hold_transaction_id,
-            entry_type=DISCUSSION_HOLD_ENTRY_TYPE,
-            release_transaction_id=_release_transaction_id(discussion.id),
-            release_entry_type=DISCUSSION_RELEASE_ENTRY_TYPE,
-            reference_type="discussion",
-            reference_id=str(discussion.id),
-            details={"reason_code": reason_code},
-        )
+        if DISCUSSION_COST_POINTS > 0:
+            release_hold(
+                db,
+                user_id=discussion.user_id,
+                amount_points=DISCUSSION_COST_POINTS,
+                transaction_id=discussion.wallet_hold_transaction_id,
+                entry_type=DISCUSSION_HOLD_ENTRY_TYPE,
+                release_transaction_id=_release_transaction_id(discussion.id),
+                release_entry_type=DISCUSSION_RELEASE_ENTRY_TYPE,
+                reference_type="discussion",
+                reference_id=str(discussion.id),
+                details={"reason_code": reason_code},
+            )
         discussion.status = "rejected"
         discussion.rejection_code = reason_code
         action = "rejected"
@@ -526,3 +530,84 @@ def unmute_user(
         muted=False,
         idempotent=False,
     )
+
+
+def increment_discussion_view(db: Session, discussion_id: UUID) -> int:
+    discussion = db.get(Discussion, discussion_id)
+    if discussion is None:
+        return 0
+    discussion.views_count += 1
+    db.commit()
+    return discussion.views_count
+
+
+def get_discussion_reaction_counts(
+    db: Session,
+    discussion_id: UUID,
+    user_id: UUID | None = None,
+) -> tuple[int, int, str | None]:
+    agree_count = int(
+        db.scalar(
+            select(func.count(DiscussionReaction.id)).where(
+                DiscussionReaction.discussion_id == discussion_id,
+                DiscussionReaction.reaction_type == "agree",
+            )
+        )
+        or 0
+    )
+    disagree_count = int(
+        db.scalar(
+            select(func.count(DiscussionReaction.id)).where(
+                DiscussionReaction.discussion_id == discussion_id,
+                DiscussionReaction.reaction_type == "disagree",
+            )
+        )
+        or 0
+    )
+    user_reaction: str | None = None
+    if user_id is not None:
+        reaction = db.scalar(
+            select(DiscussionReaction).where(
+                DiscussionReaction.discussion_id == discussion_id,
+                DiscussionReaction.user_id == user_id,
+            )
+        )
+        if reaction is not None:
+            user_reaction = reaction.reaction_type
+    return agree_count, disagree_count, user_reaction
+
+
+def toggle_discussion_reaction(
+    db: Session,
+    *,
+    user_id: UUID,
+    discussion_id: UUID,
+    reaction_type: str,
+) -> tuple[int, int, str | None]:
+    if reaction_type not in {"agree", "disagree"}:
+        raise ValueError("Invalid reaction type")
+
+    discussion = db.get(Discussion, discussion_id)
+    if discussion is None:
+        raise DiscussionNotFoundError("Discussion not found")
+
+    existing = db.scalar(
+        select(DiscussionReaction).where(
+            DiscussionReaction.discussion_id == discussion_id,
+            DiscussionReaction.user_id == user_id,
+        )
+    )
+    if existing is not None:
+        if existing.reaction_type == reaction_type:
+            db.delete(existing)
+        else:
+            existing.reaction_type = reaction_type
+    else:
+        reaction = DiscussionReaction(
+            user_id=user_id,
+            discussion_id=discussion_id,
+            reaction_type=reaction_type,
+        )
+        db.add(reaction)
+    db.commit()
+    return get_discussion_reaction_counts(db, discussion_id, user_id=user_id)
