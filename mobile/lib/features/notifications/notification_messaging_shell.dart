@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'notification_messaging.dart';
+import 'notification_providers.dart';
 
 /// Sits above the router so foreground pushes render as in-app banners and a
 /// tapped push (cold start, background, or foreground) opens the inbox.
@@ -75,6 +76,7 @@ class _NotificationMessagingShellState
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(pushRegistrationProvider);
     ref.listen<AsyncValue<RemoteMessage?>>(initialNotificationMessageProvider, (
       previous,
       next,

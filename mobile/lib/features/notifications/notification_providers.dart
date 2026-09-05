@@ -23,7 +23,13 @@ final pushRegistrationProvider = FutureProvider<void>((ref) async {
       await Firebase.initializeApp();
     }
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    debugPrint('FCM Notification permission status: ${settings.authorizationStatus}');
     final token = await messaging.getToken();
     if (token == null || token.length < 20) {
       return;
@@ -36,7 +42,9 @@ final pushRegistrationProvider = FutureProvider<void>((ref) async {
     await ref
         .read(notificationRepositoryProvider)
         .registerDevice(token: token, platform: platform);
-  } on Object {
-    // Push remains optional until Firebase project files are configured.
+    debugPrint('FCM token successfully registered with backend');
+  } on Object catch (error, stackTrace) {
+    debugPrint('FCM push registration error: $error\n$stackTrace');
   }
 });
+
