@@ -7,6 +7,9 @@ class AdminOverview {
     required this.usersTotal,
     required this.usersActive,
     required this.usersSuspended,
+    required this.usersVerified,
+    required this.usersUnverified,
+    required this.usersActiveNow,
     required this.discussionsPending,
     required this.discussionsPublished,
     required this.discussionsHidden,
@@ -20,6 +23,9 @@ class AdminOverview {
   final int usersTotal;
   final int usersActive;
   final int usersSuspended;
+  final int usersVerified;
+  final int usersUnverified;
+  final int usersActiveNow;
   final int discussionsPending;
   final int discussionsPublished;
   final int discussionsHidden;
@@ -35,6 +41,9 @@ class AdminOverview {
       usersTotal: value('users_total'),
       usersActive: value('users_active'),
       usersSuspended: value('users_suspended'),
+      usersVerified: value('users_verified'),
+      usersUnverified: value('users_unverified'),
+      usersActiveNow: value('users_active_now'),
       discussionsPending: value('discussions_pending'),
       discussionsPublished: value('discussions_published'),
       discussionsHidden: value('discussions_hidden'),

@@ -85,8 +85,11 @@ class _OverviewTab extends ConsumerWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
-                _Metric('المستخدمون', item.usersTotal),
-                _Metric('النشطون', item.usersActive),
+                _Metric('إجمالي المسجلين', item.usersTotal),
+                _Metric('النشطون الآن 🟢', item.usersActiveNow),
+                _Metric('حسابات مفعلة ✅', item.usersVerified),
+                _Metric('غير مفعلة ❌', item.usersUnverified),
+                _Metric('النشطون بالحساب', item.usersActive),
                 _Metric('الموقوفون', item.usersSuspended),
                 _Metric('قيد المراجعة', item.discussionsPending),
                 _Metric('البلاغات المفتوحة', item.openReports),
@@ -1575,7 +1578,7 @@ class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            (fb['user'] as Map?)?['display_name'] ?? 'مستخدم',
+                            ((fb['user'] as Map?)?['display_name'] as String?) ?? 'مستخدم',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           PopupMenuButton<String>(
@@ -1649,7 +1652,7 @@ class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
                         ],
                       ),
                       Text(
-                        (fb['user'] as Map?)?['email'] ?? '',
+                        ((fb['user'] as Map?)?['email'] as String?) ?? '',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 10),

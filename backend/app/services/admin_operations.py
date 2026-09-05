@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sahmi_kasban.ai import AIProviderError, SahmiAIService
@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.market_data.types import MarketDataProvider
 from app.models import (
+    AuthSession,
     CommunityAdminEvent,
     Discussion,
     DiscussionAppeal,
@@ -26,14 +27,30 @@ from app.models import (
 def get_admin_overview(db: Session, *, moment: datetime | None = None) -> dict:
     current = moment or datetime.now(UTC)
     today_start = current.replace(hour=0, minute=0, second=0, microsecond=0)
+    h1 = current - timedelta(hours=1)
 
     def count(model, *filters) -> int:
         return int(db.scalar(select(func.count(model.id)).where(*filters)) or 0)
+
+    users_verified = count(User, User.email_verified.is_(True))
+    users_unverified = count(User, User.email_verified.is_(False))
+
+    active_users_now = int(
+        db.scalar(
+            select(func.count(func.distinct(AuthSession.user_id))).where(
+                AuthSession.updated_at >= h1,
+                AuthSession.revoked_at.is_(None),
+            )
+        ) or 0
+    )
 
     return {
         "users_total": count(User),
         "users_active": count(User, User.status == "active"),
         "users_suspended": count(User, User.status == "suspended"),
+        "users_verified": users_verified,
+        "users_unverified": users_unverified,
+        "users_active_now": active_users_now,
         "discussions_pending": count(Discussion, Discussion.status == "pending_review"),
         "discussions_published": count(Discussion, Discussion.status == "published"),
         "discussions_hidden": count(Discussion, Discussion.status == "hidden"),

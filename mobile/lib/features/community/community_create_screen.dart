@@ -93,9 +93,9 @@ class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
         return;
       }
       final message = switch (result.discussion.status) {
-        'published' => 'تم قبول المناقشة ونشرها وتأكيد خصم 0.5 عملة.',
-        'rejected' => 'تم رفض المناقشة وإعادة الرصيد كاملًا.',
-        _ => 'تم إرسال المناقشة وهي قيد المراجعة مع حجز 0.5 عملة مؤقتًا.',
+        'published' => 'تم نشر المناقشة بنجاح.',
+        'rejected' => 'لم يتم قبول المناقشة.',
+        _ => 'تم إرسال المناقشة وهي قيد المراجعة حاليًا.',
       };
       ScaffoldMessenger.of(
         context,
@@ -141,13 +141,13 @@ class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      Icons.account_balance_wallet_outlined,
+                      Icons.forum_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        'سيتم حجز 0.5 عملة مؤقتًا. عند القبول يتحول الحجز إلى خصم نهائي، وعند الرفض يعود الرصيد كاملًا.',
+                        'المناقشات والتوقعات مجانية بالكامل. يتم مراجعة مناقشتك قبل نشرها في مجتمع سهمي كسبان.',
                       ),
                     ),
                   ],
