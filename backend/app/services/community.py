@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     Discussion,
+    DiscussionImpression,
     DiscussionModerationEvent,
     DiscussionReaction,
     DiscussionReport,
@@ -531,13 +532,53 @@ def unmute_user(
     )
 
 
-def increment_discussion_view(db: Session, discussion_id: UUID) -> int:
-    discussion = db.get(Discussion, discussion_id)
-    if discussion is None:
-        return 0
-    discussion.views_count += 1
+def register_discussion_views(
+    db: Session,
+    discussion_ids: list[UUID],
+    viewer_user_id: UUID | None = None,
+) -> dict[str, int]:
+    updated_counts: dict[str, int] = {}
+    if not discussion_ids:
+        return updated_counts
+
+    unique_ids = list(dict.fromkeys(discussion_ids))
+    for disc_id in unique_ids:
+        discussion = db.get(Discussion, disc_id)
+        if discussion is None or discussion.status != "published":
+            continue
+
+        if viewer_user_id is not None:
+            existing = db.scalar(
+                select(DiscussionImpression).where(
+                    DiscussionImpression.discussion_id == disc_id,
+                    DiscussionImpression.user_id == viewer_user_id,
+                )
+            )
+            if existing is None:
+                impression = DiscussionImpression(
+                    user_id=viewer_user_id,
+                    discussion_id=disc_id,
+                )
+                db.add(impression)
+                discussion.views_count += 1
+                db.flush()
+        else:
+            discussion.views_count += 1
+            db.flush()
+
+        updated_counts[str(disc_id)] = discussion.views_count
+
     db.commit()
-    return discussion.views_count
+    return updated_counts
+
+
+def increment_discussion_view(
+    db: Session,
+    discussion_id: UUID,
+    viewer_user_id: UUID | None = None,
+) -> int:
+    results = register_discussion_views(db, [discussion_id], viewer_user_id=viewer_user_id)
+    return results.get(str(discussion_id), 0)
 
 
 def get_discussion_reaction_counts(

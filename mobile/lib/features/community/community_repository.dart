@@ -167,6 +167,18 @@ class CommunityRepository {
     }
   }
 
+  Future<void> registerViews(List<String> discussionIds) async {
+    if (discussionIds.isEmpty) return;
+    try {
+      await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/discussions/views',
+        data: <String, dynamic>{'discussion_ids': discussionIds},
+      );
+    } on Object {
+      // Silently ignore view impression tracking errors
+    }
+  }
+
   Map<String, dynamic> _requiredData(Map<String, dynamic>? data) {
     if (data == null) {
       throw const FormatException('Community response is empty.');

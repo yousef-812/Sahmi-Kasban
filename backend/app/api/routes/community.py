@@ -17,6 +17,7 @@ from app.schemas.community import (
     DiscussionReportResponse,
     DiscussionResponse,
     DiscussionSubmissionResponse,
+    DiscussionViewsBatchRequest,
     UserMuteResponse,
 )
 from app.services.community import (
@@ -32,6 +33,7 @@ from app.services.community import (
     list_published_discussions,
     list_user_discussions,
     mute_user,
+    register_discussion_views,
     report_discussion,
     toggle_discussion_reaction,
     unmute_user,
@@ -208,6 +210,16 @@ def my_discussions(
     )
 
 
+@router.post("/discussions/views")
+def register_views(
+    body: DiscussionViewsBatchRequest,
+    db: DatabaseSession,
+    current_user: OptionalUser = None,
+) -> dict[str, int]:
+    viewer_user_id = current_user.id if current_user else None
+    return register_discussion_views(db, body.discussion_ids, viewer_user_id=viewer_user_id)
+
+
 @router.get(
     "/discussions/{discussion_id}",
     response_model=DiscussionResponse,
@@ -217,15 +229,15 @@ def community_discussion(
     db: DatabaseSession,
     current_user: OptionalUser = None,
 ) -> DiscussionResponse:
+    viewer_user_id = current_user.id if current_user else None
     try:
         view = get_discussion_view(db, discussion_id)
-        increment_discussion_view(db, discussion_id)
+        increment_discussion_view(db, discussion_id, viewer_user_id=viewer_user_id)
     except DiscussionNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    viewer_user_id = current_user.id if current_user else None
     if view.discussion.status != "published" and (viewer_user_id is None or view.discussion.user_id != viewer_user_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

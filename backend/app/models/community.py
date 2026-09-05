@@ -227,3 +227,28 @@ class DiscussionReaction(TimestampMixin, Base):
         nullable=False,
     )
     reaction_type: Mapped[str] = mapped_column(String(24), nullable=False)
+
+
+class DiscussionImpression(TimestampMixin, Base):
+    __tablename__ = "discussion_impressions"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "discussion_id",
+            name="uq_discussion_impressions_user_discussion",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    discussion_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("discussions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )

@@ -263,18 +263,11 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                           children: [
                             Chip(label: Text(item.periodLabel)),
                             Chip(label: Text(item.statusLabel)),
-                            const SizedBox(width: 4),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.remove_red_eye_outlined, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${item.viewsCount} مشاهدة',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
+                            if (isOwner)
+                              Chip(
+                                avatar: const Icon(Icons.remove_red_eye_outlined, size: 14),
+                                label: Text('${item.viewsCount} مشاهدة'),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -284,37 +277,33 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                           children: [
                             Expanded(
                               child: item.userReaction == 'agree'
-                                  ? FilledButton.icon(
+                                  ? FilledButton(
                                       onPressed: _actionBusy
                                           ? null
                                           : () => _toggleReaction(item, 'agree'),
-                                      icon: const Icon(Icons.thumb_up_alt),
-                                      label: Text('متفق (${item.agreeCount})'),
+                                      child: Text('متفق (${item.agreeCount})'),
                                     )
-                                  : OutlinedButton.icon(
+                                  : OutlinedButton(
                                       onPressed: _actionBusy
                                           ? null
                                           : () => _toggleReaction(item, 'agree'),
-                                      icon: const Icon(Icons.thumb_up_alt_outlined),
-                                      label: Text('متفق (${item.agreeCount})'),
+                                      child: Text('متفق (${item.agreeCount})'),
                                     ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: item.userReaction == 'disagree'
-                                  ? FilledButton.icon(
+                                  ? FilledButton(
                                       onPressed: _actionBusy
                                           ? null
                                           : () => _toggleReaction(item, 'disagree'),
-                                      icon: const Icon(Icons.thumb_down_alt),
-                                      label: Text('غير متفق (${item.disagreeCount})'),
+                                      child: Text('غير متفق (${item.disagreeCount})'),
                                     )
-                                  : OutlinedButton.icon(
+                                  : OutlinedButton(
                                       onPressed: _actionBusy
                                           ? null
                                           : () => _toggleReaction(item, 'disagree'),
-                                      icon: const Icon(Icons.thumb_down_alt_outlined),
-                                      label: Text('غير متفق (${item.disagreeCount})'),
+                                      child: Text('غير متفق (${item.disagreeCount})'),
                                     ),
                             ),
                           ],

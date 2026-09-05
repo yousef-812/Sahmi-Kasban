@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/avatar_assets.dart';
 import '../monetization/free_plan_ads.dart';
+import '../auth/session_controller.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
+import 'community_repository.dart';
 
 class CommunityFeedTab extends ConsumerStatefulWidget {
   const CommunityFeedTab({super.key});
@@ -143,7 +145,9 @@ class _CommunityFeedTabState extends ConsumerState<CommunityFeedTab> {
   }
 }
 
-class CommunityDiscussionCard extends StatelessWidget {
+final _registeredFeedViewIds = <String>{};
+
+class CommunityDiscussionCard extends ConsumerStatefulWidget {
   const CommunityDiscussionCard({
     required this.discussion,
     this.showStatus = false,
@@ -154,7 +158,52 @@ class CommunityDiscussionCard extends StatelessWidget {
   final bool showStatus;
 
   @override
+  ConsumerState<CommunityDiscussionCard> createState() =>
+      _CommunityDiscussionCardState();
+}
+
+class _CommunityDiscussionCardState
+    extends ConsumerState<CommunityDiscussionCard> {
+  @override
+  void initState() {
+    super.initState();
+    _registerImpression();
+  }
+
+  @override
+  void didUpdateWidget(covariant CommunityDiscussionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _registerImpression();
+  }
+
+  void _registerImpression() {
+    final id = widget.discussion.id;
+    if (!_registeredFeedViewIds.contains(id)) {
+      _registeredFeedViewIds.add(id);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(communityRepositoryProvider).registerViews([id]);
+      });
+    }
+  }
+
+  Future<void> _toggleReaction(String reactionType) async {
+    try {
+      await ref.read(communityRepositoryProvider).toggleReaction(
+        discussionId: widget.discussion.id,
+        reactionType: reactionType,
+      );
+      ref.invalidate(communityFeedProvider);
+      ref.invalidate(myDiscussionsProvider);
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final discussion = widget.discussion;
+    final currentUserId = ref.watch(sessionControllerProvider).profile?.id;
+    final isAuthor =
+        currentUserId != null && discussion.author.userId == currentUserId;
+
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -212,44 +261,71 @@ class CommunityDiscussionCard extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Chip(label: Text(discussion.periodLabel)),
-                  if (showStatus) Chip(label: Text(discussion.statusLabel)),
-                  const SizedBox(width: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.remove_red_eye_outlined, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${discussion.viewsCount}',
-                        style: Theme.of(context).textTheme.bodySmall,
+                  if (widget.showStatus)
+                    Chip(label: Text(discussion.statusLabel)),
+                  if (isAuthor)
+                    Chip(
+                      avatar: const Icon(
+                        Icons.remove_red_eye_outlined,
+                        size: 14,
                       ),
-                    ],
+                      label: Text('${discussion.viewsCount} مشاهدة'),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: discussion.userReaction == 'agree'
+                        ? FilledButton(
+                            onPressed: () => _toggleReaction('agree'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('متفق (${discussion.agreeCount})'),
+                          )
+                        : OutlinedButton(
+                            onPressed: () => _toggleReaction('agree'),
+                            style: OutlinedButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('متفق (${discussion.agreeCount})'),
+                          ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '👍 ${discussion.agreeCount}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: discussion.userReaction == 'agree'
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: discussion.userReaction == 'agree'
-                          ? Colors.green
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '👎 ${discussion.disagreeCount}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: discussion.userReaction == 'disagree'
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: discussion.userReaction == 'disagree'
-                          ? Colors.red
-                          : null,
-                    ),
+                  Expanded(
+                    child: discussion.userReaction == 'disagree'
+                        ? FilledButton(
+                            onPressed: () => _toggleReaction('disagree'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('غير متفق (${discussion.disagreeCount})'),
+                          )
+                        : OutlinedButton(
+                            onPressed: () => _toggleReaction('disagree'),
+                            style: OutlinedButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('غير متفق (${discussion.disagreeCount})'),
+                          ),
                   ),
                 ],
               ),

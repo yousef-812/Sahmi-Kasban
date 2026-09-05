@@ -70,6 +70,10 @@ class DiscussionReactionRequest(BaseModel):
     reaction_type: Literal["agree", "disagree"]
 
 
+class DiscussionViewsBatchRequest(BaseModel):
+    discussion_ids: list[UUID] = Field(min_length=1, max_length=50)
+
+
 class DiscussionReactionResponse(BaseModel):
     discussion_id: UUID
     agree_count: int = Field(ge=0)
