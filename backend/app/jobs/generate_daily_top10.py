@@ -68,6 +68,22 @@ def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int
 
 
 async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, object]:
+    calendar = EGXTradingCalendar.from_settings()
+    try:
+        session = calendar.resolve_scan_session(moment)
+    except ScanNotDueError as exc:
+        return {
+            "status": "skipped",
+            "reason": "before_scan_time",
+            "detail": str(exc),
+        }
+    except NonTradingSessionError as exc:
+        return {
+            "status": "skipped",
+            "reason": "non_trading_session",
+            "detail": str(exc),
+        }
+
     with SessionLocal() as db:
         try:
             await evaluate_due_market_reports(

@@ -20,11 +20,11 @@ def _enabled() -> bool:
 
 
 def _poll_seconds() -> int:
-    raw = os.getenv("DAILY_SCAN_SCHEDULER_POLL_SECONDS", "60").strip()
+    raw = os.getenv("DAILY_SCAN_SCHEDULER_POLL_SECONDS", "300").strip()
     try:
         value = int(raw)
     except ValueError:
-        value = 60
+        value = 300
     return min(max(value, 30), 3600)
 
 
