@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
 
-const int currentAppVersionCode = 29;
+const int currentAppVersionCode = 30;
 
 class AppVersionInfo {
   const AppVersionInfo({
@@ -27,8 +27,8 @@ class AppVersionInfo {
 
   factory AppVersionInfo.fromJson(Map<String, dynamic> json) {
     return AppVersionInfo(
-      latestVersion: (json['latest_version'] as String?) ?? '1.0.1+28',
-      latestVersionCode: (json['latest_version_code'] as num?)?.toInt() ?? 28,
+      latestVersion: (json['latest_version'] as String?) ?? '1.0.3+30',
+      latestVersionCode: (json['latest_version_code'] as num?)?.toInt() ?? 30,
       minRequiredVersionCode:
           (json['min_required_version_code'] as num?)?.toInt() ?? 1,
       playStoreUrl: (json['play_store_url'] as String?) ??

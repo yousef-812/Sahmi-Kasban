@@ -10,8 +10,8 @@ def test_app_version_check(client: TestClient) -> None:
     res = client.get("/api/v1/app/version")
     assert res.status_code == 200
     data = res.json()
-    assert data["latest_version"] == "1.0.2+29"
-    assert data["latest_version_code"] == 28
+    assert data["latest_version"] == "1.0.3+30"
+    assert data["latest_version_code"] == 30
     assert "com.sahmikasban.sahmi_kasban_mobile" in data["play_store_url"]
 
 
