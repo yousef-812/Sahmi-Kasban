@@ -7,8 +7,8 @@ router = APIRouter(prefix="/app", tags=["app"])
 
 
 class AppVersionResponse(BaseModel):
-    latest_version: str = "1.0.1+28"
-    latest_version_code: int = 28
+    latest_version: str = "1.0.2+29"
+    latest_version_code: int = 29
     min_required_version_code: int = 1
     play_store_url: str = (
         "https://play.google.com/store/apps/details?id=com.sahmikasban.sahmi_kasban_mobile"
