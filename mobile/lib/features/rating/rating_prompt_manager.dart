@@ -35,6 +35,7 @@ class RatingPromptManager {
 
   Future<void> showRatingBottomSheet(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
+    if (!context.mounted) return;
 
     await showModalBottomSheet<void>(
       context: context,

@@ -1584,21 +1584,21 @@ class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
                           PopupMenuButton<String>(
                             onSelected: (String status) => _updateStatus(fb['id'] as String, status),
                             itemBuilder: (context) => const [
-                              PopupMenuItem(value: 'new', child: Text('جديدة 🟡')),
-                              PopupMenuItem(value: 'reviewed', child: Text('تمت المراجعة 🔵')),
-                              PopupMenuItem(value: 'resolved', child: Text('تم الحل 🟢')),
-                              PopupMenuItem(value: 'archived', child: Text('مؤرشفة ⚪')),
+                              PopupMenuItem(value: 'new', child: Text('جديدة')),
+                              PopupMenuItem(value: 'reviewed', child: Text('تمت المراجعة')),
+                              PopupMenuItem(value: 'resolved', child: Text('تم الحل')),
+                              PopupMenuItem(value: 'archived', child: Text('مؤرشفة')),
                             ],
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: fb['status'] == 'new'
-                                    ? Colors.amber.withOpacity(0.15)
+                                    ? Colors.amber.withValues(alpha: 0.15)
                                     : fb['status'] == 'reviewed'
-                                        ? Colors.blue.withOpacity(0.15)
+                                        ? Colors.blue.withValues(alpha: 0.15)
                                         : fb['status'] == 'resolved'
-                                            ? Colors.green.withOpacity(0.15)
-                                            : Colors.grey.withOpacity(0.15),
+                                            ? Colors.green.withValues(alpha: 0.15)
+                                            : Colors.grey.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: fb['status'] == 'new'

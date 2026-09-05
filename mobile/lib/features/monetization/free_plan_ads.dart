@@ -47,6 +47,11 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   bool _loaded = false;
   bool _loading = false;
   String? _activeAdUnitId;
+  int _retryAttempt = 0;
+  Timer? _retryTimer;
+
+  static const _maxRetries = 4;
+  static const _baseDelay = Duration(seconds: 15);
 
   @override
   void initState() {
@@ -82,7 +87,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
       return;
     }
 
-    _disposeAd();
+    _disposeAd(preserveRetry: true);
     _loading = true;
     _activeAdUnitId = adUnitId;
     final ad = NativeAd(
@@ -90,6 +95,8 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
       request: const AdRequest(),
       listener: NativeAdListener(
         onAdLoaded: (loadedAd) {
+          _retryAttempt = 0;
+          _retryTimer?.cancel();
           if (!mounted || loadedAd != _ad) {
             loadedAd.dispose();
             return;
@@ -115,13 +122,14 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
               _loading = false;
             });
             ref
-                .read(monetizationRepositoryProvider)
-                .recordAdTelemetry(
-                  adType: 'native',
-                  eventType: 'failed_to_load',
-                  adUnitId: adUnitId,
-                  errorMessage: 'code ${error.code}: ${error.message}',
-                );
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'native',
+                eventType: 'failed_to_load',
+                adUnitId: adUnitId,
+                errorMessage: 'code ${error.code}: ${error.message}',
+              );
+            _scheduleRetry();
           }
         },
         onAdClicked: (ad) {
@@ -143,7 +151,27 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     ad.load();
   }
 
-  void _disposeAd() {
+  void _scheduleRetry() {
+    if (_retryAttempt >= _maxRetries) return;
+    final profile = ref.read(sessionControllerProvider).profile;
+    final enabled = widget.enabledOverride ?? profile?.adsEnabled == true;
+    if (!enabled) return;
+
+    _retryAttempt++;
+    final delay = _baseDelay * (1 << (_retryAttempt - 1));
+    _retryTimer?.cancel();
+    _retryTimer = Timer(delay, () {
+      if (mounted && _ad == null && !_loading) {
+        _syncAd();
+      }
+    });
+  }
+
+  void _disposeAd({bool preserveRetry = false}) {
+    if (!preserveRetry) {
+      _retryTimer?.cancel();
+      _retryAttempt = 0;
+    }
     final ad = _ad;
     _ad = null;
     _loaded = false;

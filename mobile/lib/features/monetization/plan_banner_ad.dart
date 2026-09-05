@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -23,6 +24,11 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
   BannerAd? _bannerAd;
   bool _loading = false;
   String? _loadedAdUnitId;
+  int _retryAttempt = 0;
+  Timer? _retryTimer;
+
+  static const _maxRetries = 4;
+  static const _baseDelay = Duration(seconds: 15);
 
   @override
   void initState() {
@@ -68,6 +74,8 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
       size: AdSize.banner,
       listener: BannerAdListener(
         onAdLoaded: (ad) {
+          _retryAttempt = 0;
+          _retryTimer?.cancel();
           if (!mounted) {
             ad.dispose();
             return;
@@ -97,6 +105,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
                   adUnitId: adUnitId,
                   errorMessage: 'code ${error.code}: ${error.message}',
                 );
+            _scheduleRetry();
           }
         },
         onAdClicked: (ad) {
@@ -111,7 +120,26 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
     banner.load();
   }
 
+  void _scheduleRetry() {
+    if (_retryAttempt >= _maxRetries) return;
+    final profile = ref.read(sessionControllerProvider).profile;
+    final enabled =
+        widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
+    if (!enabled) return;
+
+    _retryAttempt++;
+    final delay = _baseDelay * (1 << (_retryAttempt - 1));
+    _retryTimer?.cancel();
+    _retryTimer = Timer(delay, () {
+      if (mounted && _bannerAd == null && !_loading) {
+        _syncAd();
+      }
+    });
+  }
+
   void _disposeAd() {
+    _retryTimer?.cancel();
+    _retryAttempt = 0;
     _bannerAd?.dispose();
     _bannerAd = null;
     _loading = false;
