@@ -205,11 +205,14 @@ class InterstitialFrequencyPolicy {
 class FreePlanInterstitialCoordinator {
   FreePlanInterstitialCoordinator({
     required AppConfig config,
+    MonetizationRepository? repository,
     InterstitialFrequencyPolicy policy = const InterstitialFrequencyPolicy(),
   }) : _config = config,
+       _repository = repository,
        _policy = policy;
 
   final AppConfig _config;
+  final MonetizationRepository? _repository;
   final InterstitialFrequencyPolicy _policy;
   InterstitialAd? _ad;
   bool _loading = false;
@@ -240,6 +243,9 @@ class FreePlanInterstitialCoordinator {
     _ad = null;
     _meaningfulActions = 0;
     _lastShownAt = now;
+    final adUnitId = Platform.isAndroid
+        ? _config.admobAndroidInterstitialId
+        : _config.admobIosInterstitialId;
     ad.fullScreenContentCallback = FullScreenContentCallback<InterstitialAd>(
       onAdDismissedFullScreenContent: (closedAd) {
         closedAd.dispose();
@@ -247,6 +253,12 @@ class FreePlanInterstitialCoordinator {
       },
       onAdFailedToShowFullScreenContent: (failedAd, error) {
         failedAd.dispose();
+        _repository?.recordAdTelemetry(
+          adType: 'interstitial',
+          eventType: 'failed_to_show',
+          adUnitId: adUnitId,
+          errorMessage: 'code ${error.code}: ${error.message}',
+        );
         _loadIfNeeded();
       },
     );
@@ -277,9 +289,20 @@ class FreePlanInterstitialCoordinator {
         onAdLoaded: (ad) {
           _loading = false;
           _ad = ad;
+          _repository?.recordAdTelemetry(
+            adType: 'interstitial',
+            eventType: 'impression',
+            adUnitId: adUnitId,
+          );
         },
         onAdFailedToLoad: (error) {
           _loading = false;
+          _repository?.recordAdTelemetry(
+            adType: 'interstitial',
+            eventType: 'failed_to_load',
+            adUnitId: adUnitId,
+            errorMessage: 'code ${error.code}: ${error.message}',
+          );
           _retryTimer?.cancel();
           _retryTimer = Timer(const Duration(seconds: 15), () {
             _loadIfNeeded();
@@ -301,6 +324,7 @@ final freePlanInterstitialProvider = Provider<FreePlanInterstitialCoordinator>((
 ) {
   final coordinator = FreePlanInterstitialCoordinator(
     config: ref.watch(appConfigProvider),
+    repository: ref.watch(monetizationRepositoryProvider),
   );
   ref.onDispose(coordinator.dispose);
   return coordinator;

@@ -8,6 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/app.dart';
 import 'core/observability/app_observability.dart';
+import 'core/ads/consent_manager.dart';
 import 'features/notifications/notification_messaging.dart';
 
 Future<void> _initializeServices() async {
@@ -27,6 +28,7 @@ Future<void> _initializeServices() async {
   }
 
   try {
+    await const ConsentManager().gatherConsent().timeout(const Duration(seconds: 10));
     await MobileAds.instance.initialize().timeout(const Duration(seconds: 10));
   } on Object catch (error, stackTrace) {
     debugPrint('Mobile Ads initialization skipped: $error\n$stackTrace');
