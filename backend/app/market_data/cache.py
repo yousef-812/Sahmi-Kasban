@@ -89,15 +89,36 @@ async def get_cached_or_fresh_history(
         if cached is not None:
             return _series_from_snapshot(cached), True
 
-    series = await provider.get_history(
-        normalized_ticker,
-        period=requested_period,
-        interval=requested_interval,
-    )
-    if series.candle_count < requested_min_candles:
-        raise MarketDataUnavailableError(
-            f"Only {series.candle_count} candles were returned; at least {requested_min_candles} are required"
+    try:
+        series = await provider.get_history(
+            normalized_ticker,
+            period=requested_period,
+            interval=requested_interval,
         )
+        if series.candle_count < requested_min_candles:
+            raise MarketDataUnavailableError(
+                f"Only {series.candle_count} candles were returned; at least {requested_min_candles} are required"
+            )
+    except Exception as exc:
+        stale_snapshot = db.scalar(
+            select(MarketDataSnapshot)
+            .where(
+                MarketDataSnapshot.ticker == normalized_ticker,
+                MarketDataSnapshot.interval == requested_interval,
+                MarketDataSnapshot.period == requested_period,
+            )
+            .order_by(MarketDataSnapshot.fetched_at.desc())
+            .limit(1)
+        )
+        if stale_snapshot is not None:
+            logger.warning(
+                "Provider fetch failed for %s (%s); serving stale snapshot from %s",
+                normalized_ticker,
+                exc,
+                stale_snapshot.fetched_at,
+            )
+            return _series_from_snapshot(stale_snapshot), True
+        raise
 
     expires_at = current + timedelta(minutes=requested_cache_minutes)
     snapshot = db.scalar(_snapshot_identity_query(series))

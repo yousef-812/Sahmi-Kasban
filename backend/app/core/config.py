@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     market_timezone: str = "Africa/Cairo"
     market_data_period: str = "1y"
     market_data_interval: str = "1d"
-    market_data_cache_minutes: int = 30
+    market_data_cache_minutes: int = 720
     market_data_timeout_seconds: float = 20.0
     market_data_min_candles: int = 200
 
