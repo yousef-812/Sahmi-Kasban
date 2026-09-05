@@ -45,12 +45,15 @@ class FreePlanNativeAd extends ConsumerStatefulWidget {
 class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   NativeAd? _ad;
   bool _loaded = false;
+  bool _loading = false;
   String? _activeAdUnitId;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncAd();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncAd();
+    });
   }
 
   @override
@@ -75,7 +78,12 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
       return;
     }
 
+    if (_loading) {
+      return;
+    }
+
     _disposeAd();
+    _loading = true;
     _activeAdUnitId = adUnitId;
     final ad = NativeAd(
       adUnitId: adUnitId,
@@ -86,7 +94,10 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
             loadedAd.dispose();
             return;
           }
-          setState(() => _loaded = true);
+          setState(() {
+            _loading = false;
+            _loaded = true;
+          });
           ref
               .read(monetizationRepositoryProvider)
               .recordAdTelemetry(
@@ -101,6 +112,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
             setState(() {
               _ad = null;
               _loaded = false;
+              _loading = false;
             });
             ref
                 .read(monetizationRepositoryProvider)
@@ -135,6 +147,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     final ad = _ad;
     _ad = null;
     _loaded = false;
+    _loading = false;
     _activeAdUnitId = null;
     ad?.dispose();
   }
@@ -147,8 +160,20 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(sessionControllerProvider).profile;
+    final enabled = widget.enabledOverride ?? profile?.adsEnabled == true;
+
+    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+      return const SizedBox.shrink();
+    }
+
     final ad = _ad;
     if (!_loaded || ad == null) {
+      if (!_loading) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _syncAd();
+        });
+      }
       return const SizedBox.shrink();
     }
     return Semantics(
