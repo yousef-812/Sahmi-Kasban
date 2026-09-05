@@ -18,7 +18,15 @@
           "client_type": 1,
           "android_info": {
             "package_name": "com.sahmikasban.sahmi_kasban_mobile",
-            "certificate_hash": "4b3005f923d1d9af686efbf29b7fbc350da17063"
+            "certificate_hash": "f0599737f260790950498a98abeb63a495949d4c"
+          }
+        },
+        {
+          "client_id": "48076310012-upf7ec6664vkij7bgto4qk9n5vuqolgc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sahmikasban.sahmi_kasban_mobile",
+            "certificate_hash": "91bd1be324ad3878b2caba094048e78e458826de"
           }
         },
         {
