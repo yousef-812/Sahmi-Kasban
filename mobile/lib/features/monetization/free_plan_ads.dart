@@ -303,10 +303,6 @@ class FreePlanInterstitialCoordinator {
             adUnitId: adUnitId,
             errorMessage: 'code ${error.code}: ${error.message}',
           );
-          _retryTimer?.cancel();
-          _retryTimer = Timer(const Duration(seconds: 15), () {
-            _loadIfNeeded();
-          });
         },
       ),
     );

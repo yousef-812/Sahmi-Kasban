@@ -473,8 +473,6 @@ class _ComparisonResultView extends StatelessWidget {
         ),
         for (final item in result.items) _ComparisonItemCard(item: item),
         const SizedBox(height: 12),
-        const FreePlanNativeAd(),
-        const SizedBox(height: 12),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -666,7 +664,6 @@ class _InvestmentComparisonResultView extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         const SizedBox(height: 6),
-        const FreePlanNativeAd(),
       ],
     );
   }

@@ -8,71 +8,46 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/config/app_config.dart';
 import 'monetization_repository.dart';
 
-class PlanBannerAd extends ConsumerStatefulWidget {
-  const PlanBannerAd({required this.enabled, super.key});
+class BannerAdNotifier extends StateNotifier<BannerAd?> {
+  BannerAdNotifier(this._ref) : super(null);
 
-  final bool enabled;
-
-  @override
-  ConsumerState<PlanBannerAd> createState() => _PlanBannerAdState();
-}
-
-class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
-  BannerAd? _bannerAd;
+  final Ref _ref;
   bool _loading = false;
+  String? _loadedAdUnitId;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (widget.enabled && _bannerAd == null && !_loading) {
-      _load();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant PlanBannerAd oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!widget.enabled && oldWidget.enabled) {
-      _disposeAd();
-    } else if (widget.enabled && !oldWidget.enabled) {
-      _load();
-    }
-  }
-
-  Future<void> _load() async {
-    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+  void ensureLoaded({required bool enabled}) {
+    if (!enabled || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
       return;
     }
-    _loading = true;
-    final config = ref.read(appConfigProvider);
+
+    final config = _ref.read(appConfigProvider);
     final adUnitId = Platform.isAndroid
         ? config.admobAndroidBannerId
         : config.admobIosBannerId;
+
     if (adUnitId.isEmpty) {
-      _loading = false;
       return;
     }
 
-    // Keep the always-visible free-plan banner compact. The previous large
-    // anchored-adaptive format could reserve up to a much taller slot and
-    // crowd the application's navigation and content on smaller phones.
+    if (state != null && _loadedAdUnitId == adUnitId) {
+      return;
+    }
+
+    if (_loading) {
+      return;
+    }
+
+    _loading = true;
     final banner = BannerAd(
       adUnitId: adUnitId,
       request: const AdRequest(),
       size: AdSize.banner,
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          if (!mounted || !widget.enabled) {
-            ad.dispose();
-            return;
-          }
-          setState(() {
-            _loading = false;
-            _bannerAd = ad as BannerAd;
-          });
-          ref
-              .read(monetizationRepositoryProvider)
-              .recordAdTelemetry(
+          _loading = false;
+          _loadedAdUnitId = adUnitId;
+          state = ad as BannerAd;
+          _ref.read(monetizationRepositoryProvider).recordAdTelemetry(
                 adType: 'banner',
                 eventType: 'impression',
                 adUnitId: adUnitId,
@@ -80,25 +55,18 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
-          if (mounted) {
-            setState(() {
-              _loading = false;
-              _bannerAd = null;
-            });
-            ref
-                .read(monetizationRepositoryProvider)
-                .recordAdTelemetry(
-                  adType: 'banner',
-                  eventType: 'failed_to_load',
-                  adUnitId: adUnitId,
-                  errorMessage: 'code ${error.code}: ${error.message}',
-                );
-          }
+          _loading = false;
+          _loadedAdUnitId = null;
+          state = null;
+          _ref.read(monetizationRepositoryProvider).recordAdTelemetry(
+                adType: 'banner',
+                eventType: 'failed_to_load',
+                adUnitId: adUnitId,
+                errorMessage: 'code ${error.code}: ${error.message}',
+              );
         },
         onAdClicked: (ad) {
-          ref
-              .read(monetizationRepositoryProvider)
-              .recordAdTelemetry(
+          _ref.read(monetizationRepositoryProvider).recordAdTelemetry(
                 adType: 'banner',
                 eventType: 'clicked',
                 adUnitId: adUnitId,
@@ -106,27 +74,48 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
         },
       ),
     );
-    await banner.load();
+    banner.load();
   }
 
-  void _disposeAd() {
-    _bannerAd?.dispose();
-    _bannerAd = null;
+  void disposeCurrent() {
+    state?.dispose();
+    state = null;
     _loading = false;
+    _loadedAdUnitId = null;
   }
 
   @override
   void dispose() {
-    _disposeAd();
+    disposeCurrent();
     super.dispose();
   }
+}
+
+final bannerAdProvider =
+    StateNotifierProvider<BannerAdNotifier, BannerAd?>((ref) {
+  return BannerAdNotifier(ref);
+});
+
+class PlanBannerAd extends ConsumerWidget {
+  const PlanBannerAd({required this.enabled, super.key});
+
+  final bool enabled;
 
   @override
-  Widget build(BuildContext context) {
-    final banner = _bannerAd;
-    if (!widget.enabled || banner == null) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!enabled || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
       return const SizedBox.shrink();
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(bannerAdProvider.notifier).ensureLoaded(enabled: true);
+    });
+
+    final banner = ref.watch(bannerAdProvider);
+    if (banner == null) {
+      return const SizedBox.shrink();
+    }
+
     return SafeArea(
       top: false,
       child: ColoredBox(

@@ -1139,7 +1139,6 @@ class _InvestmentReportTabs extends StatelessWidget {
                           const SizedBox(height: 14),
                         ],
                       ],
-                      const FreePlanNativeAd(),
                       const SizedBox(height: 24),
                     ],
                   ),
