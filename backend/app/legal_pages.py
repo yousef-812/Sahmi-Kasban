@@ -47,7 +47,6 @@ def _navigation() -> str:
   <a href="/data-safety">سلامة البيانات</a>
   <a href="/financial-features">الإقرار بالميزات المالية</a>
   <a href="/delete-account">حذف الحساب</a>
-  <a href="/ads-log">سجل الإعلانات Live</a>
   <a href="/app-ads.txt">app-ads.txt</a>
 </nav>
 """
@@ -297,20 +296,3 @@ catch(error){result.className='error';result.textContent=error.message||'حدث 
     )
 
 
-@router.get("/ads-log", response_class=PlainTextResponse)
-def ad_telemetry_live_log(db: DatabaseSession) -> PlainTextResponse:
-    from app.services.monetization import export_ad_telemetry_report
-
-    content = export_ad_telemetry_report(db, limit=500)
-    return PlainTextResponse(
-        content=content,
-        media_type="text/plain; charset=utf-8",
-        headers={
-            "Content-Disposition": "inline; filename=admob_telemetry_log.txt",
-        },
-    )
-
-
-@router.get("/admob-log", response_class=PlainTextResponse)
-def admob_telemetry_live_log(db: DatabaseSession) -> PlainTextResponse:
-    return ad_telemetry_live_log(db)

@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from app.api.dependencies import CurrentAdmin, CurrentUser, DatabaseSession
 from app.core.config import Environment, get_settings
 from app.models import RewardedAdSession
 from app.schemas.monetization import (
@@ -363,6 +363,7 @@ def record_ad_telemetry(
 @router.get("/ads/logs", response_model=AdTelemetrySummaryResponse)
 def get_ad_telemetry_logs(
     db: DatabaseSession,
+    _admin: CurrentAdmin,
     limit: int = 100,
 ) -> AdTelemetrySummaryResponse:
     summary = get_ad_telemetry_summary(db, limit=limit)
@@ -394,6 +395,7 @@ def get_ad_telemetry_logs(
 @router.get("/ads/log.txt", response_class=PlainTextResponse)
 def export_ad_telemetry_log_file(
     db: DatabaseSession,
+    _admin: CurrentAdmin,
     limit: int = 500,
 ) -> PlainTextResponse:
     content = export_ad_telemetry_report(db, limit=limit)

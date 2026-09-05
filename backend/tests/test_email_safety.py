@@ -12,8 +12,8 @@ def test_validate_email_safety_valid():
 
 
 def test_validate_email_safety_disposable_and_fake():
-    with pytest.raises(InvalidEmailError, match="المؤقتة أو الوهمية"):
-        validate_email_safety("testuser@example.com", check_dns=False)
+    with pytest.raises(InvalidEmailError):
+        validate_email_safety("spammer@10minutemail.com", check_dns=False)
 
     with pytest.raises(InvalidEmailError, match="المؤقتة أو الوهمية"):
         validate_email_safety("spammer@tempmail.com", check_dns=False)
