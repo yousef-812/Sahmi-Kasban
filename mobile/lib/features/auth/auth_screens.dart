@@ -19,6 +19,9 @@ Future<void> _handleGoogleSignIn(
           '48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com',
       scopes: ['email', 'profile'],
     );
+    try {
+      await googleSignIn.signOut();
+    } catch (_) {}
     final account = await googleSignIn.signIn();
     if (account == null) {
       return;
