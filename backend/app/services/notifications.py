@@ -273,6 +273,21 @@ class FCMPushSender:
                         "token": token,
                         "notification": {"title": title, "body": body},
                         "data": {str(key): str(value) for key, value in data.items()},
+                        "android": {
+                            "priority": "HIGH",
+                            "notification": {
+                                "icon": "ic_launcher",
+                                "sound": "default",
+                                "channel_id": "high_importance_channel",
+                            },
+                        },
+                        "apns": {
+                            "payload": {
+                                "aps": {
+                                    "sound": "default",
+                                },
+                            },
+                        },
                     }
                 },
                 timeout=20,

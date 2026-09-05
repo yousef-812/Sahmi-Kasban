@@ -33,11 +33,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CommunityDiscussionCard(
-            discussion: _discussion(),
-            showStatus: true,
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: CommunityDiscussionCard(
+              discussion: _discussion(),
+              showStatus: true,
+            ),
           ),
         ),
       ),
@@ -47,6 +49,7 @@ void main() {
     expect(find.text('COMI'), findsOneWidget);
     expect(find.text('الجلسة القادمة'), findsOneWidget);
     expect(find.text('منشورة'), findsOneWidget);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('discussion creation screen explains wallet hold', (
