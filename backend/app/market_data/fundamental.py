@@ -8,11 +8,12 @@ from typing import Any
 
 import httpx
 from sahmi_kasban.engines.investment import FundamentalInvestmentEngine, InvestmentMetrics
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.market_data.egx_symbols import EGX_ARABIC_NAMES, UnknownTickerError, normalize_egx_ticker
-from app.models import MarketInstrumentCatalog
+from app.models import MarketDataSnapshot, MarketInstrumentCatalog
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ async def get_egx_investment_rankings(
         not force_refresh
         and _fundamental_cache is not None
         and _fundamental_cache_at is not None
-        and now - _fundamental_cache_at < timedelta(hours=1)
+        and now - _fundamental_cache_at < timedelta(hours=12)
     ):
         return _fundamental_cache[:limit] if limit is not None else _fundamental_cache
 
@@ -145,14 +146,43 @@ async def get_egx_investment_rankings(
             not force_refresh
             and _fundamental_cache is not None
             and _fundamental_cache_at is not None
-            and now - _fundamental_cache_at < timedelta(hours=1)
+            and now - _fundamental_cache_at < timedelta(hours=12)
         ):
             return _fundamental_cache[:limit] if limit is not None else _fundamental_cache
+
+        if not force_refresh:
+            db_snapshot = db.scalar(
+                select(MarketDataSnapshot)
+                .where(
+                    MarketDataSnapshot.ticker == "__INVESTMENT_RANKINGS__",
+                    MarketDataSnapshot.expires_at > now,
+                )
+                .order_by(MarketDataSnapshot.fetched_at.desc())
+                .limit(1)
+            )
+            if db_snapshot is not None:
+                cached_rankings = db_snapshot.payload.get("rankings", [])
+                if cached_rankings and isinstance(cached_rankings, list):
+                    _fundamental_cache = cached_rankings
+                    _fundamental_cache_at = db_snapshot.fetched_at
+                    return cached_rankings[:limit] if limit is not None else cached_rankings
 
         try:
             data = await _fetch_fundamental_scanner_data()
         except Exception as exc:
             logger.warning("Failed to fetch TradingView fundamental data: %s", exc)
+            stale_db = db.scalar(
+                select(MarketDataSnapshot)
+                .where(MarketDataSnapshot.ticker == "__INVESTMENT_RANKINGS__")
+                .order_by(MarketDataSnapshot.fetched_at.desc())
+                .limit(1)
+            )
+            if stale_db is not None:
+                cached_rankings = stale_db.payload.get("rankings", [])
+                if cached_rankings and isinstance(cached_rankings, list):
+                    _fundamental_cache = cached_rankings
+                    _fundamental_cache_at = stale_db.fetched_at
+                    return cached_rankings[:limit] if limit is not None else cached_rankings
             if _fundamental_cache is not None:
                 return _fundamental_cache[:limit] if limit is not None else _fundamental_cache
             return []
@@ -273,6 +303,37 @@ async def get_egx_investment_rankings(
 
         _fundamental_cache = ranked_items
         _fundamental_cache_at = now
+
+        try:
+            snapshot = db.scalar(
+                select(MarketDataSnapshot).where(
+                    MarketDataSnapshot.ticker == "__INVESTMENT_RANKINGS__",
+                    MarketDataSnapshot.interval == "1d",
+                    MarketDataSnapshot.period == "1y",
+                )
+            )
+            if snapshot is None:
+                snapshot = MarketDataSnapshot(
+                    ticker="__INVESTMENT_RANKINGS__",
+                    provider="tradingview",
+                    interval="1d",
+                    period="1y",
+                    data_as_of=now,
+                    fetched_at=now,
+                    expires_at=now + timedelta(hours=12),
+                    payload={"rankings": ranked_items},
+                )
+                db.add(snapshot)
+            else:
+                snapshot.data_as_of = now
+                snapshot.fetched_at = now
+                snapshot.expires_at = now + timedelta(hours=12)
+                snapshot.payload = {"rankings": ranked_items}
+            db.commit()
+        except Exception as exc:
+            logger.warning("Failed to persist fundamental rankings snapshot: %s", exc)
+            db.rollback()
+
         logger.info("Generated %s EGX fundamental investment rankings", len(ranked_items))
         return ranked_items[:limit] if limit is not None else ranked_items
 
