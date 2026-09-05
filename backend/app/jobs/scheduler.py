@@ -41,6 +41,12 @@ async def run_daily_scan_scheduler() -> None:
             result = await run_daily_top10_scan()
             if result.get("status") == "created":
                 logger.info("Daily EGX report created by scheduler: %s", result)
+                # Refresh investment report rankings for the new trading session
+                from app.db.session import SessionLocal
+                from app.market_data.fundamental import get_egx_investment_rankings
+                with SessionLocal() as db:
+                    await get_egx_investment_rankings(db, force_refresh=True)
+                logger.info("Investment report rankings refreshed by scheduler for new session")
         except asyncio.CancelledError:
             raise
         except Exception:

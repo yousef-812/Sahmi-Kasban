@@ -217,6 +217,9 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     if (_userWatchlists.containsKey(watchlistName)) {
       setState(() {
         _userWatchlists.remove(watchlistName);
+        if (_userWatchlists.isEmpty) {
+          _userWatchlists['متابعة 1'] = [];
+        }
       });
       _saveState();
       _initTabController(initialIndex: 0);
