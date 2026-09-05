@@ -46,7 +46,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           printf '%s' "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON" > mobile/android/app/google-services.json
-          python -m json.tool mobile/android/app/google-services.json >/dev/null
+          python -c "import json; json.load(open('mobile/android/app/google-services.json', 'r', encoding='utf-8-sig'))" >/dev/null
 
       - name: Configure stable Android signing
         shell: bash
