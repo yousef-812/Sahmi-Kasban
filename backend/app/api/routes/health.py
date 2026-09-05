@@ -78,3 +78,30 @@ def readiness_health_check(db: DatabaseSession) -> ReadinessHealthResponse:
 def database_health_check(db: DatabaseSession) -> DatabaseHealthResponse:
     _require_database(db)
     return DatabaseHealthResponse(status="ok", database="reachable")
+
+
+@router.get("/online_stats")
+def get_online_stats(db: DatabaseSession) -> dict:
+    from datetime import datetime, timedelta, UTC
+    from app.models import User, AdTelemetry, AnalysisExecution
+    now = datetime.now(UTC)
+    m15 = now - timedelta(minutes=15)
+    h1 = now - timedelta(hours=1)
+    h24 = now - timedelta(hours=24)
+    
+    total_users = db.query(User).count()
+    verified_users = db.query(User).filter(User.email_verified.is_(True)).count()
+    users_updated_1h = db.query(User).filter(User.updated_at >= h1).count()
+    users_updated_24h = db.query(User).filter(User.updated_at >= h24).count()
+    
+    recent_impressions_1h = db.query(AdTelemetry).filter(AdTelemetry.created_at >= h1, AdTelemetry.event_type == 'impression').count()
+    recent_analyses_1h = db.query(AnalysisExecution).filter(AnalysisExecution.created_at >= h1).count()
+    
+    return {
+        "total_registered_users": total_users,
+        "verified_users": verified_users,
+        "users_updated_last_1h": users_updated_1h,
+        "users_updated_last_24h": users_updated_24h,
+        "ad_impressions_last_1h": recent_impressions_1h,
+        "analyses_executed_last_1h": recent_analyses_1h,
+    }
