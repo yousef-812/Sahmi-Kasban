@@ -84,7 +84,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
       return;
     }
 
-    if (_loading) {
+    if (_loading || (_retryTimer?.isActive ?? false)) {
       return;
     }
 
@@ -198,7 +198,8 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
 
     final ad = _ad;
     if (!_loaded || ad == null) {
-      if (!_loading) {
+      final cooldownActive = _retryTimer?.isActive ?? false;
+      if (!_loading && !cooldownActive) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _syncAd();
         });

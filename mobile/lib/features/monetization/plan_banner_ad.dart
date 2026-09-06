@@ -63,7 +63,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
       return;
     }
 
-    if (_loading) {
+    if (_loading || (_retryTimer?.isActive ?? false)) {
       return;
     }
 
@@ -164,7 +164,8 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
 
     final banner = _bannerAd;
     if (banner == null) {
-      if (!_loading) {
+      final cooldownActive = _retryTimer?.isActive ?? false;
+      if (!_loading && !cooldownActive) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _syncAd();
         });
