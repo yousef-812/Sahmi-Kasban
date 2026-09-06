@@ -3,17 +3,121 @@ class CommunityAuthor {
     required this.userId,
     required this.displayName,
     required this.avatarKey,
+    this.predictionsCount = 0,
+    this.successRate = 0.0,
+    this.isFollowing = false,
   });
 
   final String userId;
   final String displayName;
   final String avatarKey;
+  final int predictionsCount;
+  final double successRate;
+  final bool isFollowing;
+
+  CommunityAuthor copyWith({
+    String? userId,
+    String? displayName,
+    String? avatarKey,
+    int? predictionsCount,
+    double? successRate,
+    bool? isFollowing,
+  }) {
+    return CommunityAuthor(
+      userId: userId ?? this.userId,
+      displayName: displayName ?? this.displayName,
+      avatarKey: avatarKey ?? this.avatarKey,
+      predictionsCount: predictionsCount ?? this.predictionsCount,
+      successRate: successRate ?? this.successRate,
+      isFollowing: isFollowing ?? this.isFollowing,
+    );
+  }
 
   factory CommunityAuthor.fromJson(Map<String, dynamic> json) {
     return CommunityAuthor(
       userId: _requiredString(json, 'user_id'),
       displayName: _requiredString(json, 'display_name'),
       avatarKey: _requiredString(json, 'avatar_key'),
+      predictionsCount: (json['predictions_count'] as num?)?.toInt() ?? 0,
+      successRate: (json['success_rate'] as num?)?.toDouble() ?? 0.0,
+      isFollowing: json['is_following'] as bool? ?? false,
+    );
+  }
+}
+
+class UserPublicProfile {
+  const UserPublicProfile({
+    required this.userId,
+    required this.displayName,
+    required this.avatarKey,
+    this.followersCount = 0,
+    this.followingCount = 0,
+    this.predictionsCount = 0,
+    this.successRate = 0.0,
+    this.isFollowing = false,
+    this.tippingUnlocked = false,
+    this.tippingEnabled = false,
+    this.canReceiveTips = false,
+    this.canSendTip = false,
+  });
+
+  final String userId;
+  final String displayName;
+  final String avatarKey;
+  final int followersCount;
+  final int followingCount;
+  final int predictionsCount;
+  final double successRate;
+  final bool isFollowing;
+  final bool tippingUnlocked;
+  final bool tippingEnabled;
+  final bool canReceiveTips;
+  final bool canSendTip;
+
+  UserPublicProfile copyWith({
+    String? userId,
+    String? displayName,
+    String? avatarKey,
+    int? followersCount,
+    int? followingCount,
+    int? predictionsCount,
+    double? successRate,
+    bool? isFollowing,
+    bool? tippingUnlocked,
+    bool? tippingEnabled,
+    bool? canReceiveTips,
+    bool? canSendTip,
+  }) {
+    return UserPublicProfile(
+      userId: userId ?? this.userId,
+      displayName: displayName ?? this.displayName,
+      avatarKey: avatarKey ?? this.avatarKey,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
+      predictionsCount: predictionsCount ?? this.predictionsCount,
+      successRate: successRate ?? this.successRate,
+      isFollowing: isFollowing ?? this.isFollowing,
+      tippingUnlocked: tippingUnlocked ?? this.tippingUnlocked,
+      tippingEnabled: tippingEnabled ?? this.tippingEnabled,
+      canReceiveTips: canReceiveTips ?? this.canReceiveTips,
+      canSendTip: canSendTip ?? this.canSendTip,
+    );
+  }
+
+  factory UserPublicProfile.fromJson(Map<String, dynamic> json) {
+    return UserPublicProfile(
+      userId: _requiredString(json, 'user_id'),
+      displayName: _requiredString(json, 'display_name'),
+      avatarKey: _requiredString(json, 'avatar_key'),
+      followersCount: (json['followers_count'] as num?)?.toInt() ?? 0,
+      followingCount: (json['following_count'] as num?)?.toInt() ?? 0,
+      predictionsCount: (json['predictions_count'] as num?)?.toInt() ?? 0,
+      successRate: (json['success_rate'] as num?)?.toDouble() ?? 0.0,
+      isFollowing: json['is_following'] as bool? ?? false,
+      tippingUnlocked: json['tipping_unlocked'] as bool? ?? false,
+      tippingEnabled: json['tipping_enabled'] as bool? ?? false,
+      canReceiveTips: json['can_receive_tips'] as bool? ?? false,
+      canSendTip: json['can_send_tip'] as bool? ?? false,
     );
   }
 }

@@ -18,7 +18,15 @@ from app.schemas.community import (
     DiscussionResponse,
     DiscussionSubmissionResponse,
     DiscussionViewsBatchRequest,
+    FollowToggleResponse,
     UserMuteResponse,
+    UserPublicProfileResponse,
+)
+from app.services.social import (
+    get_author_prediction_stats,
+    get_public_user_profile,
+    get_user_follow_stats,
+    toggle_user_follow,
 )
 from app.services.community import (
     DISCUSSION_COST_POINTS,
@@ -69,6 +77,9 @@ def _discussion_response(
         discussion.id,
         user_id=current_user_id,
     )
+    predictions_count, success_rate = get_author_prediction_stats(db, author_id=view.author.id)
+    _, _, is_following = get_user_follow_stats(db, user_id=view.author.id, current_user_id=current_user_id)
+
     return DiscussionResponse(
         id=discussion.id,
         ticker=discussion.ticker,
@@ -90,6 +101,9 @@ def _discussion_response(
             user_id=view.author.id,
             display_name=view.author.display_name,
             avatar_key=view.author.avatar_key,
+            predictions_count=predictions_count,
+            success_rate=success_rate,
+            is_following=is_following,
         ),
     )
 
@@ -370,3 +384,58 @@ def unmute_community_user(
         muted=result.muted,
         idempotent=result.idempotent,
     )
+
+
+@router.post(
+    "/users/{user_id}/follow",
+    response_model=FollowToggleResponse,
+)
+def toggle_follow_user(
+    user_id: UUID,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> FollowToggleResponse:
+    try:
+        is_following, followers_count = toggle_user_follow(
+            db,
+            follower_id=current_user.id,
+            following_id=user_id,
+        )
+        return FollowToggleResponse(
+            is_following=is_following,
+            followers_count=followers_count,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get(
+    "/users/{user_id}/profile",
+    response_model=UserPublicProfileResponse,
+)
+def get_user_profile(
+    user_id: UUID,
+    db: DatabaseSession,
+    current_user: OptionalUser,
+) -> UserPublicProfileResponse:
+    current_user_id = current_user.id if current_user else None
+    try:
+        return get_public_user_profile(
+            db,
+            target_user_id=user_id,
+            current_user_id=current_user_id,
+        )
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+

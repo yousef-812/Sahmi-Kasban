@@ -5,6 +5,7 @@ from app.models import Subscription, WalletEntry
 def test_foundational_tables_are_registered() -> None:
     assert {
         "users",
+        "user_follows",
         "wallet_entries",
         "wallet_accounts",
         "weekly_grants",

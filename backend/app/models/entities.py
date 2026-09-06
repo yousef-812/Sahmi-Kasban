@@ -43,10 +43,34 @@ class User(TimestampMixin, Base):
         nullable=True,
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tipping_unlocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    tipping_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     watchlist_items: Mapped[list[WatchlistItem]] = relationship(
         "WatchlistItem", back_populates="user", cascade="all, delete-orphan"
     )
+
+
+class UserFollow(TimestampMixin, Base):
+    __tablename__ = "user_follows"
+    __table_args__ = (
+        UniqueConstraint("follower_id", "following_id", name="uq_user_follows_follower_following"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    follower_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    following_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+
 
 
 class WalletEntry(TimestampMixin, Base):

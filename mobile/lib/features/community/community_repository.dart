@@ -178,6 +178,28 @@ class CommunityRepository {
     }
   }
 
+  Future<Map<String, dynamic>> toggleFollow(String userId) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/users/$userId/follow',
+      );
+      return _requiredData(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<UserPublicProfile> getUserProfile(String userId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/community/users/$userId/profile',
+      );
+      return UserPublicProfile.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Map<String, dynamic> _requiredData(Map<String, dynamic>? data) {
     if (data == null) {
       throw const FormatException('Community response is empty.');

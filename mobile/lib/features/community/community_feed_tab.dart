@@ -9,6 +9,7 @@ import '../auth/session_controller.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
+import 'screens/user_profile_screen.dart';
 
 class CommunityFeedTab extends ConsumerStatefulWidget {
   const CommunityFeedTab({super.key});
@@ -260,29 +261,93 @@ class _CommunityDiscussionCardState
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundImage: AssetImage(
-                      avatarAssetPath(discussion.author.avatarKey),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        UserProfileScreen.route(
+                          userId: discussion.author.userId,
+                          initialDisplayName: discussion.author.displayName,
+                          initialAvatarKey: discussion.author.avatarKey,
+                        ),
+                      );
+                    },
+                    child: CircleAvatar(
+                      backgroundImage: AssetImage(
+                        avatarAssetPath(discussion.author.avatarKey),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          discussion.author.displayName,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        Text(
-                          _formatDate(
-                            discussion.publishedAt ?? discussion.createdAt,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          UserProfileScreen.route(
+                            userId: discussion.author.userId,
+                            initialDisplayName: discussion.author.displayName,
+                            initialAvatarKey: discussion.author.avatarKey,
                           ),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            discussion.author.displayName,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                '${discussion.author.predictionsCount} توقع',
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'نجاح: ${discussion.author.successRate.toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _formatDate(
+                                  discussion.publishedAt ?? discussion.createdAt,
+                                ),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  if (!isAuthor)
+                    TextButton(
+                      onPressed: () async {
+                        try {
+                          await ref.read(communityRepositoryProvider).toggleFollow(discussion.author.userId);
+                          ref.invalidate(communityFeedProvider);
+                        } catch (_) {}
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        discussion.author.isFollowing ? 'متابَع' : '+ متابعة',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: discussion.author.isFollowing ? Colors.grey : Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
                   Chip(label: Text(discussion.ticker)),
                 ],
               ),

@@ -30,6 +30,7 @@ from app.models.entities import (
     StockAnalysis,
     Subscription,
     User,
+    UserFollow,
     WalletEntry,
 )
 from app.models.labs import LabsBacktestJob
@@ -100,6 +101,7 @@ __all__ = [
     "StockComparison",
     "Subscription",
     "User",
+    "UserFollow",
     "UserMute",
     "UserStockAnalysisAccess",
     "WalletAccount",

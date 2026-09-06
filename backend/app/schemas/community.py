@@ -44,6 +44,30 @@ class DiscussionAuthorResponse(BaseModel):
     user_id: UUID
     display_name: str
     avatar_key: str
+    predictions_count: int = 0
+    success_rate: float = 0.0
+    is_following: bool = False
+
+
+class FollowToggleResponse(BaseModel):
+    is_following: bool
+    followers_count: int
+
+
+class UserPublicProfileResponse(BaseModel):
+    user_id: UUID
+    display_name: str
+    avatar_key: str
+    followers_count: int = 0
+    following_count: int = 0
+    predictions_count: int = 0
+    success_rate: float = 0.0
+    is_following: bool = False
+    tipping_unlocked: bool = False
+    tipping_enabled: bool = False
+    can_receive_tips: bool = False
+    can_send_tip: bool = False
+
 
 
 class DiscussionResponse(BaseModel):
