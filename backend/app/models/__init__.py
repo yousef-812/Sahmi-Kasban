@@ -24,6 +24,8 @@ from app.models.community import (
 from app.models.comparisons import StockComparison
 from app.models.entities import (
     CoinTipHistory,
+    DailyChatMessage,
+    DailyChatSessionVote,
     Discussion,
     MarketReport,
     MarketReportItem,

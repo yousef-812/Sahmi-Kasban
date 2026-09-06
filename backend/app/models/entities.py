@@ -273,3 +273,42 @@ class PredictionVerification(TimestampMixin, Base):
     reward_points: Mapped[int] = mapped_column(Integer, nullable=False)
     evidence: Mapped[dict] = mapped_column(JSON, nullable=False)
     verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class DailyChatSessionVote(TimestampMixin, Base):
+    __tablename__ = "daily_chat_session_votes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "session_date", name="uq_user_daily_chat_vote"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    session_date: Mapped[datetime] = mapped_column(sa.Date(), nullable=False, index=True)
+    coins_paid: Mapped[float] = mapped_column(sa.Numeric(10, 2), default=0.5, nullable=False)
+    refunded: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class DailyChatMessage(Base):
+    __tablename__ = "daily_chat_messages"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    session_date: Mapped[datetime] = mapped_column(sa.Date(), nullable=False, index=True)
+    user_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    content: Mapped[str] = mapped_column(sa.Text(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
