@@ -106,6 +106,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Navigator.pop(context);
               },
             ),
+            ListTile(
+              leading: const Icon(
+                Icons.forum_rounded,
+                color: Color(0xFF0088CC),
+              ),
+              title: const Text('غرفة الدردشة المباشرة (شات الجلسة)'),
+              subtitle: const Text('دردشة الجلسة المشروطة بـ 40 صوتًا'),
+              onTap: () {
+                context.push('/trading-chat');
+                Navigator.pop(context);
+              },
+            ),
             const Divider(),
             for (var item in _navItems)
               ListTile(
@@ -148,7 +160,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       body: Stack(
         children: [
           _buildBody(selectedIndex),
-          const _DraggableAiCopilotBall(),
+          const _DraggableTradingRoomBall(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -183,11 +195,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             label: 'المحفظة',
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/ai-copilot'),
-        icon: const Icon(Icons.auto_awesome_rounded),
-        label: const Text('مساعد السهم'),
       ),
     );
   }
@@ -549,15 +556,15 @@ class __DeveloperFeedbackCardState
   }
 }
 
-class _DraggableAiCopilotBall extends StatefulWidget {
-  const _DraggableAiCopilotBall();
+class _DraggableTradingRoomBall extends StatefulWidget {
+  const _DraggableTradingRoomBall();
 
   @override
-  State<_DraggableAiCopilotBall> createState() =>
-      _DraggableAiCopilotBallState();
+  State<_DraggableTradingRoomBall> createState() =>
+      _DraggableTradingRoomBallState();
 }
 
-class _DraggableAiCopilotBallState extends State<_DraggableAiCopilotBall> {
+class _DraggableTradingRoomBallState extends State<_DraggableTradingRoomBall> {
   double? _top;
   double? _left;
 
@@ -578,21 +585,21 @@ class _DraggableAiCopilotBallState extends State<_DraggableAiCopilotBall> {
           });
         },
         child: Tooltip(
-          message: 'مساعد السهم الذكي (AI)',
+          message: 'شات الجلسة المباشرة (40 صوتًا)',
           child: Material(
             elevation: 10,
-            shadowColor: const Color(0xFF7C4DFF).withValues(alpha: 0.5),
+            shadowColor: const Color(0xFF0088CC).withValues(alpha: 0.5),
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              onTap: () => context.push('/ai-copilot'),
+              onTap: () => context.push('/trading-chat'),
               child: Container(
                 width: 58,
                 height: 58,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [Color(0xFF7C4DFF), Color(0xFF536DFE)],
+                    colors: [Color(0xFF0088CC), Color(0xFF0288D1)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -601,16 +608,16 @@ class _DraggableAiCopilotBallState extends State<_DraggableAiCopilotBall> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.auto_awesome_rounded,
+                      Icons.forum_rounded,
                       color: Colors.white,
-                      size: 22,
+                      size: 20,
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'AI',
+                      'شات الجلسة',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 10,
+                        fontSize: 8,
                         fontWeight: FontWeight.w900,
                         height: 1.0,
                       ),

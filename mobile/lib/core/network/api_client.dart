@@ -163,6 +163,12 @@ class ApiClient {
     if (detail is String && detail.trim().isNotEmpty) {
       return detail.trim();
     }
+    if (detail is Map) {
+      final msg = detail['message'] ?? detail['msg'];
+      if (msg is String && msg.trim().isNotEmpty) {
+        return msg.trim();
+      }
+    }
     if (detail is List) {
       final messages = detail
           .map((item) {

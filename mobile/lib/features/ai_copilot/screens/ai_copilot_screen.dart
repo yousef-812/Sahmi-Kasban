@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
-import '../../../core/network/api_exception.dart';
+import '../../../data/backend_repository.dart';
+import '../../../domain/models.dart';
 import '../../auth/session_controller.dart';
 import '../widgets/referral_gate_dialog.dart';
 
@@ -40,6 +42,7 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
   final List<AiCopilotMessage> _messages = [];
   final _questionController = TextEditingController();
   late final TextEditingController _tickerController;
+  final FocusNode _tickerFocusNode = FocusNode();
   bool _isLoading = false;
 
   @override
@@ -58,7 +61,26 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
   void dispose() {
     _questionController.dispose();
     _tickerController.dispose();
+    _tickerFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _openStockSearchModal() async {
+    final selected = await showModalBottomSheet<MarketInstrument>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => const _StockSearchSheet(),
+    );
+
+    if (selected != null && mounted) {
+      setState(() {
+        _tickerController.text = selected.ticker;
+      });
+    }
   }
 
   Future<void> _sendQuery() async {
@@ -105,26 +127,30 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
           );
         });
       }
-    } on ApiException catch (e) {
-      if (e.statusCode == 403 && e.payload is Map) {
-        final details = e.payload as Map<String, dynamic>;
-        if (details['error_code'] == 'REFERRAL_GATE_LOCKED' && mounted) {
+    } catch (e) {
+      final apiClient = ref.read(apiClientProvider);
+      final apiError = apiClient.mapError(e);
+
+      if (apiError.statusCode == 403 && apiError.payload is Map) {
+        final details = apiError.payload as Map<String, dynamic>;
+        final detailMap = details['detail'] is Map
+            ? details['detail'] as Map<String, dynamic>
+            : details;
+
+        if (detailMap['error_code'] == 'REFERRAL_GATE_LOCKED' && mounted) {
           ReferralGateDialog.show(
             context,
-            currentCount: (details['current'] as num?)?.toInt() ?? 0,
-            requiredCount: (details['required'] as num?)?.toInt() ?? 5,
-            referralCode: details['referral_code'] as String? ?? '',
+            currentCount: (detailMap['current'] as num?)?.toInt() ?? 0,
+            requiredCount: (detailMap['required'] as num?)?.toInt() ?? 5,
+            referralCode: detailMap['referral_code'] as String? ?? '',
           );
+          return;
         }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
       }
-    } catch (e) {
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ: $e')),
+          SnackBar(content: Text(apiError.message)),
         );
       }
     } finally {
@@ -210,7 +236,7 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
                 child: CircularProgressIndicator(),
               ),
 
-            // Input Control Bar
+            // Input Control Bar (Stacked Column layout)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -224,43 +250,126 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
                 ],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 90,
-                        child: TextField(
-                          controller: _tickerController,
-                          textCapitalization: TextCapitalization.characters,
-                          decoration: const InputDecoration(
-                            hintText: 'السهم',
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(),
+                  // Full-width Stock Autocomplete Field (Stacked above)
+                  RawAutocomplete<MarketInstrument>(
+                    textEditingController: _tickerController,
+                    focusNode: _tickerFocusNode,
+                    optionsBuilder: (TextEditingValue textEditingValue) async {
+                      final query = textEditingValue.text.trim();
+                      if (query.isEmpty) return const [];
+                      try {
+                        return await ref
+                            .read(backendRepositoryProvider)
+                            .searchInstruments(query, limit: 10);
+                      } catch (_) {
+                        return const [];
+                      }
+                    },
+                    displayStringForOption: (MarketInstrument option) => option.ticker,
+                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                      return TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(
+                          labelText: 'السهم المستهدف (البورصة المصرية)',
+                          hintText: 'ابحث باسم أو رمز السهم... (مثال: COMI, HELI)',
+                          prefixIcon: const Icon(Icons.show_chart_rounded, size: 20),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (controller.text.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.clear_rounded, size: 18),
+                                  onPressed: () {
+                                    controller.clear();
+                                  },
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.search_rounded),
+                                onPressed: _openStockSearchModal,
+                              ),
+                            ],
+                          ),
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.bottomRight,
+                        child: Material(
+                          elevation: 6,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: MediaQuery.of(context).size.width - 24,
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            color: theme.colorScheme.surface,
+                            child: ListView.separated(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final option = options.elementAt(index);
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(
+                                    '${option.ticker} — ${option.description.isNotEmpty ? option.description : option.providerSymbol}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    onSelected(option);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Message Input Field + Send Button (Stacked below, full width, 5000 character limit)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
                       Expanded(
                         child: TextField(
                           controller: _questionController,
+                          maxLength: 5000,
+                          maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                          minLines: 1,
+                          maxLines: 4,
                           decoration: const InputDecoration(
-                            hintText: 'اطرح سؤالك هنا...',
+                            hintText: 'اطرح سؤالك هنا (حتى 5000 حرف)...',
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
                             border: OutlineInputBorder(),
+                            counterText: '',
                           ),
                           onSubmitted: (_) => _sendQuery(),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      IconButton.filled(
-                        onPressed: _isLoading ? null : _sendQuery,
-                        icon: const Icon(Icons.send_rounded),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: IconButton.filled(
+                          onPressed: _isLoading ? null : _sendQuery,
+                          icon: const Icon(Icons.send_rounded),
+                        ),
                       ),
                     ],
                   ),
@@ -336,6 +445,142 @@ class _ChatBubble extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StockSearchSheet extends ConsumerStatefulWidget {
+  const _StockSearchSheet();
+
+  @override
+  ConsumerState<_StockSearchSheet> createState() => _StockSearchSheetState();
+}
+
+class _StockSearchSheetState extends ConsumerState<_StockSearchSheet> {
+  final _searchController = TextEditingController();
+  List<MarketInstrument> _items = const [];
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _items = const []);
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final items = await ref
+          .read(backendRepositoryProvider)
+          .searchInstruments(query, limit: 30);
+      if (mounted) {
+        setState(() => _items = items);
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() => _error = error.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.65,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'اختر سهمًا من البورصة المصرية',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _searchController,
+                autofocus: true,
+                textCapitalization: TextCapitalization.characters,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'ابحث باسم أو رمز السهم (مثال: COMI, HELI...)',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: IconButton(
+                    onPressed: _loading ? null : _search,
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                  ),
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => _search(),
+                onSubmitted: (_) => _search(),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _items.isEmpty
+                        ? const Center(child: Text('ابحث باسم أو رمز السهم للاختيار.'))
+                        : ListView.separated(
+                            itemCount: _items.length,
+                            separatorBuilder: (context, index) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = _items[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  item.ticker,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  item.description.isEmpty ? item.providerSymbol : item.description,
+                                ),
+                                onTap: () => Navigator.of(context).pop(item),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
         ),
       ),
     );
