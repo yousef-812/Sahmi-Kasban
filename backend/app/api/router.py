@@ -7,6 +7,7 @@ from app.api.routes.admin_performance_recovery import (
 )
 from app.api.routes.admin_replays import router as admin_replays_router
 from app.api.routes.admin_wallet import router as admin_wallet_router
+from app.api.routes.ai_copilot import router as ai_copilot_router
 from app.api.routes.analysis_history import router as analysis_history_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.community import router as community_router
@@ -39,6 +40,7 @@ api_router.include_router(profile_router)
 api_router.include_router(feedback_router)
 api_router.include_router(wallet_router)
 api_router.include_router(referrals_router)
+api_router.include_router(ai_copilot_router)
 api_router.include_router(market_router)
 api_router.include_router(watchlist_router)
 api_router.include_router(analysis_history_router)
