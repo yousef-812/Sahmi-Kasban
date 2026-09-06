@@ -321,6 +321,8 @@ async def get_egx_investment_rankings(
                     data_as_of=now,
                     fetched_at=now,
                     expires_at=now + timedelta(hours=12),
+                    fingerprint="investment_rankings_v1",
+                    candle_count=len(ranked_items),
                     payload={"rankings": ranked_items},
                 )
                 db.add(snapshot)
@@ -328,6 +330,8 @@ async def get_egx_investment_rankings(
                 snapshot.data_as_of = now
                 snapshot.fetched_at = now
                 snapshot.expires_at = now + timedelta(hours=12)
+                snapshot.fingerprint = "investment_rankings_v1"
+                snapshot.candle_count = len(ranked_items)
                 snapshot.payload = {"rankings": ranked_items}
             db.commit()
         except Exception as exc:

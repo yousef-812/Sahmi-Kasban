@@ -48,27 +48,47 @@ async def _scan_universe(db) -> tuple[str, ...]:
 def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int:
     if not get_bool_setting(db, "notifications_enabled"):
         return 0
-    user_ids = db.scalars(
-        select(User.id).where(
+    users = db.scalars(
+        select(User).where(
             User.status == "active",
             User.email_verified.is_(True),
         )
     ).all()
-    for user_id in user_ids:
+    push_sender = FCMPushSender()
+    title = "تقرير أفضل الفرص اليومية جاهز"
+    body = "تم ترتيب أفضل 10 فرص مع تمييز النخبوية المتوازنة والهجومية والشراء المشروط والمخاطر."
+    data = {
+        "report_id": report_id,
+        "target_session_date": target_session_date,
+        "route": f"/reports/{report_id}",
+    }
+    for user in users:
         create_notification(
             db,
-            user_id=user_id,
-            title="تقرير أفضل الفرص اليومية جاهز",
-            body=("تم ترتيب أفضل 10 فرص مع تمييز النخبوية المتوازنة والهجومية والشراء المشروط والمخاطر."),
+            user_id=user.id,
+            title=title,
+            body=body,
             category="market_report",
-            data={
-                "report_id": report_id,
-                "target_session_date": target_session_date,
-                "route": f"/reports/{report_id}",
-            },
+            data=data,
         )
+        devices = db.scalars(
+            select(PushDevice).where(
+                PushDevice.user_id == user.id,
+                PushDevice.enabled.is_(True),
+            )
+        ).all()
+        for device in devices:
+            try:
+                push_sender.send(
+                    token=_decrypt_token(device.encrypted_token),
+                    title=title,
+                    body=body,
+                    data=data,
+                )
+            except Exception:
+                pass
     db.commit()
-    return len(user_ids)
+    return len(users)
 
 
 async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, object]:
