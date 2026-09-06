@@ -99,6 +99,8 @@ class Settings(BaseSettings):
     historical_replay_idle_poll_seconds: float = 5.0
 
     egx_holidays: str = ""
+    investment_scan_hour: int = 14
+    investment_scan_minute: int = 45
     daily_scan_hour: int = 15
     daily_scan_minute: int = 0
     daily_scan_max_concurrency: int = 4

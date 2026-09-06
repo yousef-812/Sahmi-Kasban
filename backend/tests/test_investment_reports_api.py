@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
@@ -73,3 +74,20 @@ def test_investment_report_endpoints(client: TestClient, db_session: Session):
         assert item["payload"]["fair_value"] == 30.0
         assert item["payload"]["margin_of_safety_pct"] == 50.0
         assert item["payload"]["investment_category"] == "dividend"
+
+
+def test_scheduled_investment_report_scan(db_session: Session):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from app.jobs.generate_investment_report import run_investment_report_scan
+
+    # Test outside trading session or before scan time
+    moment_before = datetime(2026, 7, 29, 10, 0, 0, tzinfo=ZoneInfo("Africa/Cairo"))
+    res_before = AsyncMock()
+    with patch(
+        "app.jobs.generate_investment_report.get_egx_investment_rankings",
+        new=AsyncMock(return_value=[]),
+    ):
+        result = asyncio.run(run_investment_report_scan(moment_before))
+        assert result["status"] == "skipped"
+        assert result["reason"] == "before_scan_time"

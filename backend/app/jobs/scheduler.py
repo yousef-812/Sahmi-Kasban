@@ -5,6 +5,7 @@ import logging
 import os
 
 from app.jobs.generate_daily_top10 import run_daily_top10_scan
+from app.jobs.generate_investment_report import run_investment_report_scan
 from app.jobs.persona_scheduler import trigger_persona_discussions_job
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ def _poll_seconds() -> int:
 
 
 async def run_daily_scan_scheduler() -> None:
-    """Poll the idempotent daily scan and AI persona discussions."""
+    """Poll the idempotent daily scans and AI persona discussions."""
     if not _enabled():
         logger.info("Daily EGX scan scheduler is disabled")
         return
@@ -38,15 +39,18 @@ async def run_daily_scan_scheduler() -> None:
     logger.info("Daily EGX scan scheduler started with a %ss poll", interval)
     while True:
         try:
+            inv_result = await run_investment_report_scan()
+            if inv_result.get("status") == "created":
+                logger.info("Investment report created by scheduler: %s", inv_result)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Scheduled investment report scan failed")
+
+        try:
             result = await run_daily_top10_scan()
             if result.get("status") == "created":
                 logger.info("Daily EGX report created by scheduler: %s", result)
-                # Refresh investment report rankings for the new trading session
-                from app.db.session import SessionLocal
-                from app.market_data.fundamental import get_egx_investment_rankings
-                with SessionLocal() as db:
-                    await get_egx_investment_rankings(db, force_refresh=True)
-                logger.info("Investment report rankings refreshed by scheduler for new session")
         except asyncio.CancelledError:
             raise
         except Exception:
