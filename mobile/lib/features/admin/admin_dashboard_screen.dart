@@ -86,9 +86,9 @@ class _OverviewTab extends ConsumerWidget {
               runSpacing: 10,
               children: [
                 _Metric('إجمالي المسجلين', item.usersTotal),
-                _Metric('النشطون الآن 🟢', item.usersActiveNow),
-                _Metric('حسابات مفعلة ✅', item.usersVerified),
-                _Metric('غير مفعلة ❌', item.usersUnverified),
+                _Metric('النشطون الآن', item.usersActiveNow),
+                _Metric('حسابات مفعلة', item.usersVerified),
+                _Metric('غير مفعلة', item.usersUnverified),
                 _Metric('النشطون بالحساب', item.usersActive),
                 _Metric('الموقوفون', item.usersSuspended),
                 _Metric('قيد المراجعة', item.discussionsPending),

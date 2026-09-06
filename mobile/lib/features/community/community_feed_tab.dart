@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/avatar_assets.dart';
 import '../monetization/free_plan_ads.dart';
@@ -47,135 +48,144 @@ class _CommunityFeedTabState extends ConsumerState<CommunityFeedTab> {
     final feed = ref.watch(communityFeedProvider);
     final activeTicker = ref.watch(communityTickerFilterProvider);
 
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .primaryContainer
-                  .withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.tips_and_updates_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 22,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'المناقشات والتوقعات مجانية بالكامل. شارك توقعك مع مجتمع المتداولين لتوثيق دقة تحليلاتك.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.2),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => context.push('/community/new'),
-                  icon: const Icon(Icons.add_comment_outlined),
-                  label: const Text('إنشاء مناقشة'),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.tips_and_updates_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'المناقشات والتوقعات مجانية بالكامل. شارك توقعك مع مجتمع المتداولين لتوثيق دقة تحليلاتك.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => context.push('/community/mine'),
-                  icon: const Icon(Icons.forum_outlined),
-                  label: const Text('مناقشاتي'),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => context.push('/community/new'),
+                      icon: const Icon(Icons.add_comment_outlined),
+                      label: const Text('إنشاء مناقشة'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/community/mine'),
+                      icon: const Icon(Icons.history_edu_rounded),
+                      label: const Text('مناقشاتي'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _tickerController,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            hintText: 'تصفية حسب سهم (مثال: COMI)',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                          ),
+                          onSubmitted: (_) => _applyTickerFilter(),
+                        ),
+                      ),
+                      if (activeTicker != null)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: _clearTickerFilter,
+                        )
+                      else
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          onPressed: _applyTickerFilter,
+                        ),
+                    ],
+                  ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              feed.when(
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (error, stack) => _CommunityErrorCard(
+                  message: error.toString(),
+                  onRetry: _refresh,
+                ),
+                data: (data) {
+                  final discussions = data.items;
+                  if (discussions.isEmpty) {
+                    return const _EmptyCommunityCard();
+                  }
+
+                  return Column(
+                    children: [
+                      for (final item in discussions)
+                        CommunityDiscussionCard(discussion: item),
+                      const SizedBox(height: 12),
+                      const FreePlanNativeAd(),
+                      const SizedBox(height: 12),
+                      if (data.hasMore)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'توجد مناقشات إضافية وسيتم تحميلها في تحديث لاحق للصفحة.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _tickerController,
-            textCapitalization: TextCapitalization.characters,
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              labelText: 'فلترة برمز السهم',
-              hintText: 'مثال: COMI',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: activeTicker == null
-                  ? IconButton(
-                      onPressed: _applyTickerFilter,
-                      icon: const Icon(Icons.tune_rounded),
-                      tooltip: 'تطبيق الفلتر',
-                    )
-                  : IconButton(
-                      onPressed: _clearTickerFilter,
-                      icon: const Icon(Icons.close_rounded),
-                      tooltip: 'إلغاء الفلتر',
-                    ),
-            ),
-            onSubmitted: (_) => _applyTickerFilter(),
-          ),
-          if (activeTicker != null) ...[
-            const SizedBox(height: 10),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Chip(label: Text('السهم: $activeTicker')),
-            ),
-          ],
-          const SizedBox(height: 14),
-          const FreePlanNativeAd(),
-          const SizedBox(height: 14),
-          feed.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(36),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (error, stackTrace) => _CommunityErrorCard(
-              message: 'تعذر تحميل مناقشات المجتمع.',
-              onRetry: () => ref.invalidate(communityFeedProvider),
-            ),
-            data: (page) {
-              if (page.items.isEmpty) {
-                return const _EmptyCommunityCard();
-              }
-              return Column(
-                children: [
-                  for (var i = 0; i < page.items.length; i++) ...[
-                    CommunityDiscussionCard(discussion: page.items[i]),
-                    const SizedBox(height: 12),
-                    if ((i + 1) % 4 == 0) ...[
-                      const FreePlanNativeAd(),
-                      const SizedBox(height: 12),
-                    ],
-                  ],
-                  if (page.hasMore)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 4),
-                      child: Text(
-                        'توجد مناقشات إضافية وسيتم تحميلها في تحديث لاحق للصفحة.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+        ),
+        const _DraggableTelegramBall(),
+      ],
     );
   }
 }
@@ -426,4 +436,83 @@ String _formatDate(DateTime value) {
   String two(int number) => number.toString().padLeft(2, '0');
   return '${two(local.day)}/${two(local.month)}/${local.year} '
       '${two(local.hour)}:${two(local.minute)}';
+}
+
+class _DraggableTelegramBall extends StatefulWidget {
+  const _DraggableTelegramBall();
+
+  @override
+  State<_DraggableTelegramBall> createState() => _DraggableTelegramBallState();
+}
+
+class _DraggableTelegramBallState extends State<_DraggableTelegramBall> {
+  double? _top;
+  double? _left;
+
+  Future<void> _openTelegramGroup() async {
+    final uri = Uri.parse('https://t.me/sahmikasban');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } on Object {
+      // Fallback open attempt
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    _top ??= size.height * 0.55;
+    _left ??= size.width - 70;
+
+    return Positioned(
+      top: _top,
+      left: _left,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            _top = (_top! + details.delta.dy).clamp(60.0, size.height - 140.0);
+            _left = (_left! + details.delta.dx).clamp(10.0, size.width - 64.0);
+          });
+        },
+        child: Tooltip(
+          message: 'انضم لجروب التليجرام',
+          child: Material(
+            elevation: 8,
+            shadowColor: const Color(0xFF0088CC).withOpacity(0.5),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: _openTelegramGroup,
+              child: Container(
+                width: 54,
+                height: 54,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2AABEE), Color(0xFF229ED9)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Transform.rotate(
+                    angle: -0.35,
+                    child: const Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
