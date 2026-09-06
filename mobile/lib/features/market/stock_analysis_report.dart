@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models.dart';
 import '../../widgets/structured_data_card.dart';
+import 'branded_analysis_card_dialog.dart';
 
 class StockAnalysisReport extends StatelessWidget {
   const StockAnalysisReport({required this.analysis, super.key});
@@ -230,6 +232,55 @@ class _DecisionCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             Text('الرصيد الحالي: $balanceCoins عملة'),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final cleanExp = explanation.replaceAll(RegExp(r'[#*`_]'), '').trim();
+                      final text = '''
+تقرير تحليل سهم: $ticker
+القرار الآلي: $signalLabel
+تقييم الجودة: ${_formatNumber(score)}/100
+
+ملخص التحليل:
+$cleanExp
+
+${BrandedAnalysisCardDialog.signatureText}''';
+                      Clipboard.setData(ClipboardData(text: text));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('تم نسخ التحليل مع رابط المتجر للحافظة'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.content_copy_rounded, size: 16),
+                    label: const Text('نسخ التحليل نصياً'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (_) => BrandedAnalysisCardDialog(
+                          ticker: ticker,
+                          signal: signalLabel,
+                          score: score,
+                          confidence: confidence,
+                          explanation: explanation,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.share_rounded, size: 16),
+                    label: const Text('تصدير صورة ترويجية'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
