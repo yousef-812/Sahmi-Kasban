@@ -52,6 +52,12 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           _report = report;
           _locked = false;
         });
+        await ref.read(freePlanInterstitialProvider).showAd(
+              enabled:
+                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                  true,
+              ignoreFrequencyGate: true,
+            );
       }
     } on ApiException catch (error) {
       if (mounted) {
@@ -135,15 +141,12 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           ),
         ),
       );
-      if (execution.chargedPoints > 0) {
-        await ref
-            .read(freePlanInterstitialProvider)
-            .recordMeaningfulAction(
-              enabled:
-                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
-                  true,
-            );
-      }
+      await ref.read(freePlanInterstitialProvider).showAd(
+            enabled:
+                ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                true,
+            ignoreFrequencyGate: true,
+          );
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _error = error.message);

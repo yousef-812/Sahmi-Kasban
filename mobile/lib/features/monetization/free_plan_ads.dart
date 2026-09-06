@@ -260,16 +260,26 @@ class FreePlanInterstitialCoordinator {
   bool _loading = false;
   int _meaningfulActions = 0;
 
-  Future<void> recordMeaningfulAction({required bool enabled}) async {
+  Future<void> showAd({
+    required bool enabled,
+    bool ignoreFrequencyGate = false,
+  }) async {
     if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
       return;
     }
-    _meaningfulActions += 1;
     _loadIfNeeded();
 
     final now = DateTime.now();
-    if (_meaningfulActions < _policy.actionsPerAd || !_gate.canShow(now)) {
+    if (!ignoreFrequencyGate && !_gate.canShow(now)) {
       return;
+    }
+
+    if (_ad == null && _loading) {
+      int waitedMs = 0;
+      while (_loading && _ad == null && waitedMs < 1500) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        waitedMs += 100;
+      }
     }
 
     final ad = _ad;
@@ -308,6 +318,18 @@ class FreePlanInterstitialCoordinator {
       },
     );
     await ad.show();
+  }
+
+  Future<void> recordMeaningfulAction({required bool enabled}) async {
+    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+      return;
+    }
+    _meaningfulActions += 1;
+    if (_meaningfulActions < _policy.actionsPerAd) {
+      _loadIfNeeded();
+      return;
+    }
+    await showAd(enabled: enabled, ignoreFrequencyGate: false);
   }
 
   void preload({required bool enabled}) {
