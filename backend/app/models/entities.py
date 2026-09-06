@@ -15,7 +15,9 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Numeric,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
 )
@@ -288,8 +290,8 @@ class DailyChatSessionVote(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    session_date: Mapped[datetime] = mapped_column(sa.Date(), nullable=False, index=True)
-    coins_paid: Mapped[float] = mapped_column(sa.Numeric(10, 2), default=0.5, nullable=False)
+    session_date: Mapped[date] = mapped_column(Date(), nullable=False, index=True)
+    coins_paid: Mapped[float] = mapped_column(Numeric(10, 2), default=0.5, nullable=False)
     refunded: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
@@ -303,9 +305,9 @@ class DailyChatMessage(Base):
         nullable=False,
         index=True,
     )
-    session_date: Mapped[datetime] = mapped_column(sa.Date(), nullable=False, index=True)
+    session_date: Mapped[date] = mapped_column(Date(), nullable=False, index=True)
     user_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    content: Mapped[str] = mapped_column(sa.Text(), nullable=False)
+    content: Mapped[str] = mapped_column(Text(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

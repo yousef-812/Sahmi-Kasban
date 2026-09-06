@@ -21,6 +21,7 @@ from app.market_data.provider import get_market_data_provider
 from app.market_data.universe import apply_market_health_quarantine
 from app.models import AIPersonaLog, User, WalletAccount
 from app.services.community import apply_moderation_decision, create_discussion
+from app.services.operations_settings import get_bool_setting
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +139,10 @@ async def run_ai_persona_discussions(
     *,
     moment: datetime | None = None,
 ) -> dict[str, Any]:
+    if not get_bool_setting(db, "ai_personas_enabled"):
+        logger.info("AI personas discussions job is disabled via operational setting")
+        return {"status": "disabled", "created_count": 0}
+
     now = moment or datetime.now(UTC)
     calendar = EGXTradingCalendar.from_settings()
 

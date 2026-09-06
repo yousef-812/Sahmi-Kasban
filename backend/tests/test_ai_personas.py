@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy import select
 
-from app.models import AIPersonaLog, Discussion
+from app.models import AIPersonaLog, AppSetting, Discussion
 from app.services.ai_personas import (
     PERSONA_SPECS,
     ensure_persona_users,
@@ -27,6 +27,8 @@ def test_ensure_persona_users_creates_all_five_users(db_session):
 
 @pytest.mark.anyio
 async def test_run_ai_persona_discussions_creates_discussions_idempotently(db_session):
+    db_session.add(AppSetting(key="ai_personas_enabled", category="automation", value=True, description="تفعيل شخصيات الذكاء الاصطناعي"))
+    db_session.commit()
     fixed_moment = datetime(2026, 9, 3, 16, 0, tzinfo=UTC)  # Thursday 16:00 UTC (19:00 Cairo, after market)
 
     with patch("app.services.ai_personas.SahmiAIService") as mock_ai_cls:
