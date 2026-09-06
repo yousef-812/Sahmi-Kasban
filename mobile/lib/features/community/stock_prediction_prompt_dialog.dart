@@ -111,7 +111,7 @@ class _StockPredictionPromptDialogState
       if (!mounted) return;
 
       final message = switch (result.discussion.status) {
-        'published' => 'تم نشر توقعك في المجتمع بنجاح! 🎉',
+        'published' => 'تم نشر توقعك في المجتمع بنجاح.',
         'rejected' => 'لم يتم قبول نشر التوقع.',
         _ => 'تم إرسال التوقع وهو قيد المراجعة حاليًا.',
       };
@@ -286,7 +286,7 @@ class _StockPredictionPromptDialogState
                   label: Text(
                     _submitting
                         ? 'جارٍ نشر التوقع...'
-                        : '🚀 نشر التوقع والمتابعة للتحليل',
+                        : 'نشر التوقع والمتابعة للتحليل',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
