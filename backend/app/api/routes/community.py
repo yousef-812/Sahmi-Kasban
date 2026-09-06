@@ -8,6 +8,8 @@ from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession, OptionalUser
 from app.schemas.community import (
+    CoinTipRequest,
+    CoinTipResponse,
     DiscussionAuthorResponse,
     DiscussionCreateRequest,
     DiscussionListResponse,
@@ -26,6 +28,7 @@ from app.services.social import (
     get_author_prediction_stats,
     get_public_user_profile,
     get_user_follow_stats,
+    send_coin_tip,
     toggle_user_follow,
 )
 from app.services.community import (
@@ -438,4 +441,44 @@ def get_user_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
+
+
+@router.post(
+    "/users/{user_id}/tip",
+    response_model=CoinTipResponse,
+)
+def send_tip_to_user(
+    user_id: UUID,
+    body: CoinTipRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> CoinTipResponse:
+    try:
+        result = send_coin_tip(
+            db,
+            sender_id=current_user.id,
+            receiver_id=user_id,
+            amount_coins=body.amount_coins,
+        )
+        return CoinTipResponse(
+            success=result["success"],
+            amount_coins=result["amount_coins"],
+            receiver_id=UUID(result["receiver_id"]),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
 

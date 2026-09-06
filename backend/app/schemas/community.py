@@ -69,6 +69,15 @@ class UserPublicProfileResponse(BaseModel):
     can_send_tip: bool = False
 
 
+class CoinTipRequest(BaseModel):
+    amount_coins: int = Field(gt=0)
+
+
+class CoinTipResponse(BaseModel):
+    success: bool
+    amount_coins: int
+    receiver_id: UUID
+
 
 class DiscussionResponse(BaseModel):
     id: UUID

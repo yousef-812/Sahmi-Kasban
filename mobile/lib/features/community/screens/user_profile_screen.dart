@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../community_models.dart';
 import '../community_providers.dart';
 import '../community_repository.dart';
-import 'community_detail_screen.dart';
+import '../widgets/coin_tipping_dialog.dart';
 
 final userProfileProvider =
     FutureProvider.family<UserPublicProfile, String>((ref, userId) async {
@@ -155,8 +156,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         data: (profile) {
           return RefreshIndicator(
             onRefresh: () async {
-              ref.refresh(userProfileProvider(widget.userId));
-              ref.refresh(userDiscussionsProvider(widget.userId));
+              ref.invalidate(userProfileProvider(widget.userId));
+              ref.invalidate(userDiscussionsProvider(widget.userId));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -259,7 +260,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
                                     backgroundColor: profile.isFollowing
-                                        ? theme.colorScheme.surfaceVariant
+                                        ? theme.colorScheme.surfaceContainerHighest
                                         : theme.colorScheme.primary,
                                     foregroundColor: profile.isFollowing
                                         ? theme.colorScheme.onSurfaceVariant
@@ -273,14 +274,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: profile.canSendTip
-                                      ? () {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'سيتم فتح نافذة إهداء العملات عند التفعيل النهائي في المرحلة التالية',
-                                              ),
-                                            ),
-                                          );
+                                      ? () async {
+                                          final tipped = await CoinTippingDialog.show(context, profile);
+                                          if (tipped == true) {
+                                            ref.invalidate(userProfileProvider(widget.userId));
+                                          }
                                         }
                                       : () => _showTippingInfoDialog(profile),
                                   icon: Icon(
@@ -412,9 +410,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                 ),
                               ),
                               onTap: () {
-                                Navigator.of(context).push(
-                                  CommunityDetailScreen.route(discussionId: item.id),
-                                );
+                                context.push('/community/${item.id}');
                               },
                             ),
                           );

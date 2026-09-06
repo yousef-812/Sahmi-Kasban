@@ -56,6 +56,8 @@ class UserProfile {
     required this.balanceCoins,
     required this.weeklyCoins,
     required this.adsEnabled,
+    this.tippingUnlocked = false,
+    this.tippingEnabled = true,
   });
 
   final String id;
@@ -70,6 +72,8 @@ class UserProfile {
   final String balanceCoins;
   final String weeklyCoins;
   final bool adsEnabled;
+  final bool tippingUnlocked;
+  final bool tippingEnabled;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
@@ -85,6 +89,8 @@ class UserProfile {
       balanceCoins: json['balance_coins'] as String,
       weeklyCoins: json['weekly_coins'] as String,
       adsEnabled: json['ads_enabled'] as bool,
+      tippingUnlocked: json['tipping_unlocked'] as bool? ?? false,
+      tippingEnabled: json['tipping_enabled'] as bool? ?? true,
     );
   }
 }

@@ -23,6 +23,7 @@ from app.models.community import (
 )
 from app.models.comparisons import StockComparison
 from app.models.entities import (
+    CoinTipHistory,
     Discussion,
     MarketReport,
     MarketReportItem,
@@ -62,6 +63,7 @@ __all__ = [
     "AIPersonaLog",
     "AccountToken",
     "AdEventLog",
+    "CoinTipHistory",
     "AnalysisBacktestObservation",
     "AnalysisBacktestResult",
     "AnalysisBacktestRun",

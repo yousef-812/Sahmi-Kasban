@@ -13,6 +13,8 @@ from app.schemas.accounts import (
     MessageResponse,
     ProfileResponse,
     ProfileUpdateRequest,
+    TippingSettingsResponse,
+    TippingSettingsUpdateRequest,
 )
 from app.services.profile import (
     CurrentPasswordInvalidError,
@@ -23,6 +25,7 @@ from app.services.profile import (
     soft_delete_account,
     update_profile,
 )
+from app.services.social import update_analyst_tipping_settings
 from app.services.wallet import points_to_coins
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -48,6 +51,8 @@ def build_profile_response(db: DatabaseSession, user: CurrentUser) -> ProfileRes
         subscription_expires_at=subscription.expires_at,
         balance_points=balance_points,
         balance_coins=points_to_coins(balance_points),
+        tipping_unlocked=user.tipping_unlocked,
+        tipping_enabled=user.tipping_enabled,
         **stats,
     )
 
@@ -131,3 +136,32 @@ def delete_my_account(
             "separately to stop future renewals."
         )
     )
+
+
+@router.patch("/settings/tipping", response_model=TippingSettingsResponse)
+def update_tipping_settings(
+    payload: TippingSettingsUpdateRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> TippingSettingsResponse:
+    try:
+        new_status = update_analyst_tipping_settings(
+            db,
+            user_id=current_user.id,
+            tipping_enabled=payload.tipping_enabled,
+        )
+        return TippingSettingsResponse(
+            tipping_unlocked=current_user.tipping_unlocked,
+            tipping_enabled=new_status,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+

@@ -192,7 +192,9 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     await StockPredictionPromptDialog.show(
       context,
       ticker: instrument.ticker,
-      displayName: instrument.nameAr,
+      displayName: instrument.description.isNotEmpty
+          ? instrument.description
+          : instrument.ticker,
     );
     if (!mounted) {
       return;

@@ -182,3 +182,109 @@ def get_public_user_profile(
         can_receive_tips=can_receive_tips,
         can_send_tip=can_send_tip,
     )
+
+
+def send_coin_tip(
+    db: Session,
+    *,
+    sender_id: UUID,
+    receiver_id: UUID,
+    amount_coins: int,
+) -> dict:
+    """Executes a coin gift transfer from sender to analyst receiver.
+
+    Validates all eligibility rules before deducting and crediting wallet balances.
+    """
+    if amount_coins <= 0:
+        raise ValueError("عدد العملات يجب أن يكون أكبر من 0")
+
+    if sender_id == receiver_id:
+        raise ValueError("لا يمكنك إهداء عملات لنفسك")
+
+    profile = get_public_user_profile(
+        db, target_user_id=receiver_id, current_user_id=sender_id
+    )
+
+    if not profile.is_following:
+        raise ValueError("يجب متابعة المحلل أولاً لإمكانية إهداء العملات.")
+
+    if not profile.can_receive_tips:
+        raise ValueError("المحلل لم يفعل استقبال هدايا العملات في حسابه بعد.")
+
+    tipper_discussions = db.scalar(
+        select(func.count(Discussion.id)).where(
+            Discussion.user_id == sender_id,
+            Discussion.status == "published",
+        )
+    ) or 0
+
+    if tipper_discussions < 10:
+        raise ValueError("يجب أن يكون لديك 10 مناقشات منشورين على الأقل لإهداء العملات.")
+
+    amount_points = amount_coins * POINTS_PER_COIN
+    tx_sender = f"tip:sent:{uuid4()}"
+    tx_receiver = f"tip:recv:{uuid4()}"
+
+    # Debit sender
+    debit_points(
+        db,
+        user_id=sender_id,
+        amount_points=amount_points,
+        transaction_id=tx_sender,
+        entry_type="coin_tip_sent",
+        reference_type="user",
+        reference_id=str(receiver_id),
+        details={"amount_coins": amount_coins, "receiver_id": str(receiver_id)},
+    )
+
+    # Credit receiver
+    credit_points(
+        db,
+        user_id=receiver_id,
+        amount_points=amount_points,
+        transaction_id=tx_receiver,
+        entry_type="coin_tip_received",
+        reference_type="user",
+        reference_id=str(sender_id),
+        details={"amount_coins": amount_coins, "sender_id": str(sender_id)},
+    )
+
+    # Log tip history
+    tip_log = CoinTipHistory(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        amount_coins=amount_coins,
+    )
+    db.add(tip_log)
+    db.commit()
+
+    return {
+        "success": True,
+        "amount_coins": amount_coins,
+        "receiver_id": str(receiver_id),
+    }
+
+
+def update_analyst_tipping_settings(
+    db: Session,
+    *,
+    user_id: UUID,
+    tipping_enabled: bool,
+) -> bool:
+    """Updates the analyst's tipping preference toggle."""
+    user = db.scalar(select(User).where(User.id == user_id))
+    if not user:
+        raise KeyError("المستخدم غير موجود")
+
+    # Check unlock condition
+    unlocked = check_and_update_analyst_tipping_unlock(db, user_id=user_id)
+    if not unlocked and not user.tipping_unlocked:
+        raise ValueError(
+            "لم تستوفِ بعد شروط فتح ميزة استقبال العملات (20 توقع بنسبة نجاح تتعدى 70%)."
+        )
+
+    user.tipping_enabled = tipping_enabled
+    db.add(user)
+    db.commit()
+    return user.tipping_enabled
+

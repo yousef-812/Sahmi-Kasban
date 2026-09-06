@@ -72,6 +72,26 @@ class UserFollow(TimestampMixin, Base):
     )
 
 
+class CoinTipHistory(TimestampMixin, Base):
+    __tablename__ = "coin_tips_history"
+    __table_args__ = (
+        CheckConstraint("amount_coins > 0", name="coin_tips_amount_positive"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    sender_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    receiver_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    amount_coins: Mapped[int] = mapped_column(Integer, nullable=False)
 
 class WalletEntry(TimestampMixin, Base):
     __tablename__ = "wallet_entries"

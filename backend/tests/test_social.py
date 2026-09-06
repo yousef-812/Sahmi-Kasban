@@ -68,3 +68,17 @@ def test_get_public_user_profile(db_session):
     assert profile.predictions_count == 0
     assert profile.success_rate == 0.0
     assert profile.can_receive_tips is False
+
+
+def test_send_coin_tip_validation(db_session):
+    from app.services.social import send_coin_tip
+
+    u1 = User(email="tipper@example.com", password_hash="hash", display_name="Tipper")
+    u2 = User(email="analyst2@example.com", password_hash="hash", display_name="Analyst 2")
+    db_session.add_all([u1, u2])
+    db_session.commit()
+
+    # Should fail if not following analyst
+    with pytest.raises(ValueError, match="يجب متابعة المحلل أولاً"):
+        send_coin_tip(db_session, sender_id=u1.id, receiver_id=u2.id, amount_coins=5)
+

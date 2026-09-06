@@ -9,6 +9,7 @@ import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../community/community_repository.dart';
 
 final avatarOptionsProvider = FutureProvider.autoDispose<List<AvatarOption>>((
   ref,
@@ -265,6 +266,42 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 label: const Text('حفظ التعديلات'),
               ),
               const SizedBox(height: 24),
+              if (ref.watch(sessionControllerProvider).profile?.tippingUnlocked == true) ...[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'إعدادات استقبال العملات الهادية',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('تفعيل استقبال هدايا العملات'),
+                          subtitle: const Text('السماح لمتابعيك بإهداء عملات تقديرًا لتحليلاتك'),
+                          value: ref.watch(sessionControllerProvider).profile?.tippingEnabled ?? true,
+                          onChanged: (val) async {
+                            try {
+                              await ref.read(communityRepositoryProvider).updateTippingSettings(tippingEnabled: val);
+                              ref.invalidate(sessionControllerProvider);
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('حدث خطأ: $e')),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(18),

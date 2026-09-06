@@ -200,6 +200,35 @@ class CommunityRepository {
     }
   }
 
+  Future<Map<String, dynamic>> sendCoinTip({
+    required String receiverId,
+    required int amountCoins,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/users/$receiverId/tip',
+        data: <String, dynamic>{'amount_coins': amountCoins},
+      );
+      return _requiredData(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateTippingSettings({
+    required bool tippingEnabled,
+  }) async {
+    try {
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+        '/profile/settings/tipping',
+        data: <String, dynamic>{'tipping_enabled': tippingEnabled},
+      );
+      return _requiredData(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Map<String, dynamic> _requiredData(Map<String, dynamic>? data) {
     if (data == null) {
       throw const FormatException('Community response is empty.');

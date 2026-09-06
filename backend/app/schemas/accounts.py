@@ -13,6 +13,15 @@ class MessageResponse(BaseModel):
     message: str
 
 
+class TippingSettingsUpdateRequest(BaseModel):
+    tipping_enabled: bool
+
+
+class TippingSettingsResponse(BaseModel):
+    tipping_unlocked: bool
+    tipping_enabled: bool
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=10, max_length=128)
@@ -170,6 +179,8 @@ class ProfileResponse(BaseModel):
     subscription_expires_at: datetime | None
     balance_points: int
     balance_coins: str
+    tipping_unlocked: bool = False
+    tipping_enabled: bool = True
     discussions_count: int
     verified_predictions_count: int
     total_reward_points: int
