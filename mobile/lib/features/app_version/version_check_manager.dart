@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
 
-const int currentAppVersionCode = 30;
+const int currentAppVersionCode = 35;
 
 class AppVersionInfo {
   const AppVersionInfo({
@@ -27,8 +27,8 @@ class AppVersionInfo {
 
   factory AppVersionInfo.fromJson(Map<String, dynamic> json) {
     return AppVersionInfo(
-      latestVersion: (json['latest_version'] as String?) ?? '1.0.3+30',
-      latestVersionCode: (json['latest_version_code'] as num?)?.toInt() ?? 30,
+      latestVersion: (json['latest_version'] as String?) ?? '1.0.8+35',
+      latestVersionCode: (json['latest_version_code'] as num?)?.toInt() ?? 35,
       minRequiredVersionCode:
           (json['min_required_version_code'] as num?)?.toInt() ?? 1,
       playStoreUrl: (json['play_store_url'] as String?) ??
@@ -45,6 +45,7 @@ class VersionCheckManager {
   VersionCheckManager(this._apiClient);
 
   final ApiClient _apiClient;
+  bool _hasPromptedThisSession = false;
 
   Future<AppVersionInfo?> checkVersion() async {
     try {
@@ -59,6 +60,8 @@ class VersionCheckManager {
   }
 
   Future<void> checkAndShowPrompt(BuildContext context) async {
+    if (_hasPromptedThisSession) return;
+
     final versionInfo = await checkVersion();
     if (versionInfo == null || !context.mounted) {
       return;
@@ -69,6 +72,7 @@ class VersionCheckManager {
         currentAppVersionCode < versionInfo.minRequiredVersionCode;
 
     if (isOutdated || isForceUpdate) {
+      _hasPromptedThisSession = true;
       showDialog<void>(
         context: context,
         barrierDismissible: !isForceUpdate,
