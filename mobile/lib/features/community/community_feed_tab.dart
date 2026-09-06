@@ -215,6 +215,7 @@ class _CommunityDiscussionCardState
     extends ConsumerState<CommunityDiscussionCard> {
   Timer? _visibilityTimer;
   int _visibleDwellMs = 0;
+  int _notVisibleCount = 0;
   bool _hasTriggeredView = false;
 
   @override
@@ -228,7 +229,9 @@ class _CommunityDiscussionCardState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.discussion.id != widget.discussion.id) {
       _visibleDwellMs = 0;
+      _notVisibleCount = 0;
       _hasTriggeredView = false;
+      _startVisibilityChecker();
     }
   }
 
@@ -239,6 +242,7 @@ class _CommunityDiscussionCardState
   }
 
   void _startVisibilityChecker() {
+    _visibilityTimer?.cancel();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkVisibility();
     });
@@ -262,6 +266,10 @@ class _CommunityDiscussionCardState
         !renderObject.hasSize ||
         !renderObject.attached) {
       _visibleDwellMs = 0;
+      _notVisibleCount++;
+      if (_notVisibleCount >= 3) {
+        _visibilityTimer?.cancel();
+      }
       return;
     }
 
@@ -282,6 +290,7 @@ class _CommunityDiscussionCardState
         (visibleHeight > 0) && (visibleHeight / size.height >= 0.4);
 
     if (isVisible) {
+      _notVisibleCount = 0;
       _visibleDwellMs += 500;
       if (_visibleDwellMs >= 1000) {
         _hasTriggeredView = true;
@@ -290,6 +299,10 @@ class _CommunityDiscussionCardState
       }
     } else {
       _visibleDwellMs = 0;
+      _notVisibleCount++;
+      if (_notVisibleCount >= 3) {
+        _visibilityTimer?.cancel();
+      }
     }
   }
 
