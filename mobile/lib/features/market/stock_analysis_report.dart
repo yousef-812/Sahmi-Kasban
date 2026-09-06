@@ -725,14 +725,19 @@ class _NoticeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final textColor = isWarning ? scheme.onErrorContainer : Colors.redAccent;
+    final iconColor = isWarning ? scheme.onErrorContainer : Colors.redAccent;
+    final containerColor =
+        isWarning ? scheme.errorContainer : scheme.surfaceContainerHighest;
+
     return Card(
-      color: isWarning ? scheme.errorContainer : scheme.surfaceContainerHighest,
+      color: containerColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon),
+            Icon(icon, color: iconColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -740,10 +745,20 @@ class _NoticeCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: textColor,
+                    ),
                   ),
                   const SizedBox(height: 6),
-                  Text(body),
+                  Text(
+                    body,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      height: 1.5,
+                    ),
+                  ),
                 ],
               ),
             ),
