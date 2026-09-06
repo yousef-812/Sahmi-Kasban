@@ -8,7 +8,11 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 
 from app.db.session import SessionLocal
-from app.market_calendar import NonTradingSessionError, ScanNotDueError
+from app.market_calendar import (
+    EGXTradingCalendar,
+    NonTradingSessionError,
+    ScanNotDueError,
+)
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
 from app.market_data.provider import get_market_data_provider
