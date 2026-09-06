@@ -83,6 +83,8 @@ PERSONA_SPECS: tuple[AIPersonaSpec, ...] = (
 def ensure_persona_users(db: Session) -> dict[str, User]:
     users_by_code: dict[str, User] = {}
     dummy_password_hash = hash_password("PersonaBotPassword123!")
+    is_enabled = get_bool_setting(db, "ai_personas_enabled")
+    user_status = "active" if is_enabled else "disabled"
 
     for spec in PERSONA_SPECS:
         avatar_key = validate_avatar_key(spec.avatar_key)
@@ -93,15 +95,16 @@ def ensure_persona_users(db: Session) -> dict[str, User]:
                 password_hash=dummy_password_hash,
                 display_name=spec.display_name,
                 avatar_key=avatar_key,
-                status="active",
+                status=user_status,
                 email_verified=True,
             )
             db.add(user)
             db.flush()
         else:
-            if user.display_name != spec.display_name or user.avatar_key != avatar_key:
+            if user.display_name != spec.display_name or user.avatar_key != avatar_key or user.status != user_status:
                 user.display_name = spec.display_name
                 user.avatar_key = avatar_key
+                user.status = user_status
                 db.flush()
 
         users_by_code[spec.code] = user

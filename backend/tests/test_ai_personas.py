@@ -21,7 +21,7 @@ def test_ensure_persona_users_creates_all_five_users(db_session):
         user = users[spec.code]
         assert user.display_name == spec.display_name
         assert user.avatar_key == spec.avatar_key
-        assert user.status == "active"
+        assert user.status == "disabled"
         assert user.email_verified is True
 
 

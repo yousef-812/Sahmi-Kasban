@@ -383,14 +383,18 @@ def list_published_discussions(
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[DiscussionView], int]:
-    filters = [Discussion.status == "published"]
+    filters = [
+        Discussion.status == "published",
+        User.status == "active",
+        User.email.not_like("%@sahmikasban.internal"),
+    ]
     if viewer_user_id is not None:
         muted_user_ids = select(UserMute.muted_user_id).where(UserMute.muter_user_id == viewer_user_id)
         filters.append(Discussion.user_id.not_in(muted_user_ids))
     if ticker:
         filters.append(Discussion.ticker == ticker.strip().upper())
 
-    total = db.scalar(select(func.count(Discussion.id)).where(*filters)) or 0
+    total = db.scalar(select(func.count(Discussion.id)).join(User, User.id == Discussion.user_id).where(*filters)) or 0
     rows = db.execute(
         select(Discussion, User)
         .join(User, User.id == Discussion.user_id)
