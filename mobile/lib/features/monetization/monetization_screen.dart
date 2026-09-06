@@ -397,7 +397,11 @@ class _CoinPackCard extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2.5),
                   )
                 : FilledButton(
-                    onPressed: onPurchase,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(72, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    onPressed: storeAvailable ? onPurchase : null,
                     child: const Text('شراء'),
                   ),
           ],
