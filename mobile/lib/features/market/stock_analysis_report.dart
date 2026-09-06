@@ -42,6 +42,7 @@ class StockAnalysisReport extends StatelessWidget {
           cached: analysis.cached,
           chargedCoins: analysis.chargedCoins,
           balanceCoins: analysis.balanceCoins,
+          tradePlan: tradePlan,
         ),
         const SizedBox(height: 12),
         _SectorQualityCard(
@@ -111,6 +112,7 @@ class _DecisionCard extends StatelessWidget {
     required this.cached,
     required this.chargedCoins,
     required this.balanceCoins,
+    this.tradePlan = const {},
   });
 
   final String ticker;
@@ -121,6 +123,7 @@ class _DecisionCard extends StatelessWidget {
   final bool cached;
   final String chargedCoins;
   final String balanceCoins;
+  final Map<String, dynamic> tradePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -272,11 +275,12 @@ ${BrandedAnalysisCardDialog.signatureText}''';
                           score: score,
                           confidence: confidence,
                           explanation: explanation,
+                          tradePlan: tradePlan,
                         ),
                       );
                     },
                     icon: const Icon(Icons.share_rounded, size: 16),
-                    label: const Text('تصدير صورة ترويجية'),
+                    label: const Text('تصدير كصورة'),
                   ),
                 ),
               ],

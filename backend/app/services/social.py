@@ -90,17 +90,18 @@ def get_author_prediction_stats(db: Session, *, author_id: UUID) -> tuple[int, f
     row = db.execute(
         select(
             func.count(PredictionVerification.id),
-            func.count(PredictionVerification.id).filter(PredictionVerification.score_bp >= 4000),
+            func.coalesce(func.avg(PredictionVerification.score_bp), 0),
         )
         .join(Discussion, Discussion.id == PredictionVerification.discussion_id)
         .where(Discussion.user_id == author_id)
     ).one()
 
     verified_count = int(row[0] or 0)
-    accepted_count = int(row[1] or 0)
+    avg_score_bp = float(row[1] or 0)
 
     if verified_count > 0:
-        success_rate = round((accepted_count / verified_count) * 100.0, 1)
+        # Calculate success rate as the average verified evaluation score percentage (score_bp / 100.0)
+        success_rate = round(avg_score_bp / 100.0, 1)
     else:
         success_rate = 0.0
 

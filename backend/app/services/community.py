@@ -399,11 +399,55 @@ def list_published_discussions(
         select(Discussion, User)
         .join(User, User.id == Discussion.user_id)
         .where(*filters)
-        .order_by(Discussion.published_at.desc(), Discussion.id.desc())
+        .order_by(Discussion.is_pinned.desc(), Discussion.published_at.desc(), Discussion.id.desc())
         .limit(limit)
         .offset(offset)
     ).all()
     return [DiscussionView(discussion=row[0], author=row[1]) for row in rows], total
+
+
+def pin_discussion(
+    db: Session,
+    *,
+    discussion_id: UUID,
+    user_id: UUID,
+) -> Discussion:
+    from app.services.prediction_evaluation import resolve_prediction_window
+
+    discussion = db.scalar(
+        select(Discussion)
+        .where(Discussion.id == discussion_id)
+        .with_for_update()
+    )
+    if discussion is None:
+        raise DiscussionNotFoundError("Discussion does not exist")
+
+    if discussion.user_id != user_id:
+        user = db.get(User, user_id)
+        if not user or not user.is_admin:
+            raise CommunityPermissionError("Only the author or an admin can pin this discussion")
+
+    if discussion.status != "published":
+        raise CommunityConflictError("Discussion is not published")
+
+    # Verify that prediction trading session has NOT started yet
+    if discussion.frozen_prediction:
+        try:
+            window = resolve_prediction_window(discussion)
+            start_session_date = window.start_session_date
+            today_date = datetime.now(UTC).date()
+            if today_date >= start_session_date:
+                raise CommunityConflictError(
+                    "عذراً، انتهت المهلة. لا يمكن تثبيت أو ترقية المنشور بعد بدء الجلسة التجارية للتوقع."
+                )
+        except Exception as exc:
+            if isinstance(exc, CommunityConflictError):
+                raise
+            pass
+
+    discussion.is_pinned = True
+    db.flush()
+    return discussion
 
 
 def list_user_discussions(

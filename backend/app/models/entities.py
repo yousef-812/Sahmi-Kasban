@@ -254,6 +254,7 @@ class Discussion(TimestampMixin, Base):
     )
     hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     views_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
 
 
 class PredictionVerification(TimestampMixin, Base):

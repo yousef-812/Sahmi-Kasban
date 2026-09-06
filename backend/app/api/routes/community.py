@@ -44,6 +44,7 @@ from app.services.community import (
     list_published_discussions,
     list_user_discussions,
     mute_user,
+    pin_discussion,
     register_discussion_views,
     report_discussion,
     toggle_discussion_reaction,
@@ -99,6 +100,7 @@ def _discussion_response(
         views_count=discussion.views_count or 0,
         agree_count=agree_count,
         disagree_count=disagree_count,
+        is_pinned=discussion.is_pinned,
         user_reaction=user_reaction,
         author=DiscussionAuthorResponse(
             user_id=view.author.id,
@@ -476,6 +478,49 @@ def send_tip_to_user(
             detail=str(exc),
         ) from exc
     except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post(
+    "/discussions/{discussion_id}/pin",
+    response_model=DiscussionResponse,
+)
+def pin_community_discussion(
+    discussion_id: UUID,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> DiscussionResponse:
+    try:
+        discussion = pin_discussion(
+            db,
+            discussion_id=discussion_id,
+            user_id=current_user.id,
+        )
+        db.commit()
+        view = get_discussion_view(db, discussion.id)
+        return _discussion_response(
+            view,
+            db=db,
+            current_user_id=current_user.id,
+            include_moderation=True,
+        )
+    except DiscussionNotFoundError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except CommunityConflictError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/avatar_assets.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/ui/app_notice.dart';
 import '../monetization/free_plan_ads.dart';
 import '../auth/session_controller.dart';
 import 'community_models.dart';
@@ -259,6 +261,31 @@ class _CommunityDiscussionCardState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (discussion.isPinned)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.push_pin_rounded, color: Colors.amber, size: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        'منشور مثبت ومميز',
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Row(
                 children: [
                   GestureDetector(
@@ -439,6 +466,53 @@ class _CommunityDiscussionCardState
                   ),
                 ],
               ),
+              if (isAuthor && !discussion.isPinned && discussion.status == 'published') ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await ref.read(communityRepositoryProvider).pinDiscussion(discussion.id);
+                      ref.invalidate(communityFeedProvider);
+                      if (context.mounted) {
+                        AppNotice.show(
+                          context,
+                          title: 'تم التثبيت',
+                          message: 'تم تثبيت وإبراز المنشور بنجاح في أعلى المجتمع.',
+                          tone: AppNoticeTone.success,
+                        );
+                      }
+                    } on ApiException catch (e) {
+                      if (context.mounted) {
+                        AppNotice.show(
+                          context,
+                          title: 'تعذر التثبيت',
+                          message: e.message,
+                          tone: AppNoticeTone.error,
+                        );
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        AppNotice.show(
+                          context,
+                          title: 'تعذر التثبيت',
+                          message: 'عذراً، انتهت المهلة. لا يمكن تثبيت أو ترقية المنشور بعد بدء الجلسة التجارية للتوقع.',
+                          tone: AppNoticeTone.error,
+                        );
+                      }
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: Colors.amber,
+                    side: const BorderSide(color: Colors.amber),
+                  ),
+                  icon: const Icon(Icons.push_pin_outlined, size: 14),
+                  label: const Text(
+                    'تثبيت وإبراز المنشور',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

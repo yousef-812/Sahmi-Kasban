@@ -140,6 +140,7 @@ class CommunityDiscussion {
     this.viewsCount = 0,
     this.agreeCount = 0,
     this.disagreeCount = 0,
+    this.isPinned = false,
     this.userReaction,
   });
 
@@ -159,6 +160,7 @@ class CommunityDiscussion {
   final int viewsCount;
   final int agreeCount;
   final int disagreeCount;
+  final bool isPinned;
   final String? userReaction;
 
   bool get canAppeal => status == 'rejected' || status == 'hidden';
@@ -196,6 +198,7 @@ class CommunityDiscussion {
       viewsCount: (json['views_count'] as num?)?.toInt() ?? 0,
       agreeCount: (json['agree_count'] as num?)?.toInt() ?? 0,
       disagreeCount: (json['disagree_count'] as num?)?.toInt() ?? 0,
+      isPinned: json['is_pinned'] as bool? ?? false,
       userReaction: json['user_reaction'] as String?,
     );
   }

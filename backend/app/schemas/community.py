@@ -95,6 +95,7 @@ class DiscussionResponse(BaseModel):
     views_count: int = Field(default=0, ge=0)
     agree_count: int = Field(default=0, ge=0)
     disagree_count: int = Field(default=0, ge=0)
+    is_pinned: bool = False
     user_reaction: str | None = None
     author: DiscussionAuthorResponse
 
