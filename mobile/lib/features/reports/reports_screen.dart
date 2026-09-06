@@ -246,6 +246,28 @@ class _ReportPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final target = report.targetSessionDate;
+    final isInvestment = report.reportType == 'investment';
+
+    final title = isInvestment
+        ? (report.marketSummary['title'] as String? ??
+            'تقرير أفضل الفرص الاستثمارية والقيمة العادلة')
+        : 'تقرير جلسة ${target.day}/${target.month}/${target.year}';
+
+    final chip1Text = isInvestment
+        ? '${report.itemCount} شركة استثمارية'
+        : '${report.itemCount} فرص مؤهلة';
+
+    final chip2Text = isInvestment
+        ? 'مجاني بالكامل'
+        : (report.unlocked
+            ? 'مفتوح بالفعل'
+            : '${report.unlockCostCoins} عملة للفتح');
+
+    final bodyText = isInvestment
+        ? (report.marketSummary['description'] as String? ??
+            'مسح شامل لجميع الأسهم وتصنيف حسب الخصم عن القيمة العادلة والقوة المالية.')
+        : 'المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -255,13 +277,15 @@ class _ReportPreviewCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.auto_graph_rounded,
+                  isInvestment
+                      ? Icons.account_balance_rounded
+                      : Icons.auto_graph_rounded,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'تقرير جلسة ${target.day}/${target.month}/${target.year}',
+                    title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -274,28 +298,24 @@ class _ReportPreviewCard extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
-                Chip(label: Text('${report.itemCount} فرص مؤهلة')),
-                Chip(
-                  label: Text(
-                    report.unlocked
-                        ? 'مفتوح بالفعل'
-                        : '${report.unlockCostCoins} عملة للفتح',
-                  ),
-                ),
+                Chip(label: Text(chip1Text)),
+                Chip(label: Text(chip2Text)),
               ],
             ),
             const SizedBox(height: 16),
-            const Text('المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.'),
+            Text(bodyText),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: () =>
                   context.push('/reports/${report.reportId}', extra: report),
               icon: Icon(
-                report.unlocked
+                report.unlocked || isInvestment
                     ? Icons.visibility_rounded
                     : Icons.lock_open_rounded,
               ),
-              label: Text(report.unlocked ? 'عرض التقرير' : 'فتح التقرير'),
+              label: Text(
+                report.unlocked || isInvestment ? 'عرض التقرير' : 'فتح التقرير',
+              ),
             ),
           ],
         ),
