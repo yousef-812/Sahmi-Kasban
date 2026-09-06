@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any
@@ -9,9 +10,14 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.market_calendar import EGXTradingCalendar
-from app.market_data.types import CandleSeries
+from app.market_data.provider import get_market_data_provider
+from app.market_data.types import CandleSeries, MarketDataProvider
 from app.models import Discussion, PredictionVerification
+from app.services.community_ai import get_community_ai_service
 from app.services.wallet import credit_points, get_wallet_account
+from sahmi_kasban.ai import SahmiAIService
+
+logger = logging.getLogger(__name__)
 
 PERIOD_SESSION_COUNTS = {
     "next_session": 1,
@@ -536,3 +542,119 @@ def get_prediction_stats(db: Session, *, user_id: UUID) -> PredictionStats:
         average_score_bp=round(float(row[2] or 0)),
         total_reward_points=int(row[3] or 0),
     )
+
+
+async def auto_evaluate_due_predictions(
+    db: Session,
+    *,
+    market_provider: MarketDataProvider | None = None,
+    ai_service: SahmiAIService | None = None,
+    moment: datetime | None = None,
+    calendar: EGXTradingCalendar | None = None,
+) -> dict[str, int]:
+    """Automatically evaluate published discussions whose prediction window has ended.
+
+    Discussions are ordered chronologically by publication time and processed sequentially.
+    If a discussion was already evaluated manually by the user, it is safely skipped.
+    """
+    now = _current(moment)
+    trading_calendar = calendar or EGXTradingCalendar.from_settings()
+
+    unverified_subquery = select(PredictionVerification.discussion_id)
+    query = (
+        select(Discussion)
+        .where(
+            Discussion.status == "published",
+            Discussion.frozen_prediction.is_not(None),
+            ~Discussion.id.in_(unverified_subquery),
+        )
+        .order_by(Discussion.published_at.asc())
+    )
+    discussions = db.scalars(query).all()
+
+    evaluated_count = 0
+    skipped_count = 0
+    failed_count = 0
+
+    if not discussions:
+        return {"evaluated": 0, "skipped": 0, "failed": 0}
+
+    provider = market_provider or get_market_data_provider()
+    ai = ai_service or get_community_ai_service()
+
+    for discussion in discussions:
+        already_verified = db.scalar(
+            select(PredictionVerification.id).where(
+                PredictionVerification.discussion_id == discussion.id
+            )
+        )
+        if already_verified is not None:
+            skipped_count += 1
+            continue
+
+        try:
+            window = resolve_prediction_window(discussion, calendar=trading_calendar)
+        except Exception:
+            skipped_count += 1
+            continue
+
+        if now < window.eligible_at:
+            skipped_count += 1
+            continue
+
+        try:
+            series = await provider.get_history(discussion.ticker, period="6mo", interval="1d")
+            candles = select_window_candles(series, window=window)
+            score = calculate_prediction_score(
+                prediction=discussion.frozen_prediction,
+                candles=candles,
+                window=window,
+                ticker=discussion.ticker,
+            )
+
+            try:
+                ai_result = await ai.verify_prediction(
+                    prediction=discussion.frozen_prediction,
+                    market_outcome=score.market_outcome,
+                )
+                explanation = {
+                    "source": "ai",
+                    "reason": str(ai_result.get("reason") or "").strip(),
+                    "matched_claims": [str(x)[:300] for x in ai_result.get("matched_claims", [])[:20]]
+                    if isinstance(ai_result.get("matched_claims"), list)
+                    else [],
+                    "failed_claims": [str(x)[:300] for x in ai_result.get("failed_claims", [])[:20]]
+                    if isinstance(ai_result.get("failed_claims"), list)
+                    else [],
+                    "reward_ignored": True,
+                }
+            except Exception:
+                explanation = {
+                    "source": "deterministic_fallback",
+                    "reason": deterministic_explanation(score),
+                    "matched_claims": [],
+                    "failed_claims": [],
+                    "reward_ignored": True,
+                }
+
+            finalize_prediction_verification(
+                db,
+                discussion_id=discussion.id,
+                user_id=discussion.user_id,
+                score=score,
+                explanation=explanation,
+                moment=now,
+                calendar=trading_calendar,
+            )
+            db.commit()
+            evaluated_count += 1
+        except Exception as exc:
+            db.rollback()
+            failed_count += 1
+            logger.warning(
+                "Automated prediction evaluation skipped discussion %s due to error: %s",
+                discussion.id,
+                exc,
+            )
+
+    return {"evaluated": evaluated_count, "skipped": skipped_count, "failed": failed_count}

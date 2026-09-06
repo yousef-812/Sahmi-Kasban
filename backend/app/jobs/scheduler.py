@@ -61,4 +61,16 @@ async def run_daily_scan_scheduler() -> None:
         except Exception:
             logger.exception("Scheduled AI persona discussions job failed")
 
+        try:
+            from app.db.session import SessionLocal
+            from app.services.prediction_evaluation import auto_evaluate_due_predictions
+            with SessionLocal() as db:
+                eval_res = await auto_evaluate_due_predictions(db)
+                if eval_res.get("evaluated", 0) > 0:
+                    logger.info("Automated prediction evaluation completed: %s", eval_res)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Scheduled automated prediction evaluation failed")
+
         await asyncio.sleep(interval)

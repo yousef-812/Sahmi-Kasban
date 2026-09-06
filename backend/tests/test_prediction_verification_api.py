@@ -269,3 +269,59 @@ def test_ai_failure_uses_fallback_without_changing_rule_reward(
     explanation = verification["evidence"]["explanation"]
     assert explanation["source"] == "deterministic_fallback"
     assert explanation["reward_ignored"] is True
+
+
+import pytest
+from app.services.prediction_evaluation import auto_evaluate_due_predictions, PredictionVerification
+
+
+@pytest.mark.anyio
+async def test_auto_evaluate_due_predictions_sequential(
+    client: TestClient,
+    fake_email_service,
+    db_session: Session,
+) -> None:
+    tokens, user_id = register_and_login(
+        client,
+        fake_email_service,
+        email="verify-auto@example.com",
+    )
+    d1 = create_discussion(
+        db_session,
+        user_id=user_id,
+        published_at=datetime(2025, 1, 2, 16, tzinfo=UTC),
+    )
+    d2 = create_discussion(
+        db_session,
+        user_id=user_id,
+        published_at=datetime(2025, 1, 2, 17, tzinfo=UTC),
+    )
+
+    provider = FakeMarketProvider()
+    ai = FailingVerificationAI()
+
+    res = await auto_evaluate_due_predictions(
+        db_session,
+        market_provider=provider,
+        ai_service=ai,
+        moment=datetime(2025, 1, 10, tzinfo=UTC),
+    )
+    assert res["evaluated"] == 2
+    assert res["skipped"] == 0
+
+    v1 = db_session.scalar(
+        select(PredictionVerification).where(PredictionVerification.discussion_id == d1.id)
+    )
+    v2 = db_session.scalar(
+        select(PredictionVerification).where(PredictionVerification.discussion_id == d2.id)
+    )
+    assert v1 is not None
+    assert v2 is not None
+
+    res_again = await auto_evaluate_due_predictions(
+        db_session,
+        market_provider=provider,
+        ai_service=ai,
+        moment=datetime(2025, 1, 10, tzinfo=UTC),
+    )
+    assert res_again["evaluated"] == 0
