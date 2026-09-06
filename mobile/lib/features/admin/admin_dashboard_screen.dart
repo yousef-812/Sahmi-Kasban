@@ -23,6 +23,11 @@ class AdminDashboardScreen extends StatelessWidget {
           title: const Text('مركز الإدارة'),
           actions: [
             IconButton(
+              onPressed: () => context.push('/admin/ai-failures'),
+              icon: const Icon(Icons.bug_report_outlined),
+              tooltip: 'سجل أعطال المساعد الذكي',
+            ),
+            IconButton(
               onPressed: () => context.push('/admin/performance'),
               icon: const Icon(Icons.assessment_outlined),
               tooltip: 'تشغيل سجل الأداء',

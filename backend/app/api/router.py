@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes.admin_backtests import router as admin_backtests_router
+from app.api.routes.admin_ai_failures import router as admin_ai_failures_router
 from app.api.routes.admin_operations import router as admin_operations_router
 from app.api.routes.admin_performance_recovery import (
     router as admin_performance_recovery_router,
@@ -62,5 +63,6 @@ api_router.include_router(admin_operations_router)
 api_router.include_router(admin_performance_recovery_router)
 api_router.include_router(admin_wallet_router)
 api_router.include_router(admin_backtests_router)
+api_router.include_router(admin_ai_failures_router)
 api_router.include_router(admin_replays_router)
 api_router.include_router(quality_admin_router)

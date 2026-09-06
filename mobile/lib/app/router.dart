@@ -6,6 +6,7 @@ import '../core/observability/app_observability.dart';
 import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/admin/admin_wallet_credit_screen.dart';
+import '../features/admin/ai_failures_admin_screen.dart';
 import '../features/admin/historical_replay_control_screen.dart';
 import '../features/ai_copilot/screens/ai_copilot_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
@@ -153,6 +154,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/admin/ai-failures',
+        builder: (context, state) => const AiFailuresAdminScreen(),
       ),
       GoRoute(
         path: '/admin/performance',

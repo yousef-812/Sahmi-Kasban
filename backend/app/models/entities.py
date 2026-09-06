@@ -47,6 +47,7 @@ class User(TimestampMixin, Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     tipping_unlocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     tipping_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    ai_cooldown_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     watchlist_items: Mapped[list[WatchlistItem]] = relationship(
         "WatchlistItem", back_populates="user", cascade="all, delete-orphan"
@@ -309,6 +310,29 @@ class DailyChatMessage(Base):
     session_date: Mapped[date] = mapped_column(Date(), nullable=False, index=True)
     user_name: Mapped[str] = mapped_column(String(100), nullable=False)
     content: Mapped[str] = mapped_column(Text(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+
+class AiFailureLog(Base):
+    __tablename__ = "ai_failure_logs"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    user_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    user_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    ticker: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    question: Mapped[str] = mapped_column(Text(), nullable=False)
+    error_message: Mapped[str] = mapped_column(Text(), nullable=False)
+    error_traceback: Mapped[str | None] = mapped_column(Text(), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

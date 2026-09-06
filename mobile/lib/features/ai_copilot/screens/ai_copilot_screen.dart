@@ -131,18 +131,40 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
       final apiClient = ref.read(apiClientProvider);
       final apiError = apiClient.mapError(e);
 
-      if (apiError.statusCode == 403 && apiError.payload is Map) {
+      if (apiError.payload is Map) {
         final details = apiError.payload as Map<String, dynamic>;
         final detailMap = details['detail'] is Map
             ? details['detail'] as Map<String, dynamic>
             : details;
 
-        if (detailMap['error_code'] == 'REFERRAL_GATE_LOCKED' && mounted) {
+        final errorCode = detailMap['error_code'] as String?;
+
+        if (errorCode == 'REFERRAL_GATE_LOCKED' && mounted) {
           ReferralGateDialog.show(
             context,
             currentCount: (detailMap['current'] as num?)?.toInt() ?? 0,
             requiredCount: (detailMap['required'] as num?)?.toInt() ?? 5,
             referralCode: detailMap['referral_code'] as String? ?? '',
+          );
+          return;
+        }
+
+        if ((errorCode == 'AI_COOLDOWN_ACTIVE' || errorCode == 'AI_SERVICE_FAILURE') && mounted) {
+          showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('إيقاف مؤقت للمساعد الذكي'),
+              content: Text(
+                detailMap['message'] as String? ??
+                    'تعذرت معالجة استفسارك وسنعاود إتاحة الخدمة بحسابك بعد قليل.',
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('حسناً'),
+                ),
+              ],
+            ),
           );
           return;
         }
