@@ -107,6 +107,12 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
         title: Text(widget.ticker, textDirection: TextDirection.ltr),
         actions: [
           IconButton(
+            tooltip: 'استفسار AI',
+            onPressed: () =>
+                context.push('/ai-copilot?ticker=${widget.ticker}'),
+            icon: const Icon(Icons.auto_awesome_rounded),
+          ),
+          IconButton(
             tooltip: 'تحديث',
             onPressed: quoteState.isLoading
                 ? null
@@ -460,6 +466,15 @@ class _QuickActions extends ConsumerWidget {
             onPressed: () => context.push('/market/compare'),
             icon: const Icon(Icons.compare_arrows_rounded),
             label: const Text('مقارنة'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FilledButton.tonalIcon(
+            onPressed: () =>
+                context.push('/ai-copilot?ticker=${quote.ticker}'),
+            icon: const Icon(Icons.auto_awesome_rounded),
+            label: const Text('استفسار AI'),
           ),
         ),
       ],

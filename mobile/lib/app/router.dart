@@ -7,6 +7,7 @@ import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/admin/admin_wallet_credit_screen.dart';
 import '../features/admin/historical_replay_control_screen.dart';
+import '../features/ai_copilot/screens/ai_copilot_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
@@ -127,6 +128,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: '/ai-copilot',
+        builder: (context, state) => AiCopilotScreen(
+          initialTicker: state.uri.queryParameters['ticker'],
+        ),
       ),
       GoRoute(
         path: '/performance',

@@ -563,14 +563,11 @@ class _DraggableTelegramBallState extends State<_DraggableTelegramBall> {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: Center(
-                  child: Transform.rotate(
-                    angle: -0.35,
-                    child: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 26,
-                    ),
+                child: const Center(
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 26,
                   ),
                 ),
               ),

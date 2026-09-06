@@ -61,6 +61,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               tooltip: 'الإدارة',
             ),
           IconButton(
+            onPressed: () => context.push('/ai-copilot'),
+            icon: const Icon(Icons.auto_awesome_rounded),
+            tooltip: 'مساعد الذكاء الاصطناعي',
+          ),
+          IconButton(
             onPressed: () => context.push('/performance'),
             icon: const Icon(Icons.assessment_outlined),
             tooltip: 'سجل الأداء',
@@ -88,6 +93,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           padding: EdgeInsets.zero,
           children: [
             _DrawerHeader(profile: profile),
+            const Divider(),
+            ListTile(
+              leading: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.purpleAccent,
+              ),
+              title: const Text('مساعد السهم الذكي (AI)'),
+              subtitle: const Text('استفسار مباشر عن أي سهم'),
+              onTap: () {
+                context.push('/ai-copilot');
+                Navigator.pop(context);
+              },
+            ),
             const Divider(),
             for (var item in _navItems)
               ListTile(
@@ -127,7 +145,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ),
-      body: _buildBody(selectedIndex),
+      body: Stack(
+        children: [
+          _buildBody(selectedIndex),
+          const _DraggableAiCopilotBall(),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex > 4 ? 0 : selectedIndex,
         onDestinationSelected: (index) {
@@ -160,6 +183,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             label: 'المحفظة',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/ai-copilot'),
+        icon: const Icon(Icons.auto_awesome_rounded),
+        label: const Text('مساعد السهم'),
       ),
     );
   }
@@ -515,6 +543,83 @@ class __DeveloperFeedbackCardState
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DraggableAiCopilotBall extends StatefulWidget {
+  const _DraggableAiCopilotBall();
+
+  @override
+  State<_DraggableAiCopilotBall> createState() =>
+      _DraggableAiCopilotBallState();
+}
+
+class _DraggableAiCopilotBallState extends State<_DraggableAiCopilotBall> {
+  double? _top;
+  double? _left;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    _top ??= size.height * 0.65;
+    _left ??= size.width - 72;
+
+    return Positioned(
+      top: _top,
+      left: _left,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            _top = (_top! + details.delta.dy).clamp(60.0, size.height - 140.0);
+            _left = (_left! + details.delta.dx).clamp(10.0, size.width - 64.0);
+          });
+        },
+        child: Tooltip(
+          message: 'مساعد السهم الذكي (AI)',
+          child: Material(
+            elevation: 10,
+            shadowColor: const Color(0xFF7C4DFF).withValues(alpha: 0.5),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => context.push('/ai-copilot'),
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF7C4DFF), Color(0xFF536DFE)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'AI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
