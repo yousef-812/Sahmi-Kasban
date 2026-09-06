@@ -8,6 +8,7 @@ import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../community/stock_prediction_prompt_dialog.dart';
 import '../monetization/free_plan_ads.dart';
 import '../wallet/wallet_providers.dart';
 import 'stock_analysis_report.dart';
@@ -185,6 +186,15 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
       ),
     );
     if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await StockPredictionPromptDialog.show(
+      context,
+      ticker: instrument.ticker,
+      displayName: instrument.nameAr,
+    );
+    if (!mounted) {
       return;
     }
 
