@@ -93,6 +93,20 @@ class CoinTipHistory(TimestampMixin, Base):
     )
     amount_coins: Mapped[int] = mapped_column(Integer, nullable=False)
 
+
+class SectorReport(TimestampMixin, Base):
+    __tablename__ = "sector_reports"
+    __table_args__ = (
+        UniqueConstraint("sector_code", "target_date", name="uq_sector_reports_code_date"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    sector_code: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    target_date: Mapped[date] = mapped_column(Date, index=True, nullable=False)
+    leader_ticker: Mapped[str] = mapped_column(String(24), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+
 class WalletEntry(TimestampMixin, Base):
     __tablename__ = "wallet_entries"
     __table_args__ = (CheckConstraint("amount_points <> 0", name="wallet_amount_non_zero"),)
