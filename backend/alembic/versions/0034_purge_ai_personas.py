@@ -1,6 +1,6 @@
 """Purge AI persona discussions and disable AI personas feature.
 
-Revision ID: 0034_purge_and_disable_ai_personas
+Revision ID: 0034_purge_ai_personas
 Revises: 0033_daily_chat_session_votes
 Create Date: 2026-09-06
 """
@@ -11,7 +11,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0034_purge_and_disable_ai_personas"
+revision: str = "0034_purge_ai_personas"
 down_revision: str | None = "0033_daily_chat_session_votes"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
