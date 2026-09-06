@@ -11,6 +11,7 @@ import '../auth/session_controller.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
+import 'real_view_tracker.dart';
 import 'screens/user_profile_screen.dart';
 
 class CommunityFeedTab extends ConsumerStatefulWidget {
@@ -212,25 +213,83 @@ class CommunityDiscussionCard extends ConsumerStatefulWidget {
 
 class _CommunityDiscussionCardState
     extends ConsumerState<CommunityDiscussionCard> {
+  Timer? _visibilityTimer;
+  int _visibleDwellMs = 0;
+  bool _hasTriggeredView = false;
+
   @override
   void initState() {
     super.initState();
-    _registerImpression();
+    _startVisibilityChecker();
   }
 
   @override
   void didUpdateWidget(covariant CommunityDiscussionCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _registerImpression();
+    if (oldWidget.discussion.id != widget.discussion.id) {
+      _visibleDwellMs = 0;
+      _hasTriggeredView = false;
+    }
   }
 
-  void _registerImpression() {
+  @override
+  void dispose() {
+    _visibilityTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startVisibilityChecker() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkVisibility();
+    });
+    _visibilityTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _checkVisibility();
+    });
+  }
+
+  void _checkVisibility() {
+    if (_hasTriggeredView || !mounted) return;
+
     final id = widget.discussion.id;
-    if (!_registeredFeedViewIds.contains(id)) {
-      _registeredFeedViewIds.add(id);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(communityRepositoryProvider).registerViews([id]);
-      });
+    if (RealViewTracker.isRecorded(id)) {
+      _hasTriggeredView = true;
+      _visibilityTimer?.cancel();
+      return;
+    }
+
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.hasSize ||
+        !renderObject.attached) {
+      _visibleDwellMs = 0;
+      return;
+    }
+
+    final position = renderObject.localToGlobal(Offset.zero);
+    final size = renderObject.size;
+    final mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery == null) return;
+
+    final screenHeight = mediaQuery.size.height;
+    final top = position.dy;
+    final bottom = top + size.height;
+
+    final visibleTop = top < 0 ? 0.0 : top;
+    final visibleBottom = bottom > screenHeight ? screenHeight : bottom;
+    final visibleHeight = visibleBottom - visibleTop;
+
+    final isVisible =
+        (visibleHeight > 0) && (visibleHeight / size.height >= 0.4);
+
+    if (isVisible) {
+      _visibleDwellMs += 500;
+      if (_visibleDwellMs >= 1000) {
+        _hasTriggeredView = true;
+        _visibilityTimer?.cancel();
+        RealViewTracker.recordView(ref, id);
+      }
+    } else {
+      _visibleDwellMs = 0;
     }
   }
 
@@ -255,7 +314,10 @@ class _CommunityDiscussionCardState
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.push('/community/${discussion.id}'),
+        onTap: () {
+          RealViewTracker.recordView(ref, discussion.id);
+          context.push('/community/${discussion.id}');
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -400,14 +462,13 @@ class _CommunityDiscussionCardState
                   Chip(label: Text(discussion.periodLabel)),
                   if (widget.showStatus)
                     Chip(label: Text(discussion.statusLabel)),
-                  if (isAuthor)
-                    Chip(
-                      avatar: const Icon(
-                        Icons.remove_red_eye_outlined,
-                        size: 14,
-                      ),
-                      label: Text('${discussion.viewsCount} مشاهدة'),
+                  Chip(
+                    avatar: const Icon(
+                      Icons.remove_red_eye_outlined,
+                      size: 14,
                     ),
+                    label: Text('${discussion.viewsCount} مشاهدة'),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),

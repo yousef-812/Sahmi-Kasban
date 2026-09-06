@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import 'community_models.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
 import 'prediction_verification_card.dart';
+import 'real_view_tracker.dart';
 
 class CommunityDetailScreen extends ConsumerStatefulWidget {
   const CommunityDetailScreen({required this.discussionId, super.key});
@@ -24,6 +27,16 @@ class CommunityDetailScreen extends ConsumerStatefulWidget {
 class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
   bool _mutedLocally = false;
   bool _actionBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        RealViewTracker.recordView(ref, widget.discussionId);
+      }
+    });
+  }
 
   Future<void> _refresh() async {
     ref.invalidate(communityDiscussionProvider(widget.discussionId));
@@ -263,11 +276,10 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                           children: [
                             Chip(label: Text(item.periodLabel)),
                             Chip(label: Text(item.statusLabel)),
-                            if (isOwner)
-                              Chip(
-                                avatar: const Icon(Icons.remove_red_eye_outlined, size: 14),
-                                label: Text('${item.viewsCount} مشاهدة'),
-                              ),
+                            Chip(
+                              avatar: const Icon(Icons.remove_red_eye_outlined, size: 14),
+                              label: Text('${item.viewsCount} مشاهدة'),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
