@@ -1,6 +1,6 @@
 """Add is_pinned column to discussions table.
 
-Revision ID: 0035_add_is_pinned_to_discussions
+Revision ID: 0035_discussion_is_pinned
 Revises: 0034_purge_ai_personas
 Create Date: 2026-09-06
 """
@@ -11,7 +11,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0035_add_is_pinned_to_discussions"
+revision: str = "0035_discussion_is_pinned"
 down_revision: str | None = "0034_purge_ai_personas"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
