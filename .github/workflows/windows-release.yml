@@ -62,6 +62,9 @@ jobs:
       - name: Package Release ZIP
         shell: powershell
         run: |
+          if (Test-Path "mobile\windows\runner\resources\app_icon.ico") {
+            Copy-Item -Path "mobile\windows\runner\resources\app_icon.ico" -Destination "mobile\build\windows\x64\runner\Release\app_icon.ico" -Force
+          }
           Compress-Archive -Path "mobile\build\windows\x64\runner\Release\*" -DestinationPath "mobile\build\sahmi-kasban-windows-x64.zip" -Force
 
       - name: Upload Windows App Artifact
