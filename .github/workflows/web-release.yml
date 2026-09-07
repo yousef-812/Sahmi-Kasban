@@ -1,4 +1,4 @@
-﻿name: Web Preview Build
+name: Web Preview Build
 
 on:
   workflow_dispatch:
@@ -56,7 +56,6 @@ jobs:
             --dart-define=DEMO_MODE=false \
             --dart-define=APP_ENV=staging \
             --dart-define=RELEASE_PLATFORM=web \
-            --web-renderer=canvaskit \
             --base-href=/Sahmi-Kasban/
 
       - name: Upload Web Artifact
