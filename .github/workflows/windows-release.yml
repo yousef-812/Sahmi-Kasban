@@ -1,4 +1,4 @@
-﻿name: Windows Desktop Build
+name: Windows Desktop Build
 
 on:
   workflow_dispatch:
@@ -43,14 +43,15 @@ jobs:
           flutter pub get
 
       - name: Build Windows Desktop App
-        shell: powershell
+        shell: bash
         run: |
+          set -Eeuo pipefail
           cd mobile
-          flutter build windows --release 
-            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev 
-            --dart-define=DEMO_MODE=false 
-            --dart-define=APP_ENV=staging 
-            --dart-define=RELEASE_PLATFORM=windows
+          flutter build windows --release \
+            "--dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev" \
+            "--dart-define=DEMO_MODE=false" \
+            "--dart-define=APP_ENV=staging" \
+            "--dart-define=RELEASE_PLATFORM=windows"
 
       - name: Package Release ZIP
         shell: powershell
