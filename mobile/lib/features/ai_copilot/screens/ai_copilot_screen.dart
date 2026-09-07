@@ -859,8 +859,7 @@ class _ChatBubble extends StatelessWidget {
                   tableBody: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
-                  tableCellPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  tableHeadPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  tableCellsPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   blockquoteDecoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest,
                     border: Border(
