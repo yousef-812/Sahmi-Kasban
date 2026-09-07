@@ -1,17 +1,16 @@
-from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock
-from uuid import uuid4
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
 
-from app.api.routes.admin_ai_failures import clear_user_ai_cooldown, list_ai_failures
+from app.api.routes.admin_ai_failures import clear_user_ai_cooldown
 from app.api.routes.ai_copilot import AiCopilotQueryRequest, query_ai_copilot
 from app.models import AiFailureLog, User, WalletAccount
-from app.services.wallet import credit_points
 
 
-def test_ai_copilot_failure_logs_and_sets_cooldown(db_session):
+@pytest.mark.anyio
+async def test_ai_copilot_failure_logs_and_sets_cooldown(db_session):
     u = User(
         email="failing_ai_user@example.com",
         password_hash="hash",
@@ -35,12 +34,12 @@ def test_ai_copilot_failure_logs_and_sets_cooldown(db_session):
 
     db_session.commit()
 
-    mock_ai = MagicMock()
+    mock_ai = AsyncMock()
     mock_ai.generate_market_insight.side_effect = RuntimeError("Gemini API connection timeout")
 
     # 1. Query should fail, log to AiFailureLog, set 1-hour cooldown, and not debit points
     with pytest.raises(HTTPException) as exc_info:
-        query_ai_copilot(
+        await query_ai_copilot(
             body=AiCopilotQueryRequest(ticker="COMI", question="ما هو اتجاه سهم البنك التجاري؟"),
             db=db_session,
             current_user=u,
@@ -68,7 +67,7 @@ def test_ai_copilot_failure_logs_and_sets_cooldown(db_session):
 
     # 2. Subsequent query during cooldown should be blocked with 403
     with pytest.raises(HTTPException) as exc_cooldown:
-        query_ai_copilot(
+        await query_ai_copilot(
             body=AiCopilotQueryRequest(ticker="COMI", question="سؤال ثاني"),
             db=db_session,
             current_user=u,

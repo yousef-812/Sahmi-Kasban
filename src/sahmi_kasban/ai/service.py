@@ -20,6 +20,28 @@ class SahmiAIService:
     def __init__(self, client: AIChatClient | None = None) -> None:
         self.client = client or AIChatClient()
 
+    async def generate_market_insight(
+        self,
+        *,
+        ticker: str,
+        technical_data: dict[str, Any],
+    ) -> str:
+        prompt = technical_data.get("prompt")
+        question = technical_data.get("question", "")
+        if prompt:
+            user_content = str(prompt)
+        else:
+            user_content = (
+                f"أنت مساعد الذكاء الاصطناعي لسوق الأسهم في تطبيق سهمي كسبان.\n"
+                f"سؤال المستخدم: {question}\n"
+                f"السهم: {ticker}"
+            )
+        return await self.client.chat(
+            [
+                {"role": "user", "content": user_content},
+            ]
+        )
+
     async def explain_stock_analysis(
         self,
         *,

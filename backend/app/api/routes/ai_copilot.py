@@ -42,7 +42,7 @@ class AiCopilotQueryResponse(BaseModel):
 
 
 @router.post("/query", response_model=AiCopilotQueryResponse)
-def query_ai_copilot(
+async def query_ai_copilot(
     body: AiCopilotQueryRequest,
     db: DatabaseSession,
     current_user: CurrentUser,
@@ -131,7 +131,7 @@ def query_ai_copilot(
     )
 
     try:
-        raw_answer = ai_service.generate_market_insight(
+        raw_answer = await ai_service.generate_market_insight(
             ticker=body.ticker or "COMI",
             technical_data={"question": body.question, "prompt": prompt},
         )
@@ -176,10 +176,16 @@ def query_ai_copilot(
             current_user.ai_cooldown_until = datetime.now(UTC) + timedelta(hours=1)
         db.commit()
 
+        msg = (
+            "تعذرت معالجة استفسارك بواسطة المساعد الذكي. لم يتم خصم أي عملات."
+            if is_admin
+            else "تعذرت معالجة استفسارك بواسطة المساعد الذكي. لم يتم خصم أي عملات، وتم إيقاف دردشة الـ AI بحسابك مؤقتاً لمدة 1 ساعة."
+        )
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={
                 "error_code": "AI_SERVICE_FAILURE",
-                "message": "تعذرت معالجة استفسارك بواسطة المساعد الذكي. لم يتم خصم أي عملات، وتم إيقاف دردشة الـ AI بحسابك مؤقتاً لمدة 1 ساعة.",
+                "message": msg,
             },
         ) from exc
