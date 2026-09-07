@@ -39,7 +39,7 @@ jobs:
           }
           $mainCpp = "windows\runner\main.cpp"
           if (Test-Path $mainCpp) {
-            (Get-Content $mainCpp) -replace 'L"sahmi_kasban_mobile"', 'L"سهمي كسبان"' | Set-Content $mainCpp -Encoding UTF8
+            (Get-Content $mainCpp) -replace 'L"sahmi_kasban_mobile"', 'L"Sahmi Kasban"' | Set-Content $mainCpp -Encoding UTF8
           }
 
       - name: Fetch packages
