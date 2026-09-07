@@ -503,20 +503,18 @@ class TradingViewWidget extends StatefulWidget {
 class _TradingViewWidgetState extends State<TradingViewWidget> {
   WebViewController? _controller;
   bool _initialized = false;
-  bool _isMobile = false;
+  bool _hasWebView = false;
 
   @override
   void initState() {
     super.initState();
-    _isMobile = !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS);
-    if (_isMobile) {
+    if (!kIsWeb) {
       try {
         _controller = WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted);
+        _hasWebView = true;
       } catch (_) {
-        _isMobile = false;
+        _hasWebView = false;
       }
     }
   }
@@ -524,7 +522,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   @override
   void didUpdateWidget(covariant TradingViewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_isMobile && _controller != null) {
+    if (_hasWebView && _controller != null) {
       if (oldWidget.hideSideToolbar != widget.hideSideToolbar ||
           oldWidget.symbol != widget.symbol) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -602,7 +600,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final symbol = widget.symbol.toUpperCase();
 
-    if (!_isMobile || _controller == null) {
+    if (!_hasWebView || _controller == null) {
       return SizedBox(
         height: widget.height,
         child: ClipRRect(

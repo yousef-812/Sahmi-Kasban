@@ -23,6 +23,7 @@ dependencies:
   in_app_purchase: ^3.3.0
   intl: ^0.20.2
   webview_flutter: ^4.10.0
+  webview_flutter_windows: ^0.2.3
   sentry_flutter: ^9.25.0
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.1
