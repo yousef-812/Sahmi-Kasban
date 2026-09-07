@@ -9,6 +9,7 @@ import '../features/monetization/free_plan_ads.dart';
 import '../features/monetization/monetization_repository.dart';
 import '../features/notifications/notification_messaging_shell.dart';
 import 'app_theme_provider.dart';
+import 'desktop_title_bar.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -74,8 +75,10 @@ class _SahmiKasbanAppState extends ConsumerState<SahmiKasbanApp> {
       builder: (context, child) {
         return Directionality(
           textDirection: TextDirection.rtl,
-          child: NotificationMessagingShell(
-            child: FreePlanAdShell(child: child ?? const SizedBox.shrink()),
+          child: DesktopCustomTitleBar(
+            child: NotificationMessagingShell(
+              child: FreePlanAdShell(child: child ?? const SizedBox.shrink()),
+            ),
           ),
         );
       },

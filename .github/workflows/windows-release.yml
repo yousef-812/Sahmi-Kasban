@@ -37,13 +37,9 @@ jobs:
           if (-not (Test-Path "windows\CMakeLists.txt")) {
             flutter create --platforms=windows .
           }
-          $cmakeFile = "windows\CMakeLists.txt"
-          if (Test-Path $cmakeFile) {
-            $content = Get-Content $cmakeFile -Raw
-            if ($content -notlike "*CMAKE_POLICY_VERSION_MINIMUM*") {
-              $newContent = "cmake_minimum_required(VERSION 3.15)`r`nset(CMAKE_POLICY_VERSION_MINIMUM 3.5)`r`n" + $content
-              Set-Content -Path $cmakeFile -Value $newContent -Encoding UTF8
-            }
+          $mainCpp = "windows\runner\main.cpp"
+          if (Test-Path $mainCpp) {
+            (Get-Content $mainCpp) -replace 'L"sahmi_kasban_mobile"', 'L"سهمي كسبان"' | Set-Content $mainCpp -Encoding UTF8
           }
 
       - name: Fetch packages
