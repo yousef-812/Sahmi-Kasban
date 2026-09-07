@@ -150,7 +150,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          $FLUTTER_HOME/bin/dart format --output=none --set-exit-if-changed lib test 2>&1 \
+          $FLUTTER_HOME/bin/dart format lib test 2>&1 \
             | tee "$RUNNER_TEMP/flutter-format-check.log"
 
       - name: Capture Flutter formatting diff
