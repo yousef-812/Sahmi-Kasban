@@ -521,6 +521,19 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     }
   }
 
+  @override
+  void didUpdateWidget(covariant TradingViewWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isMobile && _controller != null) {
+      if (oldWidget.hideSideToolbar != widget.hideSideToolbar ||
+          oldWidget.symbol != widget.symbol) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final html = _buildHtml(isDark);
+        _controller!.loadHtmlString(html);
+      }
+    }
+  }
+
   String _buildHtml(bool isDark) {
     final symbol = widget.symbol.toUpperCase();
     final hideTools = widget.hideSideToolbar ? 'true' : 'false';
