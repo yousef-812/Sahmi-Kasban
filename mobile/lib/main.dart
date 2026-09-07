@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,18 +21,24 @@ Future<void> _initializeServices() async {
     );
   }
 
-  try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  } on Object catch (error, stackTrace) {
-    debugPrint('Firebase initialization skipped: $error\n$stackTrace');
-  }
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    } on Object catch (error, stackTrace) {
+      debugPrint('Firebase initialization skipped: $error\n$stackTrace');
+    }
 
-  try {
-    await const ConsentManager().gatherConsent().timeout(const Duration(seconds: 10));
-    await MobileAds.instance.initialize().timeout(const Duration(seconds: 10));
-  } on Object catch (error, stackTrace) {
-    debugPrint('Mobile Ads initialization skipped: $error\n$stackTrace');
+    try {
+      await const ConsentManager().gatherConsent().timeout(
+        const Duration(seconds: 10),
+      );
+      await MobileAds.instance.initialize().timeout(
+        const Duration(seconds: 10),
+      );
+    } on Object catch (error, stackTrace) {
+      debugPrint('Mobile Ads initialization skipped: $error\n$stackTrace');
+    }
   }
 }
 

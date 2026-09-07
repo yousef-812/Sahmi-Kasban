@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -80,9 +80,13 @@ class AppOpenAdManager with WidgetsBindingObserver {
   }
 
   void _loadAd() {
-    if (_loading || _hasFreshAd || !(Platform.isAndroid || Platform.isIOS)) return;
-    final adUnitId =
-        Platform.isAndroid ? config.admobAndroidAppOpenId : config.admobIosAppOpenId;
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (_loading || _hasFreshAd || !isMobile) return;
+    final adUnitId = defaultTargetPlatform == TargetPlatform.android
+        ? config.admobAndroidAppOpenId
+        : config.admobIosAppOpenId;
     if (adUnitId.isEmpty) return;
 
     _loading = true;
@@ -126,8 +130,9 @@ class AppOpenAdManager with WidgetsBindingObserver {
       return;
     }
     final ad = _ad!;
-    final adUnitId =
-        Platform.isAndroid ? config.admobAndroidAppOpenId : config.admobIosAppOpenId;
+    final adUnitId = defaultTargetPlatform == TargetPlatform.android
+        ? config.admobAndroidAppOpenId
+        : config.admobIosAppOpenId;
     gate.markShowing();
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdImpression: (impressionAd) {

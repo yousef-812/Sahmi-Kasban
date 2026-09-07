@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -26,7 +26,10 @@ class GoogleRewardedInterstitialGateway implements RewardedInterstitialGateway {
 
   @override
   Future<RewardedInterstitialResult> loadAndShow() async {
-    if (!(Platform.isAndroid || Platform.isIOS)) {
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (!isMobile) {
       return RewardedInterstitialResult.failed;
     }
     if (!_gate.canShow(DateTime.now())) {
@@ -36,7 +39,7 @@ class GoogleRewardedInterstitialGateway implements RewardedInterstitialGateway {
     final RewardedAdSessionModel session;
     try {
       session = await _repository.createRewardedAdSession(
-        platform: Platform.isAndroid ? 'android' : 'ios',
+        platform: defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios',
         adFormat: 'rewarded_interstitial',
       );
     } on Object {

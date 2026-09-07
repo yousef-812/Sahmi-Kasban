@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -49,13 +48,16 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
     final enabled =
         widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
 
-    if (!enabled || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+    if (!enabled ||
+        kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
       _disposeAd();
       return;
     }
 
     final config = ref.read(appConfigProvider);
-    final adUnitId = Platform.isAndroid
+    final adUnitId = defaultTargetPlatform == TargetPlatform.android
         ? config.admobAndroidBannerId
         : config.admobIosBannerId;
 
@@ -158,7 +160,10 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
     final enabled =
         widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
 
-    if (!enabled || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+    if (!enabled ||
+        kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
       return const SizedBox.shrink();
     }
 

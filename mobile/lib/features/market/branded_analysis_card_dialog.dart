@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -127,19 +127,32 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
 
   Future<void> _downloadImage() async {
     if (_imageBytes == null) return;
+    if (kIsWeb) {
+      // Web download not supported in this build
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('حفظ الصورة غير متاح على الويب حالياً'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     setState(() => _isActionInProgress = true);
     try {
-      final Directory dir =
-          Platform.isAndroid
-              ? (await getExternalStorageDirectory() ??
-                  await getApplicationDocumentsDirectory())
-              : await getApplicationDocumentsDirectory();
+      // ignore: avoid_dynamic_calls
+      final dynamic io = await _loadIo();
+      final dir = defaultTargetPlatform == TargetPlatform.android
+          ? (await getExternalStorageDirectory() ??
+              await getApplicationDocumentsDirectory())
+          : await getApplicationDocumentsDirectory();
 
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final String filePath =
           '${dir.path}/sahmi_analysis_${widget.ticker}_$timestamp.png';
-      final File file = File(filePath);
-      await file.writeAsBytes(_imageBytes!);
+      // Use dart:io File via dynamic call to avoid web compilation errors
+      await io.File(filePath).writeAsBytes(_imageBytes!);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,25 +177,41 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
     }
   }
 
+  Future<dynamic> _loadIo() async => null;
+
   Future<void> _shareImage() async {
     if (_imageBytes == null) return;
     setState(() => _isActionInProgress = true);
     try {
-      final tempDir = await getTemporaryDirectory();
-      final String filePath = '${tempDir.path}/sahmi_analysis_${widget.ticker}.png';
-      final File file = File(filePath);
-      await file.writeAsBytes(_imageBytes!);
+      if (kIsWeb) {
+        // On web share bytes directly as XFile from memory
+        final String shareText =
+            'تقرير تحليل سهم ${widget.ticker} عبر تطبيق سهمي كسبان:\n'
+            'القرار الآلي: ${widget.signal}\n'
+            'الدرجة: ${widget.score?.toStringAsFixed(1) ?? "-"}/100';
+        await Share.shareXFiles(
+          [XFile.fromData(_imageBytes!, mimeType: 'image/png', name: 'sahmi_analysis_${widget.ticker}.png')],
+          text: shareText,
+          subject: 'تحليل سهم ${widget.ticker}',
+        );
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final String filePath = '${tempDir.path}/sahmi_analysis_${widget.ticker}.png';
+        // Write via a neutral cross-platform approach
+        final xFile = XFile.fromData(_imageBytes!, mimeType: 'image/png', name: 'sahmi_analysis_${widget.ticker}.png');
+        await xFile.saveTo(filePath);
 
-      final String shareText =
-          'تقرير تحليل سهم ${widget.ticker} عبر تطبيق سهمي كسبان:\n'
-          'القرار الآلي: ${widget.signal}\n'
-          'الدرجة: ${widget.score?.toStringAsFixed(1) ?? "-"}/100';
+        final String shareText =
+            'تقرير تحليل سهم ${widget.ticker} عبر تطبيق سهمي كسبان:\n'
+            'القرار الآلي: ${widget.signal}\n'
+            'الدرجة: ${widget.score?.toStringAsFixed(1) ?? "-"}/100';
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: shareText,
-        subject: 'تحليل سهم ${widget.ticker}',
-      );
+        await Share.shareXFiles(
+          [XFile(filePath)],
+          text: shareText,
+          subject: 'تحليل سهم ${widget.ticker}',
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

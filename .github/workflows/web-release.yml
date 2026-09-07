@@ -1,0 +1,84 @@
+﻿name: Web Preview Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      FLUTTER_HOME: ${{ github.workspace }}/.github/.cache/flutter
+      PUB_CACHE: ${{ github.workspace }}/.github/.cache/pub
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+
+      - name: Install Flutter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [ ! -x "$FLUTTER_HOME/bin/flutter" ]; then
+            git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$FLUTTER_HOME"
+          fi
+          echo "$FLUTTER_HOME/bin" >> "$GITHUB_PATH"
+          "$FLUTTER_HOME/bin/flutter" config --no-analytics
+          "$FLUTTER_HOME/bin/flutter" --version
+
+      - name: Enable Flutter Web
+        shell: bash
+        run: |
+          "$FLUTTER_HOME/bin/flutter" config --enable-web
+
+      - name: Fetch Flutter packages
+        working-directory: mobile
+        shell: bash
+        run: |
+          "$FLUTTER_HOME/bin/flutter" pub get
+
+      - name: Build Flutter Web
+        working-directory: mobile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          "$FLUTTER_HOME/bin/flutter" build web --release \
+            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev \
+            --dart-define=DEMO_MODE=false \
+            --dart-define=APP_ENV=staging \
+            --dart-define=RELEASE_PLATFORM=web \
+            --web-renderer=canvaskit \
+            --base-href=/Sahmi-Kasban/
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sahmi-kasban-web-preview-${{ github.run_id }}
+          path: mobile/build/web/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: mobile/build/web/
+
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

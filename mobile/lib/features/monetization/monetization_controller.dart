@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -99,7 +99,8 @@ class MonetizationController extends StateNotifier<MonetizationState> {
       ]);
       final catalog = results[0] as MonetizationCatalog;
       final status = results[1] as MonetizationStatusModel;
-      final storeAvailable = Platform.isAndroid && await _store.isAvailable();
+      final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      final storeAvailable = isAndroid && await _store.isAvailable();
       var products = const <String, ProductDetails>{};
       if (storeAvailable && catalog.storeProductIds.isNotEmpty) {
         final response = await _store.queryProductDetails(
@@ -135,9 +136,9 @@ class MonetizationController extends StateNotifier<MonetizationState> {
     if (state.adBusy || status == null || !status.rewardedAd.eligible) {
       return;
     }
-    final platform = Platform.isAndroid
+    final platform = !kIsWeb && defaultTargetPlatform == TargetPlatform.android
         ? 'android'
-        : Platform.isIOS
+        : (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
         ? 'ios'
         : null;
     if (platform == null) {
@@ -197,7 +198,8 @@ class MonetizationController extends StateNotifier<MonetizationState> {
     if (state.purchasingProductId != null) {
       return;
     }
-    if (!Platform.isAndroid) {
+    final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroid) {
       state = state.copyWith(
         error: 'المشتريات في هذه المرحلة مرتبطة بـGoogle Play على Android.',
       );
@@ -240,7 +242,8 @@ class MonetizationController extends StateNotifier<MonetizationState> {
   }
 
   Future<void> restorePurchases() async {
-    if (!Platform.isAndroid || !state.storeAvailable) {
+    final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroid || !state.storeAvailable) {
       state = state.copyWith(
         error: 'استعادة المشتريات غير متاحة على هذا الجهاز.',
       );
@@ -309,7 +312,8 @@ class MonetizationController extends StateNotifier<MonetizationState> {
   }
 
   Future<void> _verifyAndComplete(PurchaseDetails purchase) async {
-    if (!Platform.isAndroid) {
+    final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroid) {
       if (mounted) {
         state = state.copyWith(
           purchasingProductId: null,

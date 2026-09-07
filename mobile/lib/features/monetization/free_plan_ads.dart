@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -71,13 +71,16 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   void _syncAd() {
     final profile = ref.read(sessionControllerProvider).profile;
     final enabled = widget.enabledOverride ?? profile?.adsEnabled == true;
-    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (!enabled || !isMobile) {
       _disposeAd();
       return;
     }
 
     final config = ref.read(appConfigProvider);
-    final adUnitId = Platform.isAndroid
+    final adUnitId = defaultTargetPlatform == TargetPlatform.android
         ? config.admobAndroidNativeId
         : config.admobIosNativeId;
     if (adUnitId.isEmpty || (_ad != null && _activeAdUnitId == adUnitId)) {
@@ -190,9 +193,11 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(sessionControllerProvider).profile;
-    final enabled = widget.enabledOverride ?? profile?.adsEnabled == true;
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
 
-    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+    if (!enabled || !isMobile) {
       return const SizedBox.shrink();
     }
 
@@ -264,7 +269,10 @@ class FreePlanInterstitialCoordinator {
     required bool enabled,
     bool ignoreFrequencyGate = false,
   }) async {
-    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (!enabled || !isMobile) {
       return;
     }
     _loadIfNeeded();
@@ -289,7 +297,7 @@ class FreePlanInterstitialCoordinator {
     _ad = null;
     _meaningfulActions = 0;
     _gate.markShowing();
-    final adUnitId = Platform.isAndroid
+    final adUnitId = defaultTargetPlatform == TargetPlatform.android
         ? _config.admobAndroidInterstitialId
         : _config.admobIosInterstitialId;
     ad.fullScreenContentCallback = FullScreenContentCallback<InterstitialAd>(
@@ -321,7 +329,10 @@ class FreePlanInterstitialCoordinator {
   }
 
   Future<void> recordMeaningfulAction({required bool enabled}) async {
-    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (!enabled || !isMobile) {
       return;
     }
     _meaningfulActions += 1;
@@ -339,10 +350,13 @@ class FreePlanInterstitialCoordinator {
   }
 
   void _loadIfNeeded() {
-    if (_loading || _ad != null || !(Platform.isAndroid || Platform.isIOS)) {
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (_loading || _ad != null || !isMobile) {
       return;
     }
-    final adUnitId = Platform.isAndroid
+    final adUnitId = defaultTargetPlatform == TargetPlatform.android
         ? _config.admobAndroidInterstitialId
         : _config.admobIosInterstitialId;
     if (adUnitId.isEmpty) {
