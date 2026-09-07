@@ -96,7 +96,7 @@ class _SectorLeaderboardScreenState
           .map((e) => SectorItem.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      ref.invalidate(sessionControllerProvider);
+      await ref.read(sessionControllerProvider.notifier).refreshProfile();
 
       if (mounted) {
         setState(() {

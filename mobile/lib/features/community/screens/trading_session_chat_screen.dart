@@ -128,7 +128,7 @@ class _TradingSessionChatScreenState
       final apiClient = ref.read(apiClientProvider);
       await apiClient.dio.post<Map<String, dynamic>>('/trading-chat/vote');
 
-      ref.invalidate(sessionControllerProvider);
+      await ref.read(sessionControllerProvider.notifier).refreshProfile();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

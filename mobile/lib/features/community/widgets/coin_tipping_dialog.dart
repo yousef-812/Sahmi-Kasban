@@ -64,7 +64,7 @@ class _CoinTippingDialogState extends ConsumerState<CoinTippingDialog> {
         amountCoins: amount,
       );
 
-      ref.invalidate(sessionControllerProvider);
+      await ref.read(sessionControllerProvider.notifier).refreshProfile();
       ref.invalidate(communityFeedProvider);
 
       if (mounted) {

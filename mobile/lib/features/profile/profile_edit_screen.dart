@@ -286,7 +286,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                           onChanged: (val) async {
                             try {
                               await ref.read(communityRepositoryProvider).updateTippingSettings(tippingEnabled: val);
-                              ref.invalidate(sessionControllerProvider);
+                              await ref.read(sessionControllerProvider.notifier).refreshProfile();
                             } catch (e) {
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(

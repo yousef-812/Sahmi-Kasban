@@ -124,7 +124,7 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
       final data = response.data?['data'] as Map<String, dynamic>? ?? response.data ?? {};
       final answer = data['answer'] as String? ?? 'تمت معالجة الاستفسار بنجاح.';
 
-      ref.invalidate(sessionControllerProvider);
+      await ref.read(sessionControllerProvider.notifier).refreshProfile();
 
       if (mounted) {
         setState(() {
