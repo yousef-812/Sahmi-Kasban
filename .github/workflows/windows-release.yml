@@ -40,6 +40,7 @@ jobs:
           $mainCpp = "windows\runner\main.cpp"
           if (Test-Path $mainCpp) {
             (Get-Content $mainCpp) -replace 'L"sahmi_kasban_mobile"', 'L"Sahmi Kasban"' | Set-Content $mainCpp -Encoding UTF8
+            (Get-Content $mainCpp) -replace 'window.SetQuitOnClose\(true\);', 'window.SetQuitOnClose(true); HWND hwnd = window.GetHandle(); if (hwnd != NULL) { ::ShowWindow(hwnd, SW_SHOWMAXIMIZED); }' | Set-Content $mainCpp -Encoding UTF8
           }
 
       - name: Fetch packages

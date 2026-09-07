@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:window_manager/window_manager.dart';
 
 class DesktopCustomTitleBar extends StatefulWidget {
   const DesktopCustomTitleBar({super.key, required this.child});
@@ -21,9 +22,18 @@ class _DesktopCustomTitleBarState extends State<DesktopCustomTitleBar> {
   void initState() {
     super.initState();
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
-      _applyFullscreen(_isFullscreen);
-      _scheduleHintDismiss();
+      _initWindowManager();
     }
+  }
+
+  Future<void> _initWindowManager() async {
+    try {
+      await windowManager.ensureInitialized();
+      await windowManager.setFullScreen(true);
+      await windowManager.show();
+      await windowManager.focus();
+      _scheduleHintDismiss();
+    } catch (_) {}
   }
 
   @override
@@ -34,9 +44,11 @@ class _DesktopCustomTitleBarState extends State<DesktopCustomTitleBar> {
 
   void _scheduleHintDismiss() {
     _hintTimer?.cancel();
-    setState(() {
-      _showHint = true;
-    });
+    if (mounted) {
+      setState(() {
+        _showHint = true;
+      });
+    }
     _hintTimer = Timer(const Duration(seconds: 4), () {
       if (mounted) {
         setState(() {
@@ -46,27 +58,28 @@ class _DesktopCustomTitleBarState extends State<DesktopCustomTitleBar> {
     });
   }
 
-  void _applyFullscreen(bool enable) {
-    if (enable) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
-  }
-
-  void _toggleFullscreen() {
-    setState(() {
-      _isFullscreen = !_isFullscreen;
-    });
-    _applyFullscreen(_isFullscreen);
-    if (_isFullscreen) {
-      _scheduleHintDismiss();
-    } else {
-      _hintTimer?.cancel();
-      setState(() {
-        _showHint = false;
-      });
-    }
+  Future<void> _toggleFullscreen() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) return;
+    try {
+      final isFS = await windowManager.isFullScreen();
+      final nextState = !isFS;
+      await windowManager.setFullScreen(nextState);
+      if (mounted) {
+        setState(() {
+          _isFullscreen = nextState;
+        });
+      }
+      if (nextState) {
+        _scheduleHintDismiss();
+      } else {
+        _hintTimer?.cancel();
+        if (mounted) {
+          setState(() {
+            _showHint = false;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   @override
