@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../data/backend_repository.dart';
@@ -19,6 +21,55 @@ class AiCopilotMessage {
   final String text;
   final bool isUser;
   final String? ticker;
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'isUser': isUser,
+        if (ticker != null) 'ticker': ticker,
+      };
+
+  factory AiCopilotMessage.fromJson(Map<String, dynamic> json) => AiCopilotMessage(
+        text: json['text'] as String? ?? '',
+        isUser: json['isUser'] as bool? ?? false,
+        ticker: json['ticker'] as String?,
+      );
+}
+
+class AiChatSession {
+  AiChatSession({
+    required this.id,
+    required this.title,
+    required this.timestamp,
+    required this.messages,
+    this.ticker,
+  });
+
+  final String id;
+  final String title;
+  final DateTime timestamp;
+  final List<AiCopilotMessage> messages;
+  final String? ticker;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'timestamp': timestamp.toIso8601String(),
+        'messages': messages.map((m) => m.toJson()).toList(),
+        if (ticker != null) 'ticker': ticker,
+      };
+
+  factory AiChatSession.fromJson(Map<String, dynamic> json) => AiChatSession(
+        id: json['id'] as String,
+        title: json['title'] as String? ?? 'محادثة',
+        timestamp: json['timestamp'] != null
+            ? DateTime.parse(json['timestamp'] as String)
+            : DateTime.now(),
+        messages: (json['messages'] as List<dynamic>?)
+                ?.map((m) => AiCopilotMessage.fromJson(m as Map<String, dynamic>))
+                .toList() ??
+            [],
+        ticker: json['ticker'] as String?,
+      );
 }
 
 class AiCopilotScreen extends ConsumerStatefulWidget {
@@ -40,7 +91,12 @@ class AiCopilotScreen extends ConsumerStatefulWidget {
 }
 
 class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
+  static const String _sessionsPrefKey = 'ai_copilot_saved_sessions_v1';
+
   final List<AiCopilotMessage> _messages = [];
+  final List<AiChatSession> _sessions = [];
+  String? _currentSessionId;
+
   final _questionController = TextEditingController();
   late final TextEditingController _tickerController;
   final FocusNode _tickerFocusNode = FocusNode();
@@ -50,6 +106,12 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
   void initState() {
     super.initState();
     _tickerController = TextEditingController(text: widget.initialTicker ?? '');
+    _resetToWelcomeMessage();
+    _loadSavedSessions();
+  }
+
+  void _resetToWelcomeMessage() {
+    _messages.clear();
     _messages.add(
       const AiCopilotMessage(
         text: 'أهلاً بك! أنا مساعدك الذكي المباشر لأسهم البورصة المصرية.\nاطرح أي سؤال عن سعر الدخول، الاتجاه، أو الجودة الفنية للسهم.',
@@ -64,6 +126,95 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
     _tickerController.dispose();
     _tickerFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSavedSessions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawList = prefs.getStringList(_sessionsPrefKey);
+      if (rawList != null && rawList.isNotEmpty) {
+        final parsed = rawList
+            .map((item) => AiChatSession.fromJson(jsonDecode(item) as Map<String, dynamic>))
+            .toList();
+        parsed.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        if (mounted) {
+          setState(() {
+            _sessions.clear();
+            _sessions.addAll(parsed);
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _persistSessions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final serialized = _sessions.map((s) => jsonEncode(s.toJson())).toList();
+      await prefs.setStringList(_sessionsPrefKey, serialized);
+    } catch (_) {}
+  }
+
+  void _saveCurrentSession(String question, String? ticker) {
+    final now = DateTime.now();
+    final sessionTitle = ticker != null && ticker.isNotEmpty
+        ? '$ticker — $question'
+        : question;
+
+    if (_currentSessionId == null) {
+      final newId = now.millisecondsSinceEpoch.toString();
+      _currentSessionId = newId;
+      final newSession = AiChatSession(
+        id: newId,
+        title: sessionTitle,
+        timestamp: now,
+        messages: List.from(_messages),
+        ticker: ticker,
+      );
+      _sessions.insert(0, newSession);
+    } else {
+      final index = _sessions.indexWhere((s) => s.id == _currentSessionId);
+      if (index != -1) {
+        final existing = _sessions[index];
+        _sessions[index] = AiChatSession(
+          id: existing.id,
+          title: existing.title,
+          timestamp: now,
+          messages: List.from(_messages),
+          ticker: ticker ?? existing.ticker,
+        );
+      }
+    }
+    _persistSessions();
+  }
+
+  void _startNewChat() {
+    setState(() {
+      _currentSessionId = null;
+      _resetToWelcomeMessage();
+      _questionController.clear();
+      _tickerController.clear();
+    });
+  }
+
+  void _loadSession(AiChatSession session) {
+    setState(() {
+      _currentSessionId = session.id;
+      _messages.clear();
+      _messages.addAll(session.messages);
+      _tickerController.text = session.ticker ?? '';
+    });
+  }
+
+  Future<void> _deleteSession(String sessionId) async {
+    setState(() {
+      _sessions.removeWhere((s) => s.id == sessionId);
+      if (_currentSessionId == sessionId) {
+        _currentSessionId = null;
+        _resetToWelcomeMessage();
+      }
+    });
+    await _persistSessions();
   }
 
   Future<void> _openStockSearchModal() async {
@@ -136,6 +287,7 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
               ticker: ticker.isNotEmpty ? ticker : null,
             ),
           );
+          _saveCurrentSession(question, ticker.isNotEmpty ? ticker : null);
         });
       }
     } catch (e) {
@@ -206,7 +358,7 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
         centerTitle: true,
         actions: [
           Container(
-            margin: const EdgeInsets.only(left: 12),
+            margin: const EdgeInsets.only(left: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer,
@@ -227,7 +379,191 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
               ],
             ),
           ),
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.history_rounded),
+              tooltip: 'سجل الدردشات',
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+            ),
+          ),
         ],
+      ),
+      endDrawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Drawer Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'سجل المحادثات الذكية',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // New Chat Action Button
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      _startNewChat();
+                      Navigator.of(context).pop();
+                    },
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text(
+                      'محادثة جديدة',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // Chat Sessions List
+              Expanded(
+                child: _sessions.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history_toggle_off_rounded,
+                              size: 48,
+                              color: theme.colorScheme.outline,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'لا توجد محادثات محفوطة بعد',
+                              style: TextStyle(
+                                color: theme.colorScheme.outline,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: _sessions.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
+                        itemBuilder: (context, index) {
+                          final session = _sessions[index];
+                          final isSelected = session.id == _currentSessionId;
+                          final dateStr = _formatTimestamp(session.timestamp);
+
+                          return ListTile(
+                            selected: isSelected,
+                            selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: isSelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.surfaceContainerHighest,
+                              child: Icon(
+                                Icons.auto_awesome,
+                                size: 18,
+                                color: isSelected
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.primary,
+                              ),
+                            ),
+                            title: Text(
+                              session.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            subtitle: Row(
+                              children: [
+                                if (session.ticker != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      session.ticker!,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Text(
+                                  dateStr,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                                color: theme.colorScheme.error.withValues(alpha: 0.7),
+                              ),
+                              onPressed: () => _deleteSession(session.id),
+                            ),
+                            onTap: () {
+                              _loadSession(session);
+                              Navigator.of(context).pop();
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -413,6 +749,15 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
         ),
       ),
     );
+  }
+
+  String _formatTimestamp(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'الآن';
+    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
+    if (diff.inHours < 24) return 'منذ ${diff.inHours} ساعة';
+    return '${dt.day}/${dt.month}/${dt.year}';
   }
 }
 
