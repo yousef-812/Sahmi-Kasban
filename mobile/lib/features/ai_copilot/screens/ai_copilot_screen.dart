@@ -502,7 +502,7 @@ class _ChatBubble extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
                   ),
-                  bold: const TextStyle(fontWeight: FontWeight.bold),
+                  strong: const TextStyle(fontWeight: FontWeight.bold),
                   tableBorder: TableBorder.all(
                     color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     width: 1,
