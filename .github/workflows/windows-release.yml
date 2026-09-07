@@ -34,7 +34,7 @@ jobs:
         shell: powershell
         run: |
           cd mobile
-          if (-not (Test-Path "windows")) {
+          if (-not (Test-Path "windows\CMakeLists.txt")) {
             flutter create --platforms=windows .
           }
           $cmakeFile = "windows\CMakeLists.txt"
