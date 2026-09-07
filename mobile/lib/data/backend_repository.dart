@@ -8,6 +8,7 @@ import '../core/network/api_client.dart';
 import '../core/network/api_exception.dart';
 import '../core/network/token_store.dart';
 import '../domain/models.dart';
+import 'websocket_helper/websocket_helper.dart';
 
 class BackendRepository {
   BackendRepository({
@@ -385,7 +386,7 @@ class BackendRepository {
 
     // 2. Connect to WebSocket stream for real-time live price push
     while (true) {
-      WebSocket? socket;
+      dynamic socket;
       Timer? pingTimer;
       try {
         final token = await _tokenStore.readAccessToken();
@@ -400,9 +401,10 @@ class BackendRepository {
         }
 
         final uri = Uri.parse(urlBuffer.toString());
-        socket = await WebSocket.connect(
-          uri.toString(),
-        ).timeout(const Duration(seconds: 8));
+        socket = await connectWebSocketUri(
+          uri,
+          timeout: const Duration(seconds: 8),
+        );
 
         // Periodically ping to keep socket alive
         pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
