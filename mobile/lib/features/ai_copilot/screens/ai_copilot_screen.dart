@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
@@ -467,15 +468,66 @@ class _ChatBubble extends StatelessWidget {
               ),
               const SizedBox(height: 6),
             ],
-            Text(
-              message.text,
-              style: TextStyle(
-                fontSize: 14,
-                color: isUser
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurface,
+            if (isUser)
+              Text(
+                message.text,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: theme.colorScheme.onPrimary,
+                ),
+              )
+            else
+              MarkdownBody(
+                data: message.text,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  h1: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  h2: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  h3: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                  h4: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                  bold: const TextStyle(fontWeight: FontWeight.bold),
+                  tableBorder: TableBorder.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                  tableHead: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                  tableBody: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  tableCellPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  tableHeadPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  blockquoteDecoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    border: Border(
+                      right: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 4,
+                      ),
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
