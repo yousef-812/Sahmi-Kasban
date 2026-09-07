@@ -193,6 +193,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(sessionControllerProvider).profile;
+    final enabled = widget.enabledOverride ?? profile?.adsEnabled == true;
     final isMobile = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
