@@ -884,18 +884,39 @@ class _ErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAuthError = message == 'Authentication required' ||
+        message.toLowerCase().contains('authentication') ||
+        message.contains('تسجيل الدخول');
+    final displayMessage = isAuthError
+        ? 'يلزم تسجيل الدخول لعرض وتصفح هذا التقرير.'
+        : message;
+
     return Card(
       color: Theme.of(context).colorScheme.errorContainer,
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: retry,
-              child: const Text('إعادة المحاولة'),
+            Text(
+              displayMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            const SizedBox(height: 12),
+            if (isAuthError)
+              FilledButton.icon(
+                onPressed: () => context.push('/auth/login'),
+                icon: const Icon(Icons.login_rounded),
+                label: const Text('تسجيل الدخول الآن'),
+              )
+            else
+              OutlinedButton(
+                onPressed: retry,
+                child: const Text('إعادة المحاولة'),
+              ),
           ],
         ),
       ),
