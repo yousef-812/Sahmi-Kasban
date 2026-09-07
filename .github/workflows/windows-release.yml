@@ -1,0 +1,66 @@
+﻿name: Windows Desktop Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Windows Desktop
+        shell: powershell
+        run: |
+          flutter config --enable-windows-desktop
+
+      - name: Scaffold Windows if missing
+        shell: powershell
+        run: |
+          cd mobile
+          if (-not (Test-Path "windows")) {
+            flutter create --platforms=windows .
+          }
+
+      - name: Fetch packages
+        shell: powershell
+        run: |
+          cd mobile
+          flutter pub get
+
+      - name: Build Windows Desktop App
+        shell: powershell
+        run: |
+          cd mobile
+          flutter build windows --release 
+            --dart-define=API_BASE_URL=https://sahmi-kasban.fly.dev 
+            --dart-define=DEMO_MODE=false 
+            --dart-define=APP_ENV=staging 
+            --dart-define=RELEASE_PLATFORM=windows
+
+      - name: Package Release ZIP
+        shell: powershell
+        run: |
+          Compress-Archive -Path "mobile\build\windows\x64\runner\Release\*" -DestinationPath "mobile\build\sahmi-kasban-windows-x64.zip" -Force
+
+      - name: Upload Windows App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sahmi-kasban-windows-app
+          path: mobile/build/sahmi-kasban-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 14
