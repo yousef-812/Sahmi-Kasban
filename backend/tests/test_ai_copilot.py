@@ -31,3 +31,27 @@ def test_ai_copilot_referral_gate(db_session):
     assert exc_info.value.detail["error_code"] == "REFERRAL_GATE_LOCKED"
     assert exc_info.value.detail["current"] == 0
     assert exc_info.value.detail["required"] == 5
+
+
+def test_ai_copilot_admin_bypass(db_session, monkeypatch):
+    monkeypatch.setenv("ADMIN_EMAILS", "yousefftaalip@gmail.com,yousrytalip@gmail.com")
+    u = User(
+        email="yousrytalip@gmail.com",
+        password_hash="hash",
+        display_name="Admin User",
+    )
+    db_session.add(u)
+    db_session.commit()
+
+    mock_ai = MagicMock()
+    mock_ai.generate_market_insight.return_value = "تحليل السهم رائع وجاهز للشراء."
+
+    res = query_ai_copilot(
+        body=AiCopilotQueryRequest(question="ما هو تحليل سهم التجاري الدولي؟"),
+        db=db_session,
+        current_user=u,
+        ai_service=mock_ai,
+    )
+
+    assert res.answer == "تحليل السهم رائع وجاهز للشراء."
+    assert res.coins_deducted == 0.0

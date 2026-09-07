@@ -102,12 +102,22 @@ class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
     });
 
     try {
+      final historyPayload = _messages
+          .take(_messages.length - 1)
+          .where((m) => m.text.trim().isNotEmpty)
+          .map((m) => <String, dynamic>{
+                'is_user': m.isUser,
+                'text': m.text.trim(),
+              })
+          .toList();
+
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.dio.post<Map<String, dynamic>>(
         '/ai-copilot/query',
         data: <String, dynamic>{
           if (ticker.isNotEmpty) 'ticker': ticker,
           'question': question,
+          if (historyPayload.isNotEmpty) 'history': historyPayload,
         },
       );
 
