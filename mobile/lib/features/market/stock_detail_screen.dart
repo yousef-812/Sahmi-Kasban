@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/network/api_exception.dart';
@@ -499,14 +501,24 @@ class TradingViewWidget extends StatefulWidget {
 }
 
 class _TradingViewWidgetState extends State<TradingViewWidget> {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _initialized = false;
+  bool _isMobile = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted);
+    _isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (_isMobile) {
+      try {
+        _controller = WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted);
+      } catch (_) {
+        _isMobile = false;
+      }
+    }
   }
 
   String _buildHtml(bool isDark) {
@@ -575,11 +587,59 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final symbol = widget.symbol.toUpperCase();
+
+    if (!_isMobile || _controller == null) {
+      return SizedBox(
+        height: widget.height,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF101418) : const Color(0xFFFFFFFF),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.show_chart, size: 44, color: Color(0xFF2FA87B)),
+                  const SizedBox(height: 10),
+                  Text(
+                    'شارت $symbol (TradingView)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final url = Uri.parse(
+                        'https://www.tradingview.com/symbols/EGX-$symbol/',
+                      );
+                      launchUrl(url, mode: LaunchMode.externalApplication);
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('فتح الشارت التفصيلي في المتصفح'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final html = _buildHtml(isDark);
 
     if (!_initialized) {
       _initialized = true;
-      _controller
+      _controller!
         ..setBackgroundColor(
           isDark ? const Color(0xFF101418) : const Color(0xFFFFFFFF),
         )
@@ -600,7 +660,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
                 child: const Center(child: CircularProgressIndicator()),
               ),
             ),
-            Positioned.fill(child: WebViewWidget(controller: _controller)),
+            Positioned.fill(child: WebViewWidget(controller: _controller!)),
           ],
         ),
       ),
