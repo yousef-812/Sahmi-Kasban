@@ -475,13 +475,14 @@ class _CommunityDiscussionCardState
                   Chip(label: Text(discussion.periodLabel)),
                   if (widget.showStatus)
                     Chip(label: Text(discussion.statusLabel)),
-                  Chip(
-                    avatar: const Icon(
-                      Icons.remove_red_eye_outlined,
-                      size: 14,
+                  if (isAuthor)
+                    Chip(
+                      avatar: const Icon(
+                        Icons.remove_red_eye_outlined,
+                        size: 14,
+                      ),
+                      label: Text('${discussion.viewsCount} مشاهدة'),
                     ),
-                    label: Text('${discussion.viewsCount} مشاهدة'),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),

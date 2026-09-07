@@ -276,10 +276,11 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                           children: [
                             Chip(label: Text(item.periodLabel)),
                             Chip(label: Text(item.statusLabel)),
-                            Chip(
-                              avatar: const Icon(Icons.remove_red_eye_outlined, size: 14),
-                              label: Text('${item.viewsCount} مشاهدة'),
-                            ),
+                            if (isOwner)
+                              Chip(
+                                avatar: const Icon(Icons.remove_red_eye_outlined, size: 14),
+                                label: Text('${item.viewsCount} مشاهدة'),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 12),
