@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,16 +13,59 @@ class DesktopCustomTitleBar extends StatefulWidget {
 }
 
 class _DesktopCustomTitleBarState extends State<DesktopCustomTitleBar> {
-  bool _isFullscreen = false;
+  bool _isFullscreen = true;
+  bool _showHint = true;
+  Timer? _hintTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      _applyFullscreen(_isFullscreen);
+      _scheduleHintDismiss();
+    }
+  }
+
+  @override
+  void dispose() {
+    _hintTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleHintDismiss() {
+    _hintTimer?.cancel();
+    setState(() {
+      _showHint = true;
+    });
+    _hintTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _showHint = false;
+        });
+      }
+    });
+  }
+
+  void _applyFullscreen(bool enable) {
+    if (enable) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
 
   void _toggleFullscreen() {
     setState(() {
       _isFullscreen = !_isFullscreen;
     });
+    _applyFullscreen(_isFullscreen);
     if (_isFullscreen) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      _scheduleHintDismiss();
     } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      _hintTimer?.cancel();
+      setState(() {
+        _showHint = false;
+      });
     }
   }
 
@@ -31,145 +75,70 @@ class _DesktopCustomTitleBarState extends State<DesktopCustomTitleBar> {
       return widget.child;
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF101418) : const Color(0xFFF1F3F6);
-    final fg = isDark ? Colors.white : const Color(0xFF1A1A1A);
-
-    return Column(
-      children: [
-        if (!_isFullscreen)
-          Material(
-            color: bg,
-            child: Container(
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: isDark ? Colors.white10 : Colors.black12,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/branding/app_icon.png',
-                    width: 22,
-                    height: 22,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.show_chart_rounded,
-                      size: 20,
-                      color: Color(0xFF2FA87B),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'سهمي كسبان',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: fg,
-                      fontFamily: '-apple-system, "Segoe UI", Roboto',
-                    ),
-                  ),
-                  const Spacer(),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(6),
-                    onTap: _toggleFullscreen,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): _toggleFullscreen,
+        const SingleActivator(LogicalKeyboardKey.f11): _toggleFullscreen,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Stack(
+          children: [
+            widget.child,
+            AnimatedOpacity(
+              opacity: (_isFullscreen && _showHint) ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: IgnorePointer(
+                ignoring: !(_isFullscreen && _showHint),
+                child: SafeArea(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
+                      margin: const EdgeInsets.only(top: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2FA87B).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.black.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: const Color(0xFF2FA87B).withValues(alpha: 0.4),
+                          color: const Color(0xFF2FA87B).withValues(alpha: 0.5),
+                          width: 1,
                         ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black38,
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.fullscreen_rounded,
-                            size: 16,
+                            size: 18,
                             color: Color(0xFF2FA87B),
                           ),
-                          SizedBox(width: 6),
+                          SizedBox(width: 8),
                           Text(
-                            'ملء الشاشة',
+                            'اضغط ESC أو F11 للخروج من ملء الشاشة',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF2FA87B),
+                              color: Colors.white,
+                              fontFamily: '-apple-system, "Segoe UI", Roboto',
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        Expanded(
-          child: Stack(
-            children: [
-              widget.child,
-              if (_isFullscreen)
-                Positioned(
-                  top: 14,
-                  left: 14,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: _toggleFullscreen,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2FA87B),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.fullscreen_exit_rounded,
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'إلغاء ملء الشاشة',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
