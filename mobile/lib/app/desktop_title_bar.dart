@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -45,7 +45,7 @@ class _DesktopCustomTitleBarState extends State<DesktopCustomTitleBar> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 border: Border(
-                  bottom: Border.all(
+                  bottom: BorderSide(
                     color: isDark ? Colors.white10 : Colors.black12,
                     width: 1,
                   ),
