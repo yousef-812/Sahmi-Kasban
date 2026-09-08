@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
@@ -509,11 +508,11 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
+    final isMobile = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+    if (isMobile) {
       try {
-        if (defaultTargetPlatform == TargetPlatform.windows) {
-          WebViewPlatform.instance = WebviewWindows();
-        }
         _controller = WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted);
         _hasWebView = true;
