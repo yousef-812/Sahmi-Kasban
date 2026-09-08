@@ -61,6 +61,7 @@ from app.models.performance import (
     MarketReportOutcomeRevision,
 )
 from app.models.replays import AnalysisReplayJob, AnalysisReplayRow, AnalysisReplayTicker
+from app.models.news import NewsArticle, NewsArticleTicker
 from app.models.watchlist import WatchlistItem
 
 __all__ = [
@@ -96,6 +97,8 @@ __all__ = [
     "MarketReportOutcomeRevision",
     "MarketReportUnlock",
     "MarketScanRun",
+    "NewsArticle",
+    "NewsArticleTicker",
     "Notification",
     "NotificationDelivery",
     "PredictionVerification",

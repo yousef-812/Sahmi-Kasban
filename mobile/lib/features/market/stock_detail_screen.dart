@@ -9,6 +9,7 @@ import 'package:webview_windows/webview_windows.dart' as win_wv;
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
 import '../monetization/free_plan_ads.dart';
+import '../news/widgets/stock_news_section.dart';
 import 'market_quotes_providers.dart';
 import 'stock_quote_card.dart';
 
@@ -220,6 +221,9 @@ class _DetailContent extends StatelessWidget {
         const SizedBox(height: 8),
         TradingViewWidget(symbol: ticker, hideSideToolbar: hideSideToolbar),
         const SizedBox(height: 12),
+        // ── أخبار السهم ──────────────────────────────────────
+        StockNewsSection(ticker: ticker),
+        const SizedBox(height: 4),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: FreePlanNativeAd(),

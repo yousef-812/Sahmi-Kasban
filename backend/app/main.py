@@ -15,6 +15,7 @@ from app.jobs.retry_pending_ai_reviews import (
     ai_provider_is_configured,
     retry_pending_ai_reviews,
 )
+from app.jobs.news_crawler import run_news_crawler_scheduler
 from app.jobs.scheduler import run_daily_scan_scheduler
 from app.jobs.weekly_grants import run_weekly_grant_scheduler
 from app.legal_pages import router as legal_router
@@ -55,11 +56,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     market_scheduler_task: asyncio.Task[None] | None = None
     weekly_grant_task: asyncio.Task[None] | None = None
     ai_retry_task: asyncio.Task[None] | None = None
+    news_crawler_task: asyncio.Task[None] | None = None
     broadcaster = get_quote_broadcaster()
     if settings.app_env is not Environment.TEST:
         warmup_task = asyncio.create_task(_warm_market_instrument_catalog())
         market_scheduler_task = asyncio.create_task(run_daily_scan_scheduler())
         weekly_grant_task = asyncio.create_task(run_weekly_grant_scheduler())
+        news_crawler_task = asyncio.create_task(run_news_crawler_scheduler())
         await broadcaster.start()
         if ai_provider_is_configured():
             ai_retry_task = asyncio.create_task(_community_ai_retry_scheduler())
@@ -70,6 +73,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         market_scheduler_task,
         weekly_grant_task,
         ai_retry_task,
+        news_crawler_task,
     ):
         if task is not None and not task.done():
             task.cancel()

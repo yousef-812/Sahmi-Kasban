@@ -12,6 +12,7 @@ import '../auth/session_controller.dart';
 import '../community/community_feed_tab.dart';
 import '../market/stock_analysis_tab.dart';
 import '../market/stocks_screen.dart';
+import '../news/screens/news_feed_screen.dart';
 import '../notifications/notification_providers.dart';
 import '../reports/reports_screen.dart';
 import '../wallet/wallet_providers.dart';
@@ -39,6 +40,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   static const _navItems = <(String, IconData, String)>[
     ('stocks', Icons.home_rounded, 'الرئيسية'),
     ('reports', Icons.assessment_outlined, 'التقارير'),
+    ('news', Icons.newspaper_rounded, 'الأخبار'),
     ('analyze', Icons.query_stats_outlined, 'تحليل سهم'),
     ('community', Icons.forum_outlined, 'المجتمع'),
     ('wallet', Icons.account_balance_wallet_outlined, 'المحفظة'),
@@ -164,7 +166,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex > 4 ? 0 : selectedIndex,
+        selectedIndex: selectedIndex > 5 ? 0 : selectedIndex,
         onDestinationSelected: (index) {
           ref.read(dashboardTabProvider.notifier).state = index;
         },
@@ -178,6 +180,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.assessment_outlined),
             selectedIcon: Icon(Icons.assessment_rounded),
             label: 'التقارير',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.newspaper_outlined),
+            selectedIcon: Icon(Icons.newspaper_rounded),
+            label: 'الأخبار',
           ),
           NavigationDestination(
             icon: Icon(Icons.query_stats_outlined),
@@ -206,12 +213,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 1:
         return const ReportsScreen();
       case 2:
-        return const StockAnalysisTab();
+        return const NewsFeedScreen();
       case 3:
-        return const CommunityFeedTab();
+        return const StockAnalysisTab();
       case 4:
-        return const WalletTab();
+        return const CommunityFeedTab();
       case 5:
+        return const WalletTab();
+      case 6:
         return const ProfileTab();
       default:
         return const StocksScreen();

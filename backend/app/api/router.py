@@ -32,6 +32,7 @@ from app.api.routes.sector_reports import router as sector_reports_router
 from app.api.routes.trading_chat import router as trading_chat_router
 from app.api.routes.version_check import router as version_check_router
 from app.api.routes.wallet import router as wallet_router
+from app.api.routes.news import admin_news_router, router as news_router, stock_news_router
 from app.api.routes.watchlist import router as watchlist_router
 
 api_router = APIRouter()
@@ -48,6 +49,9 @@ api_router.include_router(sector_reports_router)
 api_router.include_router(trading_chat_router)
 api_router.include_router(market_router)
 api_router.include_router(watchlist_router)
+api_router.include_router(news_router)
+api_router.include_router(stock_news_router)
+api_router.include_router(admin_news_router)
 api_router.include_router(analysis_history_router)
 api_router.include_router(reports_router)
 api_router.include_router(labs_router)

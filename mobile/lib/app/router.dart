@@ -31,6 +31,8 @@ import '../features/performance/performance_report_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
 import '../features/referral/referral_screen.dart';
+import '../features/news/screens/news_feed_screen.dart';
+import '../features/news/screens/stock_news_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
@@ -95,6 +97,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/stocks/:ticker',
         builder: (context, state) =>
             StockDetailScreen(ticker: state.pathParameters['ticker']!),
+      ),
+      GoRoute(
+        path: '/stocks/:ticker/news',
+        builder: (context, state) =>
+            StockNewsScreen(ticker: state.pathParameters['ticker']!),
+      ),
+      GoRoute(
+        path: '/news',
+        builder: (context, state) => const NewsFeedScreen(),
       ),
       GoRoute(
         path: '/reports',
