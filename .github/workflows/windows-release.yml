@@ -14,6 +14,7 @@ jobs:
     timeout-minutes: 45
     env:
       CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+      _CL_: "/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
 
     steps:
       - name: Checkout repository
@@ -37,16 +38,6 @@ jobs:
           if (-not (Test-Path "windows\CMakeLists.txt")) {
             flutter create --platforms=windows .
           }
-          $cmakeFile = "windows\CMakeLists.txt"
-          if (Test-Path $cmakeFile) {
-            Add-Content -Path $cmakeFile -Value "`nadd_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
-            Add-Content -Path $cmakeFile -Value "`nadd_compile_options(/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
-          }
-          $runnerCmake = "windows\runner\CMakeLists.txt"
-          if (Test-Path $runnerCmake) {
-            Add-Content -Path $runnerCmake -Value "`nadd_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
-            Add-Content -Path $runnerCmake -Value "`nadd_compile_options(/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
-          }
           $mainCpp = "windows\runner\main.cpp"
           if (Test-Path $mainCpp) {
             (Get-Content $mainCpp) -replace 'L"sahmi_kasban_mobile"', 'L"Sahmi Kasban"' | Set-Content $mainCpp -Encoding UTF8
@@ -59,7 +50,7 @@ jobs:
           cd mobile
           flutter pub get
 
-      - name: Inject MSVC coroutine deprecation flag into all CMakeLists
+      - name: Inject MSVC coroutine deprecation flag into CMakeLists and C++ sources
         shell: powershell
         run: |
           cd mobile
@@ -67,6 +58,12 @@ jobs:
             $content = Get-Content $_.FullName -Raw
             if ($content -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
               Set-Content -Path $_.FullName -Value "add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)`n$content" -Encoding UTF8
+            }
+          }
+          Get-ChildItem -Path . -Recurse -Include "*.cpp","*.h","*.hpp","*.c" -ErrorAction SilentlyContinue | ForEach-Object {
+            $c = Get-Content $_.FullName -Raw
+            if ($c -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
+              Set-Content -Path $_.FullName -Value "#define _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS 1`n$c" -Encoding UTF8
             }
           }
 
