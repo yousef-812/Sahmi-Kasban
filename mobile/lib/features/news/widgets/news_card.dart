@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 
 import '../news_models.dart';
 
@@ -33,13 +33,6 @@ class NewsCard extends StatelessWidget {
     return 'منذ ${diff.inDays} يوم';
   }
 
-  Future<void> _openUrl() async {
-    final uri = Uri.tryParse(article.url);
-    if (uri != null && await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -53,7 +46,7 @@ class NewsCard extends StatelessWidget {
       ),
       elevation: 0,
       child: InkWell(
-        onTap: _openUrl,
+        onTap: () => context.push('/news/detail', extra: article),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: EdgeInsets.all(compact ? 12 : 14),
@@ -158,8 +151,8 @@ class NewsCard extends StatelessWidget {
               // سهم للفتح
               const SizedBox(width: 6),
               Icon(
-                Icons.open_in_new_rounded,
-                size: 16,
+                Icons.chevron_left_rounded,
+                size: 20,
                 color: colorScheme.outline.withValues(alpha: 0.5),
               ),
             ],
