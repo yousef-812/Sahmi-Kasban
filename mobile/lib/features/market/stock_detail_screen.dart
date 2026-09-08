@@ -512,7 +512,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     if (!kIsWeb) {
       try {
         if (defaultTargetPlatform == TargetPlatform.windows) {
-          WebViewPlatform.instance = WebViewWindows();
+          WebViewPlatform.instance = WebviewWindows();
         }
         _controller = WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted);
