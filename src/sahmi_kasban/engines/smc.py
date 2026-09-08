@@ -7,6 +7,128 @@ from sahmi_kasban.indicators import safe_float
 from sahmi_kasban.models import EngineResult
 
 
+def _detect_swing_points(candles: pd.DataFrame, window: int) -> list[dict[str, object]]:
+    """Detect swing highs and swing lows using a local extremum window.
+
+    Returns a list of dicts: ``{price, kind, avg_volume, touches}`` where
+    ``kind`` is either "high" (resistance) or "low" (support). A swing point's
+    supporting volume is the modal candle volume within its neighbourhood so a
+    level is strong only when it was defended by real volume.
+    """
+    points: list[dict[str, object]] = []
+    n = len(candles)
+    if n - 2 * window < 1:
+        return points
+
+    highs = candles["high"].to_numpy(dtype=float)
+    lows = candles["low"].to_numpy(dtype=float)
+    volumes = candles["volume"].to_numpy(dtype=float)
+    if "avg_volume_20" in candles.columns:
+        avg_volume_20 = candles["avg_volume_20"].to_numpy(dtype=float)
+    else:
+        avg_volume_20 = (
+            pd.Series(volumes).rolling(20, min_periods=5).mean().to_numpy(dtype=float)
+        )
+        avg_volume_20 = [v if v == v else volumes[i] for i, v in enumerate(avg_volume_20)]
+
+    for i in range(window, n - window):
+        hi = highs[i]
+        lo = lows[i]
+        is_swing_high = all(
+            not pd.isna(highs[j]) and hi >= highs[j] for j in range(i - window, i + window + 1)
+        )
+        if is_swing_high:
+            # Volume that "defended" this high: candles near the level with volume.
+            level_volumes = [
+                volumes[j]
+                for j in range(i - window, i + window + 1)
+                if highs[j] and abs(highs[j] - hi) / hi <= 0.005
+            ]
+            base_avg = avg_volume_20[i]
+            avg_vol = (
+                sum(level_volumes) / len(level_volumes)
+                if level_volumes
+                else volumes[i]
+            )
+            points.append(
+                {
+                    "price": hi,
+                    "kind": "high",
+                    "volume": avg_vol,
+                    "base_volume": base_avg if not pd.isna(base_avg) and base_avg > 0 else volumes[i],
+                }
+            )
+        is_swing_low = all(
+            not pd.isna(lows[j]) and lo <= lows[j] for j in range(i - window, i + window + 1)
+        )
+        if is_swing_low:
+            level_volumes = [
+                volumes[j]
+                for j in range(i - window, i + window + 1)
+                if lows[j] and abs(lows[j] - lo) / lo <= 0.005
+            ]
+            base_avg = avg_volume_20[i]
+            avg_vol = (
+                sum(level_volumes) / len(level_volumes)
+                if level_volumes
+                else volumes[i]
+            )
+            points.append(
+                {
+                    "price": lo,
+                    "kind": "low",
+                    "volume": avg_vol,
+                    "base_volume": base_avg if not pd.isna(base_avg) and base_avg > 0 else volumes[i],
+                }
+            )
+    return points
+
+
+def _cluster_zones(points: list[dict[str, object]], bucket_pct: float) -> list[dict[str, object]]:
+    """Cluster nearby swing points of the same kind into price zones.
+
+    Two swing points belong to the same zone when their prices are within
+    ``bucket_pct`` of each other. Each zone aggregates the touch count and the
+    median supporting volume so a repeated, heavily-traded level reads as strong.
+    """
+    zones: list[dict[str, object]] = []
+    for point in sorted(points, key=lambda p: float(p["price"])):
+        price = float(point["price"])
+        kind = point["kind"]
+        volume = float(point["volume"])
+        base_volume = float(point["base_volume"])
+        placed = False
+        for zone in zones:
+            if zone["kind"] != kind:
+                continue
+            zone_price = float(zone["price"])
+            if abs(price - zone_price) / zone_price <= bucket_pct:
+                touches = int(zone["touches"]) + 1
+                zone["touches"] = touches
+                zone["volume_sum"] = float(zone["volume_sum"]) + volume
+                zone["volume_counts"].append(volume)
+                zone["base_volumes"].append(base_volume)
+                weighted = (float(zone["price"]) * (touches - 1) + price) / touches
+                zone["price"] = round(weighted, 4)
+                # confidence of the zone (shared touches across close levels)
+                zone["confidence"] = 40.0 + min(55.0, touches * 12.0)
+                placed = True
+                break
+        if not placed:
+            zones.append(
+                {
+                    "price": price,
+                    "kind": kind,
+                    "touches": 1,
+                    "volume_sum": volume,
+                    "volume_counts": [volume],
+                    "base_volumes": [base_volume],
+                    "confidence": 40.0,
+                }
+            )
+    return zones
+
+
 class SMCEngine(AnalysisEngine):
     name = "smc"
 
@@ -14,6 +136,8 @@ class SMCEngine(AnalysisEngine):
         recent = candles.tail(min(60, len(candles))).copy()
         latest = recent.iloc[-1]
         close = safe_float(latest["close"])
+        atr_value = safe_float(latest.get("atr"), close * 0.02)
+        range_prox_atr = max(atr_value * 0.5, close * 0.003)
 
         previous_20 = recent.iloc[-21:-1] if len(recent) >= 21 else recent.iloc[:-1]
         previous_10 = recent.iloc[-11:-1] if len(recent) >= 11 else recent.iloc[:-1]
@@ -104,6 +228,86 @@ class SMCEngine(AnalysisEngine):
                 ):
                     bearish_order_blocks.append(block)
 
+        # ---- Support / Resistance analysis over the full history ----
+        sr_cfg = self.config
+        bucket_pct = getattr(sr_cfg, "sr_zone_bucket_pct", 0.35) / 100.0
+        min_touches = int(getattr(sr_cfg, "sr_min_touches", 2))
+        strong_res_touches = int(getattr(sr_cfg, "sr_strong_resistance_touches", 3))
+        strong_vol_mult = getattr(sr_cfg, "sr_strong_volume_mult", 1.2)
+        proximity_pct = getattr(sr_cfg, "sr_resistance_proximity_pct", 1.0) / 100.0
+        resistance_penalty = float(getattr(sr_cfg, "sr_resistance_penalty", 26.0))
+        support_bonus = float(getattr(sr_cfg, "sr_support_bonus", 8.0))
+
+        swing_points = _detect_swing_points(candles, window=3)
+        zones = _cluster_zones(swing_points, bucket_pct)
+
+        resistance_zones = [
+            z
+            for z in zones
+            if z["kind"] == "high" and int(z["touches"]) >= min_touches
+        ]
+        support_zones = [
+            z
+            for z in zones
+            if z["kind"] == "low" and int(z["touches"]) >= min_touches
+        ]
+
+        # Nearest resistance above the current price.
+        resistances_above = [
+            z for z in resistance_zones if float(z["price"]) > close + range_prox_atr
+        ]
+        nearest_resistance = (
+            min(resistances_above, key=lambda z: float(z["price"]))
+            if resistances_above
+            else None
+        )
+        supports_below = [
+            z for z in support_zones if float(z["price"]) < close - range_prox_atr
+        ]
+        nearest_support = (
+            max(supports_below, key=lambda z: float(z["price"]))
+            if supports_below
+            else None
+        )
+
+        def _zone_strong(z: dict[str, object]) -> bool:
+            touches = int(z["touches"])
+            counts = z.get("volume_counts") or []
+            bases = z.get("base_volumes") or []
+            vols = [(c, b) for c, b in zip(counts, bases, strict=False) if b and b > 0 and c and c > 0]
+            rel_vol = (sum(v for v, _ in vols) / len(vols)) if vols else 0.0
+            base = max(1e-9, sum(b for _, b in vols) / len(vols)) if vols else 1.0
+            volume_strong = rel_vol >= base * strong_vol_mult
+            return touches >= strong_res_touches and volume_strong
+
+        near_strong_resistance = False
+        if nearest_resistance is not None:
+            res_price = float(nearest_resistance["price"])
+            distance_pct = (res_price - close) / close if close > 0 else 1.0
+            near_strong_resistance = (
+                distance_pct <= proximity_pct and _zone_strong(nearest_resistance)
+            )
+
+        support_strength = 0.0
+        if nearest_support is not None:
+            sup_price = float(nearest_support["price"])
+            distance_pct = (close - sup_price) / close if close > 0 else 0.0
+            touched = int(nearest_support["touches"])
+            counts = nearest_support.get("volume_counts") or []
+            bases = nearest_support.get("base_volumes") or []
+            vols = [(c, b) for c, b in zip(counts, bases, strict=False) if b and b > 0 and c and c > 0]
+            rel_vol = (sum(v for v, _ in vols) / len(vols)) if vols else 0.0
+            base = max(1e-9, sum(b for _, b in vols) / len(vols)) if vols else 1.0
+            volume_ratio = rel_vol / base
+            # Support is strongest when the price is sitting just above it with
+            # volume defending it.
+            within = distance_pct <= proximity_pct * 3
+            support_strength = (
+                min(0.5, touched / 8.0)
+                + min(0.35, max(0.0, volume_ratio - 1.0))
+            )
+            support_strength = support_strength if within else support_strength * 0.5
+
         score = 50.0
         reasons: list[str] = []
         if bullish_bos:
@@ -134,7 +338,32 @@ class SMCEngine(AnalysisEngine):
         if bearish_order_blocks:
             score -= min(8, len(bearish_order_blocks) * 3)
 
+        # ---- Support / Resistance score contribution (core pillar) ----
+        sr_details: dict[str, object] = {}
+        if near_strong_resistance:
+            score -= resistance_penalty
+            reasons.append("Price is under a strong high-volume resistance")
+        elif nearest_resistance is not None:
+            res_price = float(nearest_resistance["price"])
+            distance_pct = (res_price - close) / close if close > 0 else 1.0
+            if distance_pct <= proximity_pct * 2.5:
+                score -= 6
+                reasons.append("Price is near a resistance level")
+        if nearest_support is not None:
+            score += support_bonus * min(1.0, support_strength)
+            if support_strength >= 0.5:
+                reasons.append("Price rests above a strong volume support")
+
         score = self.clamp(score)
+
+        if near_strong_resistance:
+            sr_details = {
+                "near_strong_resistance": True,
+                "resistance_penalty": resistance_penalty,
+            }
+        else:
+            sr_details = {"near_strong_resistance": False}
+
         context["smc_bias"] = (
             "bullish" if score >= 60 else "bearish" if score <= 40 else "neutral"
         )
@@ -154,6 +383,38 @@ class SMCEngine(AnalysisEngine):
                 "zone": zone,
                 "bullish_order_blocks": bullish_order_blocks[-3:],
                 "bearish_order_blocks": bearish_order_blocks[-3:],
+                "support_resistance": {
+                    "nearest_resistance": (
+                        {
+                            "price": round(float(nearest_resistance["price"]), 4),
+                            "touches": int(nearest_resistance["touches"]),
+                            "strong": _zone_strong(nearest_resistance),
+                        }
+                        if nearest_resistance is not None
+                        else None
+                    ),
+                    "nearest_support": (
+                        {
+                            "price": round(float(nearest_support["price"]), 4),
+                            "touches": int(nearest_support["touches"]),
+                            "distance_pct": round(
+                                (close - float(nearest_support["price"]))
+                                / close
+                                * 100.0
+                                if close > 0
+                                else 0.0,
+                                2,
+                            ),
+                            "strength": round(support_strength, 2),
+                        }
+                        if nearest_support is not None
+                        else None
+                    ),
+                    "near_strong_resistance": near_strong_resistance,
+                    "resistance_proximity_pct": round(proximity_pct * 100.0, 2),
+                    "zone_count": len(zones),
+                },
+                **sr_details,
             },
             reasons=reasons,
         )

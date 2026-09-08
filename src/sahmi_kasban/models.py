@@ -45,6 +45,14 @@ class AnalysisConfig:
     # SMC Order Block thresholds
     smc_ob_displacement_multiplier: float = 1.5
     smc_ob_volume_multiplier: float = 1.0
+    # Support / Resistance zone thresholds
+    sr_zone_bucket_pct: float = 0.35
+    sr_min_touches: int = 2
+    sr_strong_resistance_touches: int = 3
+    sr_strong_volume_mult: float = 1.2
+    sr_resistance_proximity_pct: float = 1.0
+    sr_resistance_penalty: float = 26.0
+    sr_support_bonus: float = 8.0
 
     def __post_init__(self) -> None:
         if self.capital <= 0:
