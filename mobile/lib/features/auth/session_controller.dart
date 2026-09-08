@@ -51,14 +51,13 @@ class SessionController extends StateNotifier<SessionState> {
       final profile = await _repository.getProfile();
       state = SessionState.authenticated(profile);
     } on ApiException catch (error) {
-      if (error.statusCode == 401) {
+      if (error.statusCode == 401 || error.statusCode == 403) {
         await _clearTokensSafely();
       }
       state = SessionState.unauthenticated(errorMessage: error.message);
     } on Object {
-      await _clearTokensSafely();
       state = const SessionState.unauthenticated(
-        errorMessage: 'تعذر استعادة الجلسة السابقة. سجل الدخول مرة أخرى.',
+        errorMessage: 'تعذر الاتصال بالسيرفر. تحقق من الاتصال بالإنترنت.',
       );
     }
   }

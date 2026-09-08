@@ -116,8 +116,11 @@ class ApiClient {
         refreshToken: rotatedRefreshToken,
       );
       return accessToken;
-    } on DioException {
-      await _tokenStore.clear();
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 400 || status == 401 || status == 403) {
+        await _tokenStore.clear();
+      }
       return null;
     }
   }

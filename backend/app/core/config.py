@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     database_pool_size: int = 20
     database_max_overflow: int = 30
 
-    access_token_minutes: int = 15
+    access_token_minutes: int = 43_200
     refresh_token_days: int = 30
     email_verification_hours: int = 24
     password_reset_minutes: int = 30
