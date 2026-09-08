@@ -91,7 +91,10 @@ def _notify_report_ready(db, *, report_id: str, target_session_date: str) -> int
     return len(users)
 
 
-async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, object]:
+async def run_daily_top10_scan(
+    moment: datetime | None = None,
+    force_regenerate: bool = False,
+) -> dict[str, object]:
     calendar = EGXTradingCalendar.from_settings()
     try:
         session = calendar.resolve_scan_session(moment)
@@ -126,6 +129,7 @@ async def run_daily_top10_scan(moment: datetime | None = None) -> dict[str, obje
                 ai_service=get_stock_ai_service(),
                 moment=moment or datetime.now(UTC),
                 tickers=tickers,
+                force_regenerate=force_regenerate,
             )
             enriched = enrich_daily_report_selection(db, report_id=result.report.id)
             notification_count = 0
