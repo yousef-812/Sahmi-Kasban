@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_windows/webview_windows.dart' as win_wv;
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
@@ -502,36 +503,67 @@ class TradingViewWidget extends StatefulWidget {
 
 class _TradingViewWidgetState extends State<TradingViewWidget> {
   WebViewController? _controller;
+  win_wv.WebviewController? _winController;
   bool _initialized = false;
   bool _hasWebView = false;
 
   @override
   void initState() {
     super.initState();
-    final isMobile = !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS);
-    if (isMobile) {
+    _initWebView();
+  }
+
+  Future<void> _initWebView() async {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform == TargetPlatform.windows) {
       try {
-        _controller = WebViewController()
-          ..setJavaScriptMode(JavaScriptMode.unrestricted);
-        _hasWebView = true;
+        final controller = win_wv.WebviewController();
+        await controller.initialize();
+        if (mounted) {
+          setState(() {
+            _winController = controller;
+            _hasWebView = true;
+          });
+        }
       } catch (e) {
-        debugPrint('TradingView WebView initialization error: $e');
-        _hasWebView = false;
+        debugPrint('TradingView Windows WebView initialization error: $e');
+      }
+    } else if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        final controller = WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted);
+        if (mounted) {
+          setState(() {
+            _controller = controller;
+            _hasWebView = true;
+          });
+        }
+      } catch (e) {
+        debugPrint('TradingView Mobile WebView initialization error: $e');
       }
     }
   }
 
   @override
+  void dispose() {
+    _winController?.dispose();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant TradingViewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_hasWebView && _controller != null) {
+    if (_hasWebView) {
       if (oldWidget.hideSideToolbar != widget.hideSideToolbar ||
           oldWidget.symbol != widget.symbol) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final html = _buildHtml(isDark);
-        _controller!.loadHtmlString(html);
+        if (_winController != null && _winController!.value.isInitialized) {
+          _winController!.loadStringContent(html);
+        } else if (_controller != null) {
+          _controller!.loadHtmlString(html);
+        }
       }
     }
   }
@@ -603,6 +635,21 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final symbol = widget.symbol.toUpperCase();
+    final html = _buildHtml(isDark);
+
+    if (_winController != null && _winController!.value.isInitialized) {
+      if (!_initialized) {
+        _initialized = true;
+        _winController!.loadStringContent(html);
+      }
+      return SizedBox(
+        height: widget.height,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: win_wv.Webview(_winController!),
+        ),
+      );
+    }
 
     if (!_hasWebView || _controller == null) {
       return SizedBox(
