@@ -59,6 +59,17 @@ jobs:
           cd mobile
           flutter pub get
 
+      - name: Inject MSVC coroutine deprecation flag into all CMakeLists
+        shell: powershell
+        run: |
+          cd mobile
+          Get-ChildItem -Path . -Recurse -Filter "CMakeLists.txt" | ForEach-Object {
+            $content = Get-Content $_.FullName -Raw
+            if ($content -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
+              Set-Content -Path $_.FullName -Value "add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)`n$content" -Encoding UTF8
+            }
+          }
+
       - name: Build Windows Desktop App
         shell: bash
         run: |
