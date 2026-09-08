@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.admin import is_admin_email
+from app.market_data.quotes import fetch_single_quote
 from app.models import AiFailureLog, User
 from app.services.community_ai import get_community_ai_service
 from app.services.referral import ensure_user_referral_code
@@ -107,7 +108,24 @@ async def query_ai_copilot(
                 detail="رصيد العملات غير كافٍ لاستخدام المساعد الذكي (التكلفة 0.5 عملة)",
             ) from exc
 
-    # 4. Build prompt with conversation memory
+    # 4. Fetch live market quote for accurate real-time stock price
+    market_context = ""
+    if body.ticker:
+        quote = await fetch_single_quote(db, body.ticker)
+        if quote:
+            change_str = f"{quote.change_percent:+.2f}%" if quote.change_percent is not None else "غير متوفر"
+            market_context = (
+                f"بيانات السهم اللحظية المباشرة الحالية من البورصة المصرية ({quote.ticker} — {quote.description}):\n"
+                f"- السعر الحالي / إغلاق آخر جلسة: {quote.current_price or 'غير متوفر'} جنيه\n"
+                f"- التغير اليومي: {change_str}\n"
+                f"- سعر الفتح: {quote.open_price or 'غير متوفر'} جنيه\n"
+                f"- أعلى سعر للجلسة: {quote.session_high or 'غير متوفر'} جنيه\n"
+                f"- أدنى سعر للجلسة: {quote.session_low or 'غير متوفر'} جنيه\n"
+                f"- حجم التداول: {quote.volume or 'غير متوفر'}\n"
+                f"- القطاع: {quote.sector or 'غير متوفر'}\n\n"
+            )
+
+    # 5. Build prompt with conversation memory and live market quote
     history_str = ""
     if body.history:
         history_items = []
@@ -121,13 +139,15 @@ async def query_ai_copilot(
 
     prompt = (
         f"أنت مساعد الذكاء الاصطناعي لسوق الأسهم في تطبيق سهمي كسبان.\n"
+        f"{market_context}"
         f"{history_str}"
         f"سؤال المستخدم الحالي: {body.question}\n"
         f"{f'السهم المطلوب: {body.ticker}' if body.ticker else ''}\n\n"
         f"تعليمات الإجابة:\n"
-        f"1. ركّز على الإجابة عن سؤال المستخدم الحالي مع الاستفادة من سياق المحادثة السابقة إذا كان متعلقاً به.\n"
-        f"2. قدم تحليلاً مالياً وتقنياً دقيقاً بأسلوب حواري مبسط.\n"
-        f"3. اختم إجابتك دائماً بدعوة غير مباشرة تشجع المستخدم على نشر توقع ومناقشة في المجتمع (مثال: 'ما هو انطباعك أنت لأسعار الجلسة القادمة؟ شارك توقعك الآن في المجتمع وادعم المتداولين!')."
+        f"1. ركّز على الإجابة عن سؤال المستخدم الحالي مع الاستفادة من سياق المحادثة السابقة وإحصائيات السهم المباشرة أعلاه.\n"
+        f"2. اعتمد دائماً وأولاً على السعر الحالي المعلن في بيانات السهم اللحظية المباشرة أعلاه ({quote.current_price if (body.ticker and 'quote' in locals() and quote) else ''} جنيه) عند ذكر أسعار الإغلاق والدعم والمقاومة، ولا تذكر أي أسعار قديمة مخالفة.\n"
+        f"3. قدم تحليلاً مالياً وتقنياً دقيقاً بأسلوب حواري مبسط وشامل.\n"
+        f"4. اختم إجابتك دائماً بدعوة غير مباشرة تشجع المستخدم على نشر توقع ومناقشة في المجتمع (مثال: 'ما هو انطباعك أنت لأسعار الجلسة القادمة؟ شارك توقعك الآن في المجتمع وادعم المتداولين!')."
     )
 
     try:
