@@ -14,7 +14,6 @@ jobs:
     timeout-minutes: 45
     env:
       CMAKE_POLICY_VERSION_MINIMUM: "3.5"
-      _CL_: "/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
 
     steps:
       - name: Checkout repository
@@ -54,16 +53,19 @@ jobs:
         shell: powershell
         run: |
           cd mobile
-          Get-ChildItem -Path . -Recurse -Filter "CMakeLists.txt" | ForEach-Object {
-            $content = Get-Content $_.FullName -Raw
-            if ($content -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
-              Set-Content -Path $_.FullName -Value "add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)`n$content" -Encoding UTF8
+          $searchPaths = @(".", "$env:PUB_CACHE", "$env:USERPROFILE\AppData\Local\Pub\Cache", "$env:LOCALAPPDATA\Pub\Cache") | Where-Object { $_ -and (Test-Path $_) }
+          foreach ($p in $searchPaths) {
+            Get-ChildItem -Path $p -Recurse -Filter "CMakeLists.txt" -ErrorAction SilentlyContinue | ForEach-Object {
+              $content = Get-Content $_.FullName -Raw
+              if ($content -and $content -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
+                Set-Content -Path $_.FullName -Value "add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)`nadd_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)`n$content" -Encoding UTF8
+              }
             }
-          }
-          Get-ChildItem -Path . -Recurse -Include "*.cpp","*.h","*.hpp","*.c" -ErrorAction SilentlyContinue | ForEach-Object {
-            $c = Get-Content $_.FullName -Raw
-            if ($c -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
-              Set-Content -Path $_.FullName -Value "#define _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS 1`n$c" -Encoding UTF8
+            Get-ChildItem -Path $p -Recurse -Include "*.cpp","*.h","*.hpp","*.c" -ErrorAction SilentlyContinue | ForEach-Object {
+              $c = Get-Content $_.FullName -Raw
+              if ($c -and $c -notmatch "_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS") {
+                Set-Content -Path $_.FullName -Value "#ifndef _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`n#define _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS 1`n#endif`n$c" -Encoding UTF8
+              }
             }
           }
 
