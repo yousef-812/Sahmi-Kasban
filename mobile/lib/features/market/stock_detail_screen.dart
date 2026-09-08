@@ -697,8 +697,6 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
       );
     }
 
-    final html = _buildHtml(isDark);
-
     if (!_initialized) {
       _initialized = true;
       _controller!

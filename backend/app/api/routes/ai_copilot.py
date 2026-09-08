@@ -110,13 +110,17 @@ async def query_ai_copilot(
 
     # 4. Fetch live market quote for accurate real-time stock price
     market_context = ""
+    quote_price_strict = ""
+    company_name_strict = ""
     if body.ticker:
         quote = await fetch_single_quote(db, body.ticker)
         if quote:
             change_str = f"{quote.change_percent:+.2f}%" if quote.change_percent is not None else "غير متوفر"
+            quote_price_strict = f"{quote.current_price}" if quote.current_price is not None else ""
+            company_name_strict = quote.description or quote.ticker
             market_context = (
-                f"بيانات السهم اللحظية المباشرة الحالية من البورصة المصرية ({quote.ticker} — {quote.description}):\n"
-                f"- السعر الحالي / إغلاق آخر جلسة: {quote.current_price or 'غير متوفر'} جنيه\n"
+                f"🚨 بيانات رسمية مؤكدة ومحدثة الآن لسهم ({quote.ticker} — {quote.description}):\n"
+                f"- السعر الحالي اللحظي والمعتمد: {quote.current_price or 'غير متوفر'} جنيه\n"
                 f"- التغير اليومي: {change_str}\n"
                 f"- سعر الفتح: {quote.open_price or 'غير متوفر'} جنيه\n"
                 f"- أعلى سعر للجلسة: {quote.session_high or 'غير متوفر'} جنيه\n"
@@ -143,9 +147,9 @@ async def query_ai_copilot(
         f"{history_str}"
         f"سؤال المستخدم الحالي: {body.question}\n"
         f"{f'السهم المطلوب: {body.ticker}' if body.ticker else ''}\n\n"
-        f"تعليمات الإجابة:\n"
-        f"1. ركّز على الإجابة عن سؤال المستخدم الحالي مع الاستفادة من سياق المحادثة السابقة وإحصائيات السهم المباشرة أعلاه.\n"
-        f"2. اعتمد دائماً وأولاً على السعر الحالي المعلن في بيانات السهم اللحظية المباشرة أعلاه ({quote.current_price if (body.ticker and 'quote' in locals() and quote) else ''} جنيه) عند ذكر أسعار الإغلاق والدعم والمقاومة، ولا تذكر أي أسعار قديمة مخالفة.\n"
+        f"تعليمات الإجابة الصارمة:\n"
+        f"1. تنبيه مؤكد: سعر سهم {body.ticker or ''} ({company_name_strict}) الحالي والمعتمد هو بالضبط ({quote_price_strict} جنيه). يمنع منعاً باتاً تغيير السعر أو اختراع اسم شركة أخرى غير {company_name_strict}!\n"
+        f"2. اعتمد حتماً ورسمياً على السعر الحالي ({quote_price_strict} جنيه) كإغلاق ومرجع أساسي عند تحديد الدعم والمقاومة، ولا تذكر أي أسعار قديمة أو افتراضية مخالفة.\n"
         f"3. قدم تحليلاً مالياً وتقنياً دقيقاً بأسلوب حواري مبسط وشامل.\n"
         f"4. اختم إجابتك دائماً بدعوة غير مباشرة تشجع المستخدم على نشر توقع ومناقشة في المجتمع (مثال: 'ما هو انطباعك أنت لأسعار الجلسة القادمة؟ شارك توقعك الآن في المجتمع وادعم المتداولين!')."
     )
