@@ -20,10 +20,18 @@ def list_news(
     offset: int = Query(default=0, ge=0),
     source_key: str | None = Query(default=None),
     sentiment: str | None = Query(default=None),
+    q: str | None = Query(default=None, description="البحث في الأخبار باسم الشركة، التيكر، أو الكلمات المفتاحية"),
     db: Session = Depends(get_db),
 ) -> NewsListResponse:
-    """جلب آخر الأخبار المالية (عامة) مع فلترة اختيارية بالمصدر أو الـ sentiment."""
-    return get_latest_news(db, limit=limit, offset=offset, source_key=source_key, sentiment=sentiment)
+    """جلب آخر الأخبار المالية (عامة) مع فلترة اختيارية بالمصدر، الـ sentiment، أو بحث الكلمات المفتاحية."""
+    return get_latest_news(
+        db,
+        limit=limit,
+        offset=offset,
+        source_key=source_key,
+        sentiment=sentiment,
+        q=q,
+    )
 
 
 @router.get("/{article_id}", response_model=NewsArticleResponse, summary="تفاصيل خبر")

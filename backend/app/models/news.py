@@ -24,12 +24,12 @@ class NewsArticle(TimestampMixin, Base):
     __tablename__ = "news_articles"
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    title: Mapped[str] = mapped_column(String(400), nullable=False)
+    title: Mapped[str] = mapped_column(String(1000), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    url: Mapped[str] = mapped_column(String(1000), nullable=False, unique=True)
+    url: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     source_name: Mapped[str] = mapped_column(String(100), nullable=False)
     source_key: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
-    image_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     sentiment: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)

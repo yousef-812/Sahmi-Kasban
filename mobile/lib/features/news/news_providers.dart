@@ -8,14 +8,18 @@ final newsRepositoryProvider = Provider<NewsRepository>((ref) {
   return NewsRepository(ref.watch(apiClientProvider));
 });
 
+/// المزود الخاص بكلمة البحث في صفحة الأخبار
+final newsSearchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+
 /// أخبار سهم معين
 final stockNewsProvider =
     FutureProvider.autoDispose.family<List<StockNewsArticle>, String>((ref, ticker) {
   return ref.watch(newsRepositoryProvider).getStockNews(ticker);
 });
 
-/// آخر الأخبار العامة
+/// آخر الأخبار العامة مع البحث
 final latestNewsProvider =
     FutureProvider.autoDispose<List<StockNewsArticle>>((ref) {
-  return ref.watch(newsRepositoryProvider).getLatestNews();
+  final query = ref.watch(newsSearchQueryProvider);
+  return ref.watch(newsRepositoryProvider).getLatestNews(query: query);
 });

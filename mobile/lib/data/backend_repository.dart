@@ -413,7 +413,8 @@ class BackendRepository {
           } catch (_) {}
         });
 
-        await for (final message in socket) {
+        final socketStream = socket as Stream<dynamic>;
+        await for (final message in socketStream) {
           if (message is String) {
             if (message == 'pong') continue;
             try {

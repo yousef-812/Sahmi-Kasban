@@ -24,11 +24,20 @@ class NewsRepository {
   Future<List<StockNewsArticle>> getLatestNews({
     int limit = 30,
     int offset = 0,
+    String? query,
   }) async {
     try {
+      final queryParams = <String, dynamic>{
+        'limit': limit,
+        'offset': offset,
+      };
+      if (query != null && query.trim().isNotEmpty) {
+        queryParams['q'] = query.trim();
+      }
+
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
         '/news',
-        queryParameters: {'limit': limit, 'offset': offset},
+        queryParameters: queryParams,
       );
       return NewsListResponse.fromJson(response.data!).items;
     } on Object catch (e) {
