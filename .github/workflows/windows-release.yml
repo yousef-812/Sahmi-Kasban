@@ -14,7 +14,6 @@ jobs:
     timeout-minutes: 45
     env:
       CMAKE_POLICY_VERSION_MINIMUM: "3.5"
-      CL: "/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
 
     steps:
       - name: Checkout repository
@@ -41,6 +40,12 @@ jobs:
           $cmakeFile = "windows\CMakeLists.txt"
           if (Test-Path $cmakeFile) {
             Add-Content -Path $cmakeFile -Value "`nadd_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
+            Add-Content -Path $cmakeFile -Value "`nadd_compile_options(/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
+          }
+          $runnerCmake = "windows\runner\CMakeLists.txt"
+          if (Test-Path $runnerCmake) {
+            Add-Content -Path $runnerCmake -Value "`nadd_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
+            Add-Content -Path $runnerCmake -Value "`nadd_compile_options(/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
           }
           $mainCpp = "windows\runner\main.cpp"
           if (Test-Path $mainCpp) {
