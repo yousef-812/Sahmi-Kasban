@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
@@ -510,10 +511,14 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     super.initState();
     if (!kIsWeb) {
       try {
+        if (defaultTargetPlatform == TargetPlatform.windows) {
+          WebViewPlatform.instance = WebViewWindows();
+        }
         _controller = WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted);
         _hasWebView = true;
-      } catch (_) {
+      } catch (e) {
+        debugPrint('TradingView WebView initialization error: $e');
         _hasWebView = false;
       }
     }
