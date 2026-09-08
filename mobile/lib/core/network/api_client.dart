@@ -164,7 +164,11 @@ class ApiClient {
     }
     final detail = payload['detail'];
     if (detail is String && detail.trim().isNotEmpty) {
-      return detail.trim();
+      final text = detail.trim();
+      if (text == 'Authentication required' || text == 'Invalid or expired access token') {
+        return 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.';
+      }
+      return text;
     }
     if (detail is Map) {
       final msg = detail['message'] ?? detail['msg'];
