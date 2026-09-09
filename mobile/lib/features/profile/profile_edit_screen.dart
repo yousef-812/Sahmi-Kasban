@@ -305,11 +305,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                               await ref.read(communityRepositoryProvider).updateTippingSettings(tippingEnabled: val);
                               await ref.read(sessionControllerProvider.notifier).refreshProfile();
                             } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('حدث خطأ: $e')),
-                                );
-                              }
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('حدث خطأ: $e')),
+                              );
                             }
                           },
                         ),

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/avatar_assets.dart';
 import '../community_models.dart';
 import '../community_providers.dart';
 import '../community_repository.dart';
 import '../widgets/coin_tipping_dialog.dart';
-import '../../core/avatar_assets.dart';
 
 final userDiscussionsProvider =
     FutureProvider.family<List<CommunityDiscussion>, String>((ref, userId) async {

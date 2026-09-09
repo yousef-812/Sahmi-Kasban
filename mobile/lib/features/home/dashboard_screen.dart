@@ -635,12 +635,12 @@ class _ProfileStat extends StatelessWidget {
   }
 }
 
-class _ThemeSettingsCard extends StatelessWidget {
+class _ThemeSettingsCard extends ConsumerWidget {
   const _ThemeSettingsCard();
 
   @override
-  Widget build(BuildContext context) {
-    final themeMode = context.watch(themeModeProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -689,7 +689,7 @@ class _ThemeSettingsCard extends StatelessWidget {
                 ],
                 selected: {themeMode},
                 onSelectionChanged: (Set<ThemeMode> newSelection) {
-                  context
+                  ref
                       .read(themeModeProvider.notifier)
                       .setThemeMode(newSelection.first);
                 },

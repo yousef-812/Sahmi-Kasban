@@ -189,10 +189,12 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
             'تقرير تحليل سهم ${widget.ticker} عبر تطبيق سهمي كسبان:\n'
             'القرار الآلي: ${widget.signal}\n'
             'الدرجة: ${widget.score?.toStringAsFixed(1) ?? "-"}/100';
-        await Share.shareXFiles(
-          [XFile.fromData(_imageBytes!, mimeType: 'image/png', name: 'sahmi_analysis_${widget.ticker}.png')],
-          text: shareText,
-          subject: 'تحليل سهم ${widget.ticker}',
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile.fromData(_imageBytes!, mimeType: 'image/png', name: 'sahmi_analysis_${widget.ticker}.png')],
+            text: shareText,
+            subject: 'تحليل سهم ${widget.ticker}',
+          ),
         );
       } else {
         final tempDir = await getTemporaryDirectory();
@@ -206,10 +208,12 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
             'القرار الآلي: ${widget.signal}\n'
             'الدرجة: ${widget.score?.toStringAsFixed(1) ?? "-"}/100';
 
-        await Share.shareXFiles(
-          [XFile(filePath)],
-          text: shareText,
-          subject: 'تحليل سهم ${widget.ticker}',
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(filePath)],
+            text: shareText,
+            subject: 'تحليل سهم ${widget.ticker}',
+          ),
         );
       }
     } catch (e) {

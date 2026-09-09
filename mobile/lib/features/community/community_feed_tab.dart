@@ -735,7 +735,7 @@ class _DraggableTelegramBallState extends State<_DraggableTelegramBall> {
           message: 'انضم لجروب التليجرام',
           child: Material(
             elevation: 8,
-            shadowColor: const Color(0xFF0088CC).withOpacity(0.5),
+            shadowColor: const Color(0xFF0088CC).withValues(alpha: 0.5),
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
