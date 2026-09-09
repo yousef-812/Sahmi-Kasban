@@ -1,6 +1,7 @@
 """خدمة جلب وتخزين الأخبار المالية من مصادر RSS."""
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import re
@@ -18,6 +19,13 @@ from app.models.news import NewsArticle, NewsArticleTicker
 from app.schemas.news import NewsArticleResponse, NewsListResponse
 
 logger = logging.getLogger(__name__)
+
+try:
+    import trafilatura
+except ImportError:  # pragma: no cover - fallback عند عدم التثبيت
+    trafilatura = None  # type: ignore[assignment]
+
+_MAX_CONTENT_LENGTH = 100_000
 
 # ─── مصادر RSS ────────────────────────────────────────────────────────────────
 
@@ -208,6 +216,31 @@ async def fetch_rss_source(source: dict[str, str]) -> list[dict]:
     return articles
 
 
+# ─── استخراج المحتوى الكامل للمقال ──────────────────────────────────────────
+
+async def fetch_article_content(url: str) -> str:
+    """جلب المحتوى الكامل لصفحة الخبر عبر trafilatura.
+
+    ترجع نص المقال مع فواصل أسطر بين الفقرات، أو سلسلة فارغة عند الفشل.
+    """
+    if trafilatura is None or not url:
+        return ""
+
+    try:
+        html = await asyncio.to_thread(trafilatura.fetch_url, url)
+        if not html:
+            return ""
+        text = await asyncio.to_thread(trafilatura.extract, html)
+        if not text:
+            return ""
+        paragraphs = [p.strip() for p in text.splitlines() if p.strip()]
+        result = "\n\n".join(paragraphs)
+        return result[:_MAX_CONTENT_LENGTH]
+    except Exception:
+        logger.warning("Failed to extract full content for %s", url[:120])
+        return ""
+
+
 # ─── حفظ في الـ Database ──────────────────────────────────────────────────────
 
 def save_articles_to_db(
@@ -230,9 +263,11 @@ def save_articles_to_db(
 
         try:
             with db.begin_nested():
+                raw_content = raw.get("content") or None
                 article = NewsArticle(
                     title=raw["title"][:950],
                     summary=raw["summary"][:4500],
+                    content=raw_content[:_MAX_CONTENT_LENGTH] if raw_content else None,
                     url=url,
                     source_name=raw["source_name"][:90],
                     source_key=raw["source_key"][:35],
@@ -280,11 +315,17 @@ def _load_tickers_for_articles(
     return result
 
 
-def _to_response(article: NewsArticle, tickers: list[str]) -> NewsArticleResponse:
+def _to_response(
+    article: NewsArticle,
+    tickers: list[str],
+    *,
+    include_content: bool = False,
+) -> NewsArticleResponse:
     return NewsArticleResponse(
         id=article.id,
         title=article.title,
         summary=article.summary,
+        content=article.content if include_content else None,
         url=article.url,
         source_name=article.source_name,
         source_key=article.source_key,
@@ -425,4 +466,23 @@ def get_article_by_id(db: Session, article_id: UUID) -> NewsArticleResponse | No
     if not article or not article.is_active:
         return None
     tickers_map = _load_tickers_for_articles(db, [article.id])
-    return _to_response(article, tickers_map.get(article.id, []))
+    return _to_response(article, tickers_map.get(article.id, []), include_content=True)
+
+
+async def get_article_detail_content(db: Session, article_id: UUID) -> NewsArticleResponse | None:
+    """تفاصيل خبر معين مع استخراج المحتوى الكامل عند الطلب إذا لم يكن مخزناً."""
+    article = db.get(NewsArticle, article_id)
+    if not article or not article.is_active:
+        return None
+
+    if not article.content:
+        content = await fetch_article_content(article.url)
+        if content:
+            article.content = content[:_MAX_CONTENT_LENGTH]
+            try:
+                db.commit()
+            except Exception:
+                logger.exception("Failed to persist lazy article content %s", article_id)
+
+    tickers_map = _load_tickers_for_articles(db, [article.id])
+    return _to_response(article, tickers_map.get(article.id, []), include_content=True)

@@ -10,6 +10,7 @@ class NewsArticleResponse(BaseModel):
     id: UUID
     title: str
     summary: str
+    content: str | None = None
     url: str
     source_name: str
     source_key: str

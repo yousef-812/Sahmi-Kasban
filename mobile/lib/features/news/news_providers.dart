@@ -23,3 +23,9 @@ final latestNewsProvider =
   final query = ref.watch(newsSearchQueryProvider);
   return ref.watch(newsRepositoryProvider).getLatestNews(query: query);
 });
+
+/// تفاصيل خبر معين — يُستخدم لجلب المحتوى الكامل عند الحاجة
+final newsArticleDetailProvider =
+    FutureProvider.autoDispose.family<StockNewsArticle, String>((ref, id) {
+  return ref.watch(newsRepositoryProvider).getArticleDetail(id);
+});

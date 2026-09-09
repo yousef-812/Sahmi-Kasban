@@ -1,22 +1,24 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../news_models.dart';
+import '../news_providers.dart';
 
-class NewsDetailScreen extends StatefulWidget {
+class NewsDetailScreen extends ConsumerStatefulWidget {
   const NewsDetailScreen({super.key, required this.article});
 
   final StockNewsArticle article;
 
   @override
-  State<NewsDetailScreen> createState() => _NewsDetailScreenState();
+  ConsumerState<NewsDetailScreen> createState() => _NewsDetailScreenState();
 }
 
-class _NewsDetailScreenState extends State<NewsDetailScreen> {
+class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   WebViewController? _webViewController;
   bool _isLoadingWebView = true;
   bool _hasWebViewError = false;
@@ -95,6 +97,23 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
     final colorScheme = theme.colorScheme;
     final article = widget.article;
 
+    final initialContent = article.content.trim();
+    final needsFetch = initialContent.isEmpty;
+
+    String content = initialContent;
+    var isLoadingContent = false;
+    var contentFailed = false;
+    if (needsFetch) {
+      final detailAsync = ref.watch(newsArticleDetailProvider(article.id));
+      isLoadingContent = detailAsync.isLoading;
+      contentFailed = detailAsync.hasError;
+      if (detailAsync.hasValue &&
+          detailAsync.value!.content.trim().isNotEmpty) {
+        content = detailAsync.value!.content.trim();
+      }
+    }
+    final hasContent = content.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -123,7 +142,8 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
@@ -146,7 +166,8 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                 const Spacer(),
                 if (article.sentiment != null && article.sentiment!.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: article.sentiment == 'bullish'
                           ? Colors.green.withValues(alpha: 0.15)
@@ -214,13 +235,110 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
               const SizedBox(height: 16),
             ],
 
-            // ملخص الخبر في التطبيق
-            if (article.summary.isNotEmpty) ...[
+            // حالات تحميل/فشل المحتوى عند الحاجة لجلب تفاصيل
+            if (needsFetch && isLoadingContent) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
+                    Text(
+                      'جارٍ تحميل المحتوى الكامل للخبر...',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            if (needsFetch && contentFailed && !isLoadingContent) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline_rounded,
+                        color: colorScheme.error),
+                    const SizedBox(width: 10),
+                    const Expanded(child: Text('تعذّر تحميل المحتوى الكامل')),
+                    TextButton(
+                      onPressed: () =>
+                          ref.invalidate(newsArticleDetailProvider(article.id)),
+                      child: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // المحتوى الكامل للخبر (ناتيف داخل التطبيق)
+            if (hasContent) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.article_outlined,
+                          size: 20,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'الخبر كاملاً',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      content,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        height: 1.7,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else if (article.summary.isNotEmpty) ...[
+              // ملخص الخبر كبديل إذا لم يتوفر المحتوى الكامل
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color:
+                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.3),

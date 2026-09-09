@@ -8,11 +8,18 @@ from sqlalchemy import select
 
 from app.db.session import SessionLocal
 from app.models.market_data import MarketInstrumentCatalog
-from app.services.news import RSS_SOURCES, fetch_rss_source, save_articles_to_db
+from app.models.news import NewsArticle
+from app.services.news import (
+    RSS_SOURCES,
+    fetch_article_content,
+    fetch_rss_source,
+    save_articles_to_db,
+)
 
 logger = logging.getLogger(__name__)
 
 _CRAWL_INTERVAL_SECONDS = 900  # 15 دقيقة
+_CONTENT_FETCH_CONCURRENCY = 8
 
 
 def _get_known_tickers(db) -> frozenset[str]:
@@ -21,6 +28,17 @@ def _get_known_tickers(db) -> frozenset[str]:
         select(MarketInstrumentCatalog.ticker).where(MarketInstrumentCatalog.active == True)  # noqa: E712
     ).scalars().all()
     return frozenset(rows)
+
+
+async def _extract_contents(articles: list[dict]) -> None:
+    """استخراج المحتوى الكامل للمقالات الجديدة بالتوازي مع حد أقصى للتوازي."""
+    semaphore = asyncio.Semaphore(_CONTENT_FETCH_CONCURRENCY)
+
+    async def _extract_one(article: dict) -> None:
+        async with semaphore:
+            article["content"] = await fetch_article_content(article["url"])
+
+    await asyncio.gather(*(_extract_one(a) for a in articles), return_exceptions=True)
 
 
 async def run_news_crawl_once() -> int:
@@ -46,6 +64,21 @@ async def run_news_crawl_once() -> int:
     try:
         with SessionLocal() as db:
             known_tickers = _get_known_tickers(db)
+
+            # جلب المحتوى الكامل فقط للمقالات الجديدة (غير المخزنة)
+            urls = [a["url"] for a in all_articles]
+            existing_urls = set(
+                db.execute(
+                    select(NewsArticle.url).where(NewsArticle.url.in_(urls))
+                ).scalars().all()
+            )
+            new_articles = [a for a in all_articles if a["url"] not in existing_urls]
+            await _extract_contents(new_articles)
+            logger.info(
+                "News crawler: extracting full content for %d new articles",
+                len(new_articles),
+            )
+
             saved = save_articles_to_db(db, all_articles, known_tickers)
             logger.info(
                 "News crawler: cycle complete — fetched=%d new=%d",

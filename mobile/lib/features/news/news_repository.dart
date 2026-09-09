@@ -44,4 +44,14 @@ class NewsRepository {
       throw _apiClient.mapError(e);
     }
   }
+
+  Future<StockNewsArticle> getArticleDetail(String id) async {
+    try {
+      final response = await _apiClient.dio
+          .get<Map<String, dynamic>>('/news/$id');
+      return StockNewsArticle.fromJson(response.data!);
+    } on Object catch (e) {
+      throw _apiClient.mapError(e);
+    }
+  }
 }

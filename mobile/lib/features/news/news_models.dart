@@ -8,6 +8,7 @@ class StockNewsArticle {
     required this.sourceKey,
     required this.publishedAt,
     this.imageUrl,
+    this.content = '',
     this.sentiment,
     this.tickers = const [],
   });
@@ -15,6 +16,7 @@ class StockNewsArticle {
   final String id;
   final String title;
   final String summary;
+  final String content;
   final String url;
   final String sourceName;
   final String sourceKey;
@@ -28,6 +30,7 @@ class StockNewsArticle {
       id: json['id'] as String,
       title: json['title'] as String,
       summary: json['summary'] as String? ?? '',
+      content: json['content'] as String? ?? '',
       url: json['url'] as String,
       sourceName: json['source_name'] as String? ?? '',
       sourceKey: json['source_key'] as String? ?? '',

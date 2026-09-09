@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import CurrentAdmin, get_db
 from app.jobs.news_crawler import run_news_crawl_once
 from app.schemas.news import NewsArticleResponse, NewsListResponse
-from app.services.news import get_article_by_id, get_latest_news, get_stock_news
+from app.services.news import get_article_detail_content, get_latest_news, get_stock_news
 
 router = APIRouter(prefix="/news", tags=["news"])
 
@@ -35,12 +35,12 @@ def list_news(
 
 
 @router.get("/{article_id}", response_model=NewsArticleResponse, summary="تفاصيل خبر")
-def get_news_article(
+async def get_news_article(
     article_id: UUID,
     db: Session = Depends(get_db),
 ) -> NewsArticleResponse:
-    """جلب تفاصيل خبر معين بالـ ID."""
-    article = get_article_by_id(db, article_id)
+    """جلب تفاصيل خبر معين بالـ ID (مع استخراج المحتوى الكامل عند الطلب لو غير مخزّن)."""
+    article = await get_article_detail_content(db, article_id)
     if not article:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="الخبر غير موجود")
     return article
