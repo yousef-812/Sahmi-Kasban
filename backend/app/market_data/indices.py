@@ -53,6 +53,7 @@ SUPPORTED_INDICES: tuple[MarketIndexInfo, ...] = (
 )
 
 INDEX_BY_TICKER: dict[str, MarketIndexInfo] = {info.ticker: info for info in SUPPORTED_INDICES}
+INDEX_BY_TV_SYMBOL: dict[str, MarketIndexInfo] = {info.tradingview_symbol: info for info in SUPPORTED_INDICES}
 
 
 def list_index_info() -> list[MarketIndexInfo]:
@@ -109,7 +110,7 @@ def _parse_scanner_rows(payload: object) -> list[MarketQuote]:
         if not isinstance(provider_symbol, str) or ":" not in provider_symbol:
             continue
         ticker = provider_symbol.split(":", 1)[1].strip().upper()
-        info = INDEX_BY_TICKER.get(ticker)
+        info = INDEX_BY_TV_SYMBOL.get(provider_symbol) or INDEX_BY_TICKER.get(ticker)
         if info is None:
             continue
         values = values if isinstance(values, list) else []
@@ -161,14 +162,10 @@ def _parse_scanner_rows(payload: object) -> list[MarketQuote]:
 
 async def _fetch_scanner_index_rows() -> list[MarketQuote]:
     settings = get_settings()
+    tickers = [info.tradingview_symbol for info in SUPPORTED_INDICES]
     payload = {
-        "filter": [{"left": "type", "operation": "equal", "right": "index"}],
-        "options": {"lang": "ar"},
-        "markets": ["egypt"],
-        "symbols": {"query": {"types": []}, "tickers": []},
+        "symbols": {"tickers": tickers},
         "columns": _INDEX_COLUMNS,
-        "sort": {"sortBy": "name", "sortOrder": "asc"},
-        "range": [0, 50],
     }
     headers = {
         "Origin": settings.tradingview_origin,
@@ -180,8 +177,6 @@ async def _fetch_scanner_index_rows() -> list[MarketQuote]:
         response = await client.post(settings.tradingview_scanner_url, json=payload)
         response.raise_for_status()
         rows = _parse_scanner_rows(response.json())
-    # Some index rows come back typed differently; fall back to the historical
-    # close if we could not get scanner quotes for any supported index.
     return rows
 
 
