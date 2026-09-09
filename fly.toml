@@ -1,20 +1,25 @@
+# fly.toml app configuration file generated for sahmi-kasban on 2026-09-09T21:54:58Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = "sahmi-kasban"
-primary_region = "fra"
-kill_signal = "SIGTERM"
-kill_timeout = "30s"
+primary_region = 'fra'
+kill_signal = 'SIGTERM'
+kill_timeout = '30s'
 
 [build]
   dockerfile = "backend/Dockerfile"
 
 [deploy]
-  release_command = "python -m alembic upgrade head"
-  release_command_timeout = "10m"
-  strategy = "rolling"
-  wait_timeout = "10m"
+  release_command = 'python -m alembic upgrade head'
+  release_command_timeout = '10m0s'
+  strategy = 'rolling'
+  wait_timeout = '10m0s'
 
 [processes]
-  api = "uvicorn app.main:app --host 0.0.0.0 --port 8080"
-  replay = "python -m app.workers.historical_replay"
+  api = 'uvicorn app.main:app --host 0.0.0.0 --port 8080'
+  replay = 'python -m app.workers.historical_replay'
 
 [env]
   APP_ENV = "staging"
@@ -52,37 +57,26 @@ kill_timeout = "30s"
   ADMOB_SSV_VERIFICATION_MODE = "disabled"
 
 [http_service]
-  processes = ["api"]
+  processes = ['api']
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "off"
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
-
-  [http_service.concurrency]
-    type = "requests"
-    soft_limit = 40
-    hard_limit = 60
-
-[[http_service.checks]]
-  processes = ["api"]
-  grace_period = "45s"
-  interval = "30s"
-  method = "GET"
-  timeout = "10s"
-  path = "/api/v1/health/ready"
-  protocol = "http"
+  checks = [{ grace_period = '45s', interval = '30s', method = 'GET', path = '/api/v1/health/ready', protocol = 'http', timeout = '10s' }]
+  concurrency = { hard_limit = 60, soft_limit = 40, type = 'requests' }
 
 [[vm]]
-  processes = ["api"]
-  size = "shared-cpu-2x"
-  memory = "2gb"
+  processes = ['api']
+  size = 'shared-cpu-2x'
+  memory = '1gb'
   cpus = 2
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
+  memory_mb = 1024
 
 [[vm]]
-  processes = ["replay"]
-  size = "shared-cpu-2x"
-  memory = "2gb"
+  processes = ['replay']
+  size = 'shared-cpu-2x'
+  memory = '2gb'
   cpus = 2
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
