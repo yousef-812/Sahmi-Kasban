@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.admin import is_admin_email
-from app.market_calendar import EGXTradingCalendar
+from app.market_calendar import SESSION_END_TIME, SESSION_START_TIME, EGXTradingCalendar
 from app.models import (
     AIPersonaLog,
     CommunityAdminEvent,
@@ -455,13 +455,19 @@ def pin_discussion(
     if discussion.status != "published":
         raise CommunityConflictError("Discussion is not published")
 
-    # Verify that prediction trading session has NOT started yet
+    # Verify that prediction trading session has NOT started yet.
+    # A session runs 10:00-14:30 Cairo time, so a discussion written before 10:00
+    # on the session day can still be pinned.
     if discussion.frozen_prediction:
         try:
             window = resolve_prediction_window(discussion)
-            start_session_date = window.start_session_date
-            today_date = datetime.now(UTC).date()
-            if today_date >= start_session_date:
+            calendar = EGXTradingCalendar.from_settings()
+            session_start = datetime.combine(
+                window.start_session_date,
+                SESSION_START_TIME,
+                tzinfo=calendar.timezone,
+            )
+            if datetime.now(UTC) >= session_start.astimezone(UTC):
                 raise CommunityConflictError(
                     "عذراً، انتهت المهلة. لا يمكن تثبيت أو ترقية المنشور بعد بدء الجلسة التجارية للتوقع."
                 )
@@ -795,7 +801,6 @@ def is_discussion_ended(discussion: Discussion, moment: datetime | None = None) 
     now_utc = moment or datetime.now(UTC)
     cairo_now = now_utc.astimezone(calendar.timezone)
     today = cairo_now.date()
-    session_ended = cairo_now.time() >= time(14, 30)
 
     target = discussion.target_date
     if target is None and isinstance(discussion.frozen_prediction, dict):
@@ -809,7 +814,7 @@ def is_discussion_ended(discussion: Discussion, moment: datetime | None = None) 
     if target is None:
         return False
 
-    return target < today or (target == today and session_ended)
+    return target < today or (target == today and cairo_now.time() >= SESSION_END_TIME)
 
 
 def unpin_ended_discussions(db: Session, moment: datetime | None = None) -> int:

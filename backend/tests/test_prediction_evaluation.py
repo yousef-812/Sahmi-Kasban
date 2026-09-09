@@ -119,6 +119,39 @@ def test_prediction_window_uses_future_cairo_sessions(db_session: Session) -> No
     assert window.eligible_at.astimezone(calendar().timezone).isoformat() == ("2026-01-15T15:00:00+02:00")
 
 
+def test_date_based_period_resolves_to_single_session(db_session: Session) -> None:
+    user = create_user(db_session, "dated@example.com")
+    discussion = create_published_discussion(
+        db_session,
+        user_id=user.id,
+        period_type="2026-09-08",
+        published_at=datetime(2026, 9, 8, 1, tzinfo=UTC),
+    )
+
+    window = resolve_prediction_window(discussion, calendar=calendar())
+
+    assert [item.isoformat() for item in window.session_dates] == ["2026-09-08"]
+    assert window.eligible_at.astimezone(calendar().timezone).isoformat() == ("2026-09-08T15:00:00+03:00")
+
+
+def test_same_day_prediction_before_session_start_targets_today(db_session: Session) -> None:
+    # Published at 04:00 Cairo on a trading day (before the 10:00 start):
+    # the "next session" must be TODAY, not the next trading day.
+    user = create_user(db_session, "predawn@example.com")
+    discussion = create_published_discussion(
+        db_session,
+        user_id=user.id,
+        period_type="next_session",
+        published_at=datetime(2026, 7, 26, 1, tzinfo=UTC),
+    )
+
+    window = resolve_prediction_window(discussion, calendar=calendar())
+
+    assert window.start_session_date.isoformat() == "2026-07-26"
+    assert len(window.session_dates) == 1
+    assert window.eligible_at.astimezone(calendar().timezone).isoformat() == ("2026-07-26T15:00:00+03:00")
+
+
 def test_specific_prediction_can_reach_very_strong_level(db_session: Session) -> None:
     user = create_user(db_session, "score@example.com")
     discussion = create_published_discussion(db_session, user_id=user.id)

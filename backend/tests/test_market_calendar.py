@@ -49,3 +49,53 @@ def test_scan_does_not_run_on_weekend() -> None:
 
     with pytest.raises(NonTradingSessionError):
         calendar.resolve_scan_session(datetime(2026, 7, 31, 18, 0, tzinfo=zone))
+
+
+def test_upcoming_sessions_span_only_current_week() -> None:
+    calendar = _calendar()
+    zone = ZoneInfo("Africa/Cairo")
+
+    # Sunday 6/9 after 10:00 -> Monday 7/9 through Thursday 10/9 (same week only).
+    sessions = calendar.get_upcoming_trading_sessions(
+        datetime(2026, 9, 6, 12, 0, tzinfo=zone)
+    )
+    assert [item["date"] for item in sessions] == [
+        "2026-09-07",
+        "2026-09-08",
+        "2026-09-09",
+        "2026-09-10",
+    ]
+    assert sessions[0]["is_next_session"] is True
+    assert all(item["is_next_session"] is False for item in sessions[1:])
+
+
+def test_upcoming_sessions_include_today_before_ten_am() -> None:
+    calendar = _calendar()
+    zone = ZoneInfo("Africa/Cairo")
+
+    # Tuesday 8/9 before 10:00 -> today's session still available.
+    sessions = calendar.get_upcoming_trading_sessions(
+        datetime(2026, 9, 8, 9, 0, tzinfo=zone)
+    )
+    assert [item["date"] for item in sessions] == [
+        "2026-09-08",
+        "2026-09-09",
+        "2026-09-10",
+    ]
+
+
+def test_upcoming_sessions_roll_to_next_week_after_thursday() -> None:
+    calendar = _calendar()
+    zone = ZoneInfo("Africa/Cairo")
+
+    # Thursday 10/9 after 10:00 -> next trading week starts Sunday 13/9.
+    sessions = calendar.get_upcoming_trading_sessions(
+        datetime(2026, 9, 10, 12, 0, tzinfo=zone)
+    )
+    assert [item["date"] for item in sessions] == [
+        "2026-09-13",
+        "2026-09-14",
+        "2026-09-15",
+        "2026-09-16",
+        "2026-09-17",
+    ]

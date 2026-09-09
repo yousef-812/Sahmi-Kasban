@@ -26,6 +26,10 @@ class ScanSession:
     scheduled_for: datetime
 
 
+SESSION_START_TIME = time(hour=10, minute=0)
+SESSION_END_TIME = time(hour=14, minute=30)
+
+
 class EGXTradingCalendar:
     """Deterministic EGX session calendar with configurable holidays."""
 
@@ -99,13 +103,17 @@ class EGXTradingCalendar:
             current = current.replace(tzinfo=UTC)
         local = current.astimezone(self.timezone)
         today = local.date()
-        session_start_time = time(hour=10, minute=0)
 
         if self.is_trading_session(today):
-            if local.time() < session_start_time:
+            if local.time() < SESSION_START_TIME:
                 return today
             return self.next_trading_session(today)
         return self.next_trading_session(today)
+
+    def _week_thursday(self, session_date: date) -> date:
+        # EGX trading week is Sunday-Thursday; find the Thursday closing this week.
+        days_until_thursday = (3 - session_date.weekday()) % 7
+        return session_date + timedelta(days=days_until_thursday)
 
     def get_upcoming_trading_sessions(
         self,
@@ -113,14 +121,15 @@ class EGXTradingCalendar:
         count: int = 5,
     ) -> list[dict[str, object]]:
         first_target = self.resolve_prediction_target_session(moment)
+        week_end = self._week_thursday(first_target)
         sessions: list[dict[str, object]] = []
 
         curr = first_target
-        for i in range(count):
+        while curr <= week_end and len(sessions) < count:
             sessions.append({
                 "date": curr.isoformat(),
                 "display_name": format_arabic_date(curr),
-                "is_next_session": i == 0,
+                "is_next_session": len(sessions) == 0,
             })
             curr = self.next_trading_session(curr)
 

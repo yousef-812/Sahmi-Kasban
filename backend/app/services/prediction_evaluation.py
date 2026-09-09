@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 from uuid import UUID
 
+from sahmi_kasban.ai import SahmiAIService
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -15,7 +16,6 @@ from app.market_data.types import CandleSeries, MarketDataProvider
 from app.models import Discussion, PredictionVerification
 from app.services.community_ai import get_community_ai_service
 from app.services.wallet import credit_points, get_wallet_account
-from sahmi_kasban.ai import SahmiAIService
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +108,30 @@ def _current(moment: datetime | None = None) -> datetime:
     return _aware(moment or datetime.now(UTC))
 
 
+def _parse_period_spec(
+    discussion: Discussion,
+) -> tuple[int, date | None] | None:
+    """Return (session_count, explicit_first_session) for a discussion period."""
+    try:
+        explicit_first = date.fromisoformat(discussion.period_type)
+        return 1, explicit_first
+    except (ValueError, TypeError):
+        session_count = PERIOD_SESSION_COUNTS.get(discussion.period_type)
+        if session_count is None:
+            return None
+        target = discussion.target_date
+        if target is None:
+            frozen = discussion.frozen_prediction
+            if isinstance(frozen, dict):
+                raw_target = frozen.get("target_date")
+                if raw_target:
+                    try:
+                        target = date.fromisoformat(str(raw_target))
+                    except (ValueError, TypeError):
+                        pass
+        return session_count, target
+
+
 def resolve_prediction_window(
     discussion: Discussion,
     *,
@@ -115,13 +139,19 @@ def resolve_prediction_window(
 ) -> PredictionWindow:
     if discussion.published_at is None:
         raise PredictionUnavailableError("Discussion does not have a publication time")
-    session_count = PERIOD_SESSION_COUNTS.get(discussion.period_type)
-    if session_count is None:
+    spec = _parse_period_spec(discussion)
+    if spec is None:
         raise PredictionUnavailableError("Discussion period is not supported")
+    session_count, explicit_first = spec
 
     trading_calendar = calendar or EGXTradingCalendar.from_settings()
-    published_local_date = _aware(discussion.published_at).astimezone(trading_calendar.timezone).date()
-    session_dates = [trading_calendar.next_trading_session(published_local_date)]
+    first_session = explicit_first
+    if first_session is None:
+        # A discussion created before 10:00 on a trading day targets today's session.
+        first_session = trading_calendar.resolve_prediction_target_session(
+            discussion.published_at
+        )
+    session_dates = [first_session]
     while len(session_dates) < session_count:
         session_dates.append(trading_calendar.next_trading_session(session_dates[-1]))
 

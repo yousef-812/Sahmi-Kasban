@@ -10,6 +10,7 @@ import '../monetization/free_plan_ads.dart';
 import '../wallet/wallet_providers.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
+import 'prediction_date_dropdown.dart';
 
 class CommunityCreateScreen extends ConsumerStatefulWidget {
   const CommunityCreateScreen({super.key});
@@ -203,17 +204,8 @@ class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
               },
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _periodType,
-              decoration: const InputDecoration(labelText: 'مدة التوقع'),
-              items: const [
-                DropdownMenuItem(
-                  value: 'next_session',
-                  child: Text('الجلسة القادمة'),
-                ),
-                DropdownMenuItem(value: 'week', child: Text('أسبوع')),
-                DropdownMenuItem(value: 'month', child: Text('شهر')),
-              ],
+            PredictionDateDropdown(
+              value: _periodType,
               onChanged: _submitting
                   ? null
                   : (value) =>

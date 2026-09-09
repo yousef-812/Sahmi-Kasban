@@ -233,12 +233,18 @@ class CommunityDiscussion {
 
   bool get canAppeal => status == 'rejected' || status == 'hidden';
 
-  String get periodLabel => switch (periodType) {
-    'next_session' => 'الجلسة القادمة',
-    'week' => 'أسبوع',
-    'month' => 'شهر',
-    _ => periodType,
-  };
+  String get periodLabel {
+    final parsed = DateTime.tryParse(periodType);
+    if (parsed != null) {
+      return _formatArabicDate(parsed);
+    }
+    return switch (periodType) {
+      'next_session' => 'الجلسة القادمة',
+      'week' => 'أسبوع',
+      'month' => 'شهر',
+      _ => periodType,
+    };
+  }
 
   String get statusLabel => switch (status) {
     'pending_review' => 'قيد المراجعة',
@@ -556,4 +562,32 @@ DateTime? _optionalDate(Object? value) {
     }
   }
   throw const FormatException('Invalid optional date.');
+}
+
+String _formatArabicDate(DateTime value) {
+  const weekdays = [
+    'الاثنين',
+    'الثلاثاء',
+    'الأربعاء',
+    'الخميس',
+    'الجمعة',
+    'السبت',
+    'الأحد',
+  ];
+  const months = [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+  final local = value.toLocal();
+  return '${weekdays[local.weekday - 1]} ${local.day} ${months[local.month - 1]}';
 }
