@@ -142,10 +142,12 @@ class SessionController extends StateNotifier<SessionState> {
   Future<UserProfile> updateProfile({
     required String displayName,
     required String avatarKey,
+    String? bio,
   }) async {
     final profile = await _repository.updateProfile(
       displayName: displayName,
       avatarKey: avatarKey,
+      bio: bio,
     );
     state = SessionState.authenticated(profile);
     return profile;

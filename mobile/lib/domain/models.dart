@@ -51,6 +51,7 @@ class UserProfile {
     required this.emailVerified,
     this.isAdmin = false,
     this.referralCode,
+    this.bio,
     required this.planCode,
     required this.balancePoints,
     required this.balanceCoins,
@@ -67,6 +68,7 @@ class UserProfile {
   final bool emailVerified;
   final bool isAdmin;
   final String? referralCode;
+  final String? bio;
   final String planCode;
   final int balancePoints;
   final String balanceCoins;
@@ -84,6 +86,7 @@ class UserProfile {
       emailVerified: json['email_verified'] as bool,
       isAdmin: json['is_admin'] as bool? ?? false,
       referralCode: json['referral_code'] as String?,
+      bio: json['bio'] as String?,
       planCode: json['plan_code'] as String,
       balancePoints: json['balance_points'] as int,
       balanceCoins: json['balance_coins'] as String,

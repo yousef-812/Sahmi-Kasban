@@ -10,12 +10,14 @@ import '../../core/network/api_exception.dart';
 import '../app_version/version_check_manager.dart';
 import '../auth/session_controller.dart';
 import '../community/community_feed_tab.dart';
+import '../community/community_models.dart';
+import '../community/community_providers.dart';
+import '../community/community_repository.dart';
 import '../market/stock_analysis_tab.dart';
 import '../market/stocks_screen.dart';
 import '../news/screens/news_feed_screen.dart';
 import '../notifications/notification_providers.dart';
 import '../reports/reports_screen.dart';
-import '../wallet/wallet_providers.dart';
 
 final dashboardTabProvider = StateProvider<int>((ref) => 0);
 
@@ -43,8 +45,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ('news', Icons.newspaper_rounded, 'الأخبار'),
     ('analyze', Icons.query_stats_outlined, 'تحليل سهم'),
     ('community', Icons.forum_outlined, 'المجتمع'),
-    ('wallet', Icons.account_balance_wallet_outlined, 'المحفظة'),
-    ('profile', Icons.person_outline_rounded, 'حسابي'),
+    ('profile', Icons.person_outline_rounded, 'الملف الشخصي'),
   ];
 
   @override
@@ -166,7 +167,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex > 5 ? 0 : selectedIndex,
+        selectedIndex: selectedIndex,
         onDestinationSelected: (index) {
           ref.read(dashboardTabProvider.notifier).state = index;
         },
@@ -197,9 +198,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             label: 'المجتمع',
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: 'المحفظة',
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'الملف الشخصي',
           ),
         ],
       ),
@@ -219,8 +220,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 4:
         return const CommunityFeedTab();
       case 5:
-        return const WalletTab();
-      case 6:
         return const ProfileTab();
       default:
         return const StocksScreen();
@@ -246,14 +245,32 @@ class _DrawerHeader extends StatelessWidget {
   }
 }
 
-class WalletTab extends ConsumerWidget {
-  const WalletTab({super.key});
+class ProfileTab extends ConsumerWidget {
+  const ProfileTab({super.key});
+
+  static const _statusLabels = <String, String>{
+    'published': 'منشور',
+    'pending': 'قيد المراجعة',
+    'rejected': 'مرفوض',
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final wallet = ref.watch(walletSummaryProvider);
+    final profile = ref.watch(sessionControllerProvider).profile;
+    if (profile == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final publicProfileAsync = ref.watch(userPublicProfileProvider(profile.id));
+    final discussionsAsync = ref.watch(myDiscussionsProvider);
+    final theme = Theme.of(context);
+    final publicProfile = publicProfileAsync.valueOrNull;
+
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(walletSummaryProvider),
+      onRefresh: () async {
+        ref.invalidate(userPublicProfileProvider(profile.id));
+        ref.invalidate(myDiscussionsProvider);
+      },
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -261,181 +278,426 @@ class WalletTab extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(22),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'الرصيد الحالي',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  wallet.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (error, stackTrace) => Text('تعذر تحميل المحفظة.'),
-                    data: (summary) => Text(
-                      '${summary.balanceCoins} عملة',
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                  CircleAvatar(
+                    radius: 48,
+                    backgroundImage: AssetImage(
+                      avatarAssetPath(profile.avatarKey),
                     ),
                   ),
                   const SizedBox(height: 14),
-                  wallet.when(
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (summary) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('الخطة: ${summary.planCode}'),
-                        Text('التوزيع الأسبوعي: ${summary.weeklyCoins} عملة'),
-                        Text(
-                          summary.adsEnabled
-                              ? 'الإعلانات مفعلة'
-                              : 'الخطة بدون إعلانات',
-                        ),
-                      ],
+                  Text(
+                    profile.displayName,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  OutlinedButton.icon(
-                    onPressed: () => context.push('/wallet/history'),
-                    icon: const Icon(Icons.receipt_long_outlined),
-                    label: const Text('عرض سجل العمليات'),
+                  const SizedBox(height: 4),
+                  Text(
+                    profile.email,
+                    textDirection: TextDirection.ltr,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  if (profile.bio != null && profile.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        profile.bio!,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text('الخطة: ${profile.planCode}'),
+                  Text('الرصيد: ${profile.balanceCoins} عملة'),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => context.push('/wallet'),
+                          icon: const Icon(Icons.account_balance_wallet_rounded),
+                          label: const Text('المحفظة'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/profile/edit'),
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('تعديل الملف'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
-                  FilledButton.icon(
-                    onPressed: () => context.push('/monetization'),
-                    icon: const Icon(Icons.workspace_premium_outlined),
-                    label: const Text('الخطط وشراء العملات'),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        ref.read(sessionControllerProvider.notifier).logout(),
+                    icon: const Icon(Icons.logout_rounded),
+                    label: const Text('تسجيل الخروج'),
                   ),
                 ],
               ),
             ),
           ),
+          const SizedBox(height: 20),
+
+          // Stats
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _ProfileStat(
+                    label: 'المتابعون',
+                    value: '${publicProfile?.followersCount ?? 0}',
+                    icon: Icons.group,
+                    valueColor: theme.colorScheme.primary,
+                    onTap: () => context.push(
+                      '/community/users/${profile.id}/followers',
+                    ),
+                  ),
+                  _ProfileStat(
+                    label: 'يتابع',
+                    value: '${publicProfile?.followingCount ?? 0}',
+                    icon: Icons.person_add_alt_1,
+                    valueColor: theme.colorScheme.primary,
+                    onTap: () => context.push(
+                      '/community/users/${profile.id}/following',
+                    ),
+                  ),
+                  _ProfileStat(
+                    label: 'التوقعات',
+                    value: '${publicProfile?.predictionsCount ?? 0}',
+                    icon: Icons.analytics,
+                    valueColor: theme.colorScheme.primary,
+                  ),
+                  _ProfileStat(
+                    label: 'نسبة النجاح',
+                    value:
+                        '${(publicProfile?.successRate ?? 0).toStringAsFixed(0)}%',
+                    icon: Icons.verified,
+                    valueColor: Colors.green,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // My discussions
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'مناقشاتي',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          discussionsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, _) => Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('عفواً، تعذر جلب المناقشات: $err'),
+            ),
+            data: (discussions) {
+              if (discussions.items.isEmpty) {
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: const [
+                        Icon(
+                          Icons.forum_outlined,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'لم تنشر أي مناقشات بعد.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final discussion in discussions.items) ...[
+                    _MyDiscussionCard(
+                      discussion: discussion,
+                      statusLabel: _statusLabels[discussion.status] ??
+                          discussion.status,
+                      onDelete: () =>
+                          _confirmDelete(context, ref, discussion, profile.id),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          const _ThemeSettingsCard(),
+          const SizedBox(height: 16),
+          const _DeveloperFeedbackCard(),
         ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    CommunityDiscussion discussion,
+    String userId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف المناقشة'),
+        content: const Text('هل أنت متأكد من حذف هذه المناقشة؟ لا يمكن التراجع.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(communityRepositoryProvider).deleteDiscussion(discussion.id);
+      ref.invalidate(myDiscussionsProvider);
+      ref.invalidate(communityFeedProvider);
+      ref.invalidate(userPublicProfileProvider(userId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حذف المناقشة بنجاح.')),
+        );
+      }
+    } on Object catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ أثناء الحذف: $error')),
+        );
+      }
+    }
+  }
+}
+
+class _MyDiscussionCard extends StatelessWidget {
+  const _MyDiscussionCard({
+    required this.discussion,
+    required this.statusLabel,
+    required this.onDelete,
+  });
+
+  final CommunityDiscussion discussion;
+  final String statusLabel;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPublished = discussion.status == 'published';
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                discussion.ticker,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                discussion.title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isPublished
+                      ? Colors.green.withValues(alpha: 0.15)
+                      : Colors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isPublished ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            discussion.content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade700),
+          ),
+        ),
+        trailing: IconButton(
+          onPressed: onDelete,
+          icon: const Icon(Icons.delete_outline),
+          tooltip: 'حذف المناقشة',
+        ),
+        onTap: () => context.push('/community/${discussion.id}'),
       ),
     );
   }
 }
 
-class ProfileTab extends ConsumerWidget {
-  const ProfileTab({super.key});
+class _ProfileStat extends StatelessWidget {
+  const _ProfileStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.valueColor,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color valueColor;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(sessionControllerProvider).profile;
-    final themeMode = ref.watch(themeModeProvider);
-
-    return ListView(
-      padding: const EdgeInsets.all(20),
+  Widget build(BuildContext context) {
+    final tile = Column(
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 48,
-                  backgroundImage: AssetImage(
-                    avatarAssetPath(profile?.avatarKey ?? avatarKeys.first),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  profile?.displayName ?? '',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  profile?.email ?? '',
-                  textDirection: TextDirection.ltr,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                Text('الخطة: ${profile?.planCode ?? '-'}'),
-                Text('الرصيد: ${profile?.balanceCoins ?? '0'} عملة'),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: () => context.push('/profile/edit'),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('تعديل الاسم والصورة'),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      ref.read(sessionControllerProvider.notifier).logout(),
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('تسجيل الخروج'),
-                ),
-              ],
-            ),
+        Icon(icon, size: 20, color: valueColor),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
           ),
         ),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.palette_outlined, color: Colors.teal),
-                    const SizedBox(width: 10),
-                    Text(
-                      'مظهر التطبيق',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'الوضع الداكن هو الوضع الأساسي لتجربة قراءة مريحة للمؤشرات والأسهم.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<ThemeMode>(
-                    segments: const [
-                      ButtonSegment<ThemeMode>(
-                        value: ThemeMode.dark,
-                        label: Text('داكن'),
-                        icon: Icon(Icons.dark_mode_rounded),
-                      ),
-                      ButtonSegment<ThemeMode>(
-                        value: ThemeMode.light,
-                        label: Text('فاتح'),
-                        icon: Icon(Icons.light_mode_rounded),
-                      ),
-                      ButtonSegment<ThemeMode>(
-                        value: ThemeMode.system,
-                        label: Text('تلقائي'),
-                        icon: Icon(Icons.settings_suggest_rounded),
-                      ),
-                    ],
-                    selected: {themeMode},
-                    onSelectionChanged: (Set<ThemeMode> newSelection) {
-                      ref
-                          .read(themeModeProvider.notifier)
-                          .setThemeMode(newSelection.first);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        const _DeveloperFeedbackCard(),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ],
+    );
+    if (onTap == null) return tile;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: tile,
+    );
+  }
+}
+
+class _ThemeSettingsCard extends StatelessWidget {
+  const _ThemeSettingsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = context.watch(themeModeProvider);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.palette_outlined, color: Colors.teal),
+                const SizedBox(width: 10),
+                Text(
+                  'مظهر التطبيق',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'الوضع الداكن هو الوضع الأساسي لتجربة قراءة مريحة للمؤشرات والأسهم.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<ThemeMode>(
+                segments: const [
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.dark,
+                    label: Text('داكن'),
+                    icon: Icon(Icons.dark_mode_rounded),
+                  ),
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.light,
+                    label: Text('فاتح'),
+                    icon: Icon(Icons.light_mode_rounded),
+                  ),
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.system,
+                    label: Text('تلقائي'),
+                    icon: Icon(Icons.settings_suggest_rounded),
+                  ),
+                ],
+                selected: {themeMode},
+                onSelectionChanged: (Set<ThemeMode> newSelection) {
+                  context
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(newSelection.first);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -50,6 +50,7 @@ class UserPublicProfile {
     required this.userId,
     required this.displayName,
     required this.avatarKey,
+    this.bio,
     this.followersCount = 0,
     this.followingCount = 0,
     this.predictionsCount = 0,
@@ -64,6 +65,7 @@ class UserPublicProfile {
   final String userId;
   final String displayName;
   final String avatarKey;
+  final String? bio;
   final int followersCount;
   final int followingCount;
   final int predictionsCount;
@@ -78,6 +80,7 @@ class UserPublicProfile {
     String? userId,
     String? displayName,
     String? avatarKey,
+    String? bio,
     int? followersCount,
     int? followingCount,
     int? predictionsCount,
@@ -92,6 +95,7 @@ class UserPublicProfile {
       userId: userId ?? this.userId,
       displayName: displayName ?? this.displayName,
       avatarKey: avatarKey ?? this.avatarKey,
+      bio: bio ?? this.bio,
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,
       predictionsCount: predictionsCount ?? this.predictionsCount,
@@ -109,6 +113,7 @@ class UserPublicProfile {
       userId: _requiredString(json, 'user_id'),
       displayName: _requiredString(json, 'display_name'),
       avatarKey: _requiredString(json, 'avatar_key'),
+      bio: json['bio'] as String?,
       followersCount: (json['followers_count'] as num?)?.toInt() ?? 0,
       followingCount: (json['following_count'] as num?)?.toInt() ?? 0,
       predictionsCount: (json['predictions_count'] as num?)?.toInt() ?? 0,
@@ -118,6 +123,65 @@ class UserPublicProfile {
       tippingEnabled: json['tipping_enabled'] as bool? ?? false,
       canReceiveTips: json['can_receive_tips'] as bool? ?? false,
       canSendTip: json['can_send_tip'] as bool? ?? false,
+    );
+  }
+}
+
+class UserFollowItem {
+  const UserFollowItem({
+    required this.userId,
+    required this.displayName,
+    required this.avatarKey,
+    this.isFollowing = false,
+  });
+
+  final String userId;
+  final String displayName;
+  final String avatarKey;
+  final bool isFollowing;
+
+  UserFollowItem copyWith({bool? isFollowing}) {
+    return UserFollowItem(
+      userId: userId,
+      displayName: displayName,
+      avatarKey: avatarKey,
+      isFollowing: isFollowing ?? this.isFollowing,
+    );
+  }
+
+  factory UserFollowItem.fromJson(Map<String, dynamic> json) {
+    return UserFollowItem(
+      userId: _requiredString(json, 'user_id'),
+      displayName: _requiredString(json, 'display_name'),
+      avatarKey: _requiredString(json, 'avatar_key'),
+      isFollowing: json['is_following'] as bool? ?? false,
+    );
+  }
+}
+
+class UserFollowPage {
+  const UserFollowPage({
+    required this.items,
+    required this.total,
+    required this.limit,
+    required this.offset,
+  });
+
+  final List<UserFollowItem> items;
+  final int total;
+  final int limit;
+  final int offset;
+
+  bool get hasMore => offset + items.length < total;
+
+  factory UserFollowPage.fromJson(Map<String, dynamic> json) {
+    return UserFollowPage(
+      items: _requiredList(json['items'])
+          .map((item) => UserFollowItem.fromJson(_requiredMap(item)))
+          .toList(growable: false),
+      total: _requiredInt(json, 'total'),
+      limit: _requiredInt(json, 'limit'),
+      offset: _requiredInt(json, 'offset'),
     );
   }
 }

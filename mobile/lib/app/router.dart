@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/observability/app_observability.dart';
 import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
+import '../features/admin/admin_stock_report_screen.dart';
 import '../features/admin/admin_wallet_credit_screen.dart';
 import '../features/admin/ai_failures_admin_screen.dart';
 import '../features/admin/historical_replay_control_screen.dart';
@@ -15,6 +16,7 @@ import '../features/auth/session_controller.dart';
 import '../features/bootstrap/splash_screen.dart';
 import '../features/community/community_create_screen.dart';
 import '../features/community/community_detail_screen.dart';
+import '../features/community/followers_screen.dart';
 import '../features/community/my_discussions_screen.dart';
 import '../features/community/screens/trading_session_chat_screen.dart';
 import '../features/home/dashboard_screen.dart';
@@ -39,6 +41,7 @@ import '../features/news/screens/stock_news_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
+import '../features/wallet/wallet_screen.dart';
 
 class _RouterRefreshNotifier extends ChangeNotifier {
   void refresh() => notifyListeners();
@@ -141,6 +144,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ProfileEditScreen(),
       ),
       GoRoute(
+        path: '/wallet',
+        builder: (context, state) => const WalletScreen(),
+      ),
+      GoRoute(
         path: '/wallet/history',
         builder: (context, state) => const WalletHistoryScreen(),
       ),
@@ -197,12 +204,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HistoricalReplayControlScreen(),
       ),
       GoRoute(
+        path: '/admin/stock-report',
+        builder: (context, state) => const AdminStockReportScreen(),
+      ),
+      GoRoute(
         path: '/community/new',
         builder: (context, state) => const CommunityCreateScreen(),
       ),
       GoRoute(
         path: '/community/mine',
         builder: (context, state) => const MyDiscussionsScreen(),
+      ),
+      GoRoute(
+        path: '/community/users/:userId/followers',
+        builder: (context, state) => FollowersScreen(
+          userId: state.pathParameters['userId']!,
+          mode: FollowListMode.followers,
+        ),
+      ),
+      GoRoute(
+        path: '/community/users/:userId/following',
+        builder: (context, state) => FollowersScreen(
+          userId: state.pathParameters['userId']!,
+          mode: FollowListMode.following,
+        ),
       ),
       GoRoute(
         path: '/community/:discussionId',

@@ -27,6 +27,7 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  late final TextEditingController _bioController;
   late String _avatarKey;
   bool _saving = false;
   bool _deleting = false;
@@ -36,12 +37,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     super.initState();
     final profile = ref.read(sessionControllerProvider).profile;
     _nameController = TextEditingController(text: profile?.displayName ?? '');
+    _bioController = TextEditingController(text: profile?.bio ?? '');
     _avatarKey = profile?.avatarKey ?? avatarKeys.first;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -56,6 +59,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           .updateProfile(
             displayName: _nameController.text,
             avatarKey: _avatarKey,
+            bio: _bioController.text,
           );
       if (!mounted) {
         return;
@@ -194,6 +198,19 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   final cleaned = value?.trim() ?? '';
                   return cleaned.length < 2 ? 'الاسم قصير جدًا.' : null;
                 },
+              ),
+              const SizedBox(height: 18),
+              TextFormField(
+                controller: _bioController,
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 500,
+                decoration: const InputDecoration(
+                  labelText: 'نبذة عنك',
+                  hintText: 'اكتب سطرًا يوصّفك كمحلل (اختياري)',
+                  prefixIcon: Icon(Icons.notes_rounded),
+                  alignLabelWithHint: true,
+                ),
               ),
               const SizedBox(height: 18),
               Text(

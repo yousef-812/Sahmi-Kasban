@@ -45,11 +45,14 @@ def update_profile(
     *,
     display_name: str | None = None,
     avatar_key: str | None = None,
+    bio: str | None = None,
 ) -> User:
     if display_name is not None:
         user.display_name = display_name
     if avatar_key is not None:
         user.avatar_key = validate_avatar_key(avatar_key)
+    if bio is not None:
+        user.bio = bio or None
     db.flush()
     return user
 

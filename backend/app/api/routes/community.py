@@ -8,6 +8,7 @@ from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession, OptionalUser
 from app.market_calendar import EGXTradingCalendar
+from app.schemas.accounts import MessageResponse
 from app.schemas.community import (
     CoinTipRequest,
     CoinTipResponse,
@@ -23,23 +24,20 @@ from app.schemas.community import (
     DiscussionViewsBatchRequest,
     FollowToggleResponse,
     PredictionDateOption,
+    UserFollowItemResponse,
+    UserFollowListResponse,
     UserMuteResponse,
     UserPublicProfileResponse,
-)
-from app.services.social import (
-    get_author_prediction_stats,
-    get_public_user_profile,
-    get_user_follow_stats,
-    send_coin_tip,
-    toggle_user_follow,
 )
 from app.services.community import (
     DISCUSSION_COST_POINTS,
     CommunityConflictError,
+    CommunityPermissionError,
     DiscussionNotFoundError,
     DiscussionReportError,
     DiscussionView,
     UserMuteError,
+    delete_discussion,
     get_discussion_reaction_counts,
     get_discussion_view,
     increment_discussion_view,
@@ -59,6 +57,15 @@ from app.services.community_ai import (
 from app.services.community_safety import (
     CommunityRateLimitError,
     create_safe_discussion,
+)
+from app.services.social import (
+    get_author_prediction_stats,
+    get_public_user_profile,
+    get_user_follow_stats,
+    list_user_followers,
+    list_user_following,
+    send_coin_tip,
+    toggle_user_follow,
 )
 from app.services.wallet import (
     InsufficientBalanceError,
@@ -448,6 +455,88 @@ def toggle_follow_user(
 
 
 @router.get(
+    "/users/{user_id}/followers",
+    response_model=UserFollowListResponse,
+)
+def user_followers_list(
+    user_id: UUID,
+    db: DatabaseSession,
+    current_user: OptionalUser = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> UserFollowListResponse:
+    current_user_id = current_user.id if current_user else None
+    try:
+        items, total = list_user_followers(
+            db,
+            target_user_id=user_id,
+            current_user_id=current_user_id,
+            limit=limit,
+            offset=offset,
+        )
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    return UserFollowListResponse(
+        items=[
+            UserFollowItemResponse(
+                user_id=user.id,
+                display_name=user.display_name,
+                avatar_key=user.avatar_key,
+                is_following=is_following,
+            )
+            for user, is_following in items
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/users/{user_id}/following",
+    response_model=UserFollowListResponse,
+)
+def user_following_list(
+    user_id: UUID,
+    db: DatabaseSession,
+    current_user: OptionalUser = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> UserFollowListResponse:
+    current_user_id = current_user.id if current_user else None
+    try:
+        items, total = list_user_following(
+            db,
+            target_user_id=user_id,
+            current_user_id=current_user_id,
+            limit=limit,
+            offset=offset,
+        )
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    return UserFollowListResponse(
+        items=[
+            UserFollowItemResponse(
+                user_id=user.id,
+                display_name=user.display_name,
+                avatar_key=user.avatar_key,
+                is_following=is_following,
+            )
+            for user, is_following in items
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
     "/users/{user_id}/profile",
     response_model=UserPublicProfileResponse,
 )
@@ -550,5 +639,36 @@ def pin_community_discussion(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
+
+
+@router.delete(
+    "/discussions/{discussion_id}",
+    response_model=MessageResponse,
+)
+def delete_community_discussion(
+    discussion_id: UUID,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> MessageResponse:
+    try:
+        delete_discussion(
+            db,
+            discussion_id=discussion_id,
+            user=current_user,
+        )
+        db.commit()
+    except DiscussionNotFoundError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except CommunityPermissionError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        ) from exc
+    return MessageResponse(message="Discussion deleted successfully")
 
 

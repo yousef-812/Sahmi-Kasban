@@ -176,6 +176,7 @@ class BackendRepository {
   Future<UserProfile> updateProfile({
     required String displayName,
     required String avatarKey,
+    String? bio,
   }) async {
     try {
       final response = await _apiClient.dio.patch<Map<String, dynamic>>(
@@ -183,6 +184,7 @@ class BackendRepository {
         data: <String, dynamic>{
           'display_name': displayName.trim(),
           'avatar_key': avatarKey,
+          if (bio != null) 'bio': bio.trim(),
         },
       );
       return UserProfile.fromJson(_requiredData(response));

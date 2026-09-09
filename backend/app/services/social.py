@@ -1,12 +1,19 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models.entities import Discussion, PredictionVerification, User, UserFollow
+from app.models.entities import (
+    CoinTipHistory,
+    Discussion,
+    PredictionVerification,
+    User,
+    UserFollow,
+)
 from app.schemas.community import UserPublicProfileResponse
+from app.services.wallet import POINTS_PER_COIN, credit_points, debit_points
 
 
 def toggle_user_follow(
@@ -173,6 +180,7 @@ def get_public_user_profile(
         user_id=user.id,
         display_name=user.display_name,
         avatar_key=user.avatar_key,
+        bio=user.bio,
         followers_count=followers_count,
         following_count=following_count,
         predictions_count=predictions_count,
@@ -182,6 +190,95 @@ def get_public_user_profile(
         tipping_enabled=user.tipping_enabled,
         can_receive_tips=can_receive_tips,
         can_send_tip=can_send_tip,
+    )
+
+
+def _effective_follow_ids(
+    db: Session,
+    current_user_id: UUID | None,
+    candidate_user_ids: list[UUID],
+) -> set[UUID]:
+    """Returns the set of candidate user ids that current_user already follows."""
+    if current_user_id is None or not candidate_user_ids:
+        return set()
+    followed = db.scalars(
+        select(UserFollow.following_id).where(
+            UserFollow.follower_id == current_user_id,
+            UserFollow.following_id.in_(candidate_user_ids),
+        )
+    ).all()
+    return set(followed)
+
+
+def list_user_followers(
+    db: Session,
+    *,
+    target_user_id: UUID,
+    current_user_id: UUID | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[tuple[User, bool]], int]:
+    """Returns ([(follower_user, is_following_by_current_user)], total)."""
+    target = db.scalar(
+        select(User.id).where(User.id == target_user_id, User.deleted_at.is_(None))
+    )
+    if target is None:
+        raise KeyError("Target user not found")
+
+    base = (
+        select(UserFollow, User)
+        .join(User, User.id == UserFollow.follower_id)
+        .where(
+            UserFollow.following_id == target_user_id,
+            User.deleted_at.is_(None),
+        )
+    )
+    total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
+    rows = db.execute(
+        base.order_by(UserFollow.created_at.desc(), UserFollow.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    candidate_ids = [follower.id for _, follower in rows]
+    followed_ids = _effective_follow_ids(db, current_user_id, candidate_ids)
+    return [(follower, follower.id in followed_ids) for _, follower in rows], int(total)
+
+
+def list_user_following(
+    db: Session,
+    *,
+    target_user_id: UUID,
+    current_user_id: UUID | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[tuple[User, bool]], int]:
+    """Returns ([(following_user, is_following_by_current_user)], total)."""
+    target = db.scalar(
+        select(User.id).where(User.id == target_user_id, User.deleted_at.is_(None))
+    )
+    if target is None:
+        raise KeyError("Target user not found")
+
+    base = (
+        select(UserFollow, User)
+        .join(User, User.id == UserFollow.following_id)
+        .where(
+            UserFollow.follower_id == target_user_id,
+            User.deleted_at.is_(None),
+        )
+    )
+    total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
+    rows = db.execute(
+        base.order_by(UserFollow.created_at.desc(), UserFollow.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    candidate_ids = [following.id for _, following in rows]
+    followed_ids = _effective_follow_ids(db, current_user_id, candidate_ids)
+    return [(following, following.id in followed_ids) for _, following in rows], int(
+        total
     )
 
 

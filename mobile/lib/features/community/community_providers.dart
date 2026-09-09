@@ -36,3 +36,18 @@ final predictionDatesProvider =
     FutureProvider.autoDispose<List<PredictionDateOption>>((ref) {
       return ref.watch(communityRepositoryProvider).getPredictionDates();
     });
+
+final userPublicProfileProvider =
+    FutureProvider.autoDispose.family<UserPublicProfile, String>((ref, userId) {
+      return ref.watch(communityRepositoryProvider).getUserProfile(userId);
+    });
+
+final followersProvider =
+    FutureProvider.autoDispose.family<UserFollowPage, String>((ref, userId) {
+      return ref.watch(communityRepositoryProvider).getFollowers(userId: userId);
+    });
+
+final followingProvider =
+    FutureProvider.autoDispose.family<UserFollowPage, String>((ref, userId) {
+      return ref.watch(communityRepositoryProvider).getFollowing(userId: userId);
+    });

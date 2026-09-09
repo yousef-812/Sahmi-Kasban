@@ -58,6 +58,7 @@ class UserPublicProfileResponse(BaseModel):
     user_id: UUID
     display_name: str
     avatar_key: str
+    bio: str | None = None
     followers_count: int = 0
     following_count: int = 0
     predictions_count: int = 0
@@ -67,6 +68,20 @@ class UserPublicProfileResponse(BaseModel):
     tipping_enabled: bool = False
     can_receive_tips: bool = False
     can_send_tip: bool = False
+
+
+class UserFollowItemResponse(BaseModel):
+    user_id: UUID
+    display_name: str
+    avatar_key: str
+    is_following: bool = False
+
+
+class UserFollowListResponse(BaseModel):
+    items: list[UserFollowItemResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(gt=0)
+    offset: int = Field(ge=0)
 
 
 class CoinTipRequest(BaseModel):

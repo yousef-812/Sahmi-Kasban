@@ -40,6 +40,7 @@ def build_profile_response(db: DatabaseSession, user: CurrentUser) -> ProfileRes
         email=user.email,
         display_name=user.display_name,
         avatar_key=user.avatar_key,
+        bio=user.bio,
         email_verified=user.email_verified,
         status=user.status,
         is_admin=is_admin_email(user.email),
@@ -80,6 +81,7 @@ def update_my_profile(
         current_user,
         display_name=payload.display_name,
         avatar_key=payload.avatar_key,
+        bio=payload.bio,
     )
     db.commit()
     db.refresh(current_user)

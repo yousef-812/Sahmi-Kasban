@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'community_feed_tab.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
+import 'community_repository.dart';
 import 'prediction_models.dart';
 import 'prediction_providers.dart';
 import 'prediction_verification_card.dart';
@@ -45,6 +46,48 @@ class _MyDiscussionList extends ConsumerWidget {
     ]);
   }
 
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    CommunityDiscussion discussion,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف المناقشة'),
+        content: const Text('هل أنت متأكد من حذف هذه المناقشة؟ لا يمكن التراجع.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(communityRepositoryProvider).deleteDiscussion(discussion.id);
+      ref.invalidate(myDiscussionsProvider);
+      ref.invalidate(communityFeedProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حذف المناقشة بنجاح.')),
+        );
+      }
+    } on Object catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ أثناء الحذف: $error')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final discussions = ref.watch(myDiscussionsProvider);
@@ -84,6 +127,20 @@ class _MyDiscussionList extends ConsumerWidget {
                     CommunityDiscussionCard(
                       discussion: discussion,
                       showStatus: true,
+                    ),
+                    Row(
+                      children: [
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () => _confirmDelete(context, ref, discussion),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: const Text('حذف'),
+                          style: TextButton.styleFrom(
+                            foregroundColor:
+                                Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
                     ),
                     if (discussion.status == 'rejected' &&
                         discussion.rejectionCode != null)

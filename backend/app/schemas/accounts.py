@@ -136,6 +136,7 @@ class DeleteAccountRequest(BaseModel):
 class ProfileUpdateRequest(BaseModel):
     display_name: str | None = Field(default=None, min_length=2, max_length=80)
     avatar_key: str | None = None
+    bio: str | None = Field(default=None, max_length=500)
 
     @field_validator("display_name")
     @classmethod
@@ -152,6 +153,13 @@ class ProfileUpdateRequest(BaseModel):
     def supported_optional_avatar(cls, value: str | None) -> str | None:
         return validate_avatar_key(value) if value is not None else None
 
+    @field_validator("bio")
+    @classmethod
+    def clean_optional_bio(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return " ".join(value.split())
+
 
 class AvatarOption(BaseModel):
     key: str
@@ -167,6 +175,7 @@ class ProfileResponse(BaseModel):
     email: EmailStr
     display_name: str
     avatar_key: str
+    bio: str | None = None
     referral_code: str | None = None
     email_verified: bool
     status: str

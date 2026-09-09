@@ -84,6 +84,16 @@ class CommunityRepository {
     }
   }
 
+  Future<void> deleteDiscussion(String discussionId) async {
+    try {
+      await _apiClient.dio.delete<Map<String, dynamic>>(
+        '/community/discussions/$discussionId',
+      );
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<CommunityDiscussionSubmission> submitDiscussion({
     required String submissionKey,
     required String ticker,
@@ -224,6 +234,38 @@ class CommunityRepository {
         '/community/users/$userId/profile',
       );
       return UserPublicProfile.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<UserFollowPage> getFollowers({
+    required String userId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/community/users/$userId/followers',
+        queryParameters: <String, dynamic>{'limit': limit, 'offset': offset},
+      );
+      return UserFollowPage.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<UserFollowPage> getFollowing({
+    required String userId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/community/users/$userId/following',
+        queryParameters: <String, dynamic>{'limit': limit, 'offset': offset},
+      );
+      return UserFollowPage.fromJson(_requiredData(response.data));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }

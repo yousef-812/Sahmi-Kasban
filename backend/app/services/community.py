@@ -5,16 +5,21 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, time
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
+from app.core.admin import is_admin_email
 from app.market_calendar import EGXTradingCalendar
 from app.models import (
+    AIPersonaLog,
+    CommunityAdminEvent,
     Discussion,
+    DiscussionAppeal,
     DiscussionImpression,
     DiscussionModerationEvent,
     DiscussionReaction,
     DiscussionReport,
+    PredictionVerification,
     User,
     UserMute,
 )
@@ -75,6 +80,10 @@ class DiscussionReportError(CommunityError):
 
 class UserMuteError(CommunityError):
     """Raised when a mute operation is invalid."""
+
+
+class CommunityPermissionError(CommunityError):
+    """Raised when the actor is not allowed to perform the operation."""
 
 
 @dataclass(frozen=True)
@@ -482,6 +491,69 @@ def list_user_discussions(
         .offset(offset)
     ).all()
     return [DiscussionView(discussion=item, author=user) for item in discussions], total
+
+
+def delete_discussion(
+    db: Session,
+    *,
+    discussion_id: UUID,
+    user: User,
+) -> Discussion:
+    """Deletes a discussion by its author or an admin, releasing any held funds."""
+    discussion = db.scalar(
+        select(Discussion).where(Discussion.id == discussion_id).with_for_update()
+    )
+    if discussion is None:
+        raise DiscussionNotFoundError("Discussion does not exist")
+    if discussion.user_id != user.id and not is_admin_email(user.email):
+        raise CommunityPermissionError("Only the author or an admin can delete this discussion")
+
+    if (
+        DISCUSSION_COST_POINTS > 0
+        and discussion.status == "pending_review"
+        and discussion.wallet_hold_transaction_id
+    ):
+        release_hold(
+            db,
+            user_id=discussion.user_id,
+            amount_points=DISCUSSION_COST_POINTS,
+            transaction_id=discussion.wallet_hold_transaction_id,
+            entry_type=DISCUSSION_HOLD_ENTRY_TYPE,
+            release_transaction_id=_release_transaction_id(discussion.id),
+            release_entry_type=DISCUSSION_RELEASE_ENTRY_TYPE,
+            reference_type="discussion",
+            reference_id=str(discussion.id),
+            details={"reason_code": "author_deleted"},
+        )
+
+    db.execute(
+        delete(DiscussionReaction).where(DiscussionReaction.discussion_id == discussion.id)
+    )
+    db.execute(
+        delete(DiscussionImpression).where(DiscussionImpression.discussion_id == discussion.id)
+    )
+    db.execute(delete(DiscussionReport).where(DiscussionReport.discussion_id == discussion.id))
+    db.execute(
+        delete(DiscussionModerationEvent).where(
+            DiscussionModerationEvent.discussion_id == discussion.id
+        )
+    )
+    db.execute(delete(DiscussionAppeal).where(DiscussionAppeal.discussion_id == discussion.id))
+    db.execute(
+        delete(PredictionVerification).where(
+            PredictionVerification.discussion_id == discussion.id
+        )
+    )
+    db.execute(delete(AIPersonaLog).where(AIPersonaLog.discussion_id == discussion.id))
+    db.execute(
+        update(CommunityAdminEvent)
+        .where(CommunityAdminEvent.discussion_id == discussion.id)
+        .values(discussion_id=None)
+    )
+
+    db.delete(discussion)
+    db.flush()
+    return discussion
 
 
 def report_discussion(

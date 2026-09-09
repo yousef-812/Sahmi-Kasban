@@ -6,12 +6,7 @@ import '../community_models.dart';
 import '../community_providers.dart';
 import '../community_repository.dart';
 import '../widgets/coin_tipping_dialog.dart';
-
-final userProfileProvider =
-    FutureProvider.family<UserPublicProfile, String>((ref, userId) async {
-  final repository = ref.watch(communityRepositoryProvider);
-  return repository.getUserProfile(userId);
-});
+import '../../core/avatar_assets.dart';
 
 final userDiscussionsProvider =
     FutureProvider.family<List<CommunityDiscussion>, String>((ref, userId) async {
@@ -63,7 +58,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     try {
       final repo = ref.read(communityRepositoryProvider);
       await repo.toggleFollow(profile.userId);
-      ref.invalidate(userProfileProvider(widget.userId));
+      ref.invalidate(userPublicProfileProvider(widget.userId));
       ref.invalidate(communityFeedProvider);
     } catch (e) {
       if (mounted) {
@@ -128,7 +123,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final profileAsync = ref.watch(userProfileProvider(widget.userId));
+    final profileAsync = ref.watch(userPublicProfileProvider(widget.userId));
     final discussionsAsync = ref.watch(userDiscussionsProvider(widget.userId));
 
     return Scaffold(
@@ -147,7 +142,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               Text('حدث خطأ في تحميل البيانات: $err'),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: () => ref.refresh(userProfileProvider(widget.userId)),
+                onPressed: () => ref.refresh(userPublicProfileProvider(widget.userId)),
                 child: const Text('إعادة المحاولة'),
               ),
             ],
@@ -156,7 +151,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         data: (profile) {
           return RefreshIndicator(
             onRefresh: () async {
-              ref.invalidate(userProfileProvider(widget.userId));
+              ref.invalidate(userPublicProfileProvider(widget.userId));
               ref.invalidate(userDiscussionsProvider(widget.userId));
             },
             child: SingleChildScrollView(
@@ -177,16 +172,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                           CircleAvatar(
                             radius: 40,
                             backgroundColor: theme.colorScheme.primaryContainer,
-                            child: Text(
-                              profile.displayName.isNotEmpty
-                                  ? profile.displayName[0].toUpperCase()
-                                  : 'U',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
+                            backgroundImage:
+                                AssetImage(avatarAssetPath(profile.avatarKey)),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -202,21 +189,51 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                               color: Colors.grey,
                             ),
                           ),
+                          if (profile.bio != null && profile.bio!.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                profile.bio!,
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 20),
 
                           // Profile Metrics Grid
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              _MetricTile(
-                                label: 'المتابعون',
-                                value: '${profile.followersCount}',
-                                icon: Icons.group,
+                              InkWell(
+                                onTap: () => context.push(
+                                  '/community/users/${profile.userId}/followers',
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                child: _MetricTile(
+                                  label: 'المتابعون',
+                                  value: '${profile.followersCount}',
+                                  icon: Icons.group,
+                                ),
                               ),
-                              _MetricTile(
-                                label: 'يتابع',
-                                value: '${profile.followingCount}',
-                                icon: Icons.person_add_alt_1,
+                              InkWell(
+                                onTap: () => context.push(
+                                  '/community/users/${profile.userId}/following',
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                child: _MetricTile(
+                                  label: 'يتابع',
+                                  value: '${profile.followingCount}',
+                                  icon: Icons.person_add_alt_1,
+                                ),
                               ),
                               _MetricTile(
                                 label: 'التوقعات',
@@ -277,7 +294,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                       ? () async {
                                           final tipped = await CoinTippingDialog.show(context, profile);
                                           if (tipped == true) {
-                                            ref.invalidate(userProfileProvider(widget.userId));
+                                            ref.invalidate(userPublicProfileProvider(widget.userId));
                                           }
                                         }
                                       : () => _showTippingInfoDialog(profile),
