@@ -235,30 +235,10 @@ class _StockPredictionPromptDialogState
                 },
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
+              _PredictionDateDropdown(
                 value: _periodType,
-                decoration: const InputDecoration(
-                  labelText: 'أفق التوقع والتقييم',
-                  prefixIcon: Icon(Icons.schedule_rounded),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'next_session',
-                    child: Text('الجلسة القادمة'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'this_week',
-                    child: Text('هذا الأسبوع'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'next_week',
-                    child: Text('الأسبوع القادم'),
-                  ),
-                ],
                 onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _periodType = value);
-                  }
+                  if (value != null) setState(() => _periodType = value);
                 },
               ),
               const SizedBox(height: 20),
@@ -321,6 +301,74 @@ class _StockPredictionPromptDialogState
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A Riverpod-aware dropdown that fetches upcoming trading dates dynamically.
+class _PredictionDateDropdown extends ConsumerWidget {
+  const _PredictionDateDropdown({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final datesAsync = ref.watch(predictionDatesProvider);
+
+    return datesAsync.when(
+      loading: () => InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'أفق التوقع والتقييم',
+          prefixIcon: Icon(Icons.schedule_rounded),
+        ),
+        child: const SizedBox(
+          height: 20,
+          child: LinearProgressIndicator(minHeight: 2),
+        ),
+      ),
+      error: (_, __) => InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'أفق التوقع والتقييم',
+          prefixIcon: Icon(Icons.schedule_rounded),
+          errorText: 'تعذر تحميل الجلسات',
+        ),
+        child: const SizedBox.shrink(),
+      ),
+      data: (dates) {
+        // Determine the current value: if it matches one of the dates use it,
+        // otherwise fall back to the first date in the list.
+        final validValues = dates.map((d) => d.date).toSet();
+        final currentValue =
+            validValues.contains(value) ? value : dates.firstOrNull?.date;
+
+        // Notify parent if we needed to change the selected value.
+        if (currentValue != null && currentValue != value) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => onChanged(currentValue),
+          );
+        }
+
+        return DropdownButtonFormField<String>(
+          initialValue: currentValue,
+          decoration: const InputDecoration(
+            labelText: 'أفق التوقع والتقييم',
+            prefixIcon: Icon(Icons.schedule_rounded),
+          ),
+          items: dates
+              .map(
+                (opt) => DropdownMenuItem<String>(
+                  value: opt.date,
+                  child: Text(opt.displayName),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+        );
+      },
     );
   }
 }

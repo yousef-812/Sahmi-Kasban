@@ -55,6 +55,24 @@ class CommunityRepository {
     }
   }
 
+  Future<List<PredictionDateOption>> getPredictionDates() async {
+    try {
+      final response = await _apiClient.dio.get<List<dynamic>>(
+        '/community/prediction-dates',
+      );
+      final list = response.data ?? [];
+      return list
+          .map(
+            (item) => PredictionDateOption.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList();
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<CommunityDiscussion> pinDiscussion(String discussionId) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(

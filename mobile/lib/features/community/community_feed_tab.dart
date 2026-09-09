@@ -361,6 +361,45 @@ class _CommunityDiscussionCardState
                     ],
                   ),
                 ),
+              if (discussion.isEnded)
+                Builder(
+                  builder: (context) {
+                    final errorColor = Theme.of(context).colorScheme.error;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: errorColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: errorColor.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.flag_rounded,
+                            color: errorColor,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'الجلسة منتهية',
+                            style: TextStyle(
+                              color: errorColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               Row(
                 children: [
                   GestureDetector(

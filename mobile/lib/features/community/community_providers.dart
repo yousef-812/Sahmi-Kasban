@@ -30,3 +30,9 @@ final communityDiscussionProvider = FutureProvider.autoDispose
     .family<CommunityDiscussion, String>((ref, discussionId) {
       return ref.watch(communityRepositoryProvider).getDiscussion(discussionId);
     });
+
+/// Fetches the upcoming EGX trading session dates for the prediction dialog.
+final predictionDatesProvider =
+    FutureProvider.autoDispose<List<PredictionDateOption>>((ref) {
+      return ref.watch(communityRepositoryProvider).getPredictionDates();
+    });

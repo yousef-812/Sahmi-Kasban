@@ -141,6 +141,8 @@ class CommunityDiscussion {
     this.agreeCount = 0,
     this.disagreeCount = 0,
     this.isPinned = false,
+    this.isEnded = false,
+    this.targetDate,
     this.userReaction,
   });
 
@@ -161,6 +163,8 @@ class CommunityDiscussion {
   final int agreeCount;
   final int disagreeCount;
   final bool isPinned;
+  final bool isEnded;
+  final String? targetDate;
   final String? userReaction;
 
   bool get canAppeal => status == 'rejected' || status == 'hidden';
@@ -199,7 +203,30 @@ class CommunityDiscussion {
       agreeCount: (json['agree_count'] as num?)?.toInt() ?? 0,
       disagreeCount: (json['disagree_count'] as num?)?.toInt() ?? 0,
       isPinned: json['is_pinned'] as bool? ?? false,
+      isEnded: json['is_ended'] as bool? ?? false,
+      targetDate: json['target_date'] as String?,
       userReaction: json['user_reaction'] as String?,
+    );
+  }
+}
+
+/// A single trading date option returned by GET /community/prediction-dates
+class PredictionDateOption {
+  const PredictionDateOption({
+    required this.date,
+    required this.displayName,
+    this.isNextSession = false,
+  });
+
+  final String date;
+  final String displayName;
+  final bool isNextSession;
+
+  factory PredictionDateOption.fromJson(Map<String, dynamic> json) {
+    return PredictionDateOption(
+      date: json['date'] as String,
+      displayName: json['display_name'] as String,
+      isNextSession: json['is_next_session'] as bool? ?? false,
     );
   }
 }
