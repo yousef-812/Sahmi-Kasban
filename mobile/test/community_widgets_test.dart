@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sahmi_kasban_mobile/features/community/community_create_screen.dart';
 import 'package:sahmi_kasban_mobile/features/community/community_feed_tab.dart';
 import 'package:sahmi_kasban_mobile/features/community/community_models.dart';
+import 'package:sahmi_kasban_mobile/features/community/community_providers.dart';
 
 CommunityDiscussion _discussion() {
   return CommunityDiscussion.fromJson(<String, dynamic>{
@@ -56,7 +57,17 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: CommunityCreateScreen())),
+      ProviderScope(
+        overrides: [
+          predictionDatesProvider.overrideWith((ref) async => const [
+            PredictionDateOption(
+              date: '2026-09-07',
+              displayName: 'الاثنين 7 سبتمبر',
+            ),
+          ]),
+        ],
+        child: const MaterialApp(home: CommunityCreateScreen()),
+      ),
     );
 
     expect(find.text('إنشاء مناقشة'), findsOneWidget);
@@ -67,5 +78,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('إرسال للمراجعة'), findsOneWidget);
+    expect(find.text('الاثنين 7 سبتمبر'), findsOneWidget);
   });
 }
