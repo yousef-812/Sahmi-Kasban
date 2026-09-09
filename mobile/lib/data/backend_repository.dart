@@ -460,6 +460,58 @@ class BackendRepository {
     }
   }
 
+  Future<MarketIndicesSnapshot> getMarketIndices() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/indices',
+      );
+      return MarketIndicesSnapshot.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<MarketQuote> getMarketIndexQuote(String ticker) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/indices/${ticker.trim().toUpperCase()}/quote',
+      );
+      return MarketQuote.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<StockAnalysisResult> analyzeMarketIndex(String ticker) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/market/indices/${ticker.trim().toUpperCase()}/analysis',
+        data: const <String, dynamic>{'language': 'ar'},
+      );
+      return StockAnalysisResult.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<StockAnalysisResult?> getLatestOwnedIndexAnalysis(
+    String ticker,
+  ) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/indices/${ticker.trim().toUpperCase()}/analysis/latest',
+      );
+      return StockAnalysisResult.fromJson(_requiredData(response));
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      throw _apiClient.mapError(error);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReportUnlockResult> unlockMarketReport(String reportId) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(

@@ -88,6 +88,8 @@ def _analysis_cache_key(
     series: CandleSeries,
     language: str,
     index_series: CandleSeries | None = None,
+    *,
+    key_prefix: str = "stock-analysis",
 ) -> str:
     settings = get_settings()
     identity = {
@@ -103,7 +105,7 @@ def _analysis_cache_key(
         "index_fingerprint": index_series.fingerprint if index_series else None,
     }
     canonical = json.dumps(identity, sort_keys=True, separators=(",", ":"))
-    return "stock-analysis:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return f"{key_prefix}:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _deterministic_explanation(report: dict[str, object]) -> str:
@@ -397,7 +399,7 @@ async def execute_stock_analysis(
             timeout=10.0,
         )
         explanation_source = "ai"
-    except (AIProviderError, asyncio.TimeoutError) as exc:
+    except (AIProviderError, TimeoutError) as exc:
         logger.info("AI explanation fallback for %s: %s", series.ticker, exc)
 
     from app.services.sector_quality import compute_sector_quality
@@ -497,6 +499,201 @@ async def execute_stock_analysis(
             reference_id=str(analysis.id),
             details={
                 "ticker": series.ticker,
+                "data_fingerprint": series.fingerprint,
+                "engine_version": settings.analysis_engine_version,
+                "configured_cost_points": analysis_cost_points,
+            },
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    account = get_wallet_account(db, user.id)
+    return StockAnalysisExecution(
+        analysis=analysis,
+        cached=False,
+        charged_points=analysis_cost_points,
+        balance_points=account.balance_points,
+        market_snapshot_cached=market_snapshot_cached,
+    )
+
+
+async def execute_index_analysis(
+    db: Session,
+    *,
+    user: User,
+    index_name: str,
+    provider: MarketDataProvider,
+    ai_service: SahmiAIService,
+    language: str = "ar",
+) -> StockAnalysisExecution:
+    """Run the core technical engines against an Egyptian market index.
+
+    The index series is analyzed directly with no separate market-index context
+    (the series *is* the index). Persistence, caching, and wallet charging reuse
+    the same StockAnalysis store as stock analyses, keyed under `index-analysis:`.
+    """
+    from app.market_data.cache import get_cached_or_fresh_history
+    from app.market_data.indices import get_index_info
+
+    info = get_index_info(index_name)
+    if info is None:
+        raise StockAnalysisExecutionError(f"Unsupported index: {index_name}")
+
+    settings = get_settings()
+    analysis_cost_points = get_int_setting(db, "analysis_cost_points")
+    index_settings = get_settings()
+    series, market_snapshot_cached = await get_cached_or_fresh_history(
+        db,
+        provider,
+        info.ticker,
+        period="2y",
+        interval="1d",
+        cache_minutes=index_settings.market_data_cache_minutes,
+        min_candles=200,
+    )
+    cache_key = _analysis_cache_key(series, language, key_prefix="index-analysis")
+    existing = db.scalar(
+        select(StockAnalysis).where(
+            StockAnalysis.cache_key == cache_key,
+            StockAnalysis.status == "complete",
+        )
+    )
+    if existing is not None:
+        return _deliver_existing_analysis(
+            db,
+            user=user,
+            analysis=existing,
+            analysis_cost_points=analysis_cost_points,
+            market_snapshot_cached=market_snapshot_cached,
+        )
+
+    account = get_wallet_account(db, user.id)
+    if account.balance_points < analysis_cost_points:
+        db.rollback()
+        raise InsufficientBalanceError("Insufficient balance for index analysis")
+
+    available_candles = len(series.candles)
+    adaptive_min_history = max(min(available_candles, settings.market_data_min_candles), 15)
+
+    config = AnalysisConfig(
+        capital=settings.analysis_default_capital,
+        risk_per_trade=settings.analysis_risk_per_trade,
+        max_position_value=settings.analysis_max_position_value,
+        min_history=adaptive_min_history,
+    )
+    analyzer = SahmiKasbanAnalyzer(config)
+    try:
+        report = analyzer.analyze(
+            info.ticker,
+            pd.DataFrame(series.candles),
+            index=None,
+        )
+    except Exception as exc:
+        db.rollback()
+        raise StockAnalysisExecutionError(f"Core analysis failed for index {info.ticker}") from exc
+
+    report_payload = _json_safe(report.to_dict())
+    if not isinstance(report_payload, dict):
+        db.rollback()
+        raise StockAnalysisExecutionError("Index analysis payload is invalid")
+
+    explanation = _deterministic_explanation(report_payload)
+    explanation_source = "deterministic"
+    try:
+        explanation = await asyncio.wait_for(
+            ai_service.explain_stock_analysis(
+                ticker=info.ticker,
+                analysis_payload=report_payload,
+                language=language,
+            ),
+            timeout=10.0,
+        )
+        explanation_source = "ai"
+    except (AIProviderError, TimeoutError) as exc:
+        logger.info("Index AI explanation fallback for %s: %s", info.ticker, exc)
+
+    from app.services.sector_quality import compute_sector_quality
+
+    sector_quality = compute_sector_quality(
+        info.ticker,
+        score=float(report_payload.get("final_score", 0))
+        if isinstance(report_payload, dict)
+        else 0.0,
+        raw_sector="مؤشر سوق",
+    )
+
+    payload = {
+        "version": settings.analysis_engine_version,
+        "market_data": {
+            "provider": series.provider,
+            "interval": series.interval,
+            "period": series.period,
+            "data_as_of": series.data_as_of.isoformat(),
+            "fingerprint": series.fingerprint,
+            "candle_count": series.candle_count,
+            "sector": sector_quality["sector_name"],
+        },
+        "index": {
+            "name": info.ticker,
+            "provider": series.provider,
+            "interval": series.interval,
+            "data_as_of": series.data_as_of.isoformat(),
+            "fingerprint": series.fingerprint,
+        },
+        "is_index": True,
+        "analysis": report_payload,
+        "explanation": explanation,
+        "explanation_source": explanation_source,
+        "disclaimer": DISCLAIMER_AR,
+        "sector_quality": sector_quality,
+    }
+    analysis = StockAnalysis(
+        ticker=info.ticker,
+        data_as_of=series.data_as_of,
+        cache_key=cache_key,
+        status="complete",
+        payload=payload,
+    )
+    db.add(analysis)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raced = db.scalar(
+            select(StockAnalysis).where(
+                StockAnalysis.cache_key == cache_key,
+                StockAnalysis.status == "complete",
+            )
+        )
+        if raced is None:
+            raise
+        return _deliver_existing_analysis(
+            db,
+            user=user,
+            analysis=raced,
+            analysis_cost_points=analysis_cost_points,
+            market_snapshot_cached=market_snapshot_cached,
+        )
+
+    try:
+        _grant_access(
+            db,
+            user=user,
+            analysis=analysis,
+            moment=datetime.now(UTC),
+        )
+        debit_points(
+            db,
+            user_id=user.id,
+            amount_points=analysis_cost_points,
+            transaction_id=f"index-analysis:{user.id}:{analysis.id}",
+            entry_type="stock_analysis_debit",
+            reference_type="index_analysis",
+            reference_id=str(analysis.id),
+            details={
+                "ticker": info.ticker,
                 "data_fingerprint": series.fingerprint,
                 "engine_version": settings.analysis_engine_version,
                 "configured_cost_points": analysis_cost_points,

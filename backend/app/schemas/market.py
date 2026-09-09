@@ -135,6 +135,12 @@ class MarketQuotesResponse(BaseModel):
     items: list[MarketQuoteResponse]
 
 
+class MarketIndicesResponse(BaseModel):
+    generated_at: datetime
+    market_open: bool
+    items: list[MarketQuoteResponse]
+
+
 class StockInvestmentAnalysisResponse(BaseModel):
     ticker: str
     company_name: str

@@ -72,7 +72,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
 
   void _initTabController({int initialIndex = 0}) {
     final totalTabs =
-        2 + _userWatchlists.length; // 0: All, 1: Sectors, 2+: Custom Watchlists
+        3 + _userWatchlists.length; // 0: All, 1: Sectors, 2: Indices, 3+: Watchlists
     final targetIndex = initialIndex < totalTabs ? initialIndex : 0;
 
     _tabController?.dispose();
@@ -134,7 +134,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
                   _userWatchlists[name] = [];
                 });
                 _saveState();
-                _initTabController(initialIndex: 1 + _userWatchlists.length);
+                _initTabController(initialIndex: 2 + _userWatchlists.length);
               }
               Navigator.of(ctx).pop();
             },
@@ -462,6 +462,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(marketQuotesProvider);
+        ref.invalidate(marketIndicesProvider);
         await ref.read(marketQuotesProvider.future);
       },
       child: Column(
@@ -497,6 +498,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
                     tabs: [
                       const Tab(text: 'كل الأسهم'),
                       const Tab(text: 'القطاعات'),
+                      const Tab(text: 'مؤشرات'),
                       ..._userWatchlists.keys.map(
                         (name) => Tab(
                           child: GestureDetector(
@@ -581,9 +583,12 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
           Expanded(child: _buildGrid(items)),
         ],
       );
+    } else if (_currentTabIndex == 2) {
+      // Tab 2: Market indices
+      return _buildIndexTab();
     } else {
-      // Tab 2+: User custom watchlists
-      final listIndex = _currentTabIndex - 2;
+      // Tab 3+: User custom watchlists
+      final listIndex = _currentTabIndex - 3;
       final watchlistNames = _userWatchlists.keys.toList();
       if (listIndex < 0 || listIndex >= watchlistNames.length) {
         return _buildGrid([]);
@@ -625,6 +630,49 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
         ],
       );
     }
+  }
+
+  Widget _buildIndexTab() {
+    return ref.watch(marketIndicesProvider).when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => _ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(marketIndicesProvider),
+      ),
+      data: (snapshot) {
+        final items = snapshot.items;
+        if (items.isEmpty) {
+          return ListView(
+            padding: const EdgeInsets.all(24),
+            children: const [
+              Icon(Icons.query_stats_rounded, size: 48),
+              SizedBox(height: 12),
+              Text(
+                'لا توجد بيانات مؤشرات متاحة حاليًا.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          );
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 220,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.92,
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final quote = items[index];
+            return StockQuoteCard(
+              quote: quote,
+              onTap: () => context.push('/index/${quote.ticker}'),
+            );
+          },
+        );
+      },
+    );
   }
 
   static final Map<String, List<String>> _sectorStockMap = {

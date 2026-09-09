@@ -11,6 +11,7 @@ from app.market_data.broadcaster import get_quote_broadcaster
 from app.market_data.catalog import market_instrument_exists, search_market_instruments
 from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.fundamental import compare_stocks_investment, get_stock_investment_metric
+from app.market_data.indices import fetch_index_quote, fetch_market_indices, index_exists
 from app.market_data.provider import get_market_data_provider
 from app.market_data.quotes import fetch_market_quotes, fetch_single_quote
 from app.market_data.types import (
@@ -20,6 +21,7 @@ from app.market_data.types import (
 )
 from app.models import User
 from app.schemas.market import (
+    MarketIndicesResponse,
     MarketInstrumentListResponse,
     MarketInstrumentResponse,
     MarketQuoteResponse,
@@ -37,6 +39,7 @@ from app.schemas.market import (
 from app.services.stock_analysis import (
     StockAnalysisExecution,
     StockAnalysisExecutionError,
+    execute_index_analysis,
     execute_stock_analysis,
     get_stock_ai_service,
     latest_owned_stock_analysis,
@@ -176,6 +179,119 @@ async def get_market_quotes(
         next_session_open=snapshot.next_session_open,
         items=[_quote_response(item) for item in snapshot.items],
     )
+
+
+@router.get("/market/indices", response_model=MarketIndicesResponse)
+async def get_market_indices(
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> MarketIndicesResponse:
+    from datetime import UTC, datetime
+
+    quotes = await fetch_market_indices()
+    snapshot = await fetch_market_quotes(db)
+    return MarketIndicesResponse(
+        generated_at=datetime.now(UTC),
+        market_open=snapshot.market_open,
+        items=[_quote_response(item) for item in quotes],
+    )
+
+
+@router.get("/market/indices/{ticker}/quote", response_model=MarketQuoteResponse)
+async def get_market_index_quote(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> MarketQuoteResponse:
+    normalized = ticker.strip().upper()
+    if not index_exists(normalized):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="المؤشر غير مدعوم.",
+        )
+    quote = await fetch_index_quote(normalized)
+    if quote is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="بيانات المؤشر غير متاحة مؤقتًا. أعد المحاولة بعد قليل.",
+        )
+    return _quote_response(quote)
+
+
+@router.get(
+    "/market/indices/{ticker}/analysis/latest",
+    response_model=StockAnalysisResponse,
+)
+async def get_latest_owned_index_analysis(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> StockAnalysisResponse:
+    normalized = ticker.strip().upper()
+    if not index_exists(normalized):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="المؤشر غير مدعوم.",
+        )
+    execution = latest_owned_stock_analysis(
+        db,
+        user=current_user,
+        ticker=normalized,
+    )
+    if execution is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="لا يوجد تحليل محفوظ لهذا المؤشر في حسابك.",
+        )
+    return _analysis_response(execution)
+
+
+@router.post(
+    "/market/indices/{ticker}/analysis",
+    response_model=StockAnalysisResponse,
+)
+async def analyze_market_index(
+    ticker: str,
+    request: StockAnalysisRequest,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+    provider: MarketProvider,
+    ai_service: StockAIService,
+) -> StockAnalysisResponse:
+    try:
+        normalized = ticker.strip().upper()
+        if not index_exists(normalized):
+            raise UnknownTickerError(f"Unsupported market index: {normalized}")
+        execution = await execute_index_analysis(
+            db,
+            user=current_user,
+            index_name=normalized,
+            provider=provider,
+            ai_service=ai_service,
+            language=request.language,
+        )
+    except UnknownTickerError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="المؤشر غير مدعوم.",
+        ) from exc
+    except InsufficientBalanceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="الرصيد لا يكفي لإجراء هذا التحليل.",
+        ) from exc
+    except MarketDataUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="بيانات المؤشر غير متاحة مؤقتًا. أعد المحاولة بعد قليل.",
+        ) from exc
+    except StockAnalysisExecutionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=("لم يكتمل التحليل لأن تاريخ المؤشر أو بياناته لا تكفي للمحركات حاليًا."),
+        ) from exc
+
+    return _analysis_response(execution)
 
 
 @router.websocket("/market/quotes/stream")

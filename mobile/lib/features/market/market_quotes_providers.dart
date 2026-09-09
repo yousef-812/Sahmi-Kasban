@@ -11,6 +11,23 @@ final marketQuotesProvider = StreamProvider.autoDispose<MarketQuotesSnapshot>((
   return repository.streamMarketQuotes();
 });
 
+/// EGX market indices (EGX30/EGX70 EWI/EGX100 EWI) fetched via REST.
+/// Indices are not part of the live push stream, so the snapshot is refreshed
+/// on demand or via pull-to-refresh invalidation.
+final marketIndicesProvider = FutureProvider.autoDispose<MarketIndicesSnapshot>((
+  ref,
+) {
+  return ref.watch(backendRepositoryProvider).getMarketIndices();
+});
+
+/// Single EGX market index quote used by the index detail screen.
+final marketIndexQuoteProvider = FutureProvider.autoDispose.family<
+  MarketQuote,
+  String
+>((ref, ticker) {
+  return ref.watch(backendRepositoryProvider).getMarketIndexQuote(ticker);
+});
+
 /// Single stock quote used by the stock detail screen.
 /// Automatically updates in real-time when the live stream broadcasts changes for this ticker.
 class StockQuoteNotifier

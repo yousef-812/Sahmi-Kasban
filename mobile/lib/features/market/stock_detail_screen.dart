@@ -573,7 +573,8 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   }
 
   String _buildHtml(bool isDark) {
-    final symbol = widget.symbol.toUpperCase();
+    final raw = widget.symbol.toUpperCase();
+    final symbol = raw.contains(':') ? raw : 'EGX:$raw';
     final hideTools = widget.hideSideToolbar ? 'true' : 'false';
     final themeStr = isDark ? 'dark' : 'light';
     final bgHex = isDark ? '#101418' : '#ffffff';
@@ -607,7 +608,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     "autosize": true,
     "width": "100%",
     "height": "100%",
-    "symbol": "EGX:$symbol",
+    "symbol": "$symbol",
     "interval": "D",
     "timezone": "Africa/Cairo",
     "theme": "$themeStr",
@@ -686,7 +687,7 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
                   ElevatedButton.icon(
                     onPressed: () {
                       final url = Uri.parse(
-                        'https://www.tradingview.com/symbols/EGX-$symbol/',
+                        'https://www.tradingview.com/symbols/${symbol.replaceFirst(':', '-')}/',
                       );
                       launchUrl(url, mode: LaunchMode.externalApplication);
                     },

@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 from app.core.config import get_settings
 from app.market_data.egx_symbols import normalize_egx_ticker
+from app.market_data.indices import resolve_index_tradingview_symbol
 from app.market_data.types import CandleSeries, MarketDataUnavailableError
 from reusable_data_fetcher import TradingViewConnector, get_tv_symbol
 
@@ -109,7 +110,8 @@ class TradingViewMarketDataProvider:
     ) -> CandleSeries:
         settings = get_settings()
         normalized_ticker = normalize_egx_ticker(ticker)
-        provider_symbol = get_tv_symbol(normalized_ticker, "EGX")
+        index_symbol = resolve_index_tradingview_symbol(normalized_ticker)
+        provider_symbol = index_symbol or get_tv_symbol(normalized_ticker, "EGX")
         tradingview_interval = _tradingview_interval(interval)
         count = _history_count(period, interval)
 

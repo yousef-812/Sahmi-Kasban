@@ -22,6 +22,7 @@ import '../features/market/stock_analysis_screen.dart';
 import '../features/market/stock_comparison_screen.dart';
 import '../features/market/stock_detail_screen.dart';
 import '../features/market/stocks_screen.dart';
+import '../features/market/index_detail_screen.dart';
 import '../features/monetization/monetization_page.dart';
 import '../features/notifications/notification_screen.dart';
 import '../features/onboarding/onboarding_controller.dart';
@@ -99,6 +100,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/stocks/:ticker',
         builder: (context, state) =>
             StockDetailScreen(ticker: state.pathParameters['ticker']!),
+      ),
+      GoRoute(
+        path: '/index/:ticker',
+        builder: (context, state) =>
+            IndexDetailScreen(ticker: state.pathParameters['ticker']!),
       ),
       GoRoute(
         path: '/stocks/:ticker/news',

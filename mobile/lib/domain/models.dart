@@ -385,6 +385,28 @@ class MarketQuotesSnapshot {
   }
 }
 
+class MarketIndicesSnapshot {
+  const MarketIndicesSnapshot({
+    required this.generatedAt,
+    required this.marketOpen,
+    required this.items,
+  });
+
+  final DateTime generatedAt;
+  final bool marketOpen;
+  final List<MarketQuote> items;
+
+  factory MarketIndicesSnapshot.fromJson(Map<String, dynamic> json) {
+    return MarketIndicesSnapshot(
+      generatedAt: DateTime.parse(json['generated_at'] as String),
+      marketOpen: json['market_open'] as bool? ?? false,
+      items: _list(
+        json['items'],
+      ).map((item) => MarketQuote.fromJson(_map(item))).toList(growable: false),
+    );
+  }
+}
+
 class StockAnalysisResult {
   const StockAnalysisResult({
     required this.analysisId,
