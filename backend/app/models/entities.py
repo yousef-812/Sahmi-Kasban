@@ -213,10 +213,6 @@ class Discussion(TimestampMixin, Base):
             name="uq_discussions_user_content_fingerprint",
         ),
         CheckConstraint(
-            "period_type IN ('next_session', 'week', 'month')",
-            name="discussion_period_type_allowed",
-        ),
-        CheckConstraint(
             "status IN ('pending_review', 'published', 'rejected', 'hidden')",
             name="discussion_status_allowed",
         ),
@@ -256,6 +252,7 @@ class Discussion(TimestampMixin, Base):
     hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     views_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
+    target_date: Mapped[date | None] = mapped_column(Date, index=True, nullable=True)
 
 
 class PredictionVerification(TimestampMixin, Base):

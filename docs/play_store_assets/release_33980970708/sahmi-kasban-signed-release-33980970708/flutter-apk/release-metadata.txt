@@ -1,0 +1,5 @@
+package_id=com.sahmikasban.sahmi_kasban_mobile
+version_name=1.0.2
+version_code=29
+certificate_sha256=1102e68ce24f7ba959f9c49d702f6c49b0c8a6e33d6b9b83f8ef14b8e0b48b25
+source_commit=d62afff6872ad8f6b8783ca103af40ca094a593d

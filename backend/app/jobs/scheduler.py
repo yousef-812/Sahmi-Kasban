@@ -67,8 +67,12 @@ async def run_daily_scan_scheduler() -> None:
 
         try:
             from app.db.session import SessionLocal
+            from app.services.community import unpin_ended_discussions
             from app.services.prediction_evaluation import auto_evaluate_due_predictions
             with SessionLocal() as db:
+                unpinned = unpin_ended_discussions(db)
+                if unpinned > 0:
+                    logger.info("Unpinned %s ended session discussions", unpinned)
                 eval_res = await auto_evaluate_due_predictions(db)
                 if eval_res.get("evaluated", 0) > 0:
                     logger.info("Automated prediction evaluation completed: %s", eval_res)

@@ -92,3 +92,69 @@ class EGXTradingCalendar:
             target_session_date=self.next_trading_session(source_date),
             scheduled_for=scheduled_for,
         )
+
+    def resolve_prediction_target_session(self, moment: datetime | None = None) -> date:
+        current = moment or datetime.now(UTC)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=UTC)
+        local = current.astimezone(self.timezone)
+        today = local.date()
+        session_start_time = time(hour=10, minute=0)
+
+        if self.is_trading_session(today):
+            if local.time() < session_start_time:
+                return today
+            return self.next_trading_session(today)
+        return self.next_trading_session(today)
+
+    def get_upcoming_trading_sessions(
+        self,
+        moment: datetime | None = None,
+        count: int = 5,
+    ) -> list[dict[str, object]]:
+        first_target = self.resolve_prediction_target_session(moment)
+        sessions: list[dict[str, object]] = []
+
+        curr = first_target
+        for i in range(count):
+            sessions.append({
+                "date": curr.isoformat(),
+                "display_name": format_arabic_date(curr),
+                "is_next_session": i == 0,
+            })
+            curr = self.next_trading_session(curr)
+
+        return sessions
+
+
+ARABIC_DAY_NAMES: dict[int, str] = {
+    0: "الاثنين",
+    1: "الثلاثاء",
+    2: "الأربعاء",
+    3: "الخميس",
+    4: "الجمعة",
+    5: "السبت",
+    6: "الأحد",
+}
+
+ARABIC_MONTH_NAMES: dict[int, str] = {
+    1: "يناير",
+    2: "فبراير",
+    3: "مارس",
+    4: "أبريل",
+    5: "مايو",
+    6: "يونيو",
+    7: "يوليو",
+    8: "أغسطس",
+    9: "سبتمبر",
+    10: "أكتوبر",
+    11: "نوفمبر",
+    12: "ديسمبر",
+}
+
+
+def format_arabic_date(d: date) -> str:
+    day_name = ARABIC_DAY_NAMES[d.weekday()]
+    month_name = ARABIC_MONTH_NAMES[d.month]
+    return f"{day_name} {d.day} {month_name} {d.year}"
+

@@ -27,7 +27,7 @@ class DiscussionCreateRequest(BaseModel):
     ticker: str = Field(min_length=2, max_length=24, pattern=r"^[A-Za-z0-9._-]+$")
     title: str = Field(min_length=10, max_length=180)
     content: str = Field(min_length=20, max_length=5000)
-    period_type: DiscussionPeriod
+    period_type: str = Field(min_length=1, max_length=64)
 
     @field_validator("ticker")
     @classmethod
@@ -79,12 +79,20 @@ class CoinTipResponse(BaseModel):
     receiver_id: UUID
 
 
+class PredictionDateOption(BaseModel):
+    date: str
+    display_name: str
+    is_next_session: bool = False
+
+
 class DiscussionResponse(BaseModel):
     id: UUID
     ticker: str
     title: str
     content: str
-    period_type: DiscussionPeriod
+    period_type: str
+    target_date: str | None = None
+    is_ended: bool = False
     status: DiscussionStatus
     moderation_result: dict
     frozen_prediction: dict

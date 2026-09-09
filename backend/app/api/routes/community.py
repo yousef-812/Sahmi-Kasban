@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sahmi_kasban.ai import SahmiAIService
 
 from app.api.dependencies import CurrentUser, DatabaseSession, OptionalUser
+from app.market_calendar import EGXTradingCalendar
 from app.schemas.community import (
     CoinTipRequest,
     CoinTipResponse,
@@ -21,6 +22,7 @@ from app.schemas.community import (
     DiscussionSubmissionResponse,
     DiscussionViewsBatchRequest,
     FollowToggleResponse,
+    PredictionDateOption,
     UserMuteResponse,
     UserPublicProfileResponse,
 )
@@ -41,10 +43,10 @@ from app.services.community import (
     get_discussion_reaction_counts,
     get_discussion_view,
     increment_discussion_view,
+    is_discussion_ended,
     list_published_discussions,
     list_user_discussions,
     mute_user,
-    pin_discussion,
     register_discussion_views,
     report_discussion,
     toggle_discussion_reaction,
@@ -84,12 +86,21 @@ def _discussion_response(
     predictions_count, success_rate = get_author_prediction_stats(db, author_id=view.author.id)
     _, _, is_following = get_user_follow_stats(db, user_id=view.author.id, current_user_id=current_user_id)
 
+    target_date_str = (
+        discussion.target_date.isoformat()
+        if discussion.target_date
+        else (discussion.frozen_prediction or {}).get("target_date")
+    )
+    ended = is_discussion_ended(discussion)
+
     return DiscussionResponse(
         id=discussion.id,
         ticker=discussion.ticker,
         title=discussion.title,
         content=discussion.content,
         period_type=discussion.period_type,
+        target_date=target_date_str,
+        is_ended=ended,
         status=discussion.status,
         moderation_result=discussion.moderation_result if include_moderation else {},
         frozen_prediction=discussion.frozen_prediction,
@@ -100,7 +111,7 @@ def _discussion_response(
         views_count=discussion.views_count or 0,
         agree_count=agree_count,
         disagree_count=disagree_count,
-        is_pinned=discussion.is_pinned,
+        is_pinned=discussion.is_pinned and not ended,
         user_reaction=user_reaction,
         author=DiscussionAuthorResponse(
             user_id=view.author.id,
@@ -111,6 +122,20 @@ def _discussion_response(
             is_following=is_following,
         ),
     )
+
+
+@router.get("/prediction-dates", response_model=list[PredictionDateOption])
+def get_prediction_dates() -> list[PredictionDateOption]:
+    """Get the upcoming available EGX trading dates for predictions."""
+    calendar = EGXTradingCalendar.from_settings()
+    return [
+        PredictionDateOption(
+            date=str(item["date"]),
+            display_name=str(item["display_name"]),
+            is_next_session=bool(item["is_next_session"]),
+        )
+        for item in calendar.get_upcoming_trading_sessions(count=5)
+    ]
 
 
 @router.post(

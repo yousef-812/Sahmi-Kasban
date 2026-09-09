@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.market_calendar import EGXTradingCalendar
 from app.models import (
     Discussion,
     DiscussionImpression,
@@ -184,8 +185,16 @@ def create_discussion(
     normalized_ticker = ticker.strip().upper()
     normalized_title = title.strip()
     normalized_content = content.strip()
-    if period_type not in ALLOWED_PERIOD_TYPES:
-        raise ValueError("Unsupported discussion period")
+
+    calendar = EGXTradingCalendar.from_settings()
+    target_date: date | None = None
+    try:
+        target_date = date.fromisoformat(period_type)
+    except (ValueError, TypeError):
+        if period_type in ALLOWED_PERIOD_TYPES or not period_type:
+            target_date = calendar.resolve_prediction_target_session(moment)
+        else:
+            raise ValueError(f"Unsupported discussion period: {period_type}") from None
 
     existing = db.scalar(
         select(Discussion).where(
@@ -211,6 +220,12 @@ def create_discussion(
 
     discussion_id = uuid4()
     hold_transaction_id = _hold_transaction_id(discussion_id)
+    frozen_prediction = {
+        "ticker": normalized_ticker,
+        "period_type": period_type,
+        "target_date": target_date.isoformat() if target_date else None,
+    }
+
     discussion = Discussion(
         id=discussion_id,
         user_id=user.id,
@@ -218,11 +233,12 @@ def create_discussion(
         title=normalized_title,
         content=normalized_content,
         period_type=period_type,
+        target_date=target_date,
         status="pending_review",
         submission_key=submission_key,
         wallet_hold_transaction_id=hold_transaction_id,
         moderation_result={},
-        frozen_prediction={},
+        frozen_prediction=frozen_prediction,
     )
     db.add(discussion)
     db.flush()
@@ -697,5 +713,45 @@ def toggle_discussion_reaction(
             reaction_type=reaction_type,
         )
         db.add(reaction)
+
     db.commit()
-    return get_discussion_reaction_counts(db, discussion_id, user_id=user_id)
+    return get_discussion_reaction_counts(db, discussion_id=discussion_id, user_id=user_id)
+
+
+def is_discussion_ended(discussion: Discussion, moment: datetime | None = None) -> bool:
+    calendar = EGXTradingCalendar.from_settings()
+    now_utc = moment or datetime.now(UTC)
+    cairo_now = now_utc.astimezone(calendar.timezone)
+    today = cairo_now.date()
+    session_ended = cairo_now.time() >= time(14, 30)
+
+    target = discussion.target_date
+    if target is None and isinstance(discussion.frozen_prediction, dict):
+        raw_target = discussion.frozen_prediction.get("target_date")
+        if raw_target:
+            try:
+                target = date.fromisoformat(str(raw_target))
+            except Exception:
+                pass
+
+    if target is None:
+        return False
+
+    return target < today or (target == today and session_ended)
+
+
+def unpin_ended_discussions(db: Session, moment: datetime | None = None) -> int:
+    pinned = db.scalars(
+        select(Discussion).where(Discussion.is_pinned == True)  # noqa: E712
+    ).all()
+
+    unpinned_count = 0
+    for disc in pinned:
+        if is_discussion_ended(disc, moment=moment):
+            disc.is_pinned = False
+            unpinned_count += 1
+
+    if unpinned_count > 0:
+        db.commit()
+
+    return unpinned_count

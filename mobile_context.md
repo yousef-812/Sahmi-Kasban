@@ -44,7 +44,8 @@ mobile/
 │   │   │   │   └── AndroidManifest.xml
 │   │   │   └── profile
 │   │   │       └── AndroidManifest.xml
-│   │   └── build.gradle.kts
+│   │   ├── build.gradle.kts
+│   │   └── google-services.json
 │   ├── gradle
 │   │   └── wrapper
 │   │       ├── gradle-wrapper.jar
@@ -143,9 +144,12 @@ mobile/
 ├── lib
 │   ├── app
 │   │   ├── app.dart
+│   │   ├── app_theme_provider.dart
 │   │   ├── router.dart
 │   │   └── theme.dart
 │   ├── core
+│   │   ├── ads
+│   │   │   └── consent_manager.dart
 │   │   ├── config
 │   │   │   ├── app_config.dart
 │   │   │   └── demo_mode.dart
@@ -169,10 +173,18 @@ mobile/
 │   │   │   ├── admin_providers.dart
 │   │   │   ├── admin_repository.dart
 │   │   │   ├── admin_wallet_credit_screen.dart
+│   │   │   ├── ai_failures_admin_screen.dart
 │   │   │   ├── historical_replay_control_screen.dart
 │   │   │   ├── historical_replay_models.dart
 │   │   │   ├── historical_replay_providers.dart
 │   │   │   └── historical_replay_screen.dart
+│   │   ├── ai_copilot
+│   │   │   ├── screens
+│   │   │   │   └── ai_copilot_screen.dart
+│   │   │   └── widgets
+│   │   │       └── referral_gate_dialog.dart
+│   │   ├── app_version
+│   │   │   └── version_check_manager.dart
 │   │   ├── auth
 │   │   │   ├── account_recovery_screens.dart
 │   │   │   ├── auth_screens.dart
@@ -180,6 +192,11 @@ mobile/
 │   │   ├── bootstrap
 │   │   │   └── splash_screen.dart
 │   │   ├── community
+│   │   │   ├── screens
+│   │   │   │   ├── trading_session_chat_screen.dart
+│   │   │   │   └── user_profile_screen.dart
+│   │   │   ├── widgets
+│   │   │   │   └── coin_tipping_dialog.dart
 │   │   │   ├── community_create_screen.dart
 │   │   │   ├── community_detail_screen.dart
 │   │   │   ├── community_feed_tab.dart
@@ -190,7 +207,9 @@ mobile/
 │   │   │   ├── prediction_models.dart
 │   │   │   ├── prediction_providers.dart
 │   │   │   ├── prediction_repository.dart
-│   │   │   └── prediction_verification_card.dart
+│   │   │   ├── prediction_verification_card.dart
+│   │   │   ├── real_view_tracker.dart
+│   │   │   └── stock_prediction_prompt_dialog.dart
 │   │   ├── home
 │   │   │   └── dashboard_screen.dart
 │   │   ├── labs
@@ -199,6 +218,7 @@ mobile/
 │   │   │   ├── labs_repository.dart
 │   │   │   └── labs_screen.dart
 │   │   ├── market
+│   │   │   ├── branded_analysis_card_dialog.dart
 │   │   │   ├── market_quotes_providers.dart
 │   │   │   ├── stock_analysis_report.dart
 │   │   │   ├── stock_analysis_screen.dart
@@ -210,6 +230,8 @@ mobile/
 │   │   │   ├── stock_quote_card.dart
 │   │   │   └── stocks_screen.dart
 │   │   ├── monetization
+│   │   │   ├── ad_frequency_gate.dart
+│   │   │   ├── app_open_ad_manager.dart
 │   │   │   ├── free_plan_ads.dart
 │   │   │   ├── monetization_controller.dart
 │   │   │   ├── monetization_models.dart
@@ -217,7 +239,8 @@ mobile/
 │   │   │   ├── monetization_repository.dart
 │   │   │   ├── monetization_screen.dart
 │   │   │   ├── plan_banner_ad.dart
-│   │   │   └── rewarded_ad_gateway.dart
+│   │   │   ├── rewarded_ad_gateway.dart
+│   │   │   └── rewarded_interstitial_gateway.dart
 │   │   ├── notifications
 │   │   │   ├── notification_messaging.dart
 │   │   │   ├── notification_messaging_shell.dart
@@ -238,13 +261,22 @@ mobile/
 │   │   │   └── performance_widgets.dart
 │   │   ├── profile
 │   │   │   └── profile_edit_screen.dart
+│   │   ├── rating
+│   │   │   └── rating_prompt_manager.dart
+│   │   ├── referral
+│   │   │   └── referral_screen.dart
 │   │   ├── reports
+│   │   │   ├── screens
+│   │   │   │   └── sector_leaderboard_screen.dart
 │   │   │   ├── market_report_screen.dart
 │   │   │   ├── report_providers.dart
 │   │   │   └── reports_screen.dart
 │   │   └── wallet
 │   │       ├── wallet_history_screen.dart
 │   │       └── wallet_providers.dart
+│   ├── shared
+│   │   └── widgets
+│   │       └── floating_trading_room_button.dart
 │   ├── widgets
 │   │   └── structured_data_card.dart
 │   └── main.dart
@@ -257,6 +289,7 @@ mobile/
 │   │       └── stock_analysis_report_test.dart
 │   ├── api_client_test.dart
 │   ├── app_observability_test.dart
+│   ├── app_theme_test.dart
 │   ├── community_models_test.dart
 │   ├── community_repository_test.dart
 │   ├── community_widgets_test.dart
@@ -488,6 +521,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  cross_file:
+    dependency: transitive
+    description:
+      name: cross_file
+      sha256: f141ea4f277af142a0356955707f6556f37b03947d39d55585981a06ca437bd6
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.5+5"
   crypto:
     dependency: transitive
     description:
@@ -613,6 +654,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  flutter_markdown:
+    dependency: "direct main"
+    description:
+      name: flutter_markdown
+      sha256: "08fb8315236099ff8e90cb87bb2b935e0a724a3af1623000a9cec930468e0f27"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.7+1"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -679,6 +728,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  gma_mediation_unity:
+    dependency: "direct main"
+    description:
+      name: gma_mediation_unity
+      sha256: "93500de55f884660fd831ddce4b49a4de21ebdee5e3b789de3e2512bfd1ca91a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.9.0"
   go_router:
     dependency: "direct main"
     description:
@@ -687,6 +744,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "14.8.1"
+  google_identity_services_web:
+    dependency: transitive
+    description:
+      name: google_identity_services_web
+      sha256: "5d187c46dc59e02646e10fe82665fc3884a9b71bc1c90c2b8b749316d33ee454"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.3+1"
   google_mobile_ads:
     dependency: "direct main"
     description:
@@ -695,6 +760,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.0.0"
+  google_sign_in:
+    dependency: "direct main"
+    description:
+      name: google_sign_in
+      sha256: d0a2c3bcb06e607bb11e4daca48bd4b6120f0bbc4015ccebbe757d24ea60ed2a
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.0"
+  google_sign_in_android:
+    dependency: transitive
+    description:
+      name: google_sign_in_android
+      sha256: d5e23c56a4b84b6427552f1cf3f98f716db3b1d1a647f16b96dbb5b93afa2805
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.2.1"
+  google_sign_in_ios:
+    dependency: transitive
+    description:
+      name: google_sign_in_ios
+      sha256: "102005f498ce18442e7158f6791033bbc15ad2dcc0afa4cf4752e2722a516c96"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.9.0"
+  google_sign_in_platform_interface:
+    dependency: transitive
+    description:
+      name: google_sign_in_platform_interface
+      sha256: "5f6f79cf139c197261adb6ac024577518ae48fdff8e53205c5373b5f6430a8aa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
+  google_sign_in_web:
+    dependency: transitive
+    description:
+      name: google_sign_in_web
+      sha256: "460547beb4962b7623ac0fb8122d6b8268c951cf0b646dd150d60498430e4ded"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.12.4+4"
   hooks:
     dependency: transitive
     description:
@@ -823,6 +928,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
+  markdown:
+    dependency: transitive
+    description:
+      name: markdown
+      sha256: ee85086ad7698b42522c6ad42fe195f1b9898e4d974a1af4576c1a3a176cada9
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.3.1"
   matcher:
     dependency: transitive
     description:
@@ -904,7 +1017,7 @@ packages:
     source: hosted
     version: "1.9.1"
   path_provider:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path_provider
       sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
@@ -1007,6 +1120,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.26.0"
+  share_plus:
+    dependency: "direct main"
+    description:
+      name: share_plus
+      sha256: "223873d106614442ea6f20db5a038685cc5b32a2fba81cdecaefbbae0523f7fa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.0.2"
+  share_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: share_plus_platform_interface
+      sha256: "88023e53a13429bd65d8e85e11a9b484f49d4c190abbd96c7932b74d6927cc9a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.0"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1132,6 +1261,70 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  url_launcher:
+    dependency: "direct main"
+    description:
+      name: url_launcher
+      sha256: f6a7e5c4835bb4e3026a04793a4199ca2d14c739ec378fdfe23fc8075d0439f8
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.2"
+  url_launcher_android:
+    dependency: transitive
+    description:
+      name: url_launcher_android
+      sha256: "611e87fb320b70d1dd721dc46af89c98aceccea9b31fde49e084591414e0c610"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.33"
+  url_launcher_ios:
+    dependency: transitive
+    description:
+      name: url_launcher_ios
+      sha256: "8faa1aab294f1ab4040b43660c887b0418d5fa4f0cffef76a484e6aa1092eb4a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.4.2"
+  url_launcher_linux:
+    dependency: transitive
+    description:
+      name: url_launcher_linux
+      sha256: "10f86fef4c2c43563fa6c211ff9cf757adf4d3ab762c56bd430664a947d70cd0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.3"
+  url_launcher_macos:
+    dependency: transitive
+    description:
+      name: url_launcher_macos
+      sha256: "5e835a3b869c2d70325349c81c5a45c28e20791265b67b2669da6b08c5cd5201"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.6"
+  url_launcher_platform_interface:
+    dependency: transitive
+    description:
+      name: url_launcher_platform_interface
+      sha256: "552f8a1e663569be95a8190206a38187b531910283c3e982193e4f2733f01029"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.2"
+  url_launcher_web:
+    dependency: transitive
+    description:
+      name: url_launcher_web
+      sha256: "85c81589622fbc87c1c683aaea164d3604a7777495a79d91e39ffcdec39ddb34"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.3"
+  url_launcher_windows:
+    dependency: transitive
+    description:
+      name: url_launcher_windows
+      sha256: "6c5ad3f22cd4c38e089b81963b3cd7bb83b111b2df5dce008bb066162f42e429"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.6"
   uuid:
     dependency: transitive
     description:
@@ -1234,7 +1427,7 @@ sdks:
 name: sahmi_kasban_mobile
 description: Arabic-first Flutter client for the Sahmi Kasban backend.
 publish_to: none
-version: 0.9.8+24
+version: 1.0.8+35
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
@@ -1246,15 +1439,21 @@ dependencies:
   dio: ^5.8.0+1
   firebase_core: ^3.15.2
   firebase_messaging: ^15.2.10
+  flutter_markdown: ^0.7.4
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^9.2.4
   go_router: ^14.8.1
   google_mobile_ads: ^9.0.0
+  gma_mediation_unity: ^1.6.5
+  google_sign_in: ^6.2.1
   in_app_purchase: ^3.3.0
   intl: ^0.20.2
   webview_flutter: ^4.10.0
   sentry_flutter: ^9.25.0
   shared_preferences: ^2.5.3
+  url_launcher: ^6.3.1
+  share_plus: ^12.0.2
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -1590,8 +1789,8 @@ if "%OS%"=="Windows_NT" endlocal
 sdk.dir=C:\\AndroidSDK
 flutter.sdk=C:\\src\\flutter
 flutter.buildMode=release
-flutter.versionName=0.9.6
-flutter.versionCode=21
+flutter.versionName=1.0.2
+flutter.versionCode=29
 ```
 
 ---
@@ -1646,7 +1845,7 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 val googleServicesFile = file("google-services.json")
 val ciPreviewBuild =
     providers.environmentVariable("SAHMI_CI_PREVIEW_BUILD").orNull == "true"
-if (googleServicesFile.exists() && !ciPreviewBuild) {
+if (googleServicesFile.exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
 
@@ -1663,7 +1862,7 @@ val productionBuild =
     providers.environmentVariable("SAHMI_PRODUCTION_BUILD").orNull == "true"
 val admobAndroidAppId =
     providers.environmentVariable("ADMOB_ANDROID_APP_ID").orNull
-        ?: "ca-app-pub-3940256099942544~3347511713"
+        ?: "ca-app-pub-4624889874966809~5979235898"
 
 if (productionBuild) {
     if (!releaseSigningConfigured) {
@@ -1746,6 +1945,72 @@ flutter {
     source = "../.."
 }
 
+dependencies {
+    implementation("androidx.activity:activity-ktx:1.9.2")
+}
+
+```
+
+---
+
+### File: `android\app\google-services.json`
+
+```json
+{
+  "project_info": {
+    "project_number": "48076310012",
+    "project_id": "project-f14e453c-deb8-4a94-b39",
+    "storage_bucket": "project-f14e453c-deb8-4a94-b39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48076310012:android:7522bcee3fbb843bc81e79",
+        "android_client_info": {
+          "package_name": "com.sahmikasban.sahmi_kasban_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "48076310012-ofah5gism48e3bi13qr7hc8i8dbsrrts.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sahmikasban.sahmi_kasban_mobile",
+            "certificate_hash": "f0599737f260790950498a98abeb63a495949d4c"
+          }
+        },
+        {
+          "client_id": "48076310012-upf7ec6664vkij7bgto4qk9n5vuqolgc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sahmikasban.sahmi_kasban_mobile",
+            "certificate_hash": "91bd18e324ad3878b2caba094048e78e458826de"
+          }
+        },
+        {
+          "client_id": "48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsuLpAEUbLzPwGT-baggiBSg2ozC5rXKE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
 ```
 
 ---
@@ -1780,6 +2045,12 @@ flutter {
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
 
         <!-- WorkManager is not used by the app. Keep it off Android's eager
              startup path so a stale WorkDatabase cannot terminate startup
@@ -1864,9 +2135,19 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin flutter_secure_storage, com.it_nomads.fluttersecurestorage.FlutterSecureStoragePlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new io.flutter.plugins.googlemobileads.mediation.gma_mediation_unity.GmaMediationUnityPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin gma_mediation_unity, io.flutter.plugins.googlemobileads.mediation.gma_mediation_unity.GmaMediationUnityPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin google_mobile_ads, io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new io.flutter.plugins.googlesignin.GoogleSignInPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin google_sign_in_android, io.flutter.plugins.googlesignin.GoogleSignInPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.inapppurchase.InAppPurchasePlugin());
@@ -1894,9 +2175,19 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin sentry_flutter, io.sentry.flutter.SentryFlutterPlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new dev.fluttercommunity.plus.share.SharePlusPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin share_plus, dev.fluttercommunity.plus.share.SharePlusPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin shared_preferences_android, io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new io.flutter.plugins.urllauncher.UrlLauncherPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin url_launcher_android, io.flutter.plugins.urllauncher.UrlLauncherPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.webviewflutter.WebViewFlutterPlugin());
@@ -1917,15 +2208,22 @@ package com.sahmikasban.sahmi_kasban_mobile
 
 import android.content.ContentValues
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import io.flutter.embedding.android.FlutterActivity
+import androidx.activity.enableEdgeToEdge
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val downloadsChannel = "sahmi_kasban/downloads"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -2541,10 +2839,22 @@ NS_ASSUME_NONNULL_END
 @import flutter_secure_storage;
 #endif
 
+#if __has_include(<gma_mediation_unity/GmaMediationUnityPlugin.h>)
+#import <gma_mediation_unity/GmaMediationUnityPlugin.h>
+#else
+@import gma_mediation_unity;
+#endif
+
 #if __has_include(<google_mobile_ads/FLTGoogleMobileAdsPlugin.h>)
 #import <google_mobile_ads/FLTGoogleMobileAdsPlugin.h>
 #else
 @import google_mobile_ads;
+#endif
+
+#if __has_include(<google_sign_in_ios/FLTGoogleSignInPlugin.h>)
+#import <google_sign_in_ios/FLTGoogleSignInPlugin.h>
+#else
+@import google_sign_in_ios;
 #endif
 
 #if __has_include(<in_app_purchase_storekit/InAppPurchasePlugin.h>)
@@ -2565,10 +2875,22 @@ NS_ASSUME_NONNULL_END
 @import sentry_flutter;
 #endif
 
+#if __has_include(<share_plus/FPPSharePlusPlugin.h>)
+#import <share_plus/FPPSharePlusPlugin.h>
+#else
+@import share_plus;
+#endif
+
 #if __has_include(<shared_preferences_foundation/SharedPreferencesPlugin.h>)
 #import <shared_preferences_foundation/SharedPreferencesPlugin.h>
 #else
 @import shared_preferences_foundation;
+#endif
+
+#if __has_include(<url_launcher_ios/URLLauncherPlugin.h>)
+#import <url_launcher_ios/URLLauncherPlugin.h>
+#else
+@import url_launcher_ios;
 #endif
 
 #if __has_include(<webview_flutter_wkwebview/WebViewFlutterPlugin.h>)
@@ -2583,11 +2905,15 @@ NS_ASSUME_NONNULL_END
   [FLTFirebaseCorePlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseCorePlugin"]];
   [FLTFirebaseMessagingPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseMessagingPlugin"]];
   [FlutterSecureStoragePlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterSecureStoragePlugin"]];
+  [GmaMediationUnityPlugin registerWithRegistrar:[registry registrarForPlugin:@"GmaMediationUnityPlugin"]];
   [FLTGoogleMobileAdsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTGoogleMobileAdsPlugin"]];
+  [FLTGoogleSignInPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTGoogleSignInPlugin"]];
   [InAppPurchasePlugin registerWithRegistrar:[registry registrarForPlugin:@"InAppPurchasePlugin"]];
   [FPPPackageInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPPackageInfoPlusPlugin"]];
   [SentryFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"SentryFlutterPlugin"]];
+  [FPPSharePlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPSharePlusPlugin"]];
   [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
+  [URLLauncherPlugin registerWithRegistrar:[registry registrarForPlugin:@"URLLauncherPlugin"]];
   [WebViewFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"WebViewFlutterPlugin"]];
 }
 
@@ -3959,12 +4285,14 @@ class RunnerTests: XCTestCase {
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/app.dart';
 import 'core/observability/app_observability.dart';
+import 'core/ads/consent_manager.dart';
 import 'features/notifications/notification_messaging.dart';
 
 Future<void> _initializeServices() async {
@@ -3984,6 +4312,7 @@ Future<void> _initializeServices() async {
   }
 
   try {
+    await const ConsentManager().gatherConsent().timeout(const Duration(seconds: 10));
     await MobileAds.instance.initialize().timeout(const Duration(seconds: 10));
   } on Object catch (error, stackTrace) {
     debugPrint('Mobile Ads initialization skipped: $error\n$stackTrace');
@@ -3992,6 +4321,14 @@ Future<void> _initializeServices() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ),
+  );
   await AppObservability.bootstrap(
     initializeServices: _initializeServices,
     app: const ProviderScope(child: SahmiKasbanApp()),
@@ -4008,21 +4345,75 @@ Future<void> main() async {
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/app_config.dart';
+import '../features/auth/session_controller.dart';
+import '../features/monetization/ad_frequency_gate.dart';
+import '../features/monetization/app_open_ad_manager.dart';
 import '../features/monetization/free_plan_ads.dart';
+import '../features/monetization/monetization_repository.dart';
 import '../features/notifications/notification_messaging_shell.dart';
+import 'app_theme_provider.dart';
 import 'router.dart';
 import 'theme.dart';
 
-class SahmiKasbanApp extends ConsumerWidget {
+class SahmiKasbanApp extends ConsumerStatefulWidget {
   const SahmiKasbanApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SahmiKasbanApp> createState() => _SahmiKasbanAppState();
+}
+
+class _SahmiKasbanAppState extends ConsumerState<SahmiKasbanApp> {
+  late final AppOpenAdManager _appOpenAdManager;
+
+  @override
+  void initState() {
+    super.initState();
+    _appOpenAdManager = AppOpenAdManager(
+      config: ref.read(appConfigProvider),
+      gate: ref.read(adFrequencyGateProvider),
+      repository: ref.read(monetizationRepositoryProvider),
+      isEnabled: () =>
+          ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+      isSafeRoute: () {
+        final location = ref
+            .read(appRouterProvider)
+            .routerDelegate
+            .currentConfiguration
+            .uri
+            .toString();
+        const unsafe = [
+          '/login',
+          '/register',
+          '/verify-email',
+          '/forgot-password',
+          '/reset-password',
+          '/splash',
+          '/onboarding',
+        ];
+        return !unsafe.any(location.startsWith);
+      },
+    );
+    _appOpenAdManager.start();
+  }
+
+  @override
+  void dispose() {
+    _appOpenAdManager.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'سهمي كسبان',
       debugShowCheckedModeBanner: false,
       theme: SahmiTheme.light(),
+      darkTheme: SahmiTheme.dark(),
+      themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) {
         return Directionality(
@@ -4040,6 +4431,60 @@ class SahmiKasbanApp extends ConsumerWidget {
 
 ---
 
+### File: `lib\app\app_theme_provider.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const String _themePrefKey = 'app_theme_mode';
+
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  ThemeModeNotifier() : super(ThemeMode.dark) {
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_themePrefKey);
+      if (saved == 'light') {
+        state = ThemeMode.light;
+      } else if (saved == 'system') {
+        state = ThemeMode.system;
+      } else {
+        state = ThemeMode.dark;
+      }
+    } catch (_) {
+      state = ThemeMode.dark;
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    state = mode;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = switch (mode) {
+        ThemeMode.light => 'light',
+        ThemeMode.system => 'system',
+        ThemeMode.dark => 'dark',
+      };
+      await prefs.setString(_themePrefKey, value);
+    } catch (_) {}
+  }
+}
+
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((
+  ref,
+) {
+  return ThemeModeNotifier();
+});
+
+```
+
+---
+
 ### File: `lib\app\router.dart`
 
 ```dart
@@ -4051,7 +4496,9 @@ import '../core/observability/app_observability.dart';
 import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/admin/admin_wallet_credit_screen.dart';
+import '../features/admin/ai_failures_admin_screen.dart';
 import '../features/admin/historical_replay_control_screen.dart';
+import '../features/ai_copilot/screens/ai_copilot_screen.dart';
 import '../features/auth/account_recovery_screens.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/auth/session_controller.dart';
@@ -4059,6 +4506,7 @@ import '../features/bootstrap/splash_screen.dart';
 import '../features/community/community_create_screen.dart';
 import '../features/community/community_detail_screen.dart';
 import '../features/community/my_discussions_screen.dart';
+import '../features/community/screens/trading_session_chat_screen.dart';
 import '../features/home/dashboard_screen.dart';
 import '../features/market/stock_analysis_screen.dart';
 import '../features/market/stock_comparison_screen.dart';
@@ -4072,6 +4520,7 @@ import '../features/performance/performance_admin_screen.dart';
 import '../features/performance/performance_report_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
+import '../features/referral/referral_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/wallet/wallet_history_screen.dart';
@@ -4143,7 +4592,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/market/compare',
-        builder: (context, state) => const StockComparisonScreen(),
+        builder: (context, state) => StockComparisonScreen(
+          initialMode: state.uri.queryParameters['mode'],
+        ),
       ),
       GoRoute(
         path: '/market/analyze/:ticker',
@@ -4159,12 +4610,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const WalletHistoryScreen(),
       ),
       GoRoute(
+        path: '/referrals',
+        builder: (context, state) => const ReferralScreen(),
+      ),
+      GoRoute(
         path: '/monetization',
         builder: (context, state) => const MonetizationPage(),
       ),
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
+      ),
+      GoRoute(
+        path: '/ai-copilot',
+        builder: (context, state) => AiCopilotScreen(
+          initialTicker: state.uri.queryParameters['ticker'],
+        ),
+      ),
+      GoRoute(
+        path: '/trading-chat',
+        builder: (context, state) => const TradingSessionChatScreen(),
       ),
       GoRoute(
         path: '/performance',
@@ -4179,6 +4644,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/admin/ai-failures',
+        builder: (context, state) => const AiFailuresAdminScreen(),
       ),
       GoRoute(
         path: '/admin/performance',
@@ -4269,30 +4738,144 @@ class SahmiTheme {
   const SahmiTheme._();
 
   static ThemeData light() {
-    const seed = Color(0xFF1F6B52);
+    const seed = Color(0xFF008955);
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
+      primary: const Color(0xFF008955),
+      surface: Colors.white,
+      surfaceContainerHighest: const Color(0xFFF1F5F2),
+      onSurface: const Color(0xFF1E293B),
+      onSurfaceVariant: const Color(0xFF475569),
       brightness: Brightness.light,
     );
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFFF6F7F4),
-      appBarTheme: const AppBarTheme(centerTitle: false),
-      cardTheme: const CardThemeData(
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
+        titleTextStyle: TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 1,
+        shadowColor: const Color(0x14000000),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+          borderRadius: const BorderRadius.all(Radius.circular(18)),
+          side: BorderSide(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+          borderSide: const BorderSide(color: Color(0xFF008955), width: 1.5),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF008955),
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(52),
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        elevation: 2,
+        indicatorColor: const Color(0xFFE6F4EA),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF008955),
+            );
+          }
+          return const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF64748B),
+          );
+        }),
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    const seed = Color(0xFF00C875);
+    final scheme = ColorScheme.fromSeed(
+      seedColor: seed,
+      brightness: Brightness.dark,
+      primary: const Color(0xFF00C875),
+      surface: const Color(0xFF1E2630),
+      surfaceContainerHighest: const Color(0xFF283340),
+      onSurface: const Color(0xFFF8FAFC),
+      onSurfaceVariant: const Color(0xFFCBD5E1),
+    );
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: const Color(0xFF13181F),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        backgroundColor: Color(0xFF1E2630),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFFF8FAFC)),
+      ),
+      drawerTheme: const DrawerThemeData(backgroundColor: Color(0xFF171D26)),
+      dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1E2630)),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Color(0xFF1E2630),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1E2630),
+        elevation: 2,
+        shadowColor: const Color(0x33000000),
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(18)),
+          side: const BorderSide(
+            color: Color(0xFF2D3748),
+            width: 1,
+          ),
         ),
       ),
       inputDecorationTheme: const InputDecorationTheme(
+        fillColor: Color(0xFF1E2630),
+        filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF00C875),
+          foregroundColor: const Color(0xFF0F172A),
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -4334,6 +4917,65 @@ String avatarAssetPath(String key) {
 
 ---
 
+### File: `lib\core\ads\consent_manager.dart`
+
+```dart
+import 'dart:async';
+
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+class ConsentManager {
+  const ConsentManager();
+
+  /// Gathers user consent required for GDPR/EEA regions before loading ads.
+  /// For non-EEA users (e.g. Egypt), [ConsentInformation] returns [ConsentStatus.notRequired]
+  /// or unavailability instantly without displaying any UI form.
+  Future<bool> gatherConsent() async {
+    final completer = Completer<bool>();
+
+    final params = ConsentRequestParameters();
+
+    ConsentInformation.instance.requestConsentInfoUpdate(
+      params,
+      () async {
+        if (await ConsentInformation.instance.isConsentFormAvailable()) {
+          _loadAndShowForm(completer);
+        } else {
+          completer.complete(true);
+        }
+      },
+      (FormError error) {
+        // In case of error updating consent info, proceed gracefully with default ads
+        completer.complete(true);
+      },
+    );
+
+    return completer.future;
+  }
+
+  void _loadAndShowForm(Completer<bool> completer) {
+    ConsentForm.loadConsentForm(
+      (ConsentForm consentForm) async {
+        final status = await ConsentInformation.instance.getConsentStatus();
+        if (status == ConsentStatus.required) {
+          consentForm.show((FormError? formError) {
+            _loadAndShowForm(completer);
+          });
+        } else {
+          if (!completer.isCompleted) completer.complete(true);
+        }
+      },
+      (FormError error) {
+        if (!completer.isCompleted) completer.complete(true);
+      },
+    );
+  }
+}
+
+```
+
+---
+
 ### File: `lib\core\config\app_config.dart`
 
 ```dart
@@ -4348,6 +4990,10 @@ class AppConfig {
     required this.admobIosNativeId,
     required this.admobAndroidInterstitialId,
     required this.admobIosInterstitialId,
+    required this.admobAndroidAppOpenId,
+    required this.admobIosAppOpenId,
+    required this.admobAndroidRewardedInterstitialId,
+    required this.admobIosRewardedInterstitialId,
     this.appEnvironment = 'development',
     this.releasePlatform = 'android',
   });
@@ -4361,6 +5007,10 @@ class AppConfig {
   final String admobIosNativeId;
   final String admobAndroidInterstitialId;
   final String admobIosInterstitialId;
+  final String admobAndroidAppOpenId;
+  final String admobIosAppOpenId;
+  final String admobAndroidRewardedInterstitialId;
+  final String admobIosRewardedInterstitialId;
   final String appEnvironment;
   final String releasePlatform;
 
@@ -4383,11 +5033,15 @@ class AppConfig {
         admobAndroidBannerId,
         admobAndroidNativeId,
         admobAndroidInterstitialId,
+        admobAndroidAppOpenId,
+        admobAndroidRewardedInterstitialId,
       ],
       'ios' => <String>[
         admobIosBannerId,
         admobIosNativeId,
         admobIosInterstitialId,
+        admobIosAppOpenId,
+        admobIosRewardedInterstitialId,
       ],
       _ => throw StateError(
         'Production builds require RELEASE_PLATFORM=android or ios.',
@@ -4397,7 +5051,7 @@ class AppConfig {
       (id) => id.trim().isEmpty || id.contains(googleTestPublisherId),
     )) {
       throw StateError(
-        'Production builds require non-test AdMob banner, native, and interstitial IDs for the selected release platform.',
+        'Production builds require non-test AdMob ad unit IDs for the selected release platform.',
       );
     }
   }
@@ -4417,7 +5071,7 @@ class AppConfig {
     );
     const androidBannerId = String.fromEnvironment(
       'ADMOB_ANDROID_BANNER_ID',
-      defaultValue: 'ca-app-pub-3940256099942544/9214589741',
+      defaultValue: 'ca-app-pub-4624889874966809/2715711480',
     );
     const iosBannerId = String.fromEnvironment(
       'ADMOB_IOS_BANNER_ID',
@@ -4425,7 +5079,7 @@ class AppConfig {
     );
     const androidNativeId = String.fromEnvironment(
       'ADMOB_ANDROID_NATIVE_ID',
-      defaultValue: 'ca-app-pub-3940256099942544/2247696110',
+      defaultValue: 'ca-app-pub-4624889874966809/3665725872',
     );
     const iosNativeId = String.fromEnvironment(
       'ADMOB_IOS_NATIVE_ID',
@@ -4433,11 +5087,27 @@ class AppConfig {
     );
     const androidInterstitialId = String.fromEnvironment(
       'ADMOB_ANDROID_INTERSTITIAL_ID',
-      defaultValue: 'ca-app-pub-3940256099942544/1033173712',
+      defaultValue: 'ca-app-pub-4624889874966809/7776466476',
     );
     const iosInterstitialId = String.fromEnvironment(
       'ADMOB_IOS_INTERSTITIAL_ID',
       defaultValue: 'ca-app-pub-3940256099942544/4411468910',
+    );
+    const androidAppOpenId = String.fromEnvironment(
+      'ADMOB_ANDROID_APP_OPEN_ID',
+      defaultValue: 'ca-app-pub-4624889874966809/8718742008',
+    );
+    const iosAppOpenId = String.fromEnvironment(
+      'ADMOB_IOS_APP_OPEN_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/5575463023',
+    );
+    const androidRewardedInterstitialId = String.fromEnvironment(
+      'ADMOB_ANDROID_REWARDED_INTERSTITIAL_ID',
+      defaultValue: 'ca-app-pub-4624889874966809/7604970887',
+    );
+    const iosRewardedInterstitialId = String.fromEnvironment(
+      'ADMOB_IOS_REWARDED_INTERSTITIAL_ID',
+      defaultValue: 'ca-app-pub-3940256099942544/6978759866',
     );
     const config = AppConfig(
       apiBaseUrl: configuredUrl,
@@ -4447,6 +5117,10 @@ class AppConfig {
       admobIosNativeId: iosNativeId,
       admobAndroidInterstitialId: androidInterstitialId,
       admobIosInterstitialId: iosInterstitialId,
+      admobAndroidAppOpenId: androidAppOpenId,
+      admobIosAppOpenId: iosAppOpenId,
+      admobAndroidRewardedInterstitialId: androidRewardedInterstitialId,
+      admobIosRewardedInterstitialId: iosRewardedInterstitialId,
       appEnvironment: environment,
       releasePlatform: configuredReleasePlatform,
     );
@@ -4491,9 +5165,9 @@ import 'token_store.dart';
 BaseOptions _apiOptions(String baseUrl) {
   return BaseOptions(
     baseUrl: '$baseUrl/api/v1',
-    connectTimeout: const Duration(seconds: 12),
-    sendTimeout: const Duration(seconds: 20),
-    receiveTimeout: const Duration(seconds: 30),
+    connectTimeout: const Duration(seconds: 25),
+    sendTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 45),
     headers: const <String, String>{'Accept': 'application/json'},
   );
 }
@@ -4643,6 +5317,12 @@ class ApiClient {
     final detail = payload['detail'];
     if (detail is String && detail.trim().isNotEmpty) {
       return detail.trim();
+    }
+    if (detail is Map) {
+      final msg = detail['message'] ?? detail['msg'];
+      if (msg is String && msg.trim().isNotEmpty) {
+        return msg.trim();
+      }
     }
     if (detail is List) {
       final messages = detail
@@ -5142,6 +5822,10 @@ class _NoticePalette {
 ### File: `lib\data\backend_repository.dart`
 
 ```dart
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5165,6 +5849,7 @@ class BackendRepository {
     required String password,
     required String displayName,
     String avatarKey = 'avatar_01',
+    String? referralCode,
   }) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
@@ -5174,6 +5859,8 @@ class BackendRepository {
           'password': password,
           'display_name': displayName.trim(),
           'avatar_key': avatarKey,
+          if (referralCode != null && referralCode.trim().isNotEmpty)
+            'referral_code': referralCode.trim(),
         },
         options: Options(extra: <String, dynamic>{'anonymous': true}),
       );
@@ -5227,6 +5914,31 @@ class BackendRepository {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
         '/auth/login',
         data: <String, dynamic>{'email': email.trim(), 'password': password},
+        options: Options(extra: <String, dynamic>{'anonymous': true}),
+      );
+      final tokens = TokenPair.fromJson(_requiredData(response));
+      await _tokenStore.save(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      );
+      return tokens;
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<TokenPair> loginWithGoogle({
+    required String idToken,
+    String? referralCode,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/auth/google',
+        data: <String, dynamic>{
+          'id_token': idToken,
+          if (referralCode != null && referralCode.trim().isNotEmpty)
+            'referral_code': referralCode.trim(),
+        },
         options: Options(extra: <String, dynamic>{'anonymous': true}),
       );
       final tokens = TokenPair.fromJson(_requiredData(response));
@@ -5400,6 +6112,71 @@ class BackendRepository {
     }
   }
 
+  Future<MarketReportPreview?> getInvestmentReportPreview() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/reports/investment/preview',
+      );
+      return MarketReportPreview.fromJson(_requiredData(response));
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      throw _apiClient.mapError(error);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<MarketReport> getInvestmentReport() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/reports/investment/latest',
+      );
+      return MarketReport.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<StockInvestmentAnalysis> getStockInvestmentAnalysis(
+    String ticker,
+  ) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/stocks/$ticker/investment',
+      );
+      return StockInvestmentAnalysis.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<StockInvestmentComparisonResult> compareStocksInvestment(
+    List<String> tickers,
+  ) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/market/comparisons/investment',
+        data: <String, dynamic>{'tickers': tickers},
+      );
+      return StockInvestmentComparisonResult.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<MarketReportHistory> getReportHistory() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/reports/history',
+      );
+      return MarketReportHistory.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<MarketReport> getMarketReport(String reportId) async {
     try {
       final response = await _apiClient.dio.get<Map<String, dynamic>>(
@@ -5419,6 +6196,72 @@ class BackendRepository {
       return MarketQuotesSnapshot.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
+    }
+  }
+
+  Stream<MarketQuotesSnapshot> streamMarketQuotes() async* {
+    // 1. First emit instant cached snapshot from REST endpoint
+    try {
+      final initial = await getMarketQuotes();
+      yield initial;
+    } catch (_) {
+      // Continue to WebSocket even if initial REST fails
+    }
+
+    // 2. Connect to WebSocket stream for real-time live price push
+    while (true) {
+      WebSocket? socket;
+      Timer? pingTimer;
+      try {
+        final token = await _tokenStore.readAccessToken();
+        final rawBase = _apiClient.dio.options.baseUrl;
+        final wsScheme = rawBase.startsWith('https') ? 'wss' : 'ws';
+        final hostAndPath = rawBase.replaceFirst(RegExp(r'^https?://'), '');
+        final urlBuffer = StringBuffer(
+          '$wsScheme://$hostAndPath/market/quotes/stream',
+        );
+        if (token != null && token.isNotEmpty) {
+          urlBuffer.write('?token=$token');
+        }
+
+        final uri = Uri.parse(urlBuffer.toString());
+        socket = await WebSocket.connect(
+          uri.toString(),
+        ).timeout(const Duration(seconds: 8));
+
+        // Periodically ping to keep socket alive
+        pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+          try {
+            socket?.add('ping');
+          } catch (_) {}
+        });
+
+        await for (final message in socket) {
+          if (message is String) {
+            if (message == 'pong') continue;
+            try {
+              final decoded = jsonDecode(message);
+              if (decoded is Map<String, dynamic>) {
+                yield MarketQuotesSnapshot.fromJson(decoded);
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {
+        // Fallback: On disconnect or connection error, fetch one REST snapshot and wait before reconnecting
+        try {
+          final fallback = await getMarketQuotes();
+          yield fallback;
+        } catch (_) {}
+      } finally {
+        pingTimer?.cancel();
+        try {
+          await socket?.close();
+        } catch (_) {}
+      }
+
+      // Exponential or safe delay before reconnect
+      await Future<void>.delayed(const Duration(seconds: 4));
     }
   }
 
@@ -5462,6 +6305,17 @@ class BackendRepository {
       );
       return (_requiredData(response)['message'] as String?) ??
           'تم تنفيذ الطلب.';
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<ReferralStats> getReferralStats() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/referrals/me',
+      );
+      return ReferralStats.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
@@ -5552,11 +6406,14 @@ class UserProfile {
     required this.avatarKey,
     required this.emailVerified,
     this.isAdmin = false,
+    this.referralCode,
     required this.planCode,
     required this.balancePoints,
     required this.balanceCoins,
     required this.weeklyCoins,
     required this.adsEnabled,
+    this.tippingUnlocked = false,
+    this.tippingEnabled = true,
   });
 
   final String id;
@@ -5565,11 +6422,14 @@ class UserProfile {
   final String avatarKey;
   final bool emailVerified;
   final bool isAdmin;
+  final String? referralCode;
   final String planCode;
   final int balancePoints;
   final String balanceCoins;
   final String weeklyCoins;
   final bool adsEnabled;
+  final bool tippingUnlocked;
+  final bool tippingEnabled;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
@@ -5579,11 +6439,76 @@ class UserProfile {
       avatarKey: json['avatar_key'] as String,
       emailVerified: json['email_verified'] as bool,
       isAdmin: json['is_admin'] as bool? ?? false,
+      referralCode: json['referral_code'] as String?,
       planCode: json['plan_code'] as String,
       balancePoints: json['balance_points'] as int,
       balanceCoins: json['balance_coins'] as String,
       weeklyCoins: json['weekly_coins'] as String,
       adsEnabled: json['ads_enabled'] as bool,
+      tippingUnlocked: json['tipping_unlocked'] as bool? ?? false,
+      tippingEnabled: json['tipping_enabled'] as bool? ?? true,
+    );
+  }
+}
+
+class ReferredUserItem {
+  const ReferredUserItem({
+    required this.displayName,
+    required this.avatarKey,
+    required this.joinedAt,
+    required this.status,
+    required this.earnedCoins,
+  });
+
+  final String displayName;
+  final String avatarKey;
+  final String joinedAt;
+  final String status; // "verified" | "pending"
+  final String earnedCoins;
+
+  factory ReferredUserItem.fromJson(Map<String, dynamic> json) {
+    return ReferredUserItem(
+      displayName: json['display_name'] as String,
+      avatarKey: json['avatar_key'] as String,
+      joinedAt: json['joined_at'] as String,
+      status: json['status'] as String,
+      earnedCoins: json['earned_coins'] as String,
+    );
+  }
+}
+
+class ReferralStats {
+  const ReferralStats({
+    required this.referralCode,
+    required this.playStoreUrl,
+    required this.totalReferredCount,
+    required this.totalEarnedPoints,
+    required this.totalEarnedCoins,
+    required this.referredUsers,
+  });
+
+  final String referralCode;
+  final String playStoreUrl;
+  final int totalReferredCount;
+  final int totalEarnedPoints;
+  final String totalEarnedCoins;
+  final List<ReferredUserItem> referredUsers;
+
+  factory ReferralStats.fromJson(Map<String, dynamic> json) {
+    final rawList = json['referred_users'];
+    final users = rawList is List
+        ? rawList
+              .map((e) => ReferredUserItem.fromJson(e as Map<String, dynamic>))
+              .toList(growable: false)
+        : <ReferredUserItem>[];
+
+    return ReferralStats(
+      referralCode: json['referral_code'] as String? ?? '',
+      playStoreUrl: json['play_store_url'] as String? ?? '',
+      totalReferredCount: json['total_referred_count'] as int? ?? 0,
+      totalEarnedPoints: json['total_earned_points'] as int? ?? 0,
+      totalEarnedCoins: json['total_earned_coins'] as String? ?? '0.00',
+      referredUsers: users,
     );
   }
 }
@@ -5864,6 +6789,7 @@ class MarketReportPreview {
     required this.targetSessionDate,
     required this.generatedAt,
     required this.status,
+    this.reportType = 'trading',
     required this.itemCount,
     required this.unlocked,
     required this.unlockCostPoints,
@@ -5876,6 +6802,7 @@ class MarketReportPreview {
   final DateTime targetSessionDate;
   final DateTime generatedAt;
   final String status;
+  final String reportType;
   final int itemCount;
   final bool unlocked;
   final int unlockCostPoints;
@@ -5889,11 +6816,34 @@ class MarketReportPreview {
       targetSessionDate: DateTime.parse(json['target_session_date'] as String),
       generatedAt: DateTime.parse(json['generated_at'] as String),
       status: json['status'] as String,
+      reportType: json['report_type'] as String? ?? 'trading',
       itemCount: json['item_count'] as int,
       unlocked: json['unlocked'] as bool,
       unlockCostPoints: json['unlock_cost_points'] as int,
       unlockCostCoins: json['unlock_cost_coins'] as String,
       marketSummary: _map(json['market_summary']),
+    );
+  }
+}
+
+class MarketReportHistory {
+  const MarketReportHistory({
+    required this.historyDaysAllowed,
+    required this.planCode,
+    required this.reports,
+  });
+
+  final int historyDaysAllowed;
+  final String planCode;
+  final List<MarketReportPreview> reports;
+
+  factory MarketReportHistory.fromJson(Map<String, dynamic> json) {
+    return MarketReportHistory(
+      historyDaysAllowed: json['history_days_allowed'] as int? ?? 1,
+      planCode: json['plan_code'] as String? ?? 'free',
+      reports: (json['reports'] as List? ?? const [])
+          .map((item) => MarketReportPreview.fromJson(_map(item)))
+          .toList(growable: false),
     );
   }
 }
@@ -5927,6 +6877,7 @@ class MarketReport {
     required this.sourceSessionDate,
     required this.targetSessionDate,
     required this.generatedAt,
+    this.reportType = 'trading',
     required this.marketSummary,
     required this.items,
     required this.extendedItems,
@@ -5936,6 +6887,7 @@ class MarketReport {
   final DateTime sourceSessionDate;
   final DateTime targetSessionDate;
   final DateTime generatedAt;
+  final String reportType;
   final Map<String, dynamic> marketSummary;
   final List<MarketReportItem> items;
   final List<MarketReportItem> extendedItems;
@@ -5946,6 +6898,7 @@ class MarketReport {
       sourceSessionDate: DateTime.parse(json['source_session_date'] as String),
       targetSessionDate: DateTime.parse(json['target_session_date'] as String),
       generatedAt: DateTime.parse(json['generated_at'] as String),
+      reportType: json['report_type'] as String? ?? 'trading',
       marketSummary: _map(json['market_summary']),
       items: _list(json['items'])
           .map((item) => MarketReportItem.fromJson(_map(item)))
@@ -6007,6 +6960,108 @@ List<dynamic> _list(Object? value) {
   return value is List ? value : const <dynamic>[];
 }
 
+class StockInvestmentAnalysis {
+  const StockInvestmentAnalysis({
+    required this.ticker,
+    required this.companyName,
+    required this.sector,
+    required this.currentPrice,
+    required this.investmentScore,
+    this.peRatio,
+    this.pbRatio,
+    this.dividendYieldPct,
+    this.roePct,
+    this.fairValue,
+    this.marginOfSafetyPct,
+    required this.investmentCategory,
+    this.marketCap,
+    this.eps,
+    this.netIncome,
+    this.totalDebt,
+    this.valuationStatus,
+    this.recommendation,
+    this.expectedTargetPrice,
+    this.expectedTimeframe,
+    this.expectedReturnPct,
+    this.strengths = const [],
+    this.risks = const [],
+  });
+
+  final String ticker;
+  final String companyName;
+  final String sector;
+  final double currentPrice;
+  final double investmentScore;
+  final double? peRatio;
+  final double? pbRatio;
+  final double? dividendYieldPct;
+  final double? roePct;
+  final double? fairValue;
+  final double? marginOfSafetyPct;
+  final String investmentCategory;
+  final double? marketCap;
+  final double? eps;
+  final double? netIncome;
+  final double? totalDebt;
+  final String? valuationStatus;
+  final String? recommendation;
+  final double? expectedTargetPrice;
+  final String? expectedTimeframe;
+  final double? expectedReturnPct;
+  final List<String> strengths;
+  final List<String> risks;
+
+  factory StockInvestmentAnalysis.fromJson(Map<String, dynamic> json) {
+    return StockInvestmentAnalysis(
+      ticker: json['ticker'] as String? ?? '',
+      companyName: json['company_name'] as String? ?? '',
+      sector: json['sector'] as String? ?? 'عام',
+      currentPrice: _asDouble(json['current_price']) ?? 0.0,
+      investmentScore: _asDouble(json['investment_score']) ?? 0.0,
+      peRatio: _asDouble(json['pe_ratio']),
+      pbRatio: _asDouble(json['pb_ratio']),
+      dividendYieldPct: _asDouble(json['dividend_yield_pct']),
+      roePct: _asDouble(json['roe_pct']),
+      fairValue: _asDouble(json['fair_value']),
+      marginOfSafetyPct: _asDouble(json['margin_of_safety_pct']),
+      investmentCategory: json['investment_category'] as String? ?? 'balanced',
+      marketCap: _asDouble(json['market_cap']),
+      eps: _asDouble(json['eps']),
+      netIncome: _asDouble(json['net_income']),
+      totalDebt: _asDouble(json['total_debt']),
+      valuationStatus: json['valuation_status'] as String?,
+      recommendation: json['recommendation'] as String?,
+      expectedTargetPrice: _asDouble(json['expected_target_price']),
+      expectedTimeframe: json['expected_timeframe'] as String?,
+      expectedReturnPct: _asDouble(json['expected_return_pct']),
+      strengths: _list(json['strengths']).map((e) => e.toString()).toList(),
+      risks: _list(json['risks']).map((e) => e.toString()).toList(),
+    );
+  }
+}
+
+class StockInvestmentComparisonResult {
+  const StockInvestmentComparisonResult({
+    required this.items,
+    required this.bestTicker,
+    required this.summary,
+  });
+
+  final List<StockInvestmentAnalysis> items;
+  final String bestTicker;
+  final String summary;
+
+  factory StockInvestmentComparisonResult.fromJson(Map<String, dynamic> json) {
+    return StockInvestmentComparisonResult(
+      items: _list(json['items'])
+          .map((e) => StockInvestmentAnalysis.fromJson(_map(e)))
+          .toList(growable: false),
+      bestTicker: json['best_ticker'] as String? ?? '',
+      summary: json['summary'] as String? ?? '',
+    );
+  }
+}
+
 ```
 
 ---
@@ -6033,11 +7088,16 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 7,
+      length: 10,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الإدارة'),
           actions: [
+            IconButton(
+              onPressed: () => context.push('/admin/ai-failures'),
+              icon: const Icon(Icons.bug_report_outlined),
+              tooltip: 'سجل أعطال المساعد الذكي',
+            ),
             IconButton(
               onPressed: () => context.push('/admin/performance'),
               icon: const Icon(Icons.assessment_outlined),
@@ -6050,10 +7110,13 @@ class AdminDashboardScreen extends StatelessWidget {
               Tab(text: 'نظرة عامة'),
               Tab(text: 'المراجعة'),
               Tab(text: 'المستخدمون'),
+              Tab(text: 'ترقية الخطط'),
               Tab(text: 'الإعدادات'),
               Tab(text: 'الإشعارات'),
               Tab(text: 'التدقيق'),
               Tab(text: 'وظائف إعادة اللعب'),
+              Tab(text: 'إعادة التقرير'),
+              Tab(text: 'ملاحظات المستخدمين'),
             ],
           ),
         ),
@@ -6062,10 +7125,13 @@ class AdminDashboardScreen extends StatelessWidget {
             _OverviewTab(),
             _ModerationTab(),
             _UsersTab(),
+            _UserPlanUpgradeTab(),
             _SettingsTab(),
             _BroadcastTab(),
             _AuditTab(),
             _ReplayJobsTab(),
+            _RegenerateReportTab(),
+            _UserFeedbacksTab(),
           ],
         ),
       ),
@@ -6095,8 +7161,11 @@ class _OverviewTab extends ConsumerWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
-                _Metric('المستخدمون', item.usersTotal),
-                _Metric('النشطون', item.usersActive),
+                _Metric('إجمالي المسجلين', item.usersTotal),
+                _Metric('النشطون الآن', item.usersActiveNow),
+                _Metric('حسابات مفعلة', item.usersVerified),
+                _Metric('غير مفعلة', item.usersUnverified),
+                _Metric('النشطون بالحساب', item.usersActive),
                 _Metric('الموقوفون', item.usersSuspended),
                 _Metric('قيد المراجعة', item.discussionsPending),
                 _Metric('البلاغات المفتوحة', item.openReports),
@@ -6925,6 +7994,785 @@ class _ReplayJobsTabState extends ConsumerState<_ReplayJobsTab> {
   }
 }
 
+class _RegenerateReportTab extends ConsumerStatefulWidget {
+  const _RegenerateReportTab();
+
+  @override
+  ConsumerState<_RegenerateReportTab> createState() =>
+      _RegenerateReportTabState();
+}
+
+class _RegenerateReportTabState extends ConsumerState<_RegenerateReportTab> {
+  bool _loading = false;
+  String? _statusMessage;
+  bool _isSuccess = false;
+
+  bool _loadingInvestment = false;
+  String? _investmentStatusMessage;
+  bool _isInvestmentSuccess = false;
+
+  Future<void> _regenerate() async {
+    setState(() {
+      _loading = true;
+      _statusMessage = null;
+    });
+
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      final result = await repo.regenerateDailyReport();
+      setState(() {
+        _loading = false;
+        _isSuccess = true;
+        _statusMessage =
+            result['message']?.toString() ?? 'تم إعادة التقرير بنجاح.';
+      });
+    } catch (error) {
+      setState(() {
+        _loading = false;
+        _isSuccess = false;
+        _statusMessage = error is ApiException
+            ? error.message
+            : 'حدث خطأ أثناء تنفيذ الطلب.';
+      });
+    }
+  }
+
+  Future<void> _regenerateInvestment() async {
+    setState(() {
+      _loadingInvestment = true;
+      _investmentStatusMessage = null;
+    });
+
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      final result = await repo.regenerateInvestmentReport();
+      setState(() {
+        _loadingInvestment = false;
+        _isInvestmentSuccess = true;
+        _investmentStatusMessage =
+            result['message']?.toString() ?? 'تم تحديث تقارير الاستثمار بنجاح.';
+      });
+    } catch (error) {
+      setState(() {
+        _loadingInvestment = false;
+        _isInvestmentSuccess = false;
+        _investmentStatusMessage = error is ApiException
+            ? error.message
+            : 'حدث خطأ أثناء إعادة تقرير الاستثمار.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                  Icons.published_with_changes_rounded,
+                  size: 48,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'إعادة إنشاء تقرير المضاربة اليومي',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'استخدم هذا الخيار لإعادة تشغيل محرك التقارير فور إدخال تحديثات جديدة على خوارزميات المحرك (VWAP, Momentum).',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (_statusMessage != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _isSuccess
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      _statusMessage!,
+                      style: TextStyle(
+                        color: _isSuccess
+                            ? Colors.green
+                            : theme.colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _loading ? null : _regenerate,
+                  icon: _loading
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded),
+                  label: Text(
+                    _loading
+                        ? 'جاري إعادة الإنشاء...'
+                        : 'تشغيل إعادة تقرير المضاربة',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                  Icons.account_balance_rounded,
+                  size: 48,
+                  color: theme.colorScheme.secondary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'إعادة إنشاء تقارير الأسهم الاستثمارية',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'استخدم هذا الخيار لإعادة مسح مؤشرات TradingView الأساسية وحساب القيمة العادلة وهامش الأمان وتحديث الفرص فوراً.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (_investmentStatusMessage != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _isInvestmentSuccess
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      _investmentStatusMessage!,
+                      style: TextStyle(
+                        color: _isInvestmentSuccess
+                            ? Colors.green
+                            : theme.colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                FilledButton.tonalIcon(
+                  onPressed: _loadingInvestment ? null : _regenerateInvestment,
+                  icon: _loadingInvestment
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.sync_rounded),
+                  label: Text(
+                    _loadingInvestment
+                        ? 'جاري تحديث تقارير الاستثمار...'
+                        : 'إعادة إنشاء تقارير الاستثمار الآن',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UserPlanUpgradeTab extends ConsumerStatefulWidget {
+  const _UserPlanUpgradeTab();
+
+  @override
+  ConsumerState<_UserPlanUpgradeTab> createState() =>
+      _UserPlanUpgradeTabState();
+}
+
+class _UserPlanUpgradeTabState extends ConsumerState<_UserPlanUpgradeTab> {
+  AdminUserItem? _selectedUser;
+  String _searchQuery = '';
+  String _selectedPlan = 'pro';
+  int _durationDays = 30;
+  final _bonusPointsController = TextEditingController(text: '0');
+  bool _loading = false;
+  String? _statusMessage;
+  bool _isSuccess = false;
+
+  @override
+  void dispose() {
+    _bonusPointsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _upgradePlan() async {
+    final user = _selectedUser;
+    if (user == null) {
+      setState(() {
+        _statusMessage = 'يرجى اختيار مستخدم أولاً.';
+        _isSuccess = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _statusMessage = null;
+    });
+
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      final bonus = int.tryParse(_bonusPointsController.text.trim()) ?? 0;
+      final res = await repo.upgradeUserPlan(
+        userId: user.id,
+        planCode: _selectedPlan,
+        durationDays: _durationDays > 0 ? _durationDays : null,
+        bonusPoints: bonus,
+      );
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _isSuccess = true;
+        _statusMessage =
+            res['message']?.toString() ?? 'تمت ترقية خطة المستخدم بنجاح.';
+      });
+      ref.invalidate(adminUsersProvider);
+      ref.invalidate(adminOverviewProvider);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _isSuccess = false;
+        _statusMessage = error is ApiException
+            ? error.message
+            : 'فشلت ترقية الخطة.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final usersAsync = ref.watch(adminUsersProvider);
+
+    return usersAsync.when(
+      loading: () => const _Loading(),
+      error: (_, __) => const _Failure('تعذر تحميل المستخدمين.'),
+      data: (users) {
+        final filteredUsers = users.where((u) {
+          if (_searchQuery.isEmpty) return true;
+          return u.displayName.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ||
+              u.email.toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              'ترقية خطة مستخدم يدويًا',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'اختر المستخدم والمدة والخطة المطلوبة لترقيته فوريًا.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'بحث عن مستخدم بالاسم أو الإيميل',
+                        prefixIcon: Icon(Icons.search_rounded),
+                      ),
+                      onChanged: (val) =>
+                          setState(() => _searchQuery = val.trim()),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_selectedUser != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.person_rounded,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedUser!.displayName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_selectedUser!.email} • خطته الحالية: ${_selectedUser!.planCode}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: theme
+                                          .colorScheme
+                                          .onPrimaryContainer
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () =>
+                                  setState(() => _selectedUser = null),
+                              icon: const Icon(Icons.close_rounded),
+                              tooltip: 'إلغاء التحديد',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'اختر مستخدمًا من القائمة (${filteredUsers.length}):',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 180),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.dividerColor),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredUsers.take(20).length,
+                          itemBuilder: (context, idx) {
+                            final u = filteredUsers[idx];
+                            return ListTile(
+                              dense: true,
+                              title: Text(u.displayName),
+                              subtitle: Text('${u.email} (${u.planCode})'),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                              ),
+                              onTap: () => setState(() => _selectedUser = u),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'الخطة المستهدفة:',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'free', label: Text('المجانية')),
+                        ButtonSegment(value: 'basic', label: Text('الأساسية')),
+                        ButtonSegment(
+                          value: 'advanced',
+                          label: Text('المتقدمة'),
+                        ),
+                        ButtonSegment(value: 'pro', label: Text('الاحترافية')),
+                      ],
+                      selected: {_selectedPlan},
+                      onSelectionChanged: (set) =>
+                          setState(() => _selectedPlan = set.first),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'مدة الاشتراك:',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SegmentedButton<int>(
+                      segments: const [
+                        ButtonSegment(value: 30, label: Text('شهر')),
+                        ButtonSegment(value: 90, label: Text('3 أشهر')),
+                        ButtonSegment(value: 365, label: Text('سنة')),
+                        ButtonSegment(value: 0, label: Text('دائم')),
+                      ],
+                      selected: {_durationDays},
+                      onSelectionChanged: (set) =>
+                          setState(() => _durationDays = set.first),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _bonusPointsController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'نقاط إضافية للمحفظة (اختياري)',
+                        hintText: '0',
+                        prefixIcon: Icon(Icons.monetization_on_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_statusMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _isSuccess
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : theme.colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _statusMessage!,
+                          style: TextStyle(
+                            color: _isSuccess
+                                ? Colors.green
+                                : theme.colorScheme.onErrorContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    FilledButton.icon(
+                      onPressed: _loading || _selectedUser == null
+                          ? null
+                          : _upgradePlan,
+                      icon: _loading
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.verified_user_rounded),
+                      label: Text(
+                        _loading
+                            ? 'جاري ترقية الخطة...'
+                            : 'تنفيذ ترقية الخطة الآن',
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _UserFeedbacksTab extends ConsumerStatefulWidget {
+  const _UserFeedbacksTab();
+
+  @override
+  ConsumerState<_UserFeedbacksTab> createState() => _UserFeedbacksTabState();
+}
+
+class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
+  bool _loading = false;
+  String? _error;
+  List<Map<String, dynamic>> _items = [];
+  int _total = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeedbacks();
+  }
+
+  Future<void> _loadFeedbacks() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final repository = ref.read(adminRepositoryProvider);
+      final data = await repository.fetchUserFeedbacks();
+      if (mounted) {
+        setState(() {
+          _items = List<Map<String, dynamic>>.from(data['items'] as List);
+          _total = (data['total'] as num?)?.toInt() ?? _items.length;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _error = e.message);
+      }
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _updateStatus(String feedbackId, String newStatus) async {
+    try {
+      final repository = ref.read(adminRepositoryProvider);
+      await repository.updateFeedbackStatus(feedbackId, newStatus);
+      await _loadFeedbacks();
+    } on Object catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تحديث الحالة: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading && _items.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null && _items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_error!),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _loadFeedbacks,
+              child: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadFeedbacks,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'إجمالي الملاحظات: $_total',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                onPressed: _loadFeedbacks,
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: 'تحديث',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_items.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(28),
+                child: Center(
+                  child: Text('لا توجد ملاحظات من المستخدمين حالياً.'),
+                ),
+              ),
+            )
+          else
+            for (final fb in _items) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            ((fb['user'] as Map?)?['display_name'] as String?) ?? 'مستخدم',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          PopupMenuButton<String>(
+                            onSelected: (String status) => _updateStatus(fb['id'] as String, status),
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(value: 'new', child: Text('جديدة')),
+                              PopupMenuItem(value: 'reviewed', child: Text('تمت المراجعة')),
+                              PopupMenuItem(value: 'resolved', child: Text('تم الحل')),
+                              PopupMenuItem(value: 'archived', child: Text('مؤرشفة')),
+                            ],
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: fb['status'] == 'new'
+                                    ? Colors.amber.withValues(alpha: 0.15)
+                                    : fb['status'] == 'reviewed'
+                                        ? Colors.blue.withValues(alpha: 0.15)
+                                        : fb['status'] == 'resolved'
+                                            ? Colors.green.withValues(alpha: 0.15)
+                                            : Colors.grey.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: fb['status'] == 'new'
+                                      ? Colors.amber
+                                      : fb['status'] == 'reviewed'
+                                          ? Colors.blue
+                                          : fb['status'] == 'resolved'
+                                              ? Colors.green
+                                              : Colors.grey,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    fb['status'] == 'new'
+                                        ? 'جديدة'
+                                        : fb['status'] == 'reviewed'
+                                            ? 'تمت المراجعة'
+                                            : fb['status'] == 'resolved'
+                                                ? 'تم الحل'
+                                                : 'مؤرشفة',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: fb['status'] == 'new'
+                                          ? Colors.amber.shade300
+                                          : fb['status'] == 'reviewed'
+                                              ? Colors.blue.shade300
+                                              : fb['status'] == 'resolved'
+                                                  ? Colors.green.shade300
+                                                  : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_drop_down_rounded,
+                                    size: 18,
+                                    color: fb['status'] == 'new'
+                                        ? Colors.amber.shade300
+                                        : fb['status'] == 'reviewed'
+                                            ? Colors.blue.shade300
+                                            : fb['status'] == 'resolved'
+                                                ? Colors.green.shade300
+                                                : Colors.grey.shade300,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        ((fb['user'] as Map?)?['email'] as String?) ?? '',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        fb['message'] as String? ?? '',
+                        style: const TextStyle(fontSize: 15, height: 1.4),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (fb['status'] != 'reviewed')
+                            OutlinedButton.icon(
+                              onPressed: () => _updateStatus(
+                                fb['id'] as String,
+                                'reviewed',
+                              ),
+                              icon: const Icon(Icons.check_circle_outline, size: 16),
+                              label: const Text('تعليم كمراجعة'),
+                            ),
+                          const SizedBox(width: 8),
+                          if (fb['status'] != 'resolved')
+                            FilledButton.icon(
+                              onPressed: () => _updateStatus(
+                                fb['id'] as String,
+                                'resolved',
+                              ),
+                              icon: const Icon(Icons.done_all_rounded, size: 16),
+                              label: const Text('تم التعامل معها'),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
 ```
 
 ---
@@ -6941,6 +8789,9 @@ class AdminOverview {
     required this.usersTotal,
     required this.usersActive,
     required this.usersSuspended,
+    required this.usersVerified,
+    required this.usersUnverified,
+    required this.usersActiveNow,
     required this.discussionsPending,
     required this.discussionsPublished,
     required this.discussionsHidden,
@@ -6954,6 +8805,9 @@ class AdminOverview {
   final int usersTotal;
   final int usersActive;
   final int usersSuspended;
+  final int usersVerified;
+  final int usersUnverified;
+  final int usersActiveNow;
   final int discussionsPending;
   final int discussionsPublished;
   final int discussionsHidden;
@@ -6969,6 +8823,9 @@ class AdminOverview {
       usersTotal: value('users_total'),
       usersActive: value('users_active'),
       usersSuspended: value('users_suspended'),
+      usersVerified: value('users_verified'),
+      usersUnverified: value('users_unverified'),
+      usersActiveNow: value('users_active_now'),
       discussionsPending: value('discussions_pending'),
       discussionsPublished: value('discussions_published'),
       discussionsHidden: value('discussions_hidden'),
@@ -7661,6 +9518,84 @@ class AdminRepository {
     }
   }
 
+  Future<Map<String, dynamic>> regenerateDailyReport() async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/reports/regenerate',
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> regenerateInvestmentReport() async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/reports/investment/regenerate',
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> upgradeUserPlan({
+    required String userId,
+    required String planCode,
+    int? durationDays,
+    int bonusPoints = 0,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/operations/users/$userId/upgrade-plan',
+        data: <String, dynamic>{
+          'plan_code': planCode,
+          if (durationDays != null) 'duration_days': durationDays,
+          'bonus_points': bonusPoints,
+        },
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchUserFeedbacks({
+    String? status,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/admin/feedbacks',
+        queryParameters: <String, dynamic>{
+          if (status != null) 'status': status,
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateFeedbackStatus(
+    String feedbackId,
+    String status,
+  ) async {
+    try {
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+        '/admin/feedbacks/$feedbackId',
+        data: <String, dynamic>{'status': status},
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   String _dateOnly(DateTime value) {
     return '${value.year.toString().padLeft(4, '0')}-'
         '${value.month.toString().padLeft(2, '0')}-'
@@ -7984,6 +9919,334 @@ class _Failure extends StatelessWidget {
 }
 
 String _coins(int points) => (points / 100).toStringAsFixed(2);
+
+```
+
+---
+
+### File: `lib\features\admin\ai_failures_admin_screen.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/network/api_client.dart';
+import '../../core/network/api_exception.dart';
+
+class AiFailuresAdminScreen extends ConsumerStatefulWidget {
+  const AiFailuresAdminScreen({super.key});
+
+  static Route<void> route() {
+    return MaterialPageRoute<void>(
+      builder: (_) => const AiFailuresAdminScreen(),
+    );
+  }
+
+  @override
+  ConsumerState<AiFailuresAdminScreen> createState() =>
+      _AiFailuresAdminScreenState();
+}
+
+class _AiFailuresAdminScreenState extends ConsumerState<AiFailuresAdminScreen> {
+  List<Map<String, dynamic>> _failures = [];
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFailures();
+  }
+
+  Future<void> _fetchFailures() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.get<List<dynamic>>(
+        '/admin/ai-failures',
+      );
+
+      final list = (response.data ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _failures = list;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _error = e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _clearCooldown(String userId, String userName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إلغاء حظر المساعد الذكي'),
+        content: Text(
+          'هل أنت تأكد من إلغاء الحظر الإجباري مؤقتاً عن المستخدم ($userName)؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('تأكيد الإلغاء'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/ai-failures/users/$userId/clear-cooldown',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم إلغاء حظر المساعد الذكي عن ($userName) بنجاح.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      _fetchFailures();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('سجل أعطال المساعد الذكي (AI Failures)'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _fetchFailures,
+            tooltip: 'تحديث',
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _error!,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: _fetchFailures,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _failures.isEmpty
+                    ? const Center(
+                        child: Text('لا توجد سجلات أعطال للمساعد الذكي حالياً.'),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _fetchFailures,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _failures.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = _failures[index];
+                            final userId = item['user_id'] as String?;
+                            final userName = item['user_name'] as String? ?? 'مستخدم';
+                            final userEmail = item['user_email'] as String? ?? '';
+                            final ticker = item['ticker'] as String?;
+                            final question = item['question'] as String? ?? '';
+                            final errorMsg = item['error_message'] as String? ?? '';
+                            final traceback = item['error_traceback'] as String?;
+                            final createdAt = item['created_at'] as String? ?? '';
+
+                            return Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                userName,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              Text(
+                                                userEmail,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (ticker != null && ticker.isNotEmpty)
+                                          Chip(
+                                            label: Text(ticker),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                      ],
+                                    ),
+                                    const Divider(height: 16),
+                                    const Text(
+                                      'السؤال الموجه:',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      question,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.error_outline_rounded,
+                                            color: Colors.red,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              errorMsg,
+                                              style: const TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (traceback != null && traceback.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      ExpansionTile(
+                                        dense: true,
+                                        title: const Text(
+                                          'تفاصيل الخطأ (Traceback)',
+                                          style: TextStyle(fontSize: 11),
+                                        ),
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            color: Colors.black12,
+                                            width: double.infinity,
+                                            child: Text(
+                                              traceback,
+                                              style: const TextStyle(
+                                                fontFamily: 'monospace',
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          createdAt.substring(0, 16).replaceAll('T', ' '),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        if (userId != null)
+                                          FilledButton.tonal(
+                                            onPressed: () => _clearCooldown(
+                                              userId,
+                                              userName,
+                                            ),
+                                            child: const Text(
+                                              'إلغاء حظر المساعد',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+      ),
+    );
+  }
+}
 
 ```
 
@@ -9555,6 +11818,963 @@ IconData _tickerIcon(String status) => switch (status) {
 
 ---
 
+### File: `lib\features\ai_copilot\screens\ai_copilot_screen.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/network/api_client.dart';
+import '../../../data/backend_repository.dart';
+import '../../../domain/models.dart';
+import '../../auth/session_controller.dart';
+import '../widgets/referral_gate_dialog.dart';
+
+class AiCopilotMessage {
+  const AiCopilotMessage({
+    required this.text,
+    required this.isUser,
+    this.ticker,
+  });
+
+  final String text;
+  final bool isUser;
+  final String? ticker;
+}
+
+class AiCopilotScreen extends ConsumerStatefulWidget {
+  const AiCopilotScreen({
+    super.key,
+    this.initialTicker,
+  });
+
+  final String? initialTicker;
+
+  static Route<void> route({String? initialTicker}) {
+    return MaterialPageRoute<void>(
+      builder: (_) => AiCopilotScreen(initialTicker: initialTicker),
+    );
+  }
+
+  @override
+  ConsumerState<AiCopilotScreen> createState() => _AiCopilotScreenState();
+}
+
+class _AiCopilotScreenState extends ConsumerState<AiCopilotScreen> {
+  final List<AiCopilotMessage> _messages = [];
+  final _questionController = TextEditingController();
+  late final TextEditingController _tickerController;
+  final FocusNode _tickerFocusNode = FocusNode();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tickerController = TextEditingController(text: widget.initialTicker ?? '');
+    _messages.add(
+      const AiCopilotMessage(
+        text: 'أهلاً بك! أنا مساعدك الذكي المباشر لأسهم البورصة المصرية.\nاطرح أي سؤال عن سعر الدخول، الاتجاه، أو الجودة الفنية للسهم.',
+        isUser: false,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _questionController.dispose();
+    _tickerController.dispose();
+    _tickerFocusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openStockSearchModal() async {
+    final selected = await showModalBottomSheet<MarketInstrument>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => const _StockSearchSheet(),
+    );
+
+    if (selected != null && mounted) {
+      setState(() {
+        _tickerController.text = selected.ticker;
+      });
+    }
+  }
+
+  Future<void> _sendQuery() async {
+    final question = _questionController.text.trim();
+    if (question.isEmpty || _isLoading) return;
+
+    final ticker = _tickerController.text.trim().toUpperCase();
+
+    setState(() {
+      _messages.add(
+        AiCopilotMessage(
+          text: question,
+          isUser: true,
+          ticker: ticker.isNotEmpty ? ticker : null,
+        ),
+      );
+      _questionController.clear();
+      _isLoading = true;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.post<Map<String, dynamic>>(
+        '/ai-copilot/query',
+        data: <String, dynamic>{
+          if (ticker.isNotEmpty) 'ticker': ticker,
+          'question': question,
+        },
+      );
+
+      final data = response.data?['data'] as Map<String, dynamic>? ?? response.data ?? {};
+      final answer = data['answer'] as String? ?? 'تمت معالجة الاستفسار بنجاح.';
+
+      ref.invalidate(sessionControllerProvider);
+
+      if (mounted) {
+        setState(() {
+          _messages.add(
+            AiCopilotMessage(
+              text: answer,
+              isUser: false,
+              ticker: ticker.isNotEmpty ? ticker : null,
+            ),
+          );
+        });
+      }
+    } catch (e) {
+      final apiClient = ref.read(apiClientProvider);
+      final apiError = apiClient.mapError(e);
+
+      if (apiError.payload is Map) {
+        final details = apiError.payload as Map<String, dynamic>;
+        final detailMap = details['detail'] is Map
+            ? details['detail'] as Map<String, dynamic>
+            : details;
+
+        final errorCode = detailMap['error_code'] as String?;
+
+        if (errorCode == 'REFERRAL_GATE_LOCKED' && mounted) {
+          ReferralGateDialog.show(
+            context,
+            currentCount: (detailMap['current'] as num?)?.toInt() ?? 0,
+            requiredCount: (detailMap['required'] as num?)?.toInt() ?? 5,
+            referralCode: detailMap['referral_code'] as String? ?? '',
+          );
+          return;
+        }
+
+        if ((errorCode == 'AI_COOLDOWN_ACTIVE' || errorCode == 'AI_SERVICE_FAILURE') && mounted) {
+          showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('إيقاف مؤقت للمساعد الذكي'),
+              content: Text(
+                detailMap['message'] as String? ??
+                    'تعذرت معالجة استفسارك وسنعاود إتاحة الخدمة بحسابك بعد قليل.',
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('حسناً'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiError.message)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final userCoins = ref.watch(sessionControllerProvider).profile?.balanceCoins ?? '0';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('المساعد الذكي للسهم'),
+        centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(left: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.monetization_on, size: 16, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  '$userCoins عملة',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Info Header Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Row(
+                children: const [
+                  Icon(Icons.info_outline, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'تكلفة الاستفسار المباشر: 0.5 عملة. متاح مجاناً للمجتمعيين (5+ دعوات).',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Chat Messages List
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: _messages.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  return _ChatBubble(message: msg);
+                },
+              ),
+            ),
+
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: CircularProgressIndicator(),
+              ),
+
+            // Input Control Bar (Stacked Column layout)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Full-width Stock Autocomplete Field (Stacked above)
+                  RawAutocomplete<MarketInstrument>(
+                    textEditingController: _tickerController,
+                    focusNode: _tickerFocusNode,
+                    optionsBuilder: (TextEditingValue textEditingValue) async {
+                      final query = textEditingValue.text.trim();
+                      if (query.isEmpty) return const [];
+                      try {
+                        return await ref
+                            .read(backendRepositoryProvider)
+                            .searchInstruments(query, limit: 10);
+                      } catch (_) {
+                        return const [];
+                      }
+                    },
+                    displayStringForOption: (MarketInstrument option) => option.ticker,
+                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                      return TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(
+                          labelText: 'السهم المستهدف (البورصة المصرية)',
+                          hintText: 'ابحث باسم أو رمز السهم... (مثال: COMI, HELI)',
+                          prefixIcon: const Icon(Icons.show_chart_rounded, size: 20),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (controller.text.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.clear_rounded, size: 18),
+                                  onPressed: () {
+                                    controller.clear();
+                                  },
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.search_rounded),
+                                onPressed: _openStockSearchModal,
+                              ),
+                            ],
+                          ),
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.bottomRight,
+                        child: Material(
+                          elevation: 6,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: MediaQuery.of(context).size.width - 24,
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            color: theme.colorScheme.surface,
+                            child: ListView.separated(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final option = options.elementAt(index);
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(
+                                    '${option.ticker} — ${option.description.isNotEmpty ? option.description : option.providerSymbol}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    onSelected(option);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Message Input Field + Send Button (Stacked below, full width, 5000 character limit)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _questionController,
+                          maxLength: 5000,
+                          maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                          minLines: 1,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            hintText: 'اطرح سؤالك هنا (حتى 5000 حرف)...',
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            border: OutlineInputBorder(),
+                            counterText: '',
+                          ),
+                          onSubmitted: (_) => _sendQuery(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: IconButton.filled(
+                          onPressed: _isLoading ? null : _sendQuery,
+                          icon: const Icon(Icons.send_rounded),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({required this.message});
+
+  final AiCopilotMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isUser = message.isUser;
+
+    return Align(
+      alignment: isUser ? Alignment.centerLeft : Alignment.centerRight,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.82,
+        ),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isUser
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16).copyWith(
+            bottomLeft: isUser ? Radius.zero : const Radius.circular(16),
+            bottomRight: !isUser ? Radius.zero : const Radius.circular(16),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            if (message.ticker != null && message.ticker!.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isUser
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  message.ticker!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isUser
+                        ? Colors.white
+                        : theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            Text(
+              message.text,
+              style: TextStyle(
+                fontSize: 14,
+                color: isUser
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StockSearchSheet extends ConsumerStatefulWidget {
+  const _StockSearchSheet();
+
+  @override
+  ConsumerState<_StockSearchSheet> createState() => _StockSearchSheetState();
+}
+
+class _StockSearchSheetState extends ConsumerState<_StockSearchSheet> {
+  final _searchController = TextEditingController();
+  List<MarketInstrument> _items = const [];
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _items = const []);
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final items = await ref
+          .read(backendRepositoryProvider)
+          .searchInstruments(query, limit: 30);
+      if (mounted) {
+        setState(() => _items = items);
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() => _error = error.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.65,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'اختر سهمًا من البورصة المصرية',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _searchController,
+                autofocus: true,
+                textCapitalization: TextCapitalization.characters,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'ابحث باسم أو رمز السهم (مثال: COMI, HELI...)',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: IconButton(
+                    onPressed: _loading ? null : _search,
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                  ),
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => _search(),
+                onSubmitted: (_) => _search(),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _items.isEmpty
+                        ? const Center(child: Text('ابحث باسم أو رمز السهم للاختيار.'))
+                        : ListView.separated(
+                            itemCount: _items.length,
+                            separatorBuilder: (context, index) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = _items[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  item.ticker,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  item.description.isEmpty ? item.providerSymbol : item.description,
+                                ),
+                                onTap: () => Navigator.of(context).pop(item),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\ai_copilot\widgets\referral_gate_dialog.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class ReferralGateDialog extends StatelessWidget {
+  const ReferralGateDialog({
+    super.key,
+    required this.currentCount,
+    required this.requiredCount,
+    required this.referralCode,
+  });
+
+  final int currentCount;
+  final int requiredCount;
+  final String referralCode;
+
+  static Future<void> show(
+    BuildContext context, {
+    required int currentCount,
+    required int requiredCount,
+    required String referralCode,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (_) => ReferralGateDialog(
+        currentCount: currentCount,
+        requiredCount: requiredCount,
+        referralCode: referralCode,
+      ),
+    );
+  }
+
+  void _copyCode(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: referralCode));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم نسخ كود الإحالة بنجاح')),
+    );
+  }
+
+  void _shareWhatsApp(BuildContext context) {
+    final text = Uri.encodeComponent(
+      'حمل تطبيق سهمي كسبان واستخدم كود الدعوة الخاص بي: $referralCode للحصول على 10 عملات مجانية!\nhttps://play.google.com/store/apps/details?id=com.sahmikasban.sahmi_kasban_mobile',
+    );
+    launchUrl(
+      Uri.parse('https://wa.me/?text=$text'),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  void _shareTelegram(BuildContext context) {
+    final text = Uri.encodeComponent(
+      'حمل تطبيق سهمي كسبان واستخدم كود الدعوة الخاص بي: $referralCode للحصول على 10 عملات مجانية!',
+    );
+    final url = Uri.encodeComponent(
+      'https://play.google.com/store/apps/details?id=com.sahmikasban.sahmi_kasban_mobile',
+    );
+    launchUrl(
+      Uri.parse('https://t.me/share/url?url=$url&text=$text'),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final progress = (currentCount / requiredCount).clamp(0.0, 1.0);
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: Column(
+        children: const [
+          Icon(
+            Icons.lock_outlined,
+            size: 44,
+            color: Colors.amber,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'تفعيل المساعد الذكي المباشر',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'ميزة المساعد الذكي تقتصر على الأعضاء المساهمين في نمو مجتمع التطبيق.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+
+            // Progress Indicator
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'تقدم الدعوات:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '$currentCount / $requiredCount دعوات',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Referral Code Box
+            InkWell(
+              onTap: () => _copyCode(context),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.primary),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      referralCode,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const Icon(Icons.copy, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Share Buttons Row
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _shareWhatsApp(context),
+                    icon: const Icon(Icons.send_rounded, color: Colors.green),
+                    label: const Text('واتساب'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _shareTelegram(context),
+                    icon: const Icon(Icons.telegram, color: Colors.blue),
+                    label: const Text('تليجرام'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إغلاق'),
+        ),
+      ],
+    );
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\app_version\version_check_manager.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/network/api_client.dart';
+
+const int currentAppVersionCode = 35;
+
+class AppVersionInfo {
+  const AppVersionInfo({
+    required this.latestVersion,
+    required this.latestVersionCode,
+    required this.minRequiredVersionCode,
+    required this.playStoreUrl,
+    required this.titleAr,
+    required this.messageAr,
+    required this.forceUpdate,
+  });
+
+  final String latestVersion;
+  final int latestVersionCode;
+  final int minRequiredVersionCode;
+  final String playStoreUrl;
+  final String titleAr;
+  final String messageAr;
+  final bool forceUpdate;
+
+  factory AppVersionInfo.fromJson(Map<String, dynamic> json) {
+    return AppVersionInfo(
+      latestVersion: (json['latest_version'] as String?) ?? '1.0.8+35',
+      latestVersionCode: (json['latest_version_code'] as num?)?.toInt() ?? 35,
+      minRequiredVersionCode:
+          (json['min_required_version_code'] as num?)?.toInt() ?? 1,
+      playStoreUrl: (json['play_store_url'] as String?) ??
+          'https://play.google.com/store/apps/details?id=com.sahmikasban.sahmi_kasban_mobile',
+      titleAr: (json['title_ar'] as String?) ?? 'يتوفر تحديث جديد للتطبيق',
+      messageAr: (json['message_ar'] as String?) ??
+          'يتوفر إصدار أحدث للتطبيق يحتوي على تحسينات هامة وميزات جديدة. يرجى التحديث الآن للحصول على أفضل تجربة.',
+      forceUpdate: (json['force_update'] as bool?) ?? false,
+    );
+  }
+}
+
+class VersionCheckManager {
+  VersionCheckManager(this._apiClient);
+
+  final ApiClient _apiClient;
+  bool _hasPromptedThisSession = false;
+
+  Future<AppVersionInfo?> checkVersion() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>('/app/version');
+      if (response.data != null) {
+        return AppVersionInfo.fromJson(response.data!);
+      }
+    } on Object {
+      // Fail gracefully on version check network errors
+    }
+    return null;
+  }
+
+  Future<void> checkAndShowPrompt(BuildContext context) async {
+    if (_hasPromptedThisSession) return;
+
+    final versionInfo = await checkVersion();
+    if (versionInfo == null || !context.mounted) {
+      return;
+    }
+
+    final isOutdated = versionInfo.latestVersionCode > currentAppVersionCode;
+    final isForceUpdate = versionInfo.forceUpdate ||
+        currentAppVersionCode < versionInfo.minRequiredVersionCode;
+
+    if (isOutdated || isForceUpdate) {
+      _hasPromptedThisSession = true;
+      showDialog<void>(
+        context: context,
+        barrierDismissible: !isForceUpdate,
+        builder: (dialogContext) {
+          return PopScope(
+            canPop: !isForceUpdate,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  const Icon(Icons.system_update_rounded, color: Colors.amber),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      versionInfo.titleAr,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                versionInfo.messageAr,
+                style: const TextStyle(height: 1.4),
+              ),
+              actions: [
+                if (!isForceUpdate)
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('لاحقاً'),
+                  ),
+                FilledButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse(versionInfo.playStoreUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  label: const Text('تحديث الآن'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+}
+
+final versionCheckManagerProvider = Provider<VersionCheckManager>((ref) {
+  return VersionCheckManager(ref.watch(apiClientProvider));
+});
+
+```
+
+---
+
 ### File: `lib\features\auth\account_recovery_screens.dart`
 
 ```dart
@@ -10309,6 +13529,82 @@ import '../../core/network/api_exception.dart';
 import '../../core/ui/app_notice.dart';
 import 'session_controller.dart';
 
+import 'package:google_sign_in/google_sign_in.dart';
+
+Future<void> _handleGoogleSignIn(
+  BuildContext context,
+  WidgetRef ref, {
+  String? referralCode,
+}) async {
+  try {
+    final googleSignIn = GoogleSignIn(
+      serverClientId:
+          '48076310012-d1fp6anhhne69d0lljslt8b86caneets.apps.googleusercontent.com',
+      scopes: ['email', 'profile'],
+    );
+    try {
+      await googleSignIn.signOut();
+    } catch (_) {}
+    final account = await googleSignIn.signIn();
+    if (account == null) {
+      return;
+    }
+    final auth = await account.authentication;
+    final idToken = auth.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      if (context.mounted) {
+        AppNotice.show(
+          context,
+          title: 'تعذر الدخول بجوجل',
+          message: 'لم نتمكن من الحصول على توكن المصادقة الخاص بجوجل.',
+          tone: AppNoticeTone.error,
+        );
+      }
+      return;
+    }
+    await ref
+        .read(sessionControllerProvider.notifier)
+        .loginWithGoogle(idToken: idToken, referralCode: referralCode);
+    if (context.mounted) {
+      AppNotice.show(
+        context,
+        title: 'مرحباً بك!',
+        message: 'تم تسجيل الدخول بنجاح بواسطة Google.',
+        tone: AppNoticeTone.success,
+      );
+      context.go('/home');
+    }
+  } on ApiException catch (error) {
+    if (context.mounted) {
+      AppNotice.show(
+        context,
+        title: 'تعذر تسجيل الدخول',
+        message: error.message,
+        tone: AppNoticeTone.error,
+      );
+    }
+  } catch (error) {
+    if (context.mounted) {
+      final detail = error.toString();
+      String message;
+      if (detail.contains('10:')) {
+        message =
+            'بصمة SHA-1 للنسخة غير متطابقة في Google Cloud Console ($detail)';
+      } else if (detail.length > 120) {
+        message = 'خطأ من Google: ${detail.substring(0, 120)}...';
+      } else {
+        message = 'خطأ من Google: $detail';
+      }
+      AppNotice.show(
+        context,
+        title: 'تعذر الاتصال بـ Google',
+        message: message,
+        tone: AppNoticeTone.error,
+      );
+    }
+  }
+}
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -10428,6 +13724,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     )
                   : const Text('تسجيل الدخول'),
             ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('أو', style: TextStyle(color: Colors.grey)),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _submitting
+                  ? null
+                  : () => _handleGoogleSignIn(context, ref),
+              icon: const Icon(
+                Icons.g_mobiledata_rounded,
+                size: 28,
+                color: Colors.redAccent,
+              ),
+              label: const Text('تسجيل الدخول بواسطة Google'),
+            ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => context.go('/register'),
@@ -10452,6 +13771,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _referralCodeController = TextEditingController();
   bool _obscurePassword = true;
   bool _submitting = false;
 
@@ -10460,6 +13780,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -10469,12 +13790,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     setState(() => _submitting = true);
     try {
+      final codeText = _referralCodeController.text.trim();
       final result = await ref
           .read(sessionControllerProvider.notifier)
           .register(
             email: _emailController.text,
             password: _passwordController.text,
             displayName: _nameController.text,
+            referralCode: codeText.isEmpty ? null : codeText,
           );
       if (!mounted) {
         return;
@@ -10561,6 +13884,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               validator: _validatePassword,
             ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _referralCodeController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'كود الدعوة / الإحالة (اختياري)',
+                hintText: 'مثال: SK-7A39B8',
+                prefixIcon: Icon(Icons.card_giftcard_rounded),
+              ),
+            ),
             const SizedBox(height: 22),
             FilledButton(
               onPressed: _submitting ? null : _submit,
@@ -10571,6 +13904,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
                   : const Text('إنشاء الحساب'),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('أو', style: TextStyle(color: Colors.grey)),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _submitting
+                  ? null
+                  : () {
+                      final code = _referralCodeController.text.trim();
+                      _handleGoogleSignIn(
+                        context,
+                        ref,
+                        referralCode: code.isEmpty ? null : code,
+                      );
+                    },
+              icon: const Icon(
+                Icons.g_mobiledata_rounded,
+                size: 28,
+                color: Colors.redAccent,
+              ),
+              label: const Text('التسجيل المباشر بواسطة Google'),
             ),
             const SizedBox(height: 12),
             TextButton(
@@ -10752,6 +14115,24 @@ class SessionController extends StateNotifier<SessionState> {
     }
   }
 
+  Future<void> loginWithGoogle({
+    required String idToken,
+    String? referralCode,
+  }) async {
+    state = const SessionState.loading();
+    try {
+      await _repository.loginWithGoogle(
+        idToken: idToken,
+        referralCode: referralCode,
+      );
+      final profile = await _repository.getProfile();
+      state = SessionState.authenticated(profile);
+    } on ApiException catch (error) {
+      state = SessionState.unauthenticated(errorMessage: error.message);
+      rethrow;
+    }
+  }
+
   void loginAsDemo() {
     state = const SessionState.authenticated(
       UserProfile(
@@ -10773,11 +14154,13 @@ class SessionController extends StateNotifier<SessionState> {
     required String email,
     required String password,
     required String displayName,
+    String? referralCode,
   }) {
     return _repository.register(
       email: email,
       password: password,
       displayName: displayName,
+      referralCode: referralCode,
     );
   }
 
@@ -11084,9 +14467,9 @@ class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
         return;
       }
       final message = switch (result.discussion.status) {
-        'published' => 'تم قبول المناقشة ونشرها وتأكيد خصم 0.5 عملة.',
-        'rejected' => 'تم رفض المناقشة وإعادة الرصيد كاملًا.',
-        _ => 'تم إرسال المناقشة وهي قيد المراجعة مع حجز 0.5 عملة مؤقتًا.',
+        'published' => 'تم نشر المناقشة بنجاح.',
+        'rejected' => 'لم يتم قبول المناقشة.',
+        _ => 'تم إرسال المناقشة وهي قيد المراجعة حاليًا.',
       };
       ScaffoldMessenger.of(
         context,
@@ -11132,13 +14515,13 @@ class _CommunityCreateScreenState extends ConsumerState<CommunityCreateScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      Icons.account_balance_wallet_outlined,
+                      Icons.forum_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        'سيتم حجز 0.5 عملة مؤقتًا. عند القبول يتحول الحجز إلى خصم نهائي، وعند الرفض يعود الرصيد كاملًا.',
+                        'المناقشات والتوقعات مجانية بالكامل. يتم مراجعة مناقشتك قبل نشرها في مجتمع سهمي كسبان.',
                       ),
                     ),
                   ],
@@ -11363,7 +14746,10 @@ class _TickerPickerSheetState extends ConsumerState<_TickerPickerSheet> {
 ### File: `lib\features\community\community_detail_screen.dart`
 
 ```dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/avatar_assets.dart';
@@ -11374,6 +14760,7 @@ import 'community_models.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
 import 'prediction_verification_card.dart';
+import 'real_view_tracker.dart';
 
 class CommunityDetailScreen extends ConsumerStatefulWidget {
   const CommunityDetailScreen({required this.discussionId, super.key});
@@ -11388,6 +14775,16 @@ class CommunityDetailScreen extends ConsumerStatefulWidget {
 class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
   bool _mutedLocally = false;
   bool _actionBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        RealViewTracker.recordView(ref, widget.discussionId);
+      }
+    });
+  }
 
   Future<void> _refresh() async {
     ref.invalidate(communityDiscussionProvider(widget.discussionId));
@@ -11473,6 +14870,23 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
       afterSuccess: () {
         ref.invalidate(myAppealsProvider);
         ref.invalidate(myDiscussionsProvider);
+      },
+    );
+  }
+
+  Future<void> _toggleReaction(
+    CommunityDiscussion discussion,
+    String reactionType,
+  ) async {
+    await _runAction(
+      () => ref.read(communityRepositoryProvider).toggleReaction(
+        discussionId: discussion.id,
+        reactionType: reactionType,
+      ),
+      successMessage: 'تم تحديث تفاعلك مع المناقشة.',
+      afterSuccess: () {
+        ref.invalidate(communityDiscussionProvider(discussion.id));
+        ref.invalidate(communityFeedProvider);
       },
     );
   }
@@ -11590,14 +15004,68 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                               ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 12),
-                        Text(item.content),
+                        MarkdownBody(
+                          data: item.content,
+                          selectable: true,
+                          styleSheet:
+                              MarkdownStyleSheet.fromTheme(
+                                Theme.of(context),
+                              ).copyWith(
+                                p: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.copyWith(height: 1.5),
+                              ),
+                        ),
                         const SizedBox(height: 16),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Chip(label: Text(item.periodLabel)),
                             Chip(label: Text(item.statusLabel)),
+                            Chip(
+                              avatar: const Icon(Icons.remove_red_eye_outlined, size: 14),
+                              label: Text('${item.viewsCount} مشاهدة'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: item.userReaction == 'agree'
+                                  ? FilledButton(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'agree'),
+                                      child: Text('متفق (${item.agreeCount})'),
+                                    )
+                                  : OutlinedButton(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'agree'),
+                                      child: Text('متفق (${item.agreeCount})'),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: item.userReaction == 'disagree'
+                                  ? FilledButton(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'disagree'),
+                                      child: Text('غير متفق (${item.disagreeCount})'),
+                                    )
+                                  : OutlinedButton(
+                                      onPressed: _actionBusy
+                                          ? null
+                                          : () => _toggleReaction(item, 'disagree'),
+                                      child: Text('غير متفق (${item.disagreeCount})'),
+                                    ),
+                            ),
                           ],
                         ),
                         if (item.rejectionCode != null) ...[
@@ -11813,14 +15281,23 @@ class _AppealDialogState extends State<_AppealDialog> {
 ### File: `lib\features\community\community_feed_tab.dart`
 
 ```dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/avatar_assets.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/ui/app_notice.dart';
 import '../monetization/free_plan_ads.dart';
+import '../auth/session_controller.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
+import 'community_repository.dart';
+import 'real_view_tracker.dart';
+import 'screens/user_profile_screen.dart';
 
 class CommunityFeedTab extends ConsumerStatefulWidget {
   const CommunityFeedTab({super.key});
@@ -11860,101 +15337,149 @@ class _CommunityFeedTabState extends ConsumerState<CommunityFeedTab> {
     final feed = ref.watch(communityFeedProvider);
     final activeTicker = ref.watch(communityTickerFilterProvider);
 
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Row(
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => context.push('/community/new'),
-                  icon: const Icon(Icons.add_comment_outlined),
-                  label: const Text('إنشاء مناقشة'),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.tips_and_updates_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'المناقشات والتوقعات مجانية بالكامل. شارك توقعك مع مجتمع المتداولين لتوثيق دقة تحليلاتك.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => context.push('/community/mine'),
-                  icon: const Icon(Icons.forum_outlined),
-                  label: const Text('مناقشاتي'),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => context.push('/community/new'),
+                      icon: const Icon(Icons.add_comment_outlined),
+                      label: const Text('إنشاء مناقشة'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/community/mine'),
+                      icon: const Icon(Icons.history_edu_rounded),
+                      label: const Text('مناقشاتي'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _tickerController,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            hintText: 'تصفية حسب سهم (مثال: COMI)',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                          ),
+                          onSubmitted: (_) => _applyTickerFilter(),
+                        ),
+                      ),
+                      if (activeTicker != null)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: _clearTickerFilter,
+                        )
+                      else
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          onPressed: _applyTickerFilter,
+                        ),
+                    ],
+                  ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              feed.when(
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (error, stack) => _CommunityErrorCard(
+                  message: error.toString(),
+                  onRetry: _refresh,
+                ),
+                data: (data) {
+                  final discussions = data.items;
+                  if (discussions.isEmpty) {
+                    return const _EmptyCommunityCard();
+                  }
+
+                  return Column(
+                    children: [
+                      for (final item in discussions)
+                        CommunityDiscussionCard(discussion: item),
+                      const SizedBox(height: 12),
+                      const FreePlanNativeAd(),
+                      const SizedBox(height: 12),
+                      if (data.hasMore)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'توجد مناقشات إضافية وسيتم تحميلها في تحديث لاحق للصفحة.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _tickerController,
-            textCapitalization: TextCapitalization.characters,
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              labelText: 'فلترة برمز السهم',
-              hintText: 'مثال: COMI',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: activeTicker == null
-                  ? IconButton(
-                      onPressed: _applyTickerFilter,
-                      icon: const Icon(Icons.tune_rounded),
-                      tooltip: 'تطبيق الفلتر',
-                    )
-                  : IconButton(
-                      onPressed: _clearTickerFilter,
-                      icon: const Icon(Icons.close_rounded),
-                      tooltip: 'إلغاء الفلتر',
-                    ),
-            ),
-            onSubmitted: (_) => _applyTickerFilter(),
-          ),
-          if (activeTicker != null) ...[
-            const SizedBox(height: 10),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Chip(label: Text('السهم: $activeTicker')),
-            ),
-          ],
-          const SizedBox(height: 14),
-          const FreePlanNativeAd(),
-          const SizedBox(height: 14),
-          feed.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(36),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (error, stackTrace) => _CommunityErrorCard(
-              message: 'تعذر تحميل مناقشات المجتمع.',
-              onRetry: () => ref.invalidate(communityFeedProvider),
-            ),
-            data: (page) {
-              if (page.items.isEmpty) {
-                return const _EmptyCommunityCard();
-              }
-              return Column(
-                children: [
-                  for (final discussion in page.items) ...[
-                    CommunityDiscussionCard(discussion: discussion),
-                    const SizedBox(height: 12),
-                  ],
-                  if (page.hasMore)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 4),
-                      child: Text(
-                        'توجد مناقشات إضافية وسيتم تحميلها في تحديث لاحق للصفحة.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+        ),
+        const _DraggableTelegramBall(),
+      ],
     );
   }
 }
 
-class CommunityDiscussionCard extends StatelessWidget {
+class CommunityDiscussionCard extends ConsumerStatefulWidget {
   const CommunityDiscussionCard({
     required this.discussion,
     this.showStatus = false,
@@ -11965,41 +15490,249 @@ class CommunityDiscussionCard extends StatelessWidget {
   final bool showStatus;
 
   @override
+  ConsumerState<CommunityDiscussionCard> createState() =>
+      _CommunityDiscussionCardState();
+}
+
+class _CommunityDiscussionCardState
+    extends ConsumerState<CommunityDiscussionCard> {
+  Timer? _visibilityTimer;
+  int _visibleDwellMs = 0;
+  int _notVisibleCount = 0;
+  bool _hasTriggeredView = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startVisibilityChecker();
+  }
+
+  @override
+  void didUpdateWidget(covariant CommunityDiscussionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.discussion.id != widget.discussion.id) {
+      _visibleDwellMs = 0;
+      _notVisibleCount = 0;
+      _hasTriggeredView = false;
+      _startVisibilityChecker();
+    }
+  }
+
+  @override
+  void dispose() {
+    _visibilityTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startVisibilityChecker() {
+    _visibilityTimer?.cancel();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkVisibility();
+    });
+    _visibilityTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _checkVisibility();
+    });
+  }
+
+  void _checkVisibility() {
+    if (_hasTriggeredView || !mounted) return;
+
+    final id = widget.discussion.id;
+    if (RealViewTracker.isRecorded(id)) {
+      _hasTriggeredView = true;
+      _visibilityTimer?.cancel();
+      return;
+    }
+
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.hasSize ||
+        !renderObject.attached) {
+      _visibleDwellMs = 0;
+      _notVisibleCount++;
+      if (_notVisibleCount >= 3) {
+        _visibilityTimer?.cancel();
+      }
+      return;
+    }
+
+    final position = renderObject.localToGlobal(Offset.zero);
+    final size = renderObject.size;
+    final mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery == null) return;
+
+    final screenHeight = mediaQuery.size.height;
+    final top = position.dy;
+    final bottom = top + size.height;
+
+    final visibleTop = top < 0 ? 0.0 : top;
+    final visibleBottom = bottom > screenHeight ? screenHeight : bottom;
+    final visibleHeight = visibleBottom - visibleTop;
+
+    final isVisible =
+        (visibleHeight > 0) && (visibleHeight / size.height >= 0.4);
+
+    if (isVisible) {
+      _notVisibleCount = 0;
+      _visibleDwellMs += 500;
+      if (_visibleDwellMs >= 1000) {
+        _hasTriggeredView = true;
+        _visibilityTimer?.cancel();
+        RealViewTracker.recordView(ref, id);
+      }
+    } else {
+      _visibleDwellMs = 0;
+      _notVisibleCount++;
+      if (_notVisibleCount >= 3) {
+        _visibilityTimer?.cancel();
+      }
+    }
+  }
+
+  Future<void> _toggleReaction(String reactionType) async {
+    try {
+      await ref.read(communityRepositoryProvider).toggleReaction(
+        discussionId: widget.discussion.id,
+        reactionType: reactionType,
+      );
+      ref.invalidate(communityFeedProvider);
+      ref.invalidate(myDiscussionsProvider);
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final discussion = widget.discussion;
+    final currentUserId = ref.watch(sessionControllerProvider).profile?.id;
+    final isAuthor =
+        currentUserId != null && discussion.author.userId == currentUserId;
+
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.push('/community/${discussion.id}'),
+        onTap: () {
+          RealViewTracker.recordView(ref, discussion.id);
+          context.push('/community/${discussion.id}');
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (discussion.isPinned)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.push_pin_rounded, color: Colors.amber, size: 14),
+                      SizedBox(width: 6),
+                      Text(
+                        'منشور مثبت ومميز',
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundImage: AssetImage(
-                      avatarAssetPath(discussion.author.avatarKey),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        UserProfileScreen.route(
+                          userId: discussion.author.userId,
+                          initialDisplayName: discussion.author.displayName,
+                          initialAvatarKey: discussion.author.avatarKey,
+                        ),
+                      );
+                    },
+                    child: CircleAvatar(
+                      backgroundImage: AssetImage(
+                        avatarAssetPath(discussion.author.avatarKey),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          discussion.author.displayName,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        Text(
-                          _formatDate(
-                            discussion.publishedAt ?? discussion.createdAt,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          UserProfileScreen.route(
+                            userId: discussion.author.userId,
+                            initialDisplayName: discussion.author.displayName,
+                            initialAvatarKey: discussion.author.avatarKey,
                           ),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            discussion.author.displayName,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                '${discussion.author.predictionsCount} توقع',
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'نجاح: ${discussion.author.successRate.toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _formatDate(
+                                  discussion.publishedAt ?? discussion.createdAt,
+                                ),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  if (!isAuthor)
+                    TextButton(
+                      onPressed: () async {
+                        try {
+                          await ref.read(communityRepositoryProvider).toggleFollow(discussion.author.userId);
+                          ref.invalidate(communityFeedProvider);
+                        } catch (_) {}
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        discussion.author.isFollowing ? 'متابَع' : '+ متابعة',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: discussion.author.isFollowing ? Colors.grey : Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
                   Chip(label: Text(discussion.ticker)),
                 ],
               ),
@@ -12020,11 +15753,123 @@ class CommunityDiscussionCard extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Chip(label: Text(discussion.periodLabel)),
-                  if (showStatus) Chip(label: Text(discussion.statusLabel)),
+                  if (widget.showStatus)
+                    Chip(label: Text(discussion.statusLabel)),
+                  Chip(
+                    avatar: const Icon(
+                      Icons.remove_red_eye_outlined,
+                      size: 14,
+                    ),
+                    label: Text('${discussion.viewsCount} مشاهدة'),
+                  ),
                 ],
               ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: discussion.userReaction == 'agree'
+                        ? FilledButton(
+                            onPressed: () => _toggleReaction('agree'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('متفق (${discussion.agreeCount})'),
+                          )
+                        : OutlinedButton(
+                            onPressed: () => _toggleReaction('agree'),
+                            style: OutlinedButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('متفق (${discussion.agreeCount})'),
+                          ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: discussion.userReaction == 'disagree'
+                        ? FilledButton(
+                            onPressed: () => _toggleReaction('disagree'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('غير متفق (${discussion.disagreeCount})'),
+                          )
+                        : OutlinedButton(
+                            onPressed: () => _toggleReaction('disagree'),
+                            style: OutlinedButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: Text('غير متفق (${discussion.disagreeCount})'),
+                          ),
+                  ),
+                ],
+              ),
+              if (isAuthor && !discussion.isPinned && discussion.status == 'published') ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await ref.read(communityRepositoryProvider).pinDiscussion(discussion.id);
+                      ref.invalidate(communityFeedProvider);
+                      if (context.mounted) {
+                        AppNotice.show(
+                          context,
+                          title: 'تم التثبيت',
+                          message: 'تم تثبيت وإبراز المنشور بنجاح في أعلى المجتمع.',
+                          tone: AppNoticeTone.success,
+                        );
+                      }
+                    } on ApiException catch (e) {
+                      if (context.mounted) {
+                        AppNotice.show(
+                          context,
+                          title: 'تعذر التثبيت',
+                          message: e.message,
+                          tone: AppNoticeTone.error,
+                        );
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        AppNotice.show(
+                          context,
+                          title: 'تعذر التثبيت',
+                          message: 'عذراً، انتهت المهلة. لا يمكن تثبيت أو ترقية المنشور بعد بدء الجلسة التجارية للتوقع.',
+                          tone: AppNoticeTone.error,
+                        );
+                      }
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: Colors.amber,
+                    side: const BorderSide(color: Colors.amber),
+                  ),
+                  icon: const Icon(Icons.push_pin_outlined, size: 14),
+                  label: const Text(
+                    'تثبيت وإبراز المنشور',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -12089,6 +15934,82 @@ String _formatDate(DateTime value) {
       '${two(local.hour)}:${two(local.minute)}';
 }
 
+class _DraggableTelegramBall extends StatefulWidget {
+  const _DraggableTelegramBall();
+
+  @override
+  State<_DraggableTelegramBall> createState() => _DraggableTelegramBallState();
+}
+
+class _DraggableTelegramBallState extends State<_DraggableTelegramBall> {
+  double? _top;
+  double? _left;
+
+  Future<void> _openTelegramGroup() async {
+    final uri = Uri.parse('https://t.me/sahmikasban');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } on Object {
+      // Fallback open attempt
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    _top ??= size.height * 0.55;
+    _left ??= size.width - 70;
+
+    return Positioned(
+      top: _top,
+      left: _left,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            _top = (_top! + details.delta.dy).clamp(60.0, size.height - 140.0);
+            _left = (_left! + details.delta.dx).clamp(10.0, size.width - 64.0);
+          });
+        },
+        child: Tooltip(
+          message: 'انضم لجروب التليجرام',
+          child: Material(
+            elevation: 8,
+            shadowColor: const Color(0xFF0088CC).withOpacity(0.5),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: _openTelegramGroup,
+              child: Container(
+                width: 54,
+                height: 54,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2AABEE), Color(0xFF229ED9)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 ```
 
 ---
@@ -12101,17 +16022,121 @@ class CommunityAuthor {
     required this.userId,
     required this.displayName,
     required this.avatarKey,
+    this.predictionsCount = 0,
+    this.successRate = 0.0,
+    this.isFollowing = false,
   });
 
   final String userId;
   final String displayName;
   final String avatarKey;
+  final int predictionsCount;
+  final double successRate;
+  final bool isFollowing;
+
+  CommunityAuthor copyWith({
+    String? userId,
+    String? displayName,
+    String? avatarKey,
+    int? predictionsCount,
+    double? successRate,
+    bool? isFollowing,
+  }) {
+    return CommunityAuthor(
+      userId: userId ?? this.userId,
+      displayName: displayName ?? this.displayName,
+      avatarKey: avatarKey ?? this.avatarKey,
+      predictionsCount: predictionsCount ?? this.predictionsCount,
+      successRate: successRate ?? this.successRate,
+      isFollowing: isFollowing ?? this.isFollowing,
+    );
+  }
 
   factory CommunityAuthor.fromJson(Map<String, dynamic> json) {
     return CommunityAuthor(
       userId: _requiredString(json, 'user_id'),
       displayName: _requiredString(json, 'display_name'),
       avatarKey: _requiredString(json, 'avatar_key'),
+      predictionsCount: (json['predictions_count'] as num?)?.toInt() ?? 0,
+      successRate: (json['success_rate'] as num?)?.toDouble() ?? 0.0,
+      isFollowing: json['is_following'] as bool? ?? false,
+    );
+  }
+}
+
+class UserPublicProfile {
+  const UserPublicProfile({
+    required this.userId,
+    required this.displayName,
+    required this.avatarKey,
+    this.followersCount = 0,
+    this.followingCount = 0,
+    this.predictionsCount = 0,
+    this.successRate = 0.0,
+    this.isFollowing = false,
+    this.tippingUnlocked = false,
+    this.tippingEnabled = false,
+    this.canReceiveTips = false,
+    this.canSendTip = false,
+  });
+
+  final String userId;
+  final String displayName;
+  final String avatarKey;
+  final int followersCount;
+  final int followingCount;
+  final int predictionsCount;
+  final double successRate;
+  final bool isFollowing;
+  final bool tippingUnlocked;
+  final bool tippingEnabled;
+  final bool canReceiveTips;
+  final bool canSendTip;
+
+  UserPublicProfile copyWith({
+    String? userId,
+    String? displayName,
+    String? avatarKey,
+    int? followersCount,
+    int? followingCount,
+    int? predictionsCount,
+    double? successRate,
+    bool? isFollowing,
+    bool? tippingUnlocked,
+    bool? tippingEnabled,
+    bool? canReceiveTips,
+    bool? canSendTip,
+  }) {
+    return UserPublicProfile(
+      userId: userId ?? this.userId,
+      displayName: displayName ?? this.displayName,
+      avatarKey: avatarKey ?? this.avatarKey,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
+      predictionsCount: predictionsCount ?? this.predictionsCount,
+      successRate: successRate ?? this.successRate,
+      isFollowing: isFollowing ?? this.isFollowing,
+      tippingUnlocked: tippingUnlocked ?? this.tippingUnlocked,
+      tippingEnabled: tippingEnabled ?? this.tippingEnabled,
+      canReceiveTips: canReceiveTips ?? this.canReceiveTips,
+      canSendTip: canSendTip ?? this.canSendTip,
+    );
+  }
+
+  factory UserPublicProfile.fromJson(Map<String, dynamic> json) {
+    return UserPublicProfile(
+      userId: _requiredString(json, 'user_id'),
+      displayName: _requiredString(json, 'display_name'),
+      avatarKey: _requiredString(json, 'avatar_key'),
+      followersCount: (json['followers_count'] as num?)?.toInt() ?? 0,
+      followingCount: (json['following_count'] as num?)?.toInt() ?? 0,
+      predictionsCount: (json['predictions_count'] as num?)?.toInt() ?? 0,
+      successRate: (json['success_rate'] as num?)?.toDouble() ?? 0.0,
+      isFollowing: json['is_following'] as bool? ?? false,
+      tippingUnlocked: json['tipping_unlocked'] as bool? ?? false,
+      tippingEnabled: json['tipping_enabled'] as bool? ?? false,
+      canReceiveTips: json['can_receive_tips'] as bool? ?? false,
+      canSendTip: json['can_send_tip'] as bool? ?? false,
     );
   }
 }
@@ -12131,6 +16156,11 @@ class CommunityDiscussion {
     required this.reviewedAt,
     required this.publishedAt,
     required this.author,
+    this.viewsCount = 0,
+    this.agreeCount = 0,
+    this.disagreeCount = 0,
+    this.isPinned = false,
+    this.userReaction,
   });
 
   final String id;
@@ -12146,6 +16176,11 @@ class CommunityDiscussion {
   final DateTime? reviewedAt;
   final DateTime? publishedAt;
   final CommunityAuthor author;
+  final int viewsCount;
+  final int agreeCount;
+  final int disagreeCount;
+  final bool isPinned;
+  final String? userReaction;
 
   bool get canAppeal => status == 'rejected' || status == 'hidden';
 
@@ -12179,6 +16214,11 @@ class CommunityDiscussion {
       reviewedAt: _optionalDate(json['reviewed_at']),
       publishedAt: _optionalDate(json['published_at']),
       author: CommunityAuthor.fromJson(_requiredMap(json['author'])),
+      viewsCount: (json['views_count'] as num?)?.toInt() ?? 0,
+      agreeCount: (json['agree_count'] as num?)?.toInt() ?? 0,
+      disagreeCount: (json['disagree_count'] as num?)?.toInt() ?? 0,
+      isPinned: json['is_pinned'] as bool? ?? false,
+      userReaction: json['user_reaction'] as String?,
     );
   }
 }
@@ -12550,6 +16590,17 @@ class CommunityRepository {
     }
   }
 
+  Future<CommunityDiscussion> pinDiscussion(String discussionId) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/discussions/$discussionId/pin',
+      );
+      return CommunityDiscussion.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<CommunityDiscussionSubmission> submitDiscussion({
     required String submissionKey,
     required String ticker,
@@ -12632,6 +16683,20 @@ class CommunityRepository {
     }
   }
 
+  Future<void> toggleReaction({
+    required String discussionId,
+    required String reactionType,
+  }) async {
+    try {
+      await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/discussions/$discussionId/reactions',
+        data: <String, dynamic>{'reaction_type': reactionType},
+      );
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<CommunityAppealPage> listMyAppeals({
     int limit = 20,
     int offset = 0,
@@ -12642,6 +16707,69 @@ class CommunityRepository {
         queryParameters: <String, dynamic>{'limit': limit, 'offset': offset},
       );
       return CommunityAppealPage.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<void> registerViews(List<String> discussionIds) async {
+    if (discussionIds.isEmpty) return;
+    try {
+      await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/discussions/views',
+        data: <String, dynamic>{'discussion_ids': discussionIds},
+      );
+    } on Object {
+      // Silently ignore view impression tracking errors
+    }
+  }
+
+  Future<Map<String, dynamic>> toggleFollow(String userId) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/users/$userId/follow',
+      );
+      return _requiredData(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<UserPublicProfile> getUserProfile(String userId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/community/users/$userId/profile',
+      );
+      return UserPublicProfile.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> sendCoinTip({
+    required String receiverId,
+    required int amountCoins,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/users/$receiverId/tip',
+        data: <String, dynamic>{'amount_coins': amountCoins},
+      );
+      return _requiredData(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateTippingSettings({
+    required bool tippingEnabled,
+  }) async {
+    try {
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+        '/profile/settings/tipping',
+        data: <String, dynamic>{'tipping_enabled': tippingEnabled},
+      );
+      return _requiredData(response.data);
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
@@ -13632,6 +17760,1553 @@ String _formatDate(DateTime value) {
 
 ---
 
+### File: `lib\features\community\real_view_tracker.dart`
+
+```dart
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'community_repository.dart';
+
+class RealViewTracker {
+  static final Set<String> _recordedIds = <String>{};
+  static final Set<String> _pendingBatch = <String>{};
+  static Timer? _flushTimer;
+
+  static bool isRecorded(String discussionId) {
+    return _recordedIds.contains(discussionId);
+  }
+
+  static void recordView(WidgetRef ref, String discussionId) {
+    if (_recordedIds.contains(discussionId)) {
+      return;
+    }
+    _recordedIds.add(discussionId);
+    _pendingBatch.add(discussionId);
+
+    _scheduleFlush(ref);
+  }
+
+  static void _scheduleFlush(WidgetRef ref) {
+    _flushTimer ??= Timer(const Duration(seconds: 3), () {
+      flush(ref);
+    });
+  }
+
+  static void flush(WidgetRef ref) {
+    _flushTimer?.cancel();
+    _flushTimer = null;
+
+    if (_pendingBatch.isEmpty) {
+      return;
+    }
+
+    final batch = _pendingBatch.toList();
+    _pendingBatch.clear();
+
+    ref.read(communityRepositoryProvider).registerViews(batch);
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\community\stock_prediction_prompt_dialog.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/network/api_exception.dart';
+import '../auth/session_controller.dart';
+import '../monetization/free_plan_ads.dart';
+import '../wallet/wallet_providers.dart';
+import 'community_providers.dart';
+import 'community_repository.dart';
+
+enum PredictionPromptResult { published, skipped }
+
+class StockPredictionPromptDialog extends ConsumerStatefulWidget {
+  const StockPredictionPromptDialog({
+    super.key,
+    required this.ticker,
+    this.displayName,
+  });
+
+  final String ticker;
+  final String? displayName;
+
+  static Future<PredictionPromptResult?> show(
+    BuildContext context, {
+    required String ticker,
+    String? displayName,
+  }) {
+    return showModalBottomSheet<PredictionPromptResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: StockPredictionPromptDialog(
+          ticker: ticker,
+          displayName: displayName,
+        ),
+      ),
+    );
+  }
+
+  @override
+  ConsumerState<StockPredictionPromptDialog> createState() =>
+      _StockPredictionPromptDialogState();
+}
+
+class _StockPredictionPromptDialogState
+    extends ConsumerState<StockPredictionPromptDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  late final TextEditingController _contentController;
+  String _periodType = 'next_session';
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final name = widget.displayName ?? widget.ticker;
+    _titleController = TextEditingController(
+      text: 'توقعي لسهم $name للجلسة القادمة',
+    );
+    _contentController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _publishAndContinue() async {
+    if (_submitting || !_formKey.currentState!.validate()) {
+      return;
+    }
+    setState(() => _submitting = true);
+    final submissionKey =
+        'prediction-prompt-${DateTime.now().microsecondsSinceEpoch}';
+
+    try {
+      final result = await ref
+          .read(communityRepositoryProvider)
+          .submitDiscussion(
+            submissionKey: submissionKey,
+            ticker: widget.ticker,
+            title: _titleController.text,
+            content: _contentController.text,
+            periodType: _periodType,
+          );
+
+      ref.invalidate(communityFeedProvider);
+      ref.invalidate(myDiscussionsProvider);
+      ref.invalidate(walletSummaryProvider);
+      try {
+        await ref.read(sessionControllerProvider.notifier).refreshProfile();
+      } on Object {
+        // Optional profile refresh
+      }
+
+      if (!mounted) return;
+
+      await ref
+          .read(freePlanInterstitialProvider)
+          .recordMeaningfulAction(
+            enabled:
+                ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+          );
+
+      if (!mounted) return;
+
+      final message = switch (result.discussion.status) {
+        'published' => 'تم نشر توقعك في المجتمع بنجاح.',
+        'rejected' => 'لم يتم قبول نشر التوقع.',
+        _ => 'تم إرسال التوقع وهو قيد المراجعة حاليًا.',
+      };
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+
+      Navigator.of(context).pop(PredictionPromptResult.published);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final stockLabel = widget.displayName != null
+        ? '${widget.ticker} (${widget.displayName})'
+        : widget.ticker;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    radius: 22,
+                    child: Icon(
+                      Icons.forum_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'هل لديك توقع لسهم $stockLabel؟',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'شارك رؤيتك مع مجتمع المتداولين قبل التحليل',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _titleController,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'عنوان التوقع',
+                  hintText: 'أدخل عنوانًا مختصرًا ورأيـك في السهم',
+                  prefixIcon: Icon(Icons.title_rounded),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'يرجى كتابة عنوان التوقع.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _contentController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'تفاصيل التوقع والملاحظات الفنية',
+                  hintText:
+                      'اكتب أسباب توقعك الصاعد/الهابط أو المستهدفات السعرية...',
+                  alignLabelWithHint: true,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().length < 5) {
+                    return 'يرجى كتابة محتوى التوقع (5 أشكال على الأقل).';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _periodType,
+                decoration: const InputDecoration(
+                  labelText: 'أفق التوقع والتقييم',
+                  prefixIcon: Icon(Icons.schedule_rounded),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'next_session',
+                    child: Text('الجلسة القادمة'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'this_week',
+                    child: Text('هذا الأسبوع'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'next_week',
+                    child: Text('الأسبوع القادم'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _periodType = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 20),
+              // Prominent Large Primary Button
+              SizedBox(
+                height: 54,
+                child: FilledButton.icon(
+                  onPressed: _submitting ? null : _publishAndContinue,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: _submitting
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded),
+                  label: Text(
+                    _submitting
+                        ? 'جارٍ نشر التوقع...'
+                        : 'نشر التوقع والمتابعة للتحليل',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Smaller Secondary Button to Skip
+              Center(
+                child: TextButton.icon(
+                  onPressed: _submitting
+                      ? null
+                      : () => Navigator.of(
+                            context,
+                          ).pop(PredictionPromptResult.skipped),
+                  icon: Icon(
+                    Icons.visibility_outlined,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    'رؤية التحليل أولاً',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\community\screens\trading_session_chat_screen.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
+import '../../auth/session_controller.dart';
+
+class TradingSessionChatScreen extends ConsumerStatefulWidget {
+  const TradingSessionChatScreen({super.key});
+
+  static Route<void> route() {
+    return MaterialPageRoute<void>(
+      builder: (_) => const TradingSessionChatScreen(),
+    );
+  }
+
+  @override
+  ConsumerState<TradingSessionChatScreen> createState() =>
+      _TradingSessionChatScreenState();
+}
+
+class _TradingSessionChatScreenState
+    extends ConsumerState<TradingSessionChatScreen> {
+  bool _isLoading = false;
+  bool _isVoting = false;
+  bool _isSending = false;
+
+  int _votesCount = 0;
+  int _votesTarget = 40;
+  bool _isUnlocked = false;
+  bool _isSessionOpen = false;
+  bool _hasVoted = false;
+
+  List<Map<String, dynamic>> _messages = [];
+  final TextEditingController _textController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStatus();
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchStatus() async {
+    setState(() => _isLoading = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.get<Map<String, dynamic>>(
+        '/trading-chat/status',
+      );
+      final data = response.data?['data'] as Map<String, dynamic>? ?? response.data ?? {};
+
+      if (mounted) {
+        setState(() {
+          _votesCount = (data['votes_count'] as num?)?.toInt() ?? 0;
+          _votesTarget = (data['votes_target'] as num?)?.toInt() ?? 40;
+          _isUnlocked = data['is_unlocked'] as bool? ?? false;
+          _isSessionOpen = data['is_session_open'] as bool? ?? false;
+          _hasVoted = data['has_voted'] as bool? ?? false;
+        });
+      }
+
+      if (_isUnlocked) {
+        await _fetchMessages();
+      }
+    } catch (e) {
+      // Ignore network status fetch error initially
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _fetchMessages() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.get<List<dynamic>>(
+        '/trading-chat/messages',
+      );
+      final list = (response.data ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _messages = list;
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  Future<void> _vote() async {
+    if (_isVoting || _hasVoted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('التصويت لفتح الغرفة'),
+        content: const Text(
+          'تكلفة التصويت 0.5 عملة. إذا لم تصل الغرفة إلى 40 صوتًا قبل الساعة 3:00 مساءً، سيتم استرداد العملات تلقائيًا.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('تأكيد التصويت — 0.5 عملة'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isVoting = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post<Map<String, dynamic>>('/trading-chat/vote');
+
+      ref.invalidate(sessionControllerProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تصويتك بنجاح!')),
+        );
+      }
+      await _fetchStatus();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isVoting = false);
+      }
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _textController.text.trim();
+    if (text.isEmpty || _isSending) return;
+
+    setState(() => _isSending = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post<Map<String, dynamic>>(
+        '/trading-chat/messages',
+        data: {'content': text},
+      );
+      _textController.clear();
+      await _fetchMessages();
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
+  }
+
+  Future<void> _openTelegram() async {
+    final uri = Uri.parse('https://t.me/sahmikasban');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final userCoins = ref.watch(sessionControllerProvider).profile?.balanceCoins ?? '0';
+    final progress = (_votesCount / _votesTarget).clamp(0.0, 1.0);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('غرفة التداول اليومية المباشرة'),
+        centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(left: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.monetization_on, size: 16, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  '$userCoins عملة',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Telegram Official Community Banner
+            Card(
+              margin: const EdgeInsets.all(12),
+              color: const Color(0xFF0088CC),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: InkWell(
+                onTap: _openTelegram,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.send_rounded, color: Colors.white, size: 28),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'مجتمع التليجرام الرسمي (Sahmi Kasban)',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              'انضم الآن إلى القروب الرسمي لمتابعة التحليلات والنقاشات',
+                              style: TextStyle(color: Colors.white70, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _openTelegram,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF0088CC),
+                        ),
+                        child: const Text('انضم الآن'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Daily Campaign Voting Card Header
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'حالة التصويت اليومية:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Chip(
+                          avatar: const Icon(Icons.stars, size: 14, color: Colors.amber),
+                          label: Text('$_votesCount / $_votesTarget صوت'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 10,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'ملاحظة: تكلفة التصويت 0.5 عملة. إذا لم تُفتح الغرفة بـ 40 صوتًا قبل الساعة 3:00 مساءً، سيتم رد العملات تلقائيًا إلى حسابك.',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
+                    if (!_isUnlocked)
+                      FilledButton.icon(
+                        onPressed: (_hasVoted || _isVoting) ? null : _vote,
+                        icon: _isVoting
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.how_to_vote_rounded),
+                        label: Text(
+                          _hasVoted
+                              ? 'لقد قمت بالتصويت اليوم'
+                              : 'تصويت لفتح الغرفة — 0.5 عملة',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Live Chat Area
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : !_isUnlocked
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.lock_clock_rounded,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'الغرفة مغلقة حتى اكتمال 40 صوتًا',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'صوت الآن بـ 0.5 عملة للمساهمة في فتح الغرفة لجلسة اليوم المباشرة (من 9 صباحاً إلى 3 مساءً).',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            Expanded(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(12),
+                                itemCount: _messages.length,
+                                itemBuilder: (context, index) {
+                                  final msg = _messages[index];
+                                  return Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            msg['user_name'] as String? ?? 'متداول',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.amber,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            msg['content'] as String? ?? '',
+                                            style: const TextStyle(fontSize: 13),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            if (_isSessionOpen)
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                color: theme.colorScheme.surface,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _textController,
+                                        decoration: const InputDecoration(
+                                          hintText: 'اكتب رسالتك في الغرفة المباشرة...',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.send_rounded),
+                                      onPressed: _isSending ? null : _sendMessage,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                color: Colors.amber.withValues(alpha: 0.1),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.info_outline_rounded, size: 16),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'المحادثة المباشرة تفتح فقط أثناء ساعات التداول (9 ص - 3 م).',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\community\screens\user_profile_screen.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../community_models.dart';
+import '../community_providers.dart';
+import '../community_repository.dart';
+import '../widgets/coin_tipping_dialog.dart';
+
+final userProfileProvider =
+    FutureProvider.family<UserPublicProfile, String>((ref, userId) async {
+  final repository = ref.watch(communityRepositoryProvider);
+  return repository.getUserProfile(userId);
+});
+
+final userDiscussionsProvider =
+    FutureProvider.family<List<CommunityDiscussion>, String>((ref, userId) async {
+  final repository = ref.watch(communityRepositoryProvider);
+  final page = await repository.listDiscussions(limit: 50);
+  return page.items.where((item) => item.author.userId == userId).toList();
+});
+
+class UserProfileScreen extends ConsumerStatefulWidget {
+  const UserProfileScreen({
+    super.key,
+    required this.userId,
+    this.initialDisplayName,
+    this.initialAvatarKey,
+  });
+
+  final String userId;
+  final String? initialDisplayName;
+  final String? initialAvatarKey;
+
+  static Route<void> route({
+    required String userId,
+    String? initialDisplayName,
+    String? initialAvatarKey,
+  }) {
+    return MaterialPageRoute<void>(
+      builder: (_) => UserProfileScreen(
+        userId: userId,
+        initialDisplayName: initialDisplayName,
+        initialAvatarKey: initialAvatarKey,
+      ),
+    );
+  }
+
+  @override
+  ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
+  bool _isTogglingFollow = false;
+
+  Future<void> _handleFollowToggle(UserPublicProfile profile) async {
+    if (_isTogglingFollow) return;
+
+    setState(() {
+      _isTogglingFollow = true;
+    });
+
+    try {
+      final repo = ref.read(communityRepositoryProvider);
+      await repo.toggleFollow(profile.userId);
+      ref.invalidate(userProfileProvider(widget.userId));
+      ref.invalidate(communityFeedProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ أثناء الحديث: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTogglingFollow = false;
+        });
+      }
+    }
+  }
+
+  void _showTippingInfoDialog(UserPublicProfile profile) {
+    String reason = '';
+    if (!profile.isFollowing) {
+      reason = 'يجب متابعة المحلل أولاً لإمكانية إهداء العملات.';
+    } else if (!profile.canReceiveTips) {
+      reason = 'المحلل لم يفعل استقبال هدايا العملات في حسابه بعد.';
+    } else {
+      reason = 'يجب أن يكون لديك 10 مناقشات منشورين على الأقل لإهداء العملات.';
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'شروط إهداء العملات',
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              reason,
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'شروط الإهداء:\n'
+              '1. متابعة المحلل.\n'
+              '2. وجود 10 مناقشات في حسابك.\n'
+              '3. استيفاء المحلل لشرط الأهلية (20+ توقع بنسبة نجاح > 70%).',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('حسناً'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final profileAsync = ref.watch(userProfileProvider(widget.userId));
+    final discussionsAsync = ref.watch(userDiscussionsProvider(widget.userId));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.initialDisplayName ?? 'الملف الشخصي'),
+        centerTitle: true,
+      ),
+      body: profileAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 12),
+              Text('حدث خطأ في تحميل البيانات: $err'),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => ref.refresh(userProfileProvider(widget.userId)),
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+        data: (profile) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(userProfileProvider(widget.userId));
+              ref.invalidate(userDiscussionsProvider(widget.userId));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // User Header Card
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            child: Text(
+                              profile.displayName.isNotEmpty
+                                  ? profile.displayName[0].toUpperCase()
+                                  : 'U',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            profile.displayName,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'محلل في مجتمع سهمي كسبان',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Profile Metrics Grid
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _MetricTile(
+                                label: 'المتابعون',
+                                value: '${profile.followersCount}',
+                                icon: Icons.group,
+                              ),
+                              _MetricTile(
+                                label: 'يتابع',
+                                value: '${profile.followingCount}',
+                                icon: Icons.person_add_alt_1,
+                              ),
+                              _MetricTile(
+                                label: 'التوقعات',
+                                value: '${profile.predictionsCount}',
+                                icon: Icons.analytics,
+                              ),
+                              _MetricTile(
+                                label: 'نسبة النجاح',
+                                value: '${profile.successRate.toStringAsFixed(0)}%',
+                                icon: Icons.verified,
+                                isAccent: true,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Action Buttons
+                          Row(
+                            children: [
+                              // Follow / Unfollow Button
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isTogglingFollow
+                                      ? null
+                                      : () => _handleFollowToggle(profile),
+                                  icon: _isTogglingFollow
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : Icon(
+                                          profile.isFollowing
+                                              ? Icons.check_circle_outline
+                                              : Icons.person_add_outlined,
+                                        ),
+                                  label: Text(
+                                    profile.isFollowing ? 'متابَع' : 'متابعة',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    backgroundColor: profile.isFollowing
+                                        ? theme.colorScheme.surfaceContainerHighest
+                                        : theme.colorScheme.primary,
+                                    foregroundColor: profile.isFollowing
+                                        ? theme.colorScheme.onSurfaceVariant
+                                        : theme.colorScheme.onPrimary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Gift Coins Button
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: profile.canSendTip
+                                      ? () async {
+                                          final tipped = await CoinTippingDialog.show(context, profile);
+                                          if (tipped == true) {
+                                            ref.invalidate(userProfileProvider(widget.userId));
+                                          }
+                                        }
+                                      : () => _showTippingInfoDialog(profile),
+                                  icon: Icon(
+                                    Icons.monetization_on_outlined,
+                                    color: profile.canSendTip ? Colors.amber : Colors.grey,
+                                  ),
+                                  label: Text(
+                                    'إهداء عملات',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: profile.canSendTip
+                                          ? theme.colorScheme.primary
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    side: BorderSide(
+                                      color: profile.canSendTip
+                                          ? theme.colorScheme.primary
+                                          : Colors.grey.shade400,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Discussions Section Header
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      'توقعات ومناقشات المحلل',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Discussions List
+                  discussionsAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (err, _) => Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('عفواً، تعذر جلب المناقشات: $err'),
+                    ),
+                    data: (discussions) {
+                      if (discussions.isEmpty) {
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Center(
+                              child: Column(
+                                children: const [
+                                  Icon(Icons.forum_outlined, size: 40, color: Colors.grey),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'لم ينشر هذا المحلل أي مناقشات بعد.',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: discussions.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final item = discussions[index];
+                          return Card(
+                            elevation: 1,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(16),
+                              title: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      item.ticker,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item.title,
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  item.content,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.grey.shade700),
+                                ),
+                              ),
+                              onTap: () {
+                                context.push('/community/${item.id}');
+                              },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.isAccent = false,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final bool isAccent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: isAccent ? Colors.green : theme.colorScheme.primary,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: isAccent ? Colors.green : null,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\community\widgets\coin_tipping_dialog.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../community_models.dart';
+import '../community_providers.dart';
+import '../community_repository.dart';
+import '../../auth/session_controller.dart';
+
+class CoinTippingDialog extends ConsumerStatefulWidget {
+  const CoinTippingDialog({
+    super.key,
+    required this.profile,
+  });
+
+  final UserPublicProfile profile;
+
+  static Future<bool?> show(BuildContext context, UserPublicProfile profile) {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => CoinTippingDialog(profile: profile),
+    );
+  }
+
+  @override
+  ConsumerState<CoinTippingDialog> createState() => _CoinTippingDialogState();
+}
+
+class _CoinTippingDialogState extends ConsumerState<CoinTippingDialog> {
+  int _selectedAmount = 5;
+  final _customAmountController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _customAmountController.text = '5';
+  }
+
+  @override
+  void dispose() {
+    _customAmountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitTip() async {
+    final amount = int.tryParse(_customAmountController.text.trim());
+    if (amount == null || amount <= 0) {
+      setState(() {
+        _errorMessage = 'يرجى إدخال عدد صحيح من العملات أكبر من 0';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final repo = ref.read(communityRepositoryProvider);
+      await repo.sendCoinTip(
+        receiverId: widget.profile.userId,
+        amountCoins: amount,
+      );
+
+      ref.invalidate(sessionControllerProvider);
+      ref.invalidate(communityFeedProvider);
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم إهداء $amount عملة بنجاح إلى ${widget.profile.displayName}',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final userCoins = ref.watch(sessionControllerProvider).profile?.balanceCoins ?? '0';
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: Column(
+        children: [
+          const Icon(
+            Icons.monetization_on,
+            size: 40,
+            color: Colors.amber,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'إهداء عملات إلى ${widget.profile.displayName}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'رصيدك الحالي: $userCoins عملة',
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'اختر كمية العملات المراد إهداؤها:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+
+            // Preset Buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [5, 10, 20].map((preset) {
+                final isSelected = _selectedAmount == preset;
+                return ChoiceChip(
+                  label: Text('$preset عملات'),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _selectedAmount = preset;
+                        _customAmountController.text = '$preset';
+                      });
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+
+            // Custom Amount TextField
+            TextField(
+              controller: _customAmountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'عدد العملات',
+                prefixIcon: Icon(Icons.monetization_on_outlined),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (val) {
+                final parsed = int.tryParse(val);
+                if (parsed != null) {
+                  setState(() {
+                    _selectedAmount = parsed;
+                  });
+                }
+              },
+            ),
+
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+          child: const Text('إلغاء'),
+        ),
+        ElevatedButton.icon(
+          onPressed: _isSubmitting ? null : _submitTip,
+          icon: _isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.send),
+          label: const Text('إرسال الهديّة'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+```
+
+---
+
 ### File: `lib\features\home\dashboard_screen.dart`
 
 ```dart
@@ -13639,8 +19314,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/app_theme_provider.dart';
 import '../../core/avatar_assets.dart';
 import '../../domain/models.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_exception.dart';
+import '../app_version/version_check_manager.dart';
 import '../auth/session_controller.dart';
 import '../community/community_feed_tab.dart';
 import '../market/stock_analysis_tab.dart';
@@ -13648,6 +19327,8 @@ import '../market/stocks_screen.dart';
 import '../notifications/notification_providers.dart';
 import '../reports/reports_screen.dart';
 import '../wallet/wallet_providers.dart';
+
+final dashboardTabProvider = StateProvider<int>((ref) => 0);
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -13657,7 +19338,15 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int _selectedIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(() {
+      if (mounted) {
+        ref.read(versionCheckManagerProvider).checkAndShowPrompt(context);
+      }
+    });
+  }
 
   static const _navItems = <(String, IconData, String)>[
     ('stocks', Icons.home_rounded, 'الرئيسية'),
@@ -13671,10 +19360,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(sessionControllerProvider).profile;
+    final selectedIndex = ref.watch(dashboardTabProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_navItems[_selectedIndex].$3),
+        title: Text(_navItems[selectedIndex].$3),
         actions: [
           if (profile?.isAdmin == true)
             IconButton(
@@ -13682,6 +19372,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               icon: const Icon(Icons.admin_panel_settings_outlined),
               tooltip: 'الإدارة',
             ),
+          IconButton(
+            onPressed: () => context.push('/ai-copilot'),
+            icon: const Icon(Icons.auto_awesome_rounded),
+            tooltip: 'مساعد الذكاء الاصطناعي',
+          ),
           IconButton(
             onPressed: () => context.push('/performance'),
             icon: const Icon(Icons.assessment_outlined),
@@ -13711,16 +19406,55 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             _DrawerHeader(profile: profile),
             const Divider(),
+            ListTile(
+              leading: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.purpleAccent,
+              ),
+              title: const Text('مساعد السهم الذكي (AI)'),
+              subtitle: const Text('استفسار مباشر عن أي سهم'),
+              onTap: () {
+                context.push('/ai-copilot');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.forum_rounded,
+                color: Color(0xFF0088CC),
+              ),
+              title: const Text('غرفة الدردشة المباشرة (شات الجلسة)'),
+              subtitle: const Text('دردشة الجلسة المشروطة بـ 40 صوتًا'),
+              onTap: () {
+                context.push('/trading-chat');
+                Navigator.pop(context);
+              },
+            ),
+            const Divider(),
             for (var item in _navItems)
               ListTile(
                 leading: Icon(item.$2),
                 title: Text(item.$3),
-                selected: _selectedIndex == _navItems.indexOf(item),
+                selected: selectedIndex == _navItems.indexOf(item),
                 onTap: () {
-                  setState(() => _selectedIndex = _navItems.indexOf(item));
+                  ref.read(dashboardTabProvider.notifier).state =
+                      _navItems.indexOf(item);
                   Navigator.pop(context);
                 },
               ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(
+                Icons.card_giftcard_rounded,
+                color: Colors.orangeAccent,
+              ),
+              title: const Text('دعوة الأصدقاء'),
+              subtitle: const Text('احصل على 10 عملات لك ولصديقك'),
+              onTap: () {
+                context.push('/referrals');
+                Navigator.pop(context);
+              },
+            ),
             if (profile?.isAdmin == true) ...[
               const Divider(),
               ListTile(
@@ -13735,12 +19469,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(selectedIndex),
+          const _DraggableTradingRoomBall(),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: selectedIndex > 4 ? 0 : selectedIndex,
+        onDestinationSelected: (index) {
+          ref.read(dashboardTabProvider.notifier).state = index;
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'الرئيسية',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.assessment_outlined),
+            selectedIcon: Icon(Icons.assessment_rounded),
+            label: 'التقارير',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.query_stats_outlined),
+            selectedIcon: Icon(Icons.query_stats_rounded),
+            label: 'تحليل سهم',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.forum_outlined),
+            selectedIcon: Icon(Icons.forum_rounded),
+            label: 'المجتمع',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+            label: 'المحفظة',
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildBody() {
-    switch (_selectedIndex) {
+  Widget _buildBody(int selectedIndex) {
+    switch (selectedIndex) {
       case 0:
         return const StocksScreen();
       case 1:
@@ -13856,6 +19628,8 @@ class ProfileTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(sessionControllerProvider).profile;
+    final themeMode = ref.watch(themeModeProvider);
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -13903,10 +19677,274 @@ class ProfileTab extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.palette_outlined, color: Colors.teal),
+                    const SizedBox(width: 10),
+                    Text(
+                      'مظهر التطبيق',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'الوضع الداكن هو الوضع الأساسي لتجربة قراءة مريحة للمؤشرات والأسهم.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<ThemeMode>(
+                    segments: const [
+                      ButtonSegment<ThemeMode>(
+                        value: ThemeMode.dark,
+                        label: Text('داكن'),
+                        icon: Icon(Icons.dark_mode_rounded),
+                      ),
+                      ButtonSegment<ThemeMode>(
+                        value: ThemeMode.light,
+                        label: Text('فاتح'),
+                        icon: Icon(Icons.light_mode_rounded),
+                      ),
+                      ButtonSegment<ThemeMode>(
+                        value: ThemeMode.system,
+                        label: Text('تلقائي'),
+                        icon: Icon(Icons.settings_suggest_rounded),
+                      ),
+                    ],
+                    selected: {themeMode},
+                    onSelectionChanged: (Set<ThemeMode> newSelection) {
+                      ref
+                          .read(themeModeProvider.notifier)
+                          .setThemeMode(newSelection.first);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const _DeveloperFeedbackCard(),
       ],
     );
   }
 }
+
+class _DeveloperFeedbackCard extends ConsumerStatefulWidget {
+  const _DeveloperFeedbackCard();
+
+  @override
+  ConsumerState<_DeveloperFeedbackCard> createState() =>
+      __DeveloperFeedbackCardState();
+}
+
+class __DeveloperFeedbackCardState
+    extends ConsumerState<_DeveloperFeedbackCard> {
+  final _messageController = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitFeedback() async {
+    final message = _messageController.text.trim();
+    if (message.length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى كتابة ملاحظة واضحة لا تقل عن 5 أحرف.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _sending = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.dio.post<Map<String, dynamic>>(
+        '/user/feedback',
+        data: {'message': message},
+      );
+      _messageController.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('شكراً لك! تم إرسال ملاحظتك للمطورين بنجاح.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message)),
+        );
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _sending = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.feedback_outlined, color: Colors.amber),
+                const SizedBox(width: 10),
+                Text(
+                  'إرسال ملاحظة للمطورين',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'أفكارك واقتراحاتك تهمنا مستقبلاً لتطوير التطبيق وتحسين تجربة الاستخدام.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _messageController,
+              minLines: 3,
+              maxLines: 6,
+              maxLength: 4000,
+              decoration: const InputDecoration(
+                hintText: 'اكتب اقتراحك، استفسارك أو مشكلتك هنا...',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _sending ? null : _submitFeedback,
+                icon: _sending
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_rounded),
+                label: const Text('إرسال للمطورين'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DraggableTradingRoomBall extends StatefulWidget {
+  const _DraggableTradingRoomBall();
+
+  @override
+  State<_DraggableTradingRoomBall> createState() =>
+      _DraggableTradingRoomBallState();
+}
+
+class _DraggableTradingRoomBallState extends State<_DraggableTradingRoomBall> {
+  double? _top;
+  double? _left;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    _top ??= size.height * 0.65;
+    _left ??= size.width - 72;
+
+    return Positioned(
+      top: _top,
+      left: _left,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            _top = (_top! + details.delta.dy).clamp(60.0, size.height - 140.0);
+            _left = (_left! + details.delta.dx).clamp(10.0, size.width - 64.0);
+          });
+        },
+        child: Tooltip(
+          message: 'شات الجلسة المباشرة (40 صوتًا)',
+          child: Material(
+            elevation: 10,
+            shadowColor: const Color(0xFF0088CC).withValues(alpha: 0.5),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => context.push('/trading-chat'),
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF0088CC), Color(0xFF0288D1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.forum_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'شات الجلسة',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 ```
 
@@ -15274,36 +21312,929 @@ class _TrackedPainter extends CustomPainter {
 
 ---
 
+### File: `lib\features\market\branded_analysis_card_dialog.dart`
+
+```dart
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+class BrandedAnalysisCardDialog extends StatefulWidget {
+  const BrandedAnalysisCardDialog({
+    required this.ticker,
+    required this.signal,
+    required this.score,
+    required this.confidence,
+    required this.explanation,
+    this.tradePlan = const {},
+    super.key,
+  });
+
+  final String ticker;
+  final String signal;
+  final double? score;
+  final double? confidence;
+  final String explanation;
+  final Map<String, dynamic> tradePlan;
+
+  static const String signatureText = '''
+--------------------------------------------------
+تم استخراج هذا التحليل عبر تطبيق سهمي كسبان (Sahmi Kasban)
+حمل تطبيق سهمي كسبان من علي متجر بلاي
+--------------------------------------------------''';
+
+  @override
+  State<BrandedAnalysisCardDialog> createState() =>
+      _BrandedAnalysisCardDialogState();
+}
+
+class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
+  final GlobalKey _repaintKey = GlobalKey();
+  Uint8List? _imageBytes;
+  bool _isGenerating = true;
+  bool _isActionInProgress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _generateImage();
+    });
+  }
+
+  Future<void> _generateImage() async {
+    // Small delay to allow fonts and widgets to render completely
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    try {
+      final boundary =
+          _repaintKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary != null) {
+        final image = await boundary.toImage(pixelRatio: 2.8);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (mounted && byteData != null) {
+          setState(() {
+            _imageBytes = byteData.buffer.asUint8List();
+            _isGenerating = false;
+          });
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error generating image: $e');
+    }
+    if (mounted) {
+      setState(() => _isGenerating = false);
+    }
+  }
+
+  String _buildCopyableText() {
+    final cleanExplanation = widget.explanation
+        .replaceAll(RegExp(r'[#*`_]'), '')
+        .trim();
+    final scoreStr =
+        widget.score != null
+            ? '${widget.score!.toStringAsFixed(1)}/100'
+            : 'غير متوفر';
+    final confStr =
+        widget.confidence != null
+            ? '${widget.confidence!.toStringAsFixed(0)}%'
+            : 'غير متوفر';
+
+    final StringBuffer sb = StringBuffer();
+    sb.writeln('تقرير تحليل سهم شامل: ${widget.ticker}');
+    sb.writeln('القرار الآلي: ${widget.signal}');
+    sb.writeln('تقييم الجودة: $scoreStr | نسبة الثقة: $confStr');
+    if (widget.tradePlan.isNotEmpty) {
+      sb.writeln('--- خطة التداول الافتراضية ---');
+      if (widget.tradePlan['entry'] != null) {
+        sb.writeln('سعر الدخول: ${widget.tradePlan['entry']}');
+      }
+      if (widget.tradePlan['target_1'] != null) {
+        sb.writeln('الهدف الأول: ${widget.tradePlan['target_1']}');
+      }
+      if (widget.tradePlan['target_2'] != null) {
+        sb.writeln('الهدف الثاني: ${widget.tradePlan['target_2']}');
+      }
+      if (widget.tradePlan['stop_loss'] != null) {
+        sb.writeln('وقف الخسارة: ${widget.tradePlan['stop_loss']}');
+      }
+    }
+    sb.writeln('\nملخص التحليل الفني:');
+    sb.writeln(cleanExplanation);
+    sb.writeln('\n${BrandedAnalysisCardDialog.signatureText}');
+    return sb.toString();
+  }
+
+  void _copyToClipboard() {
+    final text = _buildCopyableText();
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم نسخ التحليل كاملاً مع بيانات التداول بنجاح'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _downloadImage() async {
+    if (_imageBytes == null) return;
+    setState(() => _isActionInProgress = true);
+    try {
+      final Directory dir =
+          Platform.isAndroid
+              ? (await getExternalStorageDirectory() ??
+                  await getApplicationDocumentsDirectory())
+              : await getApplicationDocumentsDirectory();
+
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final String filePath =
+          '${dir.path}/sahmi_analysis_${widget.ticker}_$timestamp.png';
+      final File file = File(filePath);
+      await file.writeAsBytes(_imageBytes!);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم حفظ صورة التحليل بنجاح في جهازك:\n$filePath'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل حفظ الصورة: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isActionInProgress = false);
+    }
+  }
+
+  Future<void> _shareImage() async {
+    if (_imageBytes == null) return;
+    setState(() => _isActionInProgress = true);
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final String filePath = '${tempDir.path}/sahmi_analysis_${widget.ticker}.png';
+      final File file = File(filePath);
+      await file.writeAsBytes(_imageBytes!);
+
+      final String shareText =
+          'تقرير تحليل سهم ${widget.ticker} عبر تطبيق سهمي كسبان:\n'
+          'القرار الآلي: ${widget.signal}\n'
+          'الدرجة: ${widget.score?.toStringAsFixed(1) ?? "-"}/100';
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: shareText,
+        subject: 'تحليل سهم ${widget.ticker}',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل مشاركة الصورة: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isActionInProgress = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 680, maxHeight: 780),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F172A),
+              Color(0xFF1E293B),
+              Color(0xFF0F172A),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.amber.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Modal Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.image_search_rounded,
+                          color: Colors.amber,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'معاينة صورة التحليل الكاملة',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'صورة عالية الدقة تحتوي كامل التقرير بدون اقتصاص',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const Divider(color: Colors.white12, height: 24),
+
+            // Content Area (Image Preview or Render Boundary)
+            Expanded(
+              child: Stack(
+                children: [
+                  // Hidden Offscreen RepaintBoundary for rendering
+                  SingleChildScrollView(
+                    child: UnconstrainedBox(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: 640,
+                        child: RepaintBoundary(
+                          key: _repaintKey,
+                          child: _BrandedCardExportContent(
+                            ticker: widget.ticker,
+                            signal: widget.signal,
+                            score: widget.score,
+                            confidence: widget.confidence,
+                            explanation: widget.explanation,
+                            tradePlan: widget.tradePlan,
+                            theme: theme,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Overlay Preview once generated
+                  if (_isGenerating)
+                    Container(
+                      color: const Color(0xFF0F172A),
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(color: Colors.amber),
+                            SizedBox(height: 16),
+                            Text(
+                              'جاري توليد صورة التحليل الكاملة...',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'يتم تجميع كافة تفاصيل التقرير في صورة واحدة عالية الجودة',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (_imageBytes != null)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: InteractiveViewer(
+                          maxScale: 4.0,
+                          minScale: 0.8,
+                          child: SingleChildScrollView(
+                            child: Image.memory(
+                              _imageBytes!,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Action Buttons Bar
+            if (_isActionInProgress)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircularProgressIndicator(color: Colors.amber),
+                ),
+              )
+            else
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _imageBytes != null ? _shareImage : null,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          icon: const Icon(Icons.share_rounded, size: 20),
+                          label: const Text(
+                            'مشاركة الصورة',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed:
+                              _imageBytes != null ? _downloadImage : null,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          icon: const Icon(Icons.download_rounded, size: 20),
+                          label: const Text(
+                            'تنزيل الصورة',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _copyToClipboard,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white70,
+                            side: const BorderSide(color: Colors.white24),
+                          ),
+                          icon: const Icon(
+                            Icons.content_copy_rounded,
+                            size: 16,
+                          ),
+                          label: const Text('نسخ كـ نص'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white60,
+                        ),
+                        child: const Text('إغلاق'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandedCardExportContent extends StatelessWidget {
+  const _BrandedCardExportContent({
+    required this.ticker,
+    required this.signal,
+    required this.score,
+    required this.confidence,
+    required this.explanation,
+    required this.tradePlan,
+    required this.theme,
+  });
+
+  final String ticker;
+  final String signal;
+  final double? score;
+  final double? confidence;
+  final String explanation;
+  final Map<String, dynamic> tradePlan;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final scoreVal = score != null ? score!.toStringAsFixed(1) : '-';
+    final confVal =
+        confidence != null ? '${confidence!.toStringAsFixed(0)}%' : '-';
+    final cleanExplanation = explanation
+        .replaceAll(RegExp(r'[#*`_]'), '')
+        .trim();
+
+    return Container(
+      width: 640,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.amber.withValues(alpha: 0.4),
+          width: 2,
+        ),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Brand Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber, width: 1.2),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.show_chart_rounded,
+                      color: Colors.amber,
+                      size: 18,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'سهمي كسبان | SAHMI KASBAN',
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Text(
+                'تقرير تحليل آلي متكامل',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // Main Header: Ticker & Recommendation Signal
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ticker,
+                      textDirection: TextDirection.ltr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'تحليل شامل ومفصل للسهم',
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primary.withValues(alpha: 0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'القرار الآلي',
+                        style: TextStyle(color: Colors.white70, fontSize: 10),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        signal,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Key Indicators & Scores Row
+          Row(
+            children: [
+              Expanded(
+                child: _ExportInfoTile(
+                  label: 'تقييم الجودة',
+                  value: '$scoreVal/100',
+                  color: Colors.amber,
+                  icon: Icons.workspace_premium_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ExportInfoTile(
+                  label: 'نسبة الثقة',
+                  value: confVal,
+                  color: Colors.lightGreenAccent,
+                  icon: Icons.verified_user_rounded,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Trade Plan Grid Section (if available)
+          if (tradePlan.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.alt_route_rounded,
+                        color: Colors.cyanAccent,
+                        size: 18,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'خطة التداول الأهداف والمخاطر',
+                        style: TextStyle(
+                          color: Colors.cyanAccent,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (tradePlan['entry'] != null)
+                        Expanded(
+                          child: _ExportPlanCell(
+                            label: 'سعر الدخول',
+                            value: '${tradePlan['entry']}',
+                            color: Colors.white,
+                          ),
+                        ),
+                      if (tradePlan['stop_loss'] != null)
+                        Expanded(
+                          child: _ExportPlanCell(
+                            label: 'وقف الخسارة',
+                            value: '${tradePlan['stop_loss']}',
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      if (tradePlan['target_1'] != null)
+                        Expanded(
+                          child: _ExportPlanCell(
+                            label: 'الهدف الأول',
+                            value: '${tradePlan['target_1']}',
+                            color: Colors.greenAccent,
+                          ),
+                        ),
+                      if (tradePlan['target_2'] != null)
+                        Expanded(
+                          child: _ExportPlanCell(
+                            label: 'الهدف الثاني',
+                            value: '${tradePlan['target_2']}',
+                            color: Colors.green,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          // Full Analysis Summary Box (Unclipped, Full Height)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.notes_rounded, color: Colors.white70, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'ملخص التحليل الفني والمالي الكامل',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  cleanExplanation,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Signature Branding Callout Box
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            ),
+            child: const Column(
+              children: [
+                Text(
+                  'تم استخراج هذا التحليل الشامل عبر تطبيق سهمي كسبان (Sahmi Kasban)',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'حمل تطبيق سهمي كسبان الآن من متجر بلاي للحصول على تحليلات دقيقة يومياً',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExportInfoTile extends StatelessWidget {
+  const _ExportInfoTile({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white60, fontSize: 11),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExportPlanCell extends StatelessWidget {
+  const _ExportPlanCell({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white60, fontSize: 10),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          textDirection: TextDirection.ltr,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+```
+
+---
+
 ### File: `lib\features\market\market_quotes_providers.dart`
 
 ```dart
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 
-const marketQuotesPollInterval = Duration(seconds: 5);
-
-/// Live EGX market quotes, refreshed periodically while the home/stock
-/// screens are visible using the backend-side cached scanner response.
+/// Real-time live EGX market quotes streamed via WebSocket from backend broadcaster.
 final marketQuotesProvider = StreamProvider.autoDispose<MarketQuotesSnapshot>((
   ref,
 ) {
   final repository = ref.watch(backendRepositoryProvider);
-  return Stream.periodic(
-    marketQuotesPollInterval,
-    (_) => (),
-  ).asyncMap((_) => repository.getMarketQuotes());
+  return repository.streamMarketQuotes();
 });
 
-/// Single stock quote used by the stock detail screen. Falls back to a
-/// one-shot fetch and re-runs when the reference ticker changes.
+/// Single stock quote used by the stock detail screen.
+/// Automatically updates in real-time when the live stream broadcasts changes for this ticker.
 class StockQuoteNotifier
     extends AutoDisposeFamilyAsyncNotifier<MarketQuote, String> {
   @override
-  Future<MarketQuote> build(String arg) {
+  Future<MarketQuote> build(String arg) async {
+    // 1. Listen to real-time market stream for live updates
+    ref.listen<AsyncValue<MarketQuotesSnapshot>>(marketQuotesProvider, (
+      _,
+      next,
+    ) {
+      final snapshot = next.valueOrNull;
+      if (snapshot != null) {
+        final normalizedTicker = arg.trim().toUpperCase();
+        for (final item in snapshot.items) {
+          if (item.ticker.toUpperCase() == normalizedTicker) {
+            state = AsyncValue.data(item);
+            break;
+          }
+        }
+      }
+    });
+
+    // 2. Check if already present in stream cache
+    final currentSnapshot = ref.read(marketQuotesProvider).valueOrNull;
+    if (currentSnapshot != null) {
+      final normalizedTicker = arg.trim().toUpperCase();
+      for (final item in currentSnapshot.items) {
+        if (item.ticker.toUpperCase() == normalizedTicker) {
+          return item;
+        }
+      }
+    }
+
+    // 3. Fallback to initial server fetch
     return ref.watch(backendRepositoryProvider).getMarketQuote(arg);
   }
 
@@ -15332,9 +22263,13 @@ final stockQuoteProvider =
 
 ```dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/models.dart';
 import '../../widgets/structured_data_card.dart';
+import 'branded_analysis_card_dialog.dart';
 
 class StockAnalysisReport extends StatelessWidget {
   const StockAnalysisReport({required this.analysis, super.key});
@@ -15371,6 +22306,21 @@ class StockAnalysisReport extends StatelessWidget {
           cached: analysis.cached,
           chargedCoins: analysis.chargedCoins,
           balanceCoins: analysis.balanceCoins,
+          tradePlan: tradePlan,
+        ),
+        const SizedBox(height: 12),
+        _SectorQualityCard(
+          sectorQuality: _asMap(payload['sector_quality']),
+          fallbackSector: _text(marketData['sector']).isNotEmpty
+              ? _text(marketData['sector'])
+              : _text(payload['sector']),
+          score: _number(analysisData['final_score']),
+        ),
+        const SizedBox(height: 12),
+        _EngineUpgradesExplanationCard(
+          sector: _text(marketData['sector']).isNotEmpty
+              ? _text(marketData['sector'])
+              : _text(payload['sector']),
         ),
         const SizedBox(height: 12),
         _TradePlanCard(tradePlan: tradePlan, risk: risk),
@@ -15404,6 +22354,8 @@ class StockAnalysisReport extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 12),
+        _StockCommunityCard(ticker: analysis.ticker),
+        const SizedBox(height: 12),
         StructuredDataCard(
           title: 'البيانات التقنية الخام',
           data: analysis.payload,
@@ -15424,6 +22376,7 @@ class _DecisionCard extends StatelessWidget {
     required this.cached,
     required this.chargedCoins,
     required this.balanceCoins,
+    this.tradePlan = const {},
   });
 
   final String ticker;
@@ -15434,6 +22387,7 @@ class _DecisionCard extends StatelessWidget {
   final bool cached;
   final String chargedCoins;
   final String balanceCoins;
+  final Map<String, dynamic> tradePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -15506,7 +22460,36 @@ class _DecisionCard extends StatelessWidget {
             ],
             if (explanation.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(explanation, style: Theme.of(context).textTheme.bodyLarge),
+              MarkdownBody(
+                data: explanation,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                    .copyWith(
+                      p: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(height: 1.5),
+                      h1: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      h2: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      h3: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      tableBody: Theme.of(context).textTheme.bodyMedium,
+                      tableBorder: TableBorder.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                      tableHead: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                      tableCellsPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+              ),
             ],
             const SizedBox(height: 12),
             Text(
@@ -15516,6 +22499,56 @@ class _DecisionCard extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             Text('الرصيد الحالي: $balanceCoins عملة'),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final cleanExp = explanation.replaceAll(RegExp(r'[#*`_]'), '').trim();
+                      final text = '''
+تقرير تحليل سهم: $ticker
+القرار الآلي: $signalLabel
+تقييم الجودة: ${_formatNumber(score)}/100
+
+ملخص التحليل:
+$cleanExp
+
+${BrandedAnalysisCardDialog.signatureText}''';
+                      Clipboard.setData(ClipboardData(text: text));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('تم نسخ التحليل مع رابط المتجر للحافظة'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.content_copy_rounded, size: 16),
+                    label: const Text('نسخ التحليل نصياً'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (_) => BrandedAnalysisCardDialog(
+                          ticker: ticker,
+                          signal: signalLabel,
+                          score: score,
+                          confidence: confidence,
+                          explanation: explanation,
+                          tradePlan: tradePlan,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.share_rounded, size: 16),
+                    label: const Text('تصدير كصورة'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -15956,14 +22989,19 @@ class _NoticeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final textColor = isWarning ? scheme.onErrorContainer : Colors.redAccent;
+    final iconColor = isWarning ? scheme.onErrorContainer : Colors.redAccent;
+    final containerColor =
+        isWarning ? scheme.errorContainer : scheme.surfaceContainerHighest;
+
     return Card(
-      color: isWarning ? scheme.errorContainer : scheme.surfaceContainerHighest,
+      color: containerColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon),
+            Icon(icon, color: iconColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -15971,10 +23009,20 @@ class _NoticeCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: textColor,
+                    ),
                   ),
                   const SizedBox(height: 6),
-                  Text(body),
+                  Text(
+                    body,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      height: 1.5,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -16126,6 +23174,325 @@ bool _containsLatinOrNumber(String value) {
   return RegExp(r'[A-Za-z0-9]').hasMatch(value);
 }
 
+class _EngineUpgradesExplanationCard extends StatelessWidget {
+  const _EngineUpgradesExplanationCard({required this.sector});
+
+  final String sector;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.stars_rounded, color: Colors.amber, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  'مواصفات المحرك ومؤشرات المؤسسات',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                if (sector.isNotEmpty)
+                  Chip(
+                    avatar: const Icon(Icons.category_outlined, size: 14),
+                    label: Text('القطاع: $sector'),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _FeatureRow(
+              icon: Icons.show_chart_rounded,
+              title: 'مؤشر VWAP المؤسسي',
+              desc:
+                  'حساب متوسط السعر المرجح بحجم التداول لكشف دخول وصانع السوق.',
+            ),
+            const SizedBox(height: 8),
+            _FeatureRow(
+              icon: Icons.shield_rounded,
+              title: 'محرك زخم القطاع (Sector Engine)',
+              desc:
+                  'حماية إشارات الشراء وضمان عدم الدخول في سهم جيد داخل قطاع هابط.',
+            ),
+            const SizedBox(height: 8),
+            _FeatureRow(
+              icon: Icons.auto_graph_rounded,
+              title: 'وقف الخسارة التكيفي (Adaptive ATR)',
+              desc:
+                  'متابعة الأرباح ووقف الخسارة ديناميكياً بحسب نسبة تذبذب السهم.',
+            ),
+            const SizedBox(height: 8),
+            _FeatureRow(
+              icon: Icons.account_balance_wallet_rounded,
+              title: 'حماية التكاليف والانزلاق (0.3% Guard)',
+              desc:
+                  'خصم تلقائي 0.3% لعمولات البورصة والانزلاق السعري لنتائج واقعية 100%.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({
+    required this.icon,
+    required this.title,
+    required this.desc,
+  });
+
+  final IconData icon;
+  final String title;
+  final String desc;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                desc,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectorQualityCard extends StatelessWidget {
+  const _SectorQualityCard({
+    required this.sectorQuality,
+    required this.fallbackSector,
+    required this.score,
+  });
+
+  final Map<String, dynamic> sectorQuality;
+  final String fallbackSector;
+  final double? score;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final currentScore = score;
+    final sectorName = _text(sectorQuality['sector_name']).isNotEmpty
+        ? _text(sectorQuality['sector_name'])
+        : (fallbackSector.isNotEmpty ? fallbackSector : 'عام');
+
+    final qualityLabel = _text(sectorQuality['quality_label']).isNotEmpty
+        ? _text(sectorQuality['quality_label'])
+        : ((currentScore ?? 0) >= 75
+              ? 'متفوق على قطاع $sectorName'
+              : ((currentScore ?? 0) >= 50
+                    ? 'متوافق مع قطاع $sectorName'
+                    : 'أقل من متوسط قطاع $sectorName'));
+
+    final qualityStatus = _text(sectorQuality['quality_status']).isNotEmpty
+        ? _text(sectorQuality['quality_status'])
+        : ((currentScore ?? 0) >= 75
+              ? 'outperforming'
+              : ((currentScore ?? 0) >= 50 ? 'in_line' : 'underperforming'));
+
+    final summaryAr = _text(sectorQuality['summary_ar']).isNotEmpty
+        ? _text(sectorQuality['summary_ar'])
+        : 'أداء وتقييم السهم بالمقارنة مع معايير ومتوسط حركة قطاع $sectorName.';
+
+    final return20d = _number(sectorQuality['return_20d_pct']);
+    final sectorTrendAr = _text(sectorQuality['sector_trend_ar']).isNotEmpty
+        ? _text(sectorQuality['sector_trend_ar'])
+        : ((return20d ?? 0) >= 0 ? 'صاعد 📈' : 'هابط 📉');
+
+    final badgeColor = switch (qualityStatus) {
+      'outperforming' => Colors.green.shade700,
+      'in_line' => Colors.blue.shade700,
+      _ => Colors.orange.shade800,
+    };
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.pie_chart_outline_rounded,
+                  color: Colors.amber,
+                  size: 24,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'جودة السهم مقابل القطاع',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: badgeColor.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    qualityLabel,
+                    style: TextStyle(
+                      color: badgeColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            MarkdownBody(
+              data: summaryAr,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet.fromTheme(
+                theme,
+              ).copyWith(p: theme.textTheme.bodyMedium?.copyWith(height: 1.4)),
+            ),
+            const SizedBox(height: 14),
+            _MetricGrid(
+              items: [
+                _MetricData(label: 'اسم القطاع', value: sectorName),
+                _MetricData(label: 'اتجاه القطاع', value: sectorTrendAr),
+                _MetricData(
+                  label: 'درجة التقييم النسبي',
+                  value: currentScore != null
+                      ? '${currentScore.toStringAsFixed(1)}/100'
+                      : '—',
+                ),
+                if (return20d != null && return20d != 0)
+                  _MetricData(
+                    label: 'عائد السهم (20 يوم)',
+                    value: '${_formatNumber(return20d)}%',
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StockCommunityCard extends StatelessWidget {
+  const _StockCommunityCard({required this.ticker});
+  final String ticker;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.forum_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'رأي وتوقعات المتداولين حول $ticker',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'شارك رؤيتك وتوقعاتك لسهم $ticker مع مجتمع المتداولين مجاناً واطلع على تحليلاتهم.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      context.push('/community/new');
+                    },
+                    icon: const Icon(Icons.add_comment_outlined, size: 18),
+                    label: Text('أضف توقعك لسهم $ticker'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 ```
 
 ---
@@ -16140,7 +23507,9 @@ import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../community/stock_prediction_prompt_dialog.dart';
 import '../monetization/free_plan_ads.dart';
+import '../rating/rating_prompt_manager.dart';
 import '../wallet/wallet_providers.dart';
 import 'stock_analysis_report.dart';
 
@@ -16214,6 +23583,14 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
       return;
     }
 
+    await StockPredictionPromptDialog.show(
+      context,
+      ticker: widget.ticker,
+    );
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _analyzing = true;
       _error = null;
@@ -16240,6 +23617,11 @@ class _StockAnalysisScreenState extends ConsumerState<StockAnalysisScreen> {
                   ref.read(sessionControllerProvider).profile?.adsEnabled ==
                   true,
             );
+        if (mounted) {
+          await ref
+              .read(ratingPromptManagerProvider)
+              .recordCompletedAnalysis(context);
+        }
       }
     } on ApiException catch (error) {
       if (mounted) {
@@ -16347,6 +23729,7 @@ import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../community/stock_prediction_prompt_dialog.dart';
 import '../monetization/free_plan_ads.dart';
 import '../wallet/wallet_providers.dart';
 import 'stock_analysis_report.dart';
@@ -16365,9 +23748,11 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
   List<MarketInstrument> _results = const [];
   MarketInstrument? _selected;
   StockAnalysisResult? _analysis;
+  StockInvestmentAnalysis? _investmentAnalysis;
   bool _searching = false;
   bool _loadingSaved = false;
   bool _analyzing = false;
+  bool _analyzingInvestment = false;
   String? _error;
 
   @override
@@ -16386,6 +23771,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
       _results = const [];
       _error = null;
       _analysis = null;
+      _investmentAnalysis = null;
       _loadingSaved = false;
       _searching = normalizedQuery.isNotEmpty;
     });
@@ -16464,6 +23850,7 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     setState(() {
       _selected = instrument;
       _analysis = null;
+      _investmentAnalysis = null;
       _error = null;
     });
     unawaited(_loadSavedAnalysis(instrument, revision));
@@ -16523,6 +23910,17 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
       return;
     }
 
+    await StockPredictionPromptDialog.show(
+      context,
+      ticker: instrument.ticker,
+      displayName: instrument.description.isNotEmpty
+          ? instrument.description
+          : instrument.ticker,
+    );
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _analyzing = true;
       _error = null;
@@ -16557,6 +23955,46 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
     } finally {
       if (mounted) {
         setState(() => _analyzing = false);
+      }
+    }
+  }
+
+  Future<void> _analyzeInvestment() async {
+    final instrument = _selected;
+    if (instrument == null || _analyzingInvestment) {
+      return;
+    }
+    setState(() {
+      _analyzingInvestment = true;
+      _error = null;
+    });
+    try {
+      final inv = await ref
+          .read(backendRepositoryProvider)
+          .getStockInvestmentAnalysis(instrument.ticker);
+      if (mounted) {
+        setState(() => _investmentAnalysis = inv);
+        await ref
+            .read(freePlanInterstitialProvider)
+            .recordMeaningfulAction(
+              enabled:
+                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                  true,
+            );
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() => _error = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = 'تعذر إجراء التحليل الاستثماري لهذا السهم حالياً.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _analyzingInvestment = false);
       }
     }
   }
@@ -16658,23 +24096,91 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _selected == null || _analyzing ? null : _analyze,
-                  icon: _analyzing
-                      ? const SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        )
-                      : const Icon(Icons.auto_graph_rounded),
-                  label: const Text('تحليل السهم — 0.5 عملة'),
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(
+                  _selected == null
+                      ? 'اختر سهمًا من نتائج البحث أولاً للبدء في التحليل أو المقارنة:'
+                      : 'خيارات التحليل والمقارنة لـ (${_selected!.ticker}):',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed:
+                            _selected == null ||
+                                _analyzing ||
+                                _analyzingInvestment
+                            ? null
+                            : () {
+                                setState(() => _investmentAnalysis = null);
+                                _analyze();
+                              },
+                        icon: _analyzing
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.bolt_rounded),
+                        label: const Text('تحليل كسهم مضاربة'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed:
+                            _selected == null ||
+                                _analyzing ||
+                                _analyzingInvestment
+                            ? null
+                            : () {
+                                setState(() => _analysis = null);
+                                _analyzeInvestment();
+                              },
+                        icon: _analyzingInvestment
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.account_balance_rounded),
+                        label: const Text('تحليل كسهم استثماري'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: _analyzing
-                      ? null
-                      : () => context.push('/market/compare'),
-                  icon: const Icon(Icons.compare_arrows_rounded),
-                  label: const Text('مقارنة سهمين أو أكثر'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _analyzing || _analyzingInvestment
+                            ? null
+                            : () => context.push('/market/compare?mode=swing'),
+                        icon: const Icon(Icons.compare_arrows_rounded),
+                        label: const Text('مقارنة أسهم مضاربة'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _analyzing || _analyzingInvestment
+                            ? null
+                            : () => context.push(
+                                '/market/compare?mode=investment',
+                              ),
+                        icon: const Icon(Icons.analytics_outlined),
+                        label: const Text('مقارنة أسهم استثمارية'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -16695,8 +24201,708 @@ class _StockAnalysisTabState extends ConsumerState<StockAnalysisTab> {
         if (_analysis case final analysis?) ...[
           const SizedBox(height: 16),
           StockAnalysisReport(analysis: analysis),
+          const SizedBox(height: 12),
+          FilledButton.tonalIcon(
+            onPressed: () => context.push('/stocks/${analysis.ticker}'),
+            icon: const Icon(Icons.candlestick_chart_rounded, size: 20),
+            label: const Text(
+              'معلومات وشارت السهم',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+        if (_investmentAnalysis case final inv?) ...[
+          const SizedBox(height: 16),
+          _StockInvestmentAnalysisView(analysis: inv),
         ],
       ],
+    );
+  }
+}
+
+class _StockInvestmentAnalysisView extends StatelessWidget {
+  const _StockInvestmentAnalysisView({required this.analysis});
+
+  final StockInvestmentAnalysis analysis;
+
+  static String _formatLargeAmount(double? value) {
+    if (value == null || value == 0) return '—';
+    if (value >= 1e9) {
+      return '${(value / 1e9).toStringAsFixed(2)} مليار ج.م';
+    }
+    if (value >= 1e6) {
+      return '${(value / 1e6).toStringAsFixed(2)} مليون ج.م';
+    }
+    return '${value.toStringAsFixed(2)} ج.م';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isValue = analysis.investmentCategory == 'value';
+    final isDividend = analysis.investmentCategory == 'dividend';
+    final (categoryTitle, categoryColor, categoryIcon) = isValue
+        ? ('سهم قيمة وهامش أمان', Colors.purple, Icons.security_rounded)
+        : isDividend
+        ? ('سهم توزيعات نقدية كاش', Colors.teal, Icons.payments_rounded)
+        : ('سهم نمو وأرباح واعدة', Colors.blue, Icons.trending_up_rounded);
+
+    final margin = analysis.marginOfSafetyPct;
+    final isPositiveMargin = margin != null && margin > 0;
+    final targetPrice = analysis.expectedTargetPrice ?? analysis.fairValue;
+    final timeframe = analysis.expectedTimeframe ?? '6 - 12 شهراً';
+    final expectedReturn = analysis.expectedReturnPct ?? margin;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. بطاقة القرار والتوصية الاستثمارية
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            analysis.ticker,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                            textDirection: TextDirection.ltr,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${analysis.companyName} • ${analysis.sector}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: categoryColor.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(categoryIcon, size: 14, color: categoryColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            categoryTitle,
+                            style: TextStyle(
+                              color: categoryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                            'التقييم الاستثماري',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${analysis.investmentScore.toStringAsFixed(1)} / 100',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        height: 36,
+                        width: 1,
+                        color: theme.dividerColor,
+                      ),
+                      Column(
+                        children: [
+                          Text(
+                            'السعر الحالي',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${analysis.currentPrice.toStringAsFixed(2)} ج.م',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        height: 36,
+                        width: 1,
+                        color: theme.dividerColor,
+                      ),
+                      Column(
+                        children: [
+                          Text(
+                            'التوصية الاستثمارية',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            analysis.recommendation ?? 'شراء استثماري',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: analysis.investmentScore >= 65
+                                  ? Colors.green
+                                  : Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                if (analysis.valuationStatus != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isPositiveMargin
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isPositiveMargin
+                            ? Colors.green.withValues(alpha: 0.3)
+                            : Colors.orange.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isPositiveMargin
+                              ? Icons.check_circle_outline_rounded
+                              : Icons.info_outline_rounded,
+                          size: 18,
+                          color: isPositiveMargin
+                              ? Colors.green
+                              : Colors.orange,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            analysis.valuationStatus!,
+                            style: TextStyle(
+                              color: isPositiveMargin
+                                  ? Colors.green.shade800
+                                  : Colors.orange.shade900,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // 2. بطاقة السعر المستهدف والأفق الزمني والقيمة العادلة
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.flag_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'القيمة المتوقعة والأفق الزمني',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.green.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'القيمة المتوقعة (المستهدف)',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.green.shade800,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              targetPrice != null
+                                  ? '${targetPrice.toStringAsFixed(2)} ج.م'
+                                  : '—',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: Colors.green.shade800,
+                              ),
+                            ),
+                            if (expectedReturn != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                '${expectedReturn >= 0 ? '+' : ''}${expectedReturn.toStringAsFixed(1)}% عائد متوقع',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: expectedReturn >= 0
+                                      ? Colors.green.shade700
+                                      : Colors.red,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.schedule_rounded, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'المدة المتوقعة',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              timeframe,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'استثمار استراتيجي',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (margin != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'هامش الأمان الحالي: ${margin >= 0 ? '+' : ''}${margin.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isPositiveMargin ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      Text(
+                        isPositiveMargin
+                            ? 'أقل من القيمة العادلة'
+                            : 'أعلى من القيمة العادلة',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(
+                    value: isPositiveMargin
+                        ? (margin / 100.0).clamp(0.0, 1.0)
+                        : 0.1,
+                    color: isPositiveMargin ? Colors.green : Colors.orange,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    minHeight: 6,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // 3. شبكة المؤشرات المالية والأساسية الكاملة
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.query_stats_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'المؤشرات المالية والأساسية',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _InvestmentMetricChip(
+                      label: 'مكرر الربحية P/E',
+                      value: analysis.peRatio != null
+                          ? '${analysis.peRatio!.toStringAsFixed(1)}x'
+                          : '—',
+                      isPositive:
+                          analysis.peRatio != null && analysis.peRatio! <= 10,
+                    ),
+                    _InvestmentMetricChip(
+                      label: 'مضاعف القيمة الدفترية P/B',
+                      value: analysis.pbRatio != null
+                          ? '${analysis.pbRatio!.toStringAsFixed(1)}x'
+                          : '—',
+                    ),
+                    _InvestmentMetricChip(
+                      label: 'عائد التوزيعات النقدية',
+                      value: analysis.dividendYieldPct != null
+                          ? '${analysis.dividendYieldPct!.toStringAsFixed(1)}%'
+                          : '—',
+                      isPositive: (analysis.dividendYieldPct ?? 0) >= 5,
+                      isHighlight: (analysis.dividendYieldPct ?? 0) >= 7,
+                    ),
+                    _InvestmentMetricChip(
+                      label: 'العائد على حقوق الملكية ROE',
+                      value: analysis.roePct != null
+                          ? '${analysis.roePct!.toStringAsFixed(1)}%'
+                          : '—',
+                      isPositive: (analysis.roePct ?? 0) >= 15,
+                    ),
+                    _InvestmentMetricChip(
+                      label: 'ربحية السهم (EPS)',
+                      value: analysis.eps != null
+                          ? '${analysis.eps!.toStringAsFixed(2)} ج.م'
+                          : '—',
+                    ),
+                    _InvestmentMetricChip(
+                      label: 'القيمة السوقية',
+                      value: _formatLargeAmount(analysis.marketCap),
+                    ),
+                    _InvestmentMetricChip(
+                      label: 'صافي الأرباح السنوية',
+                      value: _formatLargeAmount(analysis.netIncome),
+                      isPositive: (analysis.netIncome ?? 0) > 0,
+                    ),
+                    _InvestmentMetricChip(
+                      label: 'إجمالي الديون',
+                      value: _formatLargeAmount(analysis.totalDebt),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // 4. نقاط القوة الاستثمارية والمحفزات
+        if (analysis.strengths.isNotEmpty) ...[
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'نقاط القوة والمحفزات الاستثمارية',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  for (final s in analysis.strengths)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.check_rounded,
+                            size: 16,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              s,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // 5. المخاطر وجوانب الحذر
+        if (analysis.risks.isNotEmpty) ...[
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'المخاطر والتحديات الواجب متابعتها',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  for (final r in analysis.risks)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.arrow_left_rounded,
+                            size: 18,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              r,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // 6. إرشادات وخطة الاستثمار للمستثمر
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'إرشادات استراتيجية الاستثمار',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '• أسلوب الدخول المقترح: الشراء المتدرج على دفعات سعرية (DCA) لتقليل متوسط تكلفة الشراء.\n'
+                  '• أفق الاحتفاظ: ينصح بالاحتفاظ طوال الأفق الزمني المستهدف ($timeframe) لجني ثمار النمو أو التوزيعات.\n'
+                  '• إعادة استثمار الأرباح: تدوير التوزيعات النقدية يسهم في تعظيم العائد التراكمي للمحفظة على المدى الطويل.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    height: 1.6,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // 7. زر معلومات وشارت السهم
+        FilledButton.tonalIcon(
+          onPressed: () => context.push('/stocks/${analysis.ticker}'),
+          icon: const Icon(Icons.candlestick_chart_rounded, size: 20),
+          label: const Text(
+            'معلومات وشارت السهم',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+class _InvestmentMetricChip extends StatelessWidget {
+  const _InvestmentMetricChip({
+    required this.label,
+    required this.value,
+    this.isHighlight = false,
+    this.isPositive = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isHighlight;
+  final bool isPositive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isHighlight
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.5)
+            : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+        border: isHighlight
+            ? Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.4),
+              )
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isPositive ? Colors.green.shade700 : null,
+            ),
+            textDirection: TextDirection.ltr,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -16956,6 +25162,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
@@ -16967,7 +25174,9 @@ import 'stock_comparison_models.dart';
 import 'stock_comparison_repository.dart';
 
 class StockComparisonScreen extends ConsumerStatefulWidget {
-  const StockComparisonScreen({super.key});
+  const StockComparisonScreen({super.key, this.initialMode});
+
+  final String? initialMode;
 
   @override
   ConsumerState<StockComparisonScreen> createState() =>
@@ -16976,15 +25185,24 @@ class StockComparisonScreen extends ConsumerStatefulWidget {
 
 class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
   final _queryController = TextEditingController();
+  late String _mode;
   Timer? _debounce;
   int _searchRevision = 0;
   List<MarketInstrument> _results = const [];
   final List<MarketInstrument> _selected = [];
   bool _searching = false;
   bool _comparing = false;
+  bool _comparingInvestment = false;
   String? _error;
   String? _requestKey;
   StockComparisonResult? _result;
+  StockInvestmentComparisonResult? _investmentResult;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.initialMode == 'investment' ? 'investment' : 'swing';
+  }
 
   @override
   void dispose() {
@@ -17155,16 +25373,77 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
     }
   }
 
+  Future<void> _compareInvestment() async {
+    if (_selected.length < 2 || _comparingInvestment) {
+      return;
+    }
+    setState(() {
+      _comparingInvestment = true;
+      _error = null;
+    });
+    try {
+      final res = await ref
+          .read(backendRepositoryProvider)
+          .compareStocksInvestment(
+            _selected.map((item) => item.ticker).toList(),
+          );
+      if (!mounted) return;
+      setState(() => _investmentResult = res);
+      await ref
+          .read(freePlanInterstitialProvider)
+          .recordMeaningfulAction(
+            enabled:
+                ref.read(sessionControllerProvider).profile?.adsEnabled == true,
+          );
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() => _error = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'تعذر مقارنة الأسهم استثمارياً حالياً.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _comparingInvestment = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final planCode =
         ref.watch(sessionControllerProvider).profile?.planCode ?? 'free';
+    final isLoading = _mode == 'swing' ? _comparing : _comparingInvestment;
+
     return Scaffold(
       appBar: AppBar(title: const Text('مقارنة الأسهم')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'swing',
+                  icon: Icon(Icons.bolt_rounded),
+                  label: Text('مقارنة المضاربة'),
+                ),
+                ButtonSegment(
+                  value: 'investment',
+                  icon: Icon(Icons.account_balance_rounded),
+                  label: Text('مقارنة الاستثمار'),
+                ),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (set) {
+                setState(() {
+                  _mode = set.first;
+                  _error = null;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
@@ -17179,9 +25458,11 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      planCode == 'free'
-                          ? 'المقارنة نفسها تكلف 0.5 عملة، والتحليلات المحفوظة لا تُخصم مرة أخرى.'
-                          : 'يتم استخدام المقارنات الشهرية المتضمنة في خطتك قبل الخصم.',
+                      _mode == 'swing'
+                          ? (planCode == 'free'
+                                ? 'المقارنة الفنية تكلف 0.5 عملة، والتحليلات المحفوظة لا تُخصم مرة أخرى.'
+                                : 'يتم استخدام المقارنات الشهرية المتضمنة في خطتك قبل الخصم.')
+                          : 'مقارنة استثمارية شاملة للقيمة العادلة، مكررات الربحية، وعوائد التوزيعات.',
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -17237,23 +25518,37 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
                   for (final instrument in _selected)
                     InputChip(
                       label: Text(instrument.ticker),
-                      onDeleted: _comparing ? null : () => _remove(instrument),
+                      onDeleted: isLoading ? null : () => _remove(instrument),
                     ),
                 ],
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
-                onPressed: _selected.length < 2 || _comparing ? null : _compare,
-                icon: _comparing
+                onPressed: _selected.length < 2 || isLoading
+                    ? null
+                    : () {
+                        if (_mode == 'swing') {
+                          _compare();
+                        } else {
+                          _compareInvestment();
+                        }
+                      },
+                icon: isLoading
                     ? const SizedBox.square(
                         dimension: 20,
                         child: CircularProgressIndicator(strokeWidth: 2.5),
                       )
-                    : const Icon(Icons.compare_arrows_rounded),
+                    : Icon(
+                        _mode == 'swing'
+                            ? Icons.compare_arrows_rounded
+                            : Icons.analytics_outlined,
+                      ),
                 label: Text(
-                  _comparing
+                  isLoading
                       ? 'جاري تحليل المقارنة...'
-                      : 'قارن الأسهم المختارة',
+                      : (_mode == 'swing'
+                            ? 'قارن الأسهم للمضاربة'
+                            : 'قارن الأسهم للاستثمار والقيمة'),
                 ),
               ),
             ],
@@ -17269,8 +25564,10 @@ class _StockComparisonScreenState extends ConsumerState<StockComparisonScreen> {
             ],
             const SizedBox(height: 12),
             const FreePlanNativeAd(),
-            if (_result case final result?)
-              _ComparisonResultView(result: result),
+            if (_mode == 'swing' && _result != null)
+              _ComparisonResultView(result: _result!),
+            if (_mode == 'investment' && _investmentResult != null)
+              _InvestmentComparisonResultView(result: _investmentResult!),
           ],
         ),
       ),
@@ -17334,6 +25631,7 @@ class _ComparisonResultView extends StatelessWidget {
           ),
         ),
         for (final item in result.items) _ComparisonItemCard(item: item),
+        const SizedBox(height: 12),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -17468,6 +25766,388 @@ String _risk(String value) {
   };
 }
 
+class _InvestmentComparisonResultView extends StatelessWidget {
+  const _InvestmentComparisonResultView({required this.result});
+
+  final StockInvestmentComparisonResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        Card(
+          color: theme.colorScheme.primaryContainer,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.stars_rounded,
+                      color: theme.colorScheme.onPrimaryContainer,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'أفضل خيار استثماري: ${result.bestTicker}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  result.summary,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (var i = 0; i < result.items.length; i++) ...[
+          _InvestmentStockComparisonCard(
+            item: result.items[i],
+            rank: i + 1,
+            isBest: result.items[i].ticker == result.bestTicker,
+          ),
+          const SizedBox(height: 10),
+        ],
+        const SizedBox(height: 6),
+      ],
+    );
+  }
+}
+
+class _InvestmentStockComparisonCard extends StatelessWidget {
+  const _InvestmentStockComparisonCard({
+    required this.item,
+    required this.rank,
+    required this.isBest,
+  });
+
+  final StockInvestmentAnalysis item;
+  final int rank;
+  final bool isBest;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isValue = item.investmentCategory == 'value';
+    final isDividend = item.investmentCategory == 'dividend';
+    final categoryText = isValue
+        ? '🛡️ سهم قيمة'
+        : isDividend
+        ? '💰 توزيعات كاش'
+        : '💎 نمو واعد';
+
+    final margin = item.marginOfSafetyPct;
+    final isPositiveMargin = margin != null && margin > 0;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: isBest
+            ? BorderSide(color: theme.colorScheme.primary, width: 2)
+            : BorderSide.none,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: isBest
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.surfaceContainerHighest,
+                  foregroundColor: isBest
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurfaceVariant,
+                  child: Text(
+                    '$rank',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            item.ticker,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textDirection: TextDirection.ltr,
+                          ),
+                          if (isBest) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'الخيار الأفضل',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        '${item.companyName} • ${item.sector}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    categoryText,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      Text('التقييم', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${item.investmentScore.toStringAsFixed(1)} / 100',
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text('هامش الأمان', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 2),
+                      Text(
+                        margin != null
+                            ? '${isPositiveMargin ? '+' : ''}${margin.toStringAsFixed(1)}%'
+                            : '—',
+                        style: TextStyle(
+                          color: isPositiveMargin ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textDirection: TextDirection.ltr,
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text('السعر الحالي', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${item.currentPrice.toStringAsFixed(2)} ج.م',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // صندوق القيمة المستهدفة والمدة المتوقعة
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.flag_rounded,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'المستهدف: ${item.expectedTargetPrice != null ? "${item.expectedTargetPrice!.toStringAsFixed(2)} ج.م" : (item.fairValue != null ? "${item.fairValue!.toStringAsFixed(2)} ج.م" : "—")}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 14,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.expectedTimeframe ?? '6 - 12 شهراً',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (item.fairValue != null)
+                  _InvChip(
+                    label: 'القيمة العادلة',
+                    value: '${item.fairValue!.toStringAsFixed(2)} ج.م',
+                  ),
+                if (item.peRatio != null)
+                  _InvChip(
+                    label: 'مكرر P/E',
+                    value: '${item.peRatio!.toStringAsFixed(1)}x',
+                    isPositive: item.peRatio! <= 10,
+                  ),
+                if (item.pbRatio != null)
+                  _InvChip(
+                    label: 'مضاعف P/B',
+                    value: '${item.pbRatio!.toStringAsFixed(1)}x',
+                  ),
+                if (item.dividendYieldPct != null)
+                  _InvChip(
+                    label: 'عائد توزيعات',
+                    value: '${item.dividendYieldPct!.toStringAsFixed(1)}%',
+                    isPositive: item.dividendYieldPct! > 5,
+                  ),
+                if (item.roePct != null)
+                  _InvChip(
+                    label: 'عائد ROE',
+                    value: '${item.roePct!.toStringAsFixed(1)}%',
+                    isPositive: item.roePct! > 15,
+                  ),
+                if (item.eps != null)
+                  _InvChip(
+                    label: 'ربحية السهم EPS',
+                    value: '${item.eps!.toStringAsFixed(2)} ج.م',
+                  ),
+              ],
+            ),
+            if (item.strengths.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              for (final s in item.strengths.take(2))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check, size: 14, color: Colors.green),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          s,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () => context.push('/stocks/${item.ticker}'),
+              icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+              label: const Text(
+                'معلومات وشارت السهم',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InvChip extends StatelessWidget {
+  const _InvChip({
+    required this.label,
+    required this.value,
+    this.isPositive = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isPositive;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: isPositive ? Colors.green : null,
+        ),
+      ),
+    );
+  }
+}
+
 ```
 
 ---
@@ -17482,6 +26162,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
+import '../monetization/free_plan_ads.dart';
 import 'market_quotes_providers.dart';
 import 'stock_quote_card.dart';
 
@@ -17498,6 +26179,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
   bool _fullscreenOpen = false;
   bool _autoFullscreen = false;
   bool _rotationCheckScheduled = false;
+  bool _hideSideToolbar = true;
 
   @override
   void didChangeDependencies() {
@@ -17530,16 +26212,43 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     _autoFullscreen = auto;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => Scaffold(
-          backgroundColor: const Color(0xFFF7F7F7),
-          body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) => TradingViewWidget(
-                symbol: widget.ticker,
-                height: constraints.maxHeight,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setModalState) {
+            return Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              appBar: AppBar(
+                title: Text(widget.ticker, textDirection: TextDirection.ltr),
+                actions: [
+                  IconButton(
+                    tooltip: _hideSideToolbar
+                        ? 'إظهار أدوات الرسم'
+                        : 'إخفاء أدوات الرسم',
+                    onPressed: () {
+                      setState(() {
+                        _hideSideToolbar = !_hideSideToolbar;
+                      });
+                      setModalState(() {});
+                    },
+                    icon: Icon(
+                      _hideSideToolbar
+                          ? Icons.edit_note_rounded
+                          : Icons.edit_off_rounded,
+                    ),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ],
               ),
-            ),
-          ),
+              body: SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) => TradingViewWidget(
+                    symbol: widget.ticker,
+                    height: constraints.maxHeight,
+                    hideSideToolbar: _hideSideToolbar,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -17554,6 +26263,12 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
       appBar: AppBar(
         title: Text(widget.ticker, textDirection: TextDirection.ltr),
         actions: [
+          IconButton(
+            tooltip: 'استفسار AI',
+            onPressed: () =>
+                context.push('/ai-copilot?ticker=${widget.ticker}'),
+            icon: const Icon(Icons.auto_awesome_rounded),
+          ),
           IconButton(
             tooltip: 'تحديث',
             onPressed: quoteState.isLoading
@@ -17579,6 +26294,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
         data: (quote) => _DetailContent(
           quote: quote,
           ticker: widget.ticker,
+          hideSideToolbar: _hideSideToolbar,
+          onToggleSideToolbar: (hide) =>
+              setState(() => _hideSideToolbar = hide),
           onOpenFullscreen: _openFullscreenChart,
         ),
       ),
@@ -17586,19 +26304,23 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
   }
 }
 
-class _DetailContent extends ConsumerWidget {
+class _DetailContent extends StatelessWidget {
   const _DetailContent({
     required this.quote,
     required this.ticker,
+    required this.hideSideToolbar,
+    required this.onToggleSideToolbar,
     required this.onOpenFullscreen,
   });
 
   final MarketQuote quote;
   final String ticker;
+  final bool hideSideToolbar;
+  final ValueChanged<bool> onToggleSideToolbar;
   final VoidCallback onOpenFullscreen;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 12),
       children: [
@@ -17629,6 +26351,18 @@ class _DetailContent extends ConsumerWidget {
                 ),
               ),
               IconButton(
+                tooltip: hideSideToolbar
+                    ? 'إظهار أدوات الرسم'
+                    : 'إخفاء أدوات الرسم',
+                onPressed: () => onToggleSideToolbar(!hideSideToolbar),
+                icon: Icon(
+                  hideSideToolbar
+                      ? Icons.edit_note_rounded
+                      : Icons.edit_off_rounded,
+                ),
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              IconButton(
                 tooltip: 'ملء الشاشة',
                 onPressed: onOpenFullscreen,
                 icon: const Icon(Icons.fullscreen_rounded),
@@ -17638,7 +26372,12 @@ class _DetailContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TradingViewWidget(symbol: ticker),
+        TradingViewWidget(symbol: ticker, hideSideToolbar: hideSideToolbar),
+        const SizedBox(height: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: FreePlanNativeAd(),
+        ),
         const SizedBox(height: 8),
       ],
     );
@@ -17886,17 +26625,31 @@ class _QuickActions extends ConsumerWidget {
             label: const Text('مقارنة'),
           ),
         ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FilledButton.tonalIcon(
+            onPressed: () =>
+                context.push('/ai-copilot?ticker=${quote.ticker}'),
+            icon: const Icon(Icons.auto_awesome_rounded),
+            label: const Text('استفسار AI'),
+          ),
+        ),
       ],
     );
   }
 }
 
 class TradingViewWidget extends StatefulWidget {
-  const TradingViewWidget({super.key, required this.symbol, this.height = 420});
+  const TradingViewWidget({
+    super.key,
+    required this.symbol,
+    this.height = 420,
+    this.hideSideToolbar = true,
+  });
 
   final String symbol;
   final double height;
-  final bool dark = false;
+  final bool hideSideToolbar;
 
   @override
   State<TradingViewWidget> createState() => _TradingViewWidgetState();
@@ -17904,19 +26657,23 @@ class TradingViewWidget extends StatefulWidget {
 
 class _TradingViewWidgetState extends State<TradingViewWidget> {
   late final WebViewController _controller;
-  late final String _html;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    _html = _buildHtml();
     _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFFFFFFFF));
+      ..setJavaScriptMode(JavaScriptMode.unrestricted);
   }
 
-  String _buildHtml() {
+  String _buildHtml(bool isDark) {
     final symbol = widget.symbol.toUpperCase();
+    final hideTools = widget.hideSideToolbar ? 'true' : 'false';
+    final themeStr = isDark ? 'dark' : 'light';
+    final bgHex = isDark ? '#101418' : '#ffffff';
+    final toolbarBgHex = isDark ? '#161a22' : '#f1f3f6';
+    final spinnerBgHex = isDark ? '#262c36' : '#e0e0e0';
+
     return '''
 <!DOCTYPE html>
 <html>
@@ -17924,13 +26681,13 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   html, body {
-    margin: 0; padding: 0; height: 100%; background: #ffffff;
+    margin: 0; padding: 0; height: 100%; background: $bgHex;
     font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   #tv { width: 100%; height: 100%; }
   body.loading #tv { visibility: hidden; }
   .center { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #e0e0e0; border-top-color: #1f6feb; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner { width: 28px; height: 28px; border: 3px solid $spinnerBgHex; border-top-color: #2fa87b; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -17947,15 +26704,16 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
     "symbol": "EGX:$symbol",
     "interval": "D",
     "timezone": "Africa/Cairo",
-    "theme": "light",
+    "theme": "$themeStr",
     "style": "1",
     "locale": "ar_AE",
-    "toolbar_bg": "#f1f3f6",
+    "toolbar_bg": "$toolbarBgHex",
     "enable_publishing": false,
-    "hide_side_toolbar": false,
+    "hide_side_toolbar": $hideTools,
     "allow_symbol_change": true,
     "hide_top_toolbar": false,
-    "studies": ["Volume@tv-basicstudies"],
+    "studies": [],
+    "disabled_features": ["create_volume_indicator_by_default"],
     "details": true,
     "hotlist": true,
     "calendar": false,
@@ -17972,35 +26730,34 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
   }
 
   @override
-  void didUpdateWidget(covariant TradingViewWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.symbol != widget.symbol) {
-      _html = _buildHtml();
-      _controller
-        ..loadHtmlString(_html)
-        ..reload();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final html = _buildHtml(isDark);
+
+    if (!_initialized) {
+      _initialized = true;
+      _controller
+        ..setBackgroundColor(
+          isDark ? const Color(0xFF101418) : const Color(0xFFFFFFFF),
+        )
+        ..loadHtmlString(html);
+    }
+
     return SizedBox(
       height: widget.height,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: Color(0xFFF7F7F7)),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ),
             Positioned.fill(
-              child: WebViewWidget(
-                controller: _controller..loadHtmlString(_html),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                child: const Center(child: CircularProgressIndicator()),
               ),
             ),
+            Positioned.fill(child: WebViewWidget(controller: _controller)),
           ],
         ),
       ),
@@ -18089,34 +26846,41 @@ Color changeColor(BuildContext context, double? value) {
     return Theme.of(context).colorScheme.onSurfaceVariant;
   }
   if (value > 0) {
-    return Colors.green;
+    return const Color(0xFF008955);
   }
   if (value < 0) {
-    return Colors.redAccent;
+    return const Color(0xFFDC2626);
   }
   return Theme.of(context).colorScheme.onSurfaceVariant;
 }
 
 class StockQuoteCard extends StatelessWidget {
-  const StockQuoteCard({super.key, required this.quote, required this.onTap});
+  const StockQuoteCard({
+    super.key,
+    required this.quote,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final MarketQuote quote;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final isUp = (quote.changePercent ?? 0) > 0;
     final isDown = (quote.changePercent ?? 0) < 0;
     final accent = isUp
-        ? Colors.green
+        ? const Color(0xFF008955)
         : isDown
-        ? Colors.redAccent
+        ? const Color(0xFFDC2626)
         : Theme.of(context).colorScheme.primary;
 
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -18232,12 +26996,16 @@ class StockQuoteCard extends StatelessWidget {
 ### File: `lib\features\market\stocks_screen.dart`
 
 ```dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../domain/models.dart';
+import '../home/dashboard_screen.dart';
+import '../monetization/free_plan_ads.dart';
 import 'market_quotes_providers.dart';
 import 'stock_quote_card.dart';
 
@@ -18248,19 +27016,446 @@ class StocksScreen extends ConsumerStatefulWidget {
   ConsumerState<StocksScreen> createState() => _StocksScreenState();
 }
 
-class _StocksScreenState extends ConsumerState<StocksScreen> {
+class _StocksScreenState extends ConsumerState<StocksScreen>
+    with SingleTickerProviderStateMixin {
   String _query = '';
-  bool _showFallers = false;
-  bool _showOnlyActive = false;
+  String _selectedSector = 'الجميع';
+  TabController? _tabController;
+  int _currentTabIndex = 0;
+
+  // Custom User Watchlists stored locally: { watchlistName: [ticker1, ticker2] }
+  Map<String, List<String>> _userWatchlists = {'متابعة 1': []};
+
+  final List<String> _sectors = const [
+    'الجميع',
+    'العقارات',
+    'البنوك',
+    'الخدمات المالية',
+    'الأغذية والمشروبات',
+    'الكيماويات',
+    'موارد أساسية',
+    'الرعاية الصحية',
+    'الاتصالات والتكنولوجيا',
+    'مغاسل وغزل ونسيج',
+    'مواد البناء',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTab = prefs.getInt('last_home_tab_index') ?? 0;
+    final rawWatchlists = prefs.getString('user_watchlists_data');
+
+    if (rawWatchlists != null) {
+      try {
+        final decoded = Map<String, dynamic>.from(
+          jsonDecode(rawWatchlists) as Map,
+        );
+        _userWatchlists = decoded.map(
+          (k, v) => MapEntry(k, (v as List).map((e) => e.toString()).toList()),
+        );
+        if (_userWatchlists.isEmpty) {
+          _userWatchlists = {'متابعة 1': []};
+        }
+      } catch (_) {}
+    }
+
+    _initTabController(initialIndex: savedTab);
+  }
+
+  void _initTabController({int initialIndex = 0}) {
+    final totalTabs =
+        2 + _userWatchlists.length; // 0: All, 1: Sectors, 2+: Custom Watchlists
+    final targetIndex = initialIndex < totalTabs ? initialIndex : 0;
+
+    _tabController?.dispose();
+    _tabController = TabController(
+      length: totalTabs,
+      vsync: this,
+      initialIndex: targetIndex,
+    );
+    _currentTabIndex = targetIndex;
+
+    _tabController!.addListener(() {
+      if (_tabController!.indexIsChanging ||
+          _tabController!.index != _currentTabIndex) {
+        setState(() {
+          _currentTabIndex = _tabController!.index;
+        });
+        _saveTabPreference(_tabController!.index);
+      }
+    });
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _saveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_watchlists_data', jsonEncode(_userWatchlists));
+  }
+
+  Future<void> _saveTabPreference(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_home_tab_index', index);
+  }
+
+  void _createWatchlist() {
+    final textController = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إنشاء قائمة متابعة جديدة'),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'مثال: قائمة التداول اليومي',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = textController.text.trim();
+              if (name.isNotEmpty && !_userWatchlists.containsKey(name)) {
+                setState(() {
+                  _userWatchlists[name] = [];
+                });
+                _saveState();
+                _initTabController(initialIndex: 1 + _userWatchlists.length);
+              }
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('إنشاء'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addStockToWatchlist(String watchlistName, String ticker) {
+    if (_userWatchlists.containsKey(watchlistName)) {
+      if (!_userWatchlists[watchlistName]!.contains(ticker)) {
+        setState(() {
+          _userWatchlists[watchlistName]!.add(ticker);
+        });
+        _saveState();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم إضافة $ticker إلى قائمة "$watchlistName"'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'السهم $ticker موجود بالفعل في قائمة "$watchlistName"',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeStockFromWatchlist(String watchlistName, String ticker) {
+    if (_userWatchlists.containsKey(watchlistName)) {
+      setState(() {
+        _userWatchlists[watchlistName]?.remove(ticker);
+      });
+      _saveState();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم حذف السهم $ticker من قائمة "$watchlistName"'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _confirmDeleteWatchlist(String watchlistName) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('حذف قائمة "$watchlistName"'),
+        content: Text(
+          'هل أنت تأكد من حذف قائمة المتابعة "$watchlistName" والأسهم الموجودة بها؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _deleteWatchlist(watchlistName);
+            },
+            child: const Text('حذف القائمة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteWatchlist(String watchlistName) {
+    if (_userWatchlists.containsKey(watchlistName)) {
+      setState(() {
+        _userWatchlists.remove(watchlistName);
+        if (_userWatchlists.isEmpty) {
+          _userWatchlists['متابعة 1'] = [];
+        }
+      });
+      _saveState();
+      _initTabController(initialIndex: 0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم حذف قائمة المتابعة "$watchlistName"'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _showCustomWatchlistStockOptions(
+    MarketQuote quote,
+    String watchlistName,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'خيارات السهم ${quote.ticker}',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                ),
+                title: Text(
+                  'حذف السهم من قائمة "$watchlistName"',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _removeStockFromWatchlist(watchlistName, quote.ticker);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.bookmark_add_outlined,
+                  color: Theme.of(ctx).colorScheme.primary,
+                ),
+                title: const Text('إضافة إلى قائمة متابعة أخرى'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _showLongPressBottomSheet(quote);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddStockPicker(String watchlistName, List<MarketQuote> allQuotes) {
+    String search = '';
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final filtered = allQuotes.where((q) {
+            if (search.isEmpty) return true;
+            return q.ticker.contains(search.toUpperCase()) ||
+                q.description.contains(search);
+          }).toList();
+
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.7,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  'إضافة سهم لقائمة "$watchlistName"',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'بحث برمز السهم أو الاسم...',
+                    isDense: true,
+                  ),
+                  onChanged: (val) => setModalState(() => search = val.trim()),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (ctx, index) {
+                      final item = filtered[index];
+                      final isAdded =
+                          _userWatchlists[watchlistName]?.contains(
+                            item.ticker,
+                          ) ??
+                          false;
+                      return ListTile(
+                        title: Text(
+                          item.ticker,
+                          textDirection: TextDirection.ltr,
+                        ),
+                        subtitle: Text(item.description),
+                        trailing: Icon(
+                          isAdded
+                              ? Icons.check_circle_rounded
+                              : Icons.add_circle_outline_rounded,
+                          color: isAdded
+                              ? Colors.green
+                              : Theme.of(ctx).colorScheme.primary,
+                        ),
+                        onTap: () {
+                          _addStockToWatchlist(watchlistName, item.ticker);
+                          setModalState(() {});
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showLongPressBottomSheet(MarketQuote quote) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'إضافة ${quote.ticker} إلى قوائم المتابعة',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const Divider(),
+              if (_userWatchlists.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'لا توجد قوائم متابعة حالية. اضغط + لإضافة قائمة.',
+                  ),
+                )
+              else
+                ..._userWatchlists.keys.map((name) {
+                  final inList =
+                      _userWatchlists[name]?.contains(quote.ticker) ?? false;
+                  return ListTile(
+                    leading: Icon(
+                      inList
+                          ? Icons.bookmark_added_rounded
+                          : Icons.bookmark_add_outlined,
+                      color: inList
+                          ? Colors.green
+                          : Theme.of(ctx).colorScheme.primary,
+                    ),
+                    title: Text(name),
+                    trailing: inList
+                        ? const Text(
+                            'مضاف',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : const Text(
+                            '+ إضافة',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      _addStockToWatchlist(name, quote.ticker);
+                    },
+                  );
+                }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(marketQuotesProvider).valueOrNull;
-    final items = _visibleItems(snapshot);
-
-    final header = snapshot == null
-        ? null
-        : QuoteSessionHeader(snapshot: snapshot);
+    final allQuotes = snapshot?.items ?? [];
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -18269,9 +27464,9 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
       },
       child: Column(
         children: [
-          if (header != null) header,
+          // Search bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               textDirection: TextDirection.ltr,
               textCapitalization: TextCapitalization.characters,
@@ -18287,27 +27482,42 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
                   setState(() => _query = value.trim().toUpperCase()),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
+
+          // Tab Bar with Add List Button
+          if (_tabController != null)
+            Row(
               children: [
-                FilterChip(
-                  label: const Text('الأكثر هبوطًا'),
-                  selected: _showFallers,
-                  onSelected: (value) => setState(() => _showFallers = value),
+                Expanded(
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    tabs: [
+                      const Tab(text: 'كل الأسهم'),
+                      const Tab(text: 'القطاعات'),
+                      ..._userWatchlists.keys.map(
+                        (name) => Tab(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onLongPress: () => _confirmDeleteWatchlist(name),
+                            child: Align(
+                              alignment: Alignment.center,
+                              child: Text(name),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                FilterChip(
-                  label: const Text('المتداولة فقط'),
-                  selected: _showOnlyActive,
-                  onSelected: (value) =>
-                      setState(() => _showOnlyActive = value),
+                IconButton(
+                  icon: const Icon(Icons.add_rounded),
+                  tooltip: 'إضافة قائمة متابعة',
+                  onPressed: _createWatchlist,
                 ),
               ],
             ),
-          ),
+
           Expanded(
             child: ref
                 .watch(marketQuotesProvider)
@@ -18318,7 +27528,7 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
                     error: error,
                     onRetry: () => ref.invalidate(marketQuotesProvider),
                   ),
-                  data: (_) => _buildGrid(context, items),
+                  data: (_) => _buildActiveTabContent(allQuotes),
                 ),
           ),
         ],
@@ -18326,49 +27536,571 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
     );
   }
 
-  List<MarketQuote> _visibleItems(MarketQuotesSnapshot? snapshot) {
-    if (snapshot == null) {
-      return const [];
-    }
-    final items = snapshot.items
-        .where((quote) {
-          if (_query.isNotEmpty) {
-            final match =
-                quote.ticker.contains(_query) ||
-                quote.description.contains(_query);
-            if (!match) {
-              return false;
-            }
-          }
-          if (_showOnlyActive && quote.currentPrice == null) {
-            return false;
-          }
-          return true;
-        })
-        .toList(growable: false);
-
-    items.sort((a, b) {
-      if (_showFallers) {
-        final aChange = a.changePercent ?? 0;
-        final bChange = b.changePercent ?? 0;
-        return aChange.compareTo(bChange);
+  Widget _buildActiveTabContent(List<MarketQuote> allQuotes) {
+    if (_currentTabIndex == 0) {
+      // Tab 0: All stocks
+      final items = _filterQuotes(allQuotes);
+      return Column(
+        children: [
+          _CommunityBannerCard(
+            onTap: () {
+              ref.read(dashboardTabProvider.notifier).state = 3;
+            },
+          ),
+          const FreePlanNativeAd(),
+          Expanded(child: _buildGrid(items)),
+        ],
+      );
+    } else if (_currentTabIndex == 1) {
+      // Tab 1: Sectors filter
+      final items = _filterQuotes(allQuotes);
+      return Column(
+        children: [
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _sectors.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (ctx, idx) {
+                final sec = _sectors[idx];
+                final isSelected = sec == _selectedSector;
+                return ChoiceChip(
+                  label: Text(sec),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) setState(() => _selectedSector = sec);
+                  },
+                );
+              },
+            ),
+          ),
+          Expanded(child: _buildGrid(items)),
+        ],
+      );
+    } else {
+      // Tab 2+: User custom watchlists
+      final listIndex = _currentTabIndex - 2;
+      final watchlistNames = _userWatchlists.keys.toList();
+      if (listIndex < 0 || listIndex >= watchlistNames.length) {
+        return _buildGrid([]);
       }
-      return a.ticker.compareTo(b.ticker);
-    });
-    return items;
+
+      final currentListName = watchlistNames[listIndex];
+      final targetTickers = _userWatchlists[currentListName] ?? [];
+      final listQuotes = allQuotes
+          .where((q) => targetTickers.contains(q.ticker))
+          .toList();
+
+      final filtered = _filterQuotes(listQuotes);
+
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  'عدد الأسهم: ${filtered.length}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: () =>
+                      _showAddStockPicker(currentListName, allQuotes),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('إضافة سهم'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _buildGrid(filtered, currentWatchlistName: currentListName),
+          ),
+        ],
+      );
+    }
   }
 
-  Widget _buildGrid(BuildContext context, List<MarketQuote> items) {
+  static final Map<String, List<String>> _sectorStockMap = {
+    'العقارات': [
+      'TMGH',
+      'PHDC',
+      'HELI',
+      'EMFD',
+      'SODI',
+      'ORHD',
+      'EGTS',
+      'OCDI',
+      'RREI',
+      'EHDR',
+      'ACAP',
+      'AREH',
+      'ARAB',
+      'CCRS',
+      'DAPH',
+      'IDRE',
+      'KORA',
+      'MAAL',
+      'MASR',
+      'MOED',
+      'NARE',
+      'ODIN',
+      'ROTO',
+      'UEGC',
+      'UNIT',
+      'UPMS',
+      'UTOP',
+    ],
+    'البنوك': [
+      'COMI',
+      'ADIB',
+      'HDBK',
+      'CIEB',
+      'QNBE',
+      'EGBE',
+      'EXPA',
+      'SAIB',
+      'NBKE',
+      'CANA',
+      'CBKD',
+      'FAIT',
+      'FAITA',
+    ],
+    'الخدمات المالية': [
+      'HRHO',
+      'FWRY',
+      'CCAP',
+      'RAYA',
+      'BTFH',
+      'CICH',
+      'BINV',
+      'CNFN',
+      'EFIH',
+      'VALU',
+      'AIFI',
+      'AIH',
+      'BONY',
+      'CFGH',
+      'GDWA',
+      'GIHD',
+      'GRCA',
+      'OFH',
+      'OIH',
+      'PIOH',
+      'PRMH',
+      'RKAZ',
+      'SDTI',
+      'TYCN',
+    ],
+    'الأغذية والمشروبات': [
+      'JUFO',
+      'OLFI',
+      'EAST',
+      'DOMT',
+      'GOUR',
+      'SUGR',
+      'EFID',
+      'ISMA',
+      'POUL',
+      'AJWA',
+      'AFDI',
+      'AFMC',
+      'AMER',
+      'BIDI',
+      'COSG',
+      'DTPP',
+      'EASB',
+      'EBSC',
+      'EGWA',
+      'INFI',
+      'ISMQ',
+      'LKGP',
+      'MBEG',
+      'MILS',
+      'MITR',
+      'MPCO',
+      'NEDA',
+      'SNFC',
+      'UEFM',
+      'WATP',
+    ],
+    'الكيماويات': [
+      'KIMA',
+      'MFPC',
+      'ABUK',
+      'SKPC',
+      'AMOC',
+      'SIDM',
+      'EFIC',
+      'PACH',
+      'AALR',
+      'ACAMD',
+      'BIOC',
+      'CPCI',
+      'EGCH',
+      'ICID',
+      'MICH',
+      'MPCI',
+      'NCGC',
+      'NFCI',
+      'NIPH',
+      'SIPC',
+      'SMFR',
+      'ZEOT',
+    ],
+    'موارد أساسية': [
+      'EGAL',
+      'ESRS',
+      'IRON',
+      'ALUM',
+      'SPMD',
+      'ASCM',
+      'ANCC',
+      'ARCC',
+      'DCRC',
+      'IRAX',
+      'LCSW',
+      'MCQE',
+      'SCEM',
+      'SCFM',
+      'SINA',
+      'SVCE',
+    ],
+    'الرعاية الصحية': [
+      'CLHO',
+      'PHAR',
+      'RMDA',
+      'ISPH',
+      'EITP',
+      'ADCI',
+      'AXPH',
+      'CEFM',
+      'CERA',
+      'CID',
+      'EPCO',
+      'FCMD',
+      'MCRO',
+      'MEPA',
+      'MIPH',
+      'OBRI',
+      'OCPH',
+      'SPHT',
+    ],
+    'الاتصالات والتكنولوجيا': [
+      'ETEL',
+      'ORAS',
+      'SWDY',
+      'GTWL',
+      'ELEC',
+      'AIDC',
+      'ENGC',
+      'FTNS',
+      'HAEX',
+      'HAVC',
+      'HBCO',
+      'ICFC',
+      'IEEC',
+      'INEG',
+      'MOIL',
+      'NAHO',
+      'NCCW',
+      'TAQA',
+    ],
+    'مغاسل وغزل ونسيج': [
+      'ORWE',
+      'KABO',
+      'UNIP',
+      'SPIN',
+      'GTEX',
+      'ACFR',
+      'ACGC',
+      'AMIA',
+      'AMII',
+      'AMPI',
+      'APSW',
+      'DCCC',
+      'EEII',
+      'ELKA',
+      'ELNA',
+      'ELWA',
+      'EPPK',
+      'ETRS',
+      'FIRE',
+      'FNAR',
+      'GGCC',
+      'GGRN',
+      'GPIM',
+      'GPPL',
+      'GSSC',
+      'GTHE',
+      'HDST',
+      'IBCT',
+      'ICLE',
+      'IFAP',
+      'KWIN',
+      'KZPC',
+      'LUTS',
+      'MBSC',
+      'MENA',
+      'MFSC',
+      'MHOT',
+      'MISR',
+      'MKIT',
+      'MLIC',
+      'MMAT',
+      'MMHC',
+      'MOIN',
+      'MOSC',
+      'MPRC',
+      'NHPS',
+      'NINH',
+      'NMIN',
+      'OCAP',
+      'PHTV',
+      'PMSC',
+      'POCO',
+      'PRCL',
+      'PRDC',
+      'RACC',
+      'RAKT',
+      'RMTV',
+      'RUBX',
+      'SACE',
+      'SAUD',
+      'SCTS',
+      'SEIG',
+      'SIEG',
+      'SMPP',
+      'SNFI',
+      'TALM',
+      'TANM',
+      'TORA',
+      'TRTO',
+      'TWSA',
+      'UBEE',
+      'VERT',
+      'VLMR',
+      'VLMRA',
+      'WCDF',
+      'WKOL',
+      'YAYT',
+      'ZMID',
+    ],
+    'مواد البناء': [
+      'ARCC',
+      'SCEM',
+      'MCQE',
+      'TORA',
+      'PRCL',
+      'ALUM',
+      'EALR',
+      'ECAP',
+      'EDFM',
+      'EEP',
+      'EFAC',
+      'EGAS',
+      'EGOTH',
+      'EGREF',
+      'ELAB',
+      'ENPI',
+      'EOSB',
+      'EXPA',
+      'GEOS',
+    ],
+  };
+
+  static const Set<String> _bankTickers = {
+    'COMI',
+    'ADIB',
+    'HDBK',
+    'CIEB',
+    'QNBE',
+    'EXPA',
+    'SAIB',
+    'NBKE',
+    'CANA',
+    'EGBE',
+    'SAUD',
+    'FAIT',
+    'FAITA',
+    'CBKD',
+  };
+
+  static String _getCanonicalSector(MarketQuote quote) {
+    // 1. Strict bank priority check (Prevents BTFH/HDBK from showing in Real Estate)
+    if (_bankTickers.contains(quote.ticker)) {
+      return 'البنوك';
+    }
+
+    // 2. Check quote.sector if returned by TradingView/backend
+    if (quote.sector != null && quote.sector!.isNotEmpty) {
+      final sec = quote.sector!;
+      if (sec == 'البنوك' || sec.contains('Bank')) return 'البنوك';
+      if (sec == 'العقارات' || sec.contains('Real Estate')) return 'العقارات';
+      if (sec == 'الخدمات المالية' ||
+          sec.contains('Finance') ||
+          sec.contains('Financial')) {
+        return 'الخدمات المالية';
+      }
+      if (sec == 'الأغذية والمشروبات' ||
+          sec.contains('Food') ||
+          sec.contains('Tobacco') ||
+          sec.contains('Agricultural')) {
+        return 'الأغذية والمشروبات';
+      }
+      if (sec == 'الكيماويات' ||
+          sec.contains('Chemical') ||
+          sec.contains('Process') ||
+          sec.contains('Petro')) {
+        return 'الكيماويات';
+      }
+      if (sec == 'موارد أساسية' ||
+          sec.contains('Mineral') ||
+          sec.contains('Steel') ||
+          sec.contains('Aluminum')) {
+        return 'موارد أساسية';
+      }
+      if (sec == 'الرعاية الصحية' ||
+          sec.contains('Health') ||
+          sec.contains('Pharma') ||
+          sec.contains('Hospital')) {
+        return 'الرعاية الصحية';
+      }
+      if (sec == 'الاتصالات والتكنولوجيا' ||
+          sec.contains('Tech') ||
+          sec.contains('Telecom') ||
+          sec.contains('Electric')) {
+        return 'الاتصالات والتكنولوجيا';
+      }
+      if (sec == 'مواد البناء' ||
+          sec.contains('Building') ||
+          sec.contains('Cement')) {
+        return 'مواد البناء';
+      }
+      if (sec == 'مغاسل وغزل ونسيج' ||
+          sec.contains('Textiles') ||
+          sec.contains('Apparel') ||
+          sec.contains('Durables')) {
+        return 'مغاسل وغزل ونسيج';
+      }
+    }
+
+    // 3. Check curated ticker map
+    for (final entry in _sectorStockMap.entries) {
+      if (entry.value.contains(quote.ticker)) {
+        return entry.key;
+      }
+    }
+
+    // 4. Keyword fallbacks
+    final desc = '${quote.ticker} ${quote.description}';
+    if (desc.contains('بنك') ||
+        desc.contains('مصرف') ||
+        desc.contains('تجاري دولي') ||
+        desc.contains('أبوظبي') ||
+        desc.contains('كريدي')) {
+      return 'البنوك';
+    }
+    if (desc.contains('عقار') ||
+        desc.contains('تطوير عقاري') ||
+        desc.contains('طلعت مصطفى') ||
+        desc.contains('بالم هيلز') ||
+        desc.contains('سوديك') ||
+        desc.contains('إعمار')) {
+      return 'العقارات';
+    }
+    if (desc.contains('مالية') ||
+        desc.contains('استثمار') ||
+        desc.contains('فوري') ||
+        desc.contains('هيرميس') ||
+        desc.contains('القلعة') ||
+        desc.contains('راية') ||
+        desc.contains('بلتون')) {
+      return 'الخدمات المالية';
+    }
+    if (desc.contains('أغذية') ||
+        desc.contains('مشروب') ||
+        desc.contains('جهينة') ||
+        desc.contains('دومتي') ||
+        desc.contains('دخان') ||
+        desc.contains('مطاحن') ||
+        desc.contains('دواجن') ||
+        desc.contains('سكر')) {
+      return 'الأغذية والمشروبات';
+    }
+    if (desc.contains('كيماو') ||
+        desc.contains('موبكو') ||
+        desc.contains('أسمدة') ||
+        desc.contains('بتروكيماويات') ||
+        desc.contains('زيوت')) {
+      return 'الكيماويات';
+    }
+    if (desc.contains('حديد') ||
+        desc.contains('صلب') ||
+        desc.contains('ألومنيوم') ||
+        desc.contains('معادن')) {
+      return 'موارد أساسية';
+    }
+    if (desc.contains('أدوية') ||
+        desc.contains('صيدل') ||
+        desc.contains('مستشفى') ||
+        desc.contains('طبي')) {
+      return 'الرعاية الصحية';
+    }
+    if (desc.contains('اتصالا') ||
+        desc.contains('كهربا') ||
+        desc.contains('تكنولوجيا') ||
+        desc.contains('سويدي')) {
+      return 'الاتصالات والتكنولوجيا';
+    }
+    if (desc.contains('غزل') ||
+        desc.contains('نسيج') ||
+        desc.contains('سجاد') ||
+        desc.contains('ملابس') ||
+        desc.contains('نساجون')) {
+      return 'مغاسل وغزل ونسيج';
+    }
+    if (desc.contains('أسمنت') ||
+        desc.contains('سيراميك') ||
+        desc.contains('حراريات') ||
+        desc.contains('بورسلين')) {
+      return 'مواد البناء';
+    }
+
+    return 'العقارات';
+  }
+
+  bool _matchSector(MarketQuote quote, String selectedSector) {
+    if (selectedSector == 'الجميع') return true;
+    return _getCanonicalSector(quote) == selectedSector;
+  }
+
+  List<MarketQuote> _filterQuotes(List<MarketQuote> quotes) {
+    return quotes.where((quote) {
+      if (_query.isNotEmpty) {
+        final match =
+            quote.ticker.contains(_query) || quote.description.contains(_query);
+        if (!match) return false;
+      }
+      if (_currentTabIndex == 1 && _selectedSector != 'الجميع') {
+        if (!_matchSector(quote, _selectedSector)) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  Widget _buildGrid(List<MarketQuote> items, {String? currentWatchlistName}) {
     if (items.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(24),
         children: const [
           Icon(Icons.search_off_rounded, size: 48),
           SizedBox(height: 12),
-          Text(
-            'لا توجد أسهم مطابقة للبحث الحالي.',
-            textAlign: TextAlign.center,
-          ),
+          Text('لا توجد أسهم في هذه القائمة.', textAlign: TextAlign.center),
         ],
       );
     }
@@ -18386,123 +28118,16 @@ class _StocksScreenState extends ConsumerState<StocksScreen> {
         return StockQuoteCard(
           quote: quote,
           onTap: () => context.push('/stocks/${quote.ticker}'),
+          onLongPress: () {
+            if (currentWatchlistName != null) {
+              _showCustomWatchlistStockOptions(quote, currentWatchlistName);
+            } else {
+              _showLongPressBottomSheet(quote);
+            }
+          },
         );
       },
     );
-  }
-}
-
-class QuoteSessionHeader extends StatelessWidget {
-  const QuoteSessionHeader({super.key, required this.snapshot});
-
-  final MarketQuotesSnapshot snapshot;
-
-  @override
-  Widget build(BuildContext context) {
-    final open = snapshot.marketOpen;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: open
-              ? [
-                  Theme.of(context).colorScheme.primaryContainer,
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
-                ]
-              : [
-                  Theme.of(context).colorScheme.surfaceContainerHigh,
-                  Theme.of(context).colorScheme.surfaceContainerLow,
-                ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            open
-                ? Icons.show_chart_rounded
-                : Icons.pause_circle_outline_rounded,
-            size: 34,
-            color: open
-                ? Colors.green
-                : Theme.of(context).colorScheme.onSurface,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  open ? 'السوق مفتوح الآن' : 'السوق مغلق',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _subtitle(context, open),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (snapshot.items.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${snapshot.items.length} سهم',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'تحديث كل ${marketQuotesPollInterval.inSeconds} ث',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _subtitle(BuildContext context, bool open) {
-    final next = snapshot.nextSessionOpen;
-    if (next == null) {
-      return open ? 'التداول جارٍ' : 'سيُفتح السوق قريبًا';
-    }
-    if (open) {
-      final now = DateTime.now();
-      final diff = next.difference(now);
-      if (diff.isNegative) {
-        return 'سيغلق السوق في نهاية الجلسة.';
-      }
-      final minutes = diff.inMinutes.remainder(60);
-      final hours = diff.inHours;
-      return 'باقي على إغلاق السوق '
-          '${hours > 0 ? '$hours س ' : ''}$minutes د';
-    }
-    return 'باقي على فتح السوق '
-        '${_untilOpen(next)}';
-  }
-
-  String _untilOpen(DateTime next) {
-    final now = DateTime.now();
-    final diff = next.difference(now);
-    if (diff.isNegative) {
-      return 'قريبًا';
-    }
-    final minutes = diff.inMinutes.remainder(60);
-    final hours = diff.inHours;
-    return '${hours > 0 ? '$hours س ' : ''}$minutes د';
   }
 }
 
@@ -18541,6 +28166,288 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
+class _CommunityBannerCard extends StatelessWidget {
+  const _CommunityBannerCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.forum_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'توقعات ومناقشات المتداولين',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'استكشف آراء مجتمع المتداولين وشارك توقعك للأسهم مجاناً',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: theme.colorScheme.primary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\monetization\ad_frequency_gate.dart`
+
+```dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Unified frequency gate for all interrupting full-screen ads:
+/// Standard Interstitial, App Open, and Rewarded Interstitial.
+/// Prevents multiple full-screen ads from bombarding the user in quick succession.
+class AdFrequencyGate {
+  AdFrequencyGate({this.minimumInterval = const Duration(minutes: 3)});
+
+  final Duration minimumInterval;
+
+  DateTime? _lastShownAt;
+  bool _showing = false;
+
+  bool get isAnyAdShowing => _showing;
+
+  bool canShow(DateTime now) {
+    if (_showing) return false;
+    final last = _lastShownAt;
+    if (last == null) return true;
+    return now.difference(last) >= minimumInterval;
+  }
+
+  void markShowing() {
+    _showing = true;
+  }
+
+  void markDismissed({DateTime? at}) {
+    _showing = false;
+    _lastShownAt = at ?? DateTime.now();
+  }
+}
+
+final adFrequencyGateProvider = Provider<AdFrequencyGate>((ref) {
+  return AdFrequencyGate();
+});
+
+```
+
+---
+
+### File: `lib\features\monetization\app_open_ad_manager.dart`
+
+```dart
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../core/config/app_config.dart';
+import 'ad_frequency_gate.dart';
+import 'monetization_repository.dart';
+
+class AppOpenAdManager with WidgetsBindingObserver {
+  AppOpenAdManager({
+    required this.config,
+    required this.gate,
+    required this.isEnabled,
+    required this.isSafeRoute,
+    this.repository,
+    this.minimumBackgroundDuration = const Duration(minutes: 5),
+    this.adMaxCacheDuration = const Duration(hours: 4),
+  });
+
+  final AppConfig config;
+  final AdFrequencyGate gate;
+  final bool Function() isEnabled;
+  final bool Function() isSafeRoute;
+  final MonetizationRepository? repository;
+  final Duration minimumBackgroundDuration;
+  final Duration adMaxCacheDuration;
+
+  AppOpenAd? _ad;
+  DateTime? _adLoadedAt;
+  DateTime? _backgroundedAt;
+  bool _loading = false;
+  bool _isFirstLaunchHandled = false;
+
+  static const _prefsKey = 'sahmi_has_opened_before';
+
+  Future<void> start() async {
+    WidgetsBinding.instance.addObserver(this);
+    final prefs = await SharedPreferences.getInstance();
+    final hasOpenedBefore = prefs.getBool(_prefsKey) ?? false;
+    if (!hasOpenedBefore) {
+      // First installation: record it and avoid showing ad on first open
+      await prefs.setBool(_prefsKey, true);
+      _isFirstLaunchHandled = true;
+      _loadAd();
+      return;
+    }
+    _isFirstLaunchHandled = true;
+    _loadAd();
+  }
+
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _ad?.dispose();
+    _ad = null;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _backgroundedAt = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      _maybeShowOnResume();
+    }
+  }
+
+  void _maybeShowOnResume() {
+    if (!_isFirstLaunchHandled || !isEnabled() || !isSafeRoute()) return;
+
+    final backgroundedAt = _backgroundedAt;
+    if (backgroundedAt == null) return;
+    final wasInBackgroundLongEnough =
+        DateTime.now().difference(backgroundedAt) >= minimumBackgroundDuration;
+    if (!wasInBackgroundLongEnough) return;
+
+    if (!gate.canShow(DateTime.now())) return;
+    _showAdIfAvailable();
+  }
+
+  void _loadAd() {
+    if (_loading || _hasFreshAd || !(Platform.isAndroid || Platform.isIOS)) return;
+    final adUnitId =
+        Platform.isAndroid ? config.admobAndroidAppOpenId : config.admobIosAppOpenId;
+    if (adUnitId.isEmpty) return;
+
+    _loading = true;
+    AppOpenAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      adLoadCallback: AppOpenAdLoadCallback(
+        onAdLoaded: (ad) {
+          _loading = false;
+          _ad = ad;
+          _adLoadedAt = DateTime.now();
+          repository?.recordAdTelemetry(
+            adType: 'app_open',
+            eventType: 'loaded',
+            adUnitId: adUnitId,
+          );
+        },
+        onAdFailedToLoad: (error) {
+          _loading = false;
+          repository?.recordAdTelemetry(
+            adType: 'app_open',
+            eventType: 'failed_to_load',
+            adUnitId: adUnitId,
+            errorMessage: 'code ${error.code}: ${error.message}',
+          );
+        },
+      ),
+    );
+  }
+
+  bool get _hasFreshAd {
+    final ad = _ad;
+    final loadedAt = _adLoadedAt;
+    if (ad == null || loadedAt == null) return false;
+    return DateTime.now().difference(loadedAt) < adMaxCacheDuration;
+  }
+
+  void _showAdIfAvailable() {
+    if (!_hasFreshAd) {
+      _loadAd();
+      return;
+    }
+    final ad = _ad!;
+    final adUnitId =
+        Platform.isAndroid ? config.admobAndroidAppOpenId : config.admobIosAppOpenId;
+    gate.markShowing();
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdImpression: (impressionAd) {
+        repository?.recordAdTelemetry(
+          adType: 'app_open',
+          eventType: 'impression',
+          adUnitId: adUnitId,
+        );
+      },
+      onAdDismissedFullScreenContent: (dismissedAd) {
+        dismissedAd.dispose();
+        _ad = null;
+        gate.markDismissed();
+        _loadAd();
+      },
+      onAdFailedToShowFullScreenContent: (failedAd, error) {
+        failedAd.dispose();
+        _ad = null;
+        gate.markDismissed();
+        repository?.recordAdTelemetry(
+          adType: 'app_open',
+          eventType: 'failed_to_show',
+          adUnitId: adUnitId,
+          errorMessage: 'code ${error.code}: ${error.message}',
+        );
+        _loadAd();
+      },
+    );
+    ad.show();
+  }
+}
+
 ```
 
 ---
@@ -18548,6 +28455,7 @@ class _ErrorView extends StatelessWidget {
 ### File: `lib\features\monetization\free_plan_ads.dart`
 
 ```dart
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -18556,6 +28464,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../core/config/app_config.dart';
 import '../auth/session_controller.dart';
+import 'ad_frequency_gate.dart';
+import 'monetization_repository.dart';
 import 'plan_banner_ad.dart';
 
 class FreePlanAdShell extends ConsumerWidget {
@@ -18567,6 +28477,11 @@ class FreePlanAdShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(sessionControllerProvider).profile;
     final enabled = profile?.adsEnabled == true;
+    if (enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(freePlanInterstitialProvider).preload(enabled: true);
+      });
+    }
     return Column(
       children: [
         Expanded(child: child),
@@ -18588,12 +28503,20 @@ class FreePlanNativeAd extends ConsumerStatefulWidget {
 class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   NativeAd? _ad;
   bool _loaded = false;
+  bool _loading = false;
   String? _activeAdUnitId;
+  int _retryAttempt = 0;
+  Timer? _retryTimer;
+
+  static const _maxRetries = 4;
+  static const _baseDelay = Duration(seconds: 15);
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncAd();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncAd();
+    });
   }
 
   @override
@@ -18618,18 +28541,35 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
       return;
     }
 
-    _disposeAd();
+    if (_loading || (_retryTimer?.isActive ?? false)) {
+      return;
+    }
+
+    _disposeAd(preserveRetry: true);
+    _loading = true;
     _activeAdUnitId = adUnitId;
     final ad = NativeAd(
       adUnitId: adUnitId,
       request: const AdRequest(),
       listener: NativeAdListener(
         onAdLoaded: (loadedAd) {
+          _retryAttempt = 0;
+          _retryTimer?.cancel();
           if (!mounted || loadedAd != _ad) {
             loadedAd.dispose();
             return;
           }
-          setState(() => _loaded = true);
+          setState(() {
+            _loading = false;
+            _loaded = true;
+          });
+          ref
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'native',
+                eventType: 'impression',
+                adUnitId: adUnitId,
+              );
         },
         onAdFailedToLoad: (failedAd, error) {
           failedAd.dispose();
@@ -18637,8 +28577,27 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
             setState(() {
               _ad = null;
               _loaded = false;
+              _loading = false;
             });
+            ref
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'native',
+                eventType: 'failed_to_load',
+                adUnitId: adUnitId,
+                errorMessage: 'code ${error.code}: ${error.message}',
+              );
+            _scheduleRetry();
           }
+        },
+        onAdClicked: (ad) {
+          ref
+              .read(monetizationRepositoryProvider)
+              .recordAdTelemetry(
+                adType: 'native',
+                eventType: 'clicked',
+                adUnitId: adUnitId,
+              );
         },
       ),
       nativeTemplateStyle: NativeTemplateStyle(
@@ -18650,10 +28609,31 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     ad.load();
   }
 
-  void _disposeAd() {
+  void _scheduleRetry() {
+    if (_retryAttempt >= _maxRetries) return;
+    final profile = ref.read(sessionControllerProvider).profile;
+    final enabled = widget.enabledOverride ?? profile?.adsEnabled == true;
+    if (!enabled) return;
+
+    _retryAttempt++;
+    final delay = _baseDelay * (1 << (_retryAttempt - 1));
+    _retryTimer?.cancel();
+    _retryTimer = Timer(delay, () {
+      if (mounted && _ad == null && !_loading) {
+        _syncAd();
+      }
+    });
+  }
+
+  void _disposeAd({bool preserveRetry = false}) {
+    if (!preserveRetry) {
+      _retryTimer?.cancel();
+      _retryAttempt = 0;
+    }
     final ad = _ad;
     _ad = null;
     _loaded = false;
+    _loading = false;
     _activeAdUnitId = null;
     ad?.dispose();
   }
@@ -18666,8 +28646,21 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(sessionControllerProvider).profile;
+    final enabled = widget.enabledOverride ?? profile?.adsEnabled == true;
+
+    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+      return const SizedBox.shrink();
+    }
+
     final ad = _ad;
     if (!_loaded || ad == null) {
+      final cooldownActive = _retryTimer?.isActive ?? false;
+      if (!_loading && !cooldownActive) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _syncAd();
+        });
+      }
       return const SizedBox.shrink();
     }
     return Semantics(
@@ -18699,56 +28692,51 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
 
 class InterstitialFrequencyPolicy {
   const InterstitialFrequencyPolicy({
-    this.actionsPerAd = 3,
-    this.minimumInterval = const Duration(minutes: 4),
+    this.actionsPerAd = 2,
   });
 
   final int actionsPerAd;
-  final Duration minimumInterval;
-
-  bool canShow({
-    required int meaningfulActions,
-    required DateTime now,
-    required DateTime? lastShownAt,
-  }) {
-    if (meaningfulActions < actionsPerAd) {
-      return false;
-    }
-    if (lastShownAt == null) {
-      return true;
-    }
-    return now.difference(lastShownAt) >= minimumInterval;
-  }
 }
 
 class FreePlanInterstitialCoordinator {
   FreePlanInterstitialCoordinator({
     required AppConfig config,
+    required AdFrequencyGate gate,
+    MonetizationRepository? repository,
     InterstitialFrequencyPolicy policy = const InterstitialFrequencyPolicy(),
   }) : _config = config,
+       _gate = gate,
+       _repository = repository,
        _policy = policy;
 
   final AppConfig _config;
+  final AdFrequencyGate _gate;
+  final MonetizationRepository? _repository;
   final InterstitialFrequencyPolicy _policy;
   InterstitialAd? _ad;
   bool _loading = false;
   int _meaningfulActions = 0;
-  DateTime? _lastShownAt;
 
-  Future<void> recordMeaningfulAction({required bool enabled}) async {
+  Future<void> showAd({
+    required bool enabled,
+    bool ignoreFrequencyGate = false,
+  }) async {
     if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
       return;
     }
-    _meaningfulActions += 1;
     _loadIfNeeded();
 
     final now = DateTime.now();
-    if (!_policy.canShow(
-      meaningfulActions: _meaningfulActions,
-      now: now,
-      lastShownAt: _lastShownAt,
-    )) {
+    if (!ignoreFrequencyGate && !_gate.canShow(now)) {
       return;
+    }
+
+    if (_ad == null && _loading) {
+      int waitedMs = 0;
+      while (_loading && _ad == null && waitedMs < 1500) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        waitedMs += 100;
+      }
     }
 
     final ad = _ad;
@@ -18757,18 +28745,48 @@ class FreePlanInterstitialCoordinator {
     }
     _ad = null;
     _meaningfulActions = 0;
-    _lastShownAt = now;
+    _gate.markShowing();
+    final adUnitId = Platform.isAndroid
+        ? _config.admobAndroidInterstitialId
+        : _config.admobIosInterstitialId;
     ad.fullScreenContentCallback = FullScreenContentCallback<InterstitialAd>(
+      onAdImpression: (impressionAd) {
+        _repository?.recordAdTelemetry(
+          adType: 'interstitial',
+          eventType: 'impression',
+          adUnitId: adUnitId,
+        );
+      },
       onAdDismissedFullScreenContent: (closedAd) {
         closedAd.dispose();
+        _gate.markDismissed();
         _loadIfNeeded();
       },
       onAdFailedToShowFullScreenContent: (failedAd, error) {
         failedAd.dispose();
+        _gate.markDismissed();
+        _repository?.recordAdTelemetry(
+          adType: 'interstitial',
+          eventType: 'failed_to_show',
+          adUnitId: adUnitId,
+          errorMessage: 'code ${error.code}: ${error.message}',
+        );
         _loadIfNeeded();
       },
     );
     await ad.show();
+  }
+
+  Future<void> recordMeaningfulAction({required bool enabled}) async {
+    if (!enabled || !(Platform.isAndroid || Platform.isIOS)) {
+      return;
+    }
+    _meaningfulActions += 1;
+    if (_meaningfulActions < _policy.actionsPerAd) {
+      _loadIfNeeded();
+      return;
+    }
+    await showAd(enabled: enabled, ignoreFrequencyGate: false);
   }
 
   void preload({required bool enabled}) {
@@ -18795,9 +28813,20 @@ class FreePlanInterstitialCoordinator {
         onAdLoaded: (ad) {
           _loading = false;
           _ad = ad;
+          _repository?.recordAdTelemetry(
+            adType: 'interstitial',
+            eventType: 'loaded',
+            adUnitId: adUnitId,
+          );
         },
         onAdFailedToLoad: (error) {
           _loading = false;
+          _repository?.recordAdTelemetry(
+            adType: 'interstitial',
+            eventType: 'failed_to_load',
+            adUnitId: adUnitId,
+            errorMessage: 'code ${error.code}: ${error.message}',
+          );
         },
       ),
     );
@@ -18814,6 +28843,8 @@ final freePlanInterstitialProvider = Provider<FreePlanInterstitialCoordinator>((
 ) {
   final coordinator = FreePlanInterstitialCoordinator(
     config: ref.watch(appConfigProvider),
+    gate: ref.watch(adFrequencyGateProvider),
+    repository: ref.watch(monetizationRepositoryProvider),
   );
   ref.onDispose(coordinator.dispose);
   return coordinator;
@@ -18988,14 +29019,23 @@ class MonetizationController extends StateNotifier<MonetizationState> {
         return;
       }
 
-      if (session.testMode) {
-        await _repository.simulateRewardedAd(session: session);
+      var verified = false;
+      try {
+        await _repository.claimRewardedAdSession(session: session);
+        verified = true;
+      } catch (_) {
+        if (session.testMode) {
+          await _repository.simulateRewardedAd(session: session);
+        }
+        verified = await _waitForReward(beforeCount);
       }
-      final verified = await _waitForReward(beforeCount);
+
       await _onEntitlementChanged();
+      final updatedStatus = await _repository.getStatus();
       if (mounted) {
         state = state.copyWith(
           adBusy: false,
+          status: updatedStatus,
           message: verified
               ? 'تم التحقق من الإعلان وإضافة المكافأة إلى المحفظة.'
               : 'اكتمل الإعلان، والتحقق من Google ما زال قيد المعالجة. حدّث الصفحة بعد قليل.',
@@ -19003,7 +29043,11 @@ class MonetizationController extends StateNotifier<MonetizationState> {
       }
     } on Object catch (error) {
       if (mounted) {
-        state = state.copyWith(adBusy: false, error: error.toString());
+        final rawStr = error.toString();
+        final displayErr = rawStr.contains('403')
+            ? 'تعذر بدء جلسة الإعلان (رمز 403). يرجى التأكد من تفعيل البريد الإلكتروني أو إعادة تسجيل الدخول.'
+            : rawStr;
+        state = state.copyWith(adBusy: false, error: displayErr);
       }
     }
   }
@@ -19081,7 +29125,9 @@ class MonetizationController extends StateNotifier<MonetizationState> {
       if (current.rewardedAd.rewardsUsedToday > beforeCount) {
         return true;
       }
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(
+        Duration(milliseconds: attempt == 0 ? 500 : 1200),
+      );
     }
     return false;
   }
@@ -19193,7 +29239,7 @@ final inAppPurchaseProvider = Provider<InAppPurchase>((ref) {
 });
 
 final rewardedAdGatewayProvider = Provider<RewardedAdGateway>((ref) {
-  return const GoogleRewardedAdGateway();
+  return GoogleRewardedAdGateway(ref.watch(monetizationRepositoryProvider));
 });
 
 final monetizationControllerProvider =
@@ -19568,13 +29614,30 @@ class MonetizationRepository {
 
   Future<RewardedAdSessionModel> createRewardedAdSession({
     required String platform,
+    String adFormat = 'rewarded',
   }) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
         '/monetization/rewarded-ads/session',
-        data: <String, dynamic>{'platform': platform},
+        data: <String, dynamic>{'platform': platform, 'ad_format': adFormat},
       );
       return RewardedAdSessionModel.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<RewardedAdSimulationResultModel> claimRewardedAdSession({
+    required RewardedAdSessionModel session,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/monetization/rewarded-ads/sessions/${session.sessionId}/claim',
+        data: <String, dynamic>{'custom_data': session.customData},
+      );
+      return RewardedAdSimulationResultModel.fromJson(
+        _requiredData(response.data),
+      );
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
@@ -19613,6 +29676,29 @@ class MonetizationRepository {
       );
     } on Object catch (error) {
       throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<void> recordAdTelemetry({
+    required String adType,
+    required String eventType,
+    String? adUnitId,
+    String platform = 'android',
+    String? errorMessage,
+  }) async {
+    try {
+      await _apiClient.dio.post<void>(
+        '/monetization/ads/telemetry',
+        data: <String, dynamic>{
+          'ad_type': adType,
+          'event_type': eventType,
+          if (adUnitId != null) 'ad_unit_id': adUnitId,
+          'platform': platform,
+          if (errorMessage != null) 'error_message': errorMessage,
+        },
+      );
+    } on Object {
+      // Telemetry is non-blocking
     }
   }
 
@@ -19714,10 +29800,6 @@ class MonetizationScreen extends ConsumerWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'العملات المشتراة تُضاف بعد تحقق السيرفر من Google Play فقط.',
-                  ),
                   const SizedBox(height: 10),
                   if (catalog != null)
                     for (final pack in catalog.coinPacks)
@@ -19739,8 +29821,6 @@ class MonetizationScreen extends ConsumerWidget {
                     icon: const Icon(Icons.restore_rounded),
                     label: const Text('استعادة مشتريات Google Play'),
                   ),
-                  const SizedBox(height: 14),
-                  const _SecurityNote(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -19860,11 +29940,6 @@ class _RewardedAdCard extends StatelessWidget {
                   : const Icon(Icons.play_arrow_rounded),
               label: Text(busy ? 'جارٍ تجهيز الإعلان...' : 'مشاهدة الإعلان'),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'لا تُضاف المكافأة من الهاتف؛ السيرفر ينتظر تحقق AdMob أولًا.',
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
       ),
@@ -19912,36 +29987,56 @@ class _PlanCard extends StatelessWidget {
                 if (current) const Chip(label: Text('الخطة الحالية')),
               ],
             ),
-            Text('${plan.weeklyCoins} عملة أسبوعيًا'),
-            Text(plan.adsEnabled ? 'مع الإعلانات' : 'بدون إعلانات'),
-            Text('سجل التقارير: ${plan.reportHistoryDays} يوم'),
-            if (plan.maxComparisonStocks > 0)
-              Text('مقارنة حتى ${plan.maxComparisonStocks} أسهم'),
-            if (plan.comparisonMonthlyAllowance > 0)
-              Text('${plan.comparisonMonthlyAllowance} مقارنة متضمنة شهريًا'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                Chip(
+                  avatar: const Icon(Icons.monetization_on_outlined, size: 16),
+                  label: Text('${plan.weeklyCoins} عملة/أسبوع'),
+                ),
+                Chip(
+                  avatar: Icon(
+                    plan.adsEnabled
+                        ? Icons.ad_units_outlined
+                        : Icons.block_outlined,
+                    size: 16,
+                  ),
+                  label: Text(
+                    plan.adsEnabled ? 'مع الإعلانات' : 'بدون إعلانات',
+                  ),
+                ),
+                Chip(
+                  avatar: const Icon(Icons.history_rounded, size: 16),
+                  label: Text('سجل ${plan.reportHistoryDays} يوم'),
+                ),
+              ],
+            ),
             if (plan.features.isNotEmpty) ...[
               const SizedBox(height: 12),
               for (final feature in plan.features)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(feature)),
-                    ],
+                if (!feature.contains('عملة أسبوعيًا') &&
+                    !feature.contains('عملات أسبوعيًا'))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(feature)),
+                      ],
+                    ),
                   ),
-                ),
             ],
             const SizedBox(height: 12),
             FilledButton.tonal(
-              onPressed:
-                  current || onPurchase == null || !storeAvailable || busy
+              onPressed: current || onPurchase == null || busy
                   ? null
                   : onPurchase,
               child: Text(
@@ -19949,7 +30044,9 @@ class _PlanCard extends StatelessWidget {
                     ? 'جارٍ فتح Google Play...'
                     : current
                     ? 'مفعّلة'
-                    : price,
+                    : (price.isNotEmpty && price != 'غير متاح حاليًا'
+                          ? price
+                          : 'اشترك الآن'),
               ),
             ),
           ],
@@ -19976,13 +30073,23 @@ class _CoinPackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayPrice = (price.isNotEmpty && price != 'غير متاح حاليًا')
+        ? price
+        : '${pack.coins} عملة';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            const CircleAvatar(child: Icon(Icons.monetization_on_rounded)),
+            CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Icon(
+                Icons.monetization_on_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -19997,9 +30104,10 @@ class _CoinPackCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$price — ${pack.points} نقطة',
+                    displayPrice,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -20012,6 +30120,10 @@ class _CoinPackCard extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2.5),
                   )
                 : FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(72, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
                     onPressed: storeAvailable ? onPurchase : null,
                     child: const Text('شراء'),
                   ),
@@ -20035,34 +30147,6 @@ class _NoticeCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Text(message, textAlign: TextAlign.center),
-      ),
-    );
-  }
-}
-
-class _SecurityNote extends StatelessWidget {
-  const _SecurityNote();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.verified_user_outlined,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Google Play وAdMob لا يغيّران رصيدك مباشرة من التطبيق. كل عملية تُراجع على السيرفر، وتُسجل بمعرف فريد لمنع التكرار.',
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -20101,6 +30185,7 @@ String _cleanError(String value) {
 ### File: `lib\features\monetization\plan_banner_ad.dart`
 
 ```dart
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -20109,11 +30194,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../core/config/app_config.dart';
+import '../auth/session_controller.dart';
+import 'monetization_repository.dart';
 
 class PlanBannerAd extends ConsumerStatefulWidget {
-  const PlanBannerAd({required this.enabled, super.key});
+  const PlanBannerAd({this.enabled = true, this.enabledOverride, super.key});
 
   final bool enabled;
+  final bool? enabledOverride;
 
   @override
   ConsumerState<PlanBannerAd> createState() => _PlanBannerAdState();
@@ -20122,75 +30210,127 @@ class PlanBannerAd extends ConsumerStatefulWidget {
 class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
   BannerAd? _bannerAd;
   bool _loading = false;
+  String? _loadedAdUnitId;
+  int _retryAttempt = 0;
+  Timer? _retryTimer;
+
+  static const _maxRetries = 4;
+  static const _baseDelay = Duration(seconds: 15);
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (widget.enabled && _bannerAd == null && !_loading) {
-      _load();
-    }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncAd();
+    });
   }
 
   @override
   void didUpdateWidget(covariant PlanBannerAd oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!widget.enabled && oldWidget.enabled) {
-      _disposeAd();
-    } else if (widget.enabled && !oldWidget.enabled) {
-      _load();
-    }
+    _syncAd();
   }
 
-  Future<void> _load() async {
-    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+  void _syncAd() {
+    final profile = ref.read(sessionControllerProvider).profile;
+    final enabled =
+        widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
+
+    if (!enabled || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      _disposeAd();
       return;
     }
-    _loading = true;
+
     final config = ref.read(appConfigProvider);
     final adUnitId = Platform.isAndroid
         ? config.admobAndroidBannerId
         : config.admobIosBannerId;
-    if (adUnitId.isEmpty) {
-      _loading = false;
+
+    if (adUnitId.isEmpty || (_bannerAd != null && _loadedAdUnitId == adUnitId)) {
       return;
     }
 
-    // Keep the always-visible free-plan banner compact. The previous large
-    // anchored-adaptive format could reserve up to a much taller slot and
-    // crowd the application's navigation and content on smaller phones.
+    if (_loading || (_retryTimer?.isActive ?? false)) {
+      return;
+    }
+
+    _loading = true;
     final banner = BannerAd(
       adUnitId: adUnitId,
       request: const AdRequest(),
       size: AdSize.banner,
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          if (!mounted || !widget.enabled) {
+          _retryAttempt = 0;
+          _retryTimer?.cancel();
+          if (!mounted) {
             ad.dispose();
             return;
           }
           setState(() {
             _loading = false;
+            _loadedAdUnitId = adUnitId;
             _bannerAd = ad as BannerAd;
           });
+          ref.read(monetizationRepositoryProvider).recordAdTelemetry(
+                adType: 'banner',
+                eventType: 'impression',
+                adUnitId: adUnitId,
+              );
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
           if (mounted) {
             setState(() {
               _loading = false;
+              _loadedAdUnitId = null;
               _bannerAd = null;
             });
+            ref.read(monetizationRepositoryProvider).recordAdTelemetry(
+                  adType: 'banner',
+                  eventType: 'failed_to_load',
+                  adUnitId: adUnitId,
+                  errorMessage: 'code ${error.code}: ${error.message}',
+                );
+            _scheduleRetry();
           }
+        },
+        onAdClicked: (ad) {
+          ref.read(monetizationRepositoryProvider).recordAdTelemetry(
+                adType: 'banner',
+                eventType: 'clicked',
+                adUnitId: adUnitId,
+              );
         },
       ),
     );
-    await banner.load();
+    banner.load();
+  }
+
+  void _scheduleRetry() {
+    if (_retryAttempt >= _maxRetries) return;
+    final profile = ref.read(sessionControllerProvider).profile;
+    final enabled =
+        widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
+    if (!enabled) return;
+
+    _retryAttempt++;
+    final delay = _baseDelay * (1 << (_retryAttempt - 1));
+    _retryTimer?.cancel();
+    _retryTimer = Timer(delay, () {
+      if (mounted && _bannerAd == null && !_loading) {
+        _syncAd();
+      }
+    });
   }
 
   void _disposeAd() {
+    _retryTimer?.cancel();
+    _retryAttempt = 0;
     _bannerAd?.dispose();
     _bannerAd = null;
     _loading = false;
+    _loadedAdUnitId = null;
   }
 
   @override
@@ -20201,10 +30341,25 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
 
   @override
   Widget build(BuildContext context) {
-    final banner = _bannerAd;
-    if (!widget.enabled || banner == null) {
+    final profile = ref.watch(sessionControllerProvider).profile;
+    final enabled =
+        widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
+
+    if (!enabled || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
       return const SizedBox.shrink();
     }
+
+    final banner = _bannerAd;
+    if (banner == null) {
+      final cooldownActive = _retryTimer?.isActive ?? false;
+      if (!_loading && !cooldownActive) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _syncAd();
+        });
+      }
+      return const SizedBox.shrink();
+    }
+
     return SafeArea(
       top: false,
       child: ColoredBox(
@@ -20236,13 +30391,16 @@ import 'dart:async';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'monetization_models.dart';
+import 'monetization_repository.dart';
 
 abstract interface class RewardedAdGateway {
   Future<bool> loadAndShow(RewardedAdSessionModel session);
 }
 
 class GoogleRewardedAdGateway implements RewardedAdGateway {
-  const GoogleRewardedAdGateway();
+  const GoogleRewardedAdGateway([this._repository]);
+
+  final MonetizationRepository? _repository;
 
   @override
   Future<bool> loadAndShow(RewardedAdSessionModel session) {
@@ -20253,10 +30411,22 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) async {
           var userEarnedReward = false;
+          _repository?.recordAdTelemetry(
+            adType: 'rewarded',
+            eventType: 'loaded',
+            adUnitId: session.adUnitId,
+          );
           await ad.setServerSideOptions(
             ServerSideVerificationOptions(customData: session.customData),
           );
           ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdImpression: (impressionAd) {
+              _repository?.recordAdTelemetry(
+                adType: 'rewarded',
+                eventType: 'impression',
+                adUnitId: session.adUnitId,
+              );
+            },
             onAdDismissedFullScreenContent: (shownAd) {
               shownAd.dispose();
               if (!completer.isCompleted) {
@@ -20265,6 +30435,12 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
             },
             onAdFailedToShowFullScreenContent: (shownAd, error) {
               shownAd.dispose();
+              _repository?.recordAdTelemetry(
+                adType: 'rewarded',
+                eventType: 'failed_to_show',
+                adUnitId: session.adUnitId,
+                errorMessage: 'code ${error.code}: ${error.message}',
+              );
               if (!completer.isCompleted) {
                 completer.completeError(
                   StateError('تعذر عرض الإعلان: ${error.message}'),
@@ -20275,13 +30451,27 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
           ad.show(
             onUserEarnedReward: (_, reward) {
               userEarnedReward = true;
+              _repository?.recordAdTelemetry(
+                adType: 'rewarded',
+                eventType: 'reward_granted',
+                adUnitId: session.adUnitId,
+              );
             },
           );
         },
         onAdFailedToLoad: (error) {
+          _repository?.recordAdTelemetry(
+            adType: 'rewarded',
+            eventType: 'failed_to_load',
+            adUnitId: session.adUnitId,
+            errorMessage: 'code ${error.code}: ${error.message}',
+          );
           if (!completer.isCompleted) {
+            final reason = error.code == 3
+                ? 'لا يوجد إعلان متوفر حالياً من AdMob (في انتظار تفعيل الوحدات الجديدة واعتماد المتجر).'
+                : error.message;
             completer.completeError(
-              StateError('تعذر تحميل الإعلان: ${error.message}'),
+              StateError('تعذر تحميل إعلان الفيديو: $reason'),
             );
           }
         },
@@ -20290,6 +30480,143 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
     return completer.future;
   }
 }
+
+```
+
+---
+
+### File: `lib\features\monetization\rewarded_interstitial_gateway.dart`
+
+```dart
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+import 'ad_frequency_gate.dart';
+import 'monetization_models.dart';
+import 'monetization_repository.dart';
+
+enum RewardedInterstitialResult { earned, dismissedWithoutReward, failed }
+
+abstract interface class RewardedInterstitialGateway {
+  Future<RewardedInterstitialResult> loadAndShow();
+}
+
+class GoogleRewardedInterstitialGateway implements RewardedInterstitialGateway {
+  const GoogleRewardedInterstitialGateway({
+    required MonetizationRepository repository,
+    required AdFrequencyGate gate,
+  }) : _repository = repository,
+       _gate = gate;
+
+  final MonetizationRepository _repository;
+  final AdFrequencyGate _gate;
+
+  @override
+  Future<RewardedInterstitialResult> loadAndShow() async {
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      return RewardedInterstitialResult.failed;
+    }
+    if (!_gate.canShow(DateTime.now())) {
+      return RewardedInterstitialResult.failed;
+    }
+
+    final RewardedAdSessionModel session;
+    try {
+      session = await _repository.createRewardedAdSession(
+        platform: Platform.isAndroid ? 'android' : 'ios',
+        adFormat: 'rewarded_interstitial',
+      );
+    } on Object {
+      return RewardedInterstitialResult.failed;
+    }
+
+    final completer = Completer<RewardedInterstitialResult>();
+    RewardedInterstitialAd.load(
+      adUnitId: session.adUnitId,
+      request: const AdRequest(),
+      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+        onAdLoaded: (ad) async {
+          var earned = false;
+          _gate.markShowing();
+          _repository.recordAdTelemetry(
+            adType: 'rewarded_interstitial',
+            eventType: 'loaded',
+            adUnitId: session.adUnitId,
+          );
+          await ad.setServerSideOptions(
+            ServerSideVerificationOptions(customData: session.customData),
+          );
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdImpression: (impressionAd) {
+              _repository.recordAdTelemetry(
+                adType: 'rewarded_interstitial',
+                eventType: 'impression',
+                adUnitId: session.adUnitId,
+              );
+            },
+            onAdDismissedFullScreenContent: (shownAd) {
+              shownAd.dispose();
+              _gate.markDismissed();
+              if (!completer.isCompleted) {
+                completer.complete(
+                  earned
+                      ? RewardedInterstitialResult.earned
+                      : RewardedInterstitialResult.dismissedWithoutReward,
+                );
+              }
+            },
+            onAdFailedToShowFullScreenContent: (shownAd, error) {
+              shownAd.dispose();
+              _gate.markDismissed();
+              _repository.recordAdTelemetry(
+                adType: 'rewarded_interstitial',
+                eventType: 'failed_to_show',
+                adUnitId: session.adUnitId,
+                errorMessage: 'code ${error.code}: ${error.message}',
+              );
+              if (!completer.isCompleted) {
+                completer.complete(RewardedInterstitialResult.failed);
+              }
+            },
+          );
+          ad.show(
+            onUserEarnedReward: (_, reward) {
+              earned = true;
+              _repository.recordAdTelemetry(
+                adType: 'rewarded_interstitial',
+                eventType: 'reward_granted',
+                adUnitId: session.adUnitId,
+              );
+            },
+          );
+        },
+        onAdFailedToLoad: (error) {
+          _repository.recordAdTelemetry(
+            adType: 'rewarded_interstitial',
+            eventType: 'failed_to_load',
+            adUnitId: session.adUnitId,
+            errorMessage: 'code ${error.code}: ${error.message}',
+          );
+          if (!completer.isCompleted) {
+            completer.complete(RewardedInterstitialResult.failed);
+          }
+        },
+      ),
+    );
+    return completer.future;
+  }
+}
+
+final rewardedInterstitialGatewayProvider =
+    Provider<RewardedInterstitialGateway>((ref) {
+  return GoogleRewardedInterstitialGateway(
+    repository: ref.watch(monetizationRepositoryProvider),
+    gate: ref.watch(adFrequencyGateProvider),
+  );
+});
 
 ```
 
@@ -20337,6 +30664,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'notification_messaging.dart';
+import 'notification_providers.dart';
 
 /// Sits above the router so foreground pushes render as in-app banners and a
 /// tapped push (cold start, background, or foreground) opens the inbox.
@@ -20408,6 +30736,7 @@ class _NotificationMessagingShellState
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(pushRegistrationProvider);
     ref.listen<AsyncValue<RemoteMessage?>>(initialNotificationMessageProvider, (
       previous,
       next,
@@ -20551,7 +30880,13 @@ final pushRegistrationProvider = FutureProvider<void>((ref) async {
       await Firebase.initializeApp();
     }
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    debugPrint('FCM Notification permission status: ${settings.authorizationStatus}');
     final token = await messaging.getToken();
     if (token == null || token.length < 20) {
       return;
@@ -20564,10 +30899,12 @@ final pushRegistrationProvider = FutureProvider<void>((ref) async {
     await ref
         .read(notificationRepositoryProvider)
         .registerDevice(token: token, platform: platform);
-  } on Object {
-    // Push remains optional until Firebase project files are configured.
+    debugPrint('FCM token successfully registered with backend');
+  } on Object catch (error, stackTrace) {
+    debugPrint('FCM push registration error: $error\n$stackTrace');
   }
 });
+
 
 ```
 
@@ -22808,6 +33145,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../monetization/free_plan_ads.dart';
 import 'performance_models.dart';
 import 'performance_providers.dart';
 import 'performance_widgets.dart';
@@ -22893,6 +33231,8 @@ class PerformanceScreen extends ConsumerWidget {
                             .toList(growable: false),
                       ),
               ),
+              const SizedBox(height: 16),
+              const FreePlanNativeAd(),
             ],
           ),
         ),
@@ -23335,6 +33675,7 @@ import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../auth/session_controller.dart';
+import '../community/community_repository.dart';
 
 final avatarOptionsProvider = FutureProvider.autoDispose<List<AvatarOption>>((
   ref,
@@ -23591,6 +33932,42 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 label: const Text('حفظ التعديلات'),
               ),
               const SizedBox(height: 24),
+              if (ref.watch(sessionControllerProvider).profile?.tippingUnlocked == true) ...[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'إعدادات استقبال العملات الهادية',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('تفعيل استقبال هدايا العملات'),
+                          subtitle: const Text('السماح لمتابعيك بإهداء عملات تقديرًا لتحليلاتك'),
+                          value: ref.watch(sessionControllerProvider).profile?.tippingEnabled ?? true,
+                          onChanged: (val) async {
+                            try {
+                              await ref.read(communityRepositoryProvider).updateTippingSettings(tippingEnabled: val);
+                              ref.invalidate(sessionControllerProvider);
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('حدث خطأ: $e')),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(18),
@@ -23649,11 +34026,516 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
 ---
 
+### File: `lib\features\rating\rating_prompt_manager.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+const String _keyAnalysisCount = 'rating_analysis_count';
+const String _keyNextTargetCount = 'rating_next_target_count';
+const String _keyHasRatedOrRefused = 'rating_has_rated_or_refused';
+
+const String playStoreUrl =
+    'https://play.google.com/store/apps/details?id=com.sahmikasban.sahmi_kasban_mobile';
+
+class RatingPromptManager {
+  RatingPromptManager();
+
+  /// Call this when an analysis is completed successfully.
+  Future<void> recordCompletedAnalysis(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final bool hasRatedOrRefused =
+        prefs.getBool(_keyHasRatedOrRefused) ?? false;
+    if (hasRatedOrRefused) {
+      return;
+    }
+
+    final int currentCount = (prefs.getInt(_keyAnalysisCount) ?? 0) + 1;
+    await prefs.setInt(_keyAnalysisCount, currentCount);
+
+    final int targetCount = prefs.getInt(_keyNextTargetCount) ?? 3;
+
+    if (currentCount >= targetCount && context.mounted) {
+      await showRatingBottomSheet(context);
+    }
+  }
+
+  Future<void> showRatingBottomSheet(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const Icon(Icons.star_rounded, size: 56, color: Colors.amber),
+              const SizedBox(height: 12),
+              Text(
+                'ما رأيك في تطبيق سهمي كسبان؟',
+                style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'تقييمك يساعدنا على تقديم ميزات جديدة وتحسين جودة التحليلات الذكية باستمرار.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, height: 1.4),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    Navigator.of(sheetContext).pop();
+                    await prefs.setBool(_keyHasRatedOrRefused, true);
+                    final uri = Uri.parse(playStoreUrl);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  icon: const Icon(Icons.star_rate_rounded),
+                  label: const Text('تقييم الآن ⭐⭐⭐⭐⭐'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        Navigator.of(sheetContext).pop();
+                        final int count = prefs.getInt(_keyAnalysisCount) ?? 3;
+                        await prefs.setInt(_keyNextTargetCount, count + 20);
+                      },
+                      child: const Text('تذكيري لاحقاً'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        Navigator.of(sheetContext).pop();
+                        await prefs.setBool(_keyHasRatedOrRefused, true);
+                      },
+                      child: const Text('لا شكراً'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+final ratingPromptManagerProvider = Provider<RatingPromptManager>((ref) {
+  return RatingPromptManager();
+});
+
+```
+
+---
+
+### File: `lib\features\referral\referral_screen.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/avatar_assets.dart';
+import '../../core/ui/app_notice.dart';
+import '../../data/backend_repository.dart';
+import '../../domain/models.dart';
+
+final referralStatsProvider = FutureProvider.autoDispose<ReferralStats>((
+  ref,
+) async {
+  final repository = ref.watch(backendRepositoryProvider);
+  return repository.getReferralStats();
+});
+
+class ReferralScreen extends ConsumerWidget {
+  const ReferralScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(referralStatsProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('دعوة الأصدقاء 🎁')),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(referralStatsProvider),
+        child: statsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'تعذر تحميل بيانات الإحالات.',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(referralStatsProvider),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ),
+          ),
+          data: (stats) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeroBanner(context),
+                const SizedBox(height: 20),
+                _buildReferralCodeCard(context, stats),
+                const SizedBox(height: 20),
+                _buildStatsOverviewCard(context, stats),
+                const SizedBox(height: 24),
+                Text(
+                  'الأصدقاء الذين انضموا (${stats.totalReferredCount})',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (stats.referredUsers.isEmpty)
+                  _buildEmptyState(context)
+                else
+                  ...stats.referredUsers.map(
+                    (user) => _buildReferredUserTile(context, user),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroBanner(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.card_giftcard_rounded,
+                size: 40,
+                color: Colors.amber,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'ادعُ أصدقاءك واكسب 10 عملات!',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'احصل أنت وصديقك على 10 عملات مجانية (1,000 نقطة) فور إتمام صديقك لتأكيد بريده الإلكتروني على تطبيق سهمي كسبان.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReferralCodeCard(BuildContext context, ReferralStats stats) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'كود الدعوة الخاص بك',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      stats.referralCode,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                  ),
+                  IconButton.filledTonal(
+                    onPressed: () {
+                      Clipboard.setData(
+                        ClipboardData(text: stats.referralCode),
+                      );
+                      AppNotice.show(
+                        context,
+                        title: 'تم النسخ',
+                        message:
+                            'تم نسخ كود الدعوة إلى الحافظة: ${stats.referralCode}',
+                        tone: AppNoticeTone.success,
+                      );
+                    },
+                    icon: const Icon(Icons.copy_rounded),
+                    tooltip: 'نسخ الكود',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                final shareText =
+                    'حمّل تطبيق سهمي كسبان لتحليل الأسهم واستخدم كود الدعوة الخاص بي [${stats.referralCode}] للحصول على 10 عملات مجانية!\n\nرابط التحميل من متجر بلاي:\n${stats.playStoreUrl}';
+                Clipboard.setData(ClipboardData(text: shareText));
+                AppNotice.show(
+                  context,
+                  title: 'تم نسخ رابط الدعوة',
+                  message:
+                      'تم نسخ نص ورابط الدعوة إلى الحافظة جاهزاً للمشاركة مع أصدقائك!',
+                  tone: AppNoticeTone.success,
+                );
+              },
+              icon: const Icon(Icons.share_rounded),
+              label: const Text('مشاركة رابط وكود الدعوة'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsOverviewCard(BuildContext context, ReferralStats stats) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            title: 'إجمالي الأصدقاء',
+            value: '${stats.totalReferredCount}',
+            icon: Icons.people_outline_rounded,
+            iconColor: Colors.blueAccent,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatCard(
+            title: 'أرباح الإحالات',
+            value: '${stats.totalEarnedCoins} عملة',
+            icon: Icons.monetization_on_outlined,
+            iconColor: Colors.amber,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        child: Column(
+          children: [
+            Icon(
+              Icons.person_add_disabled_outlined,
+              size: 48,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 12),
+            Text(
+              'لم تقم بدعوة أصدقاء بعد',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'شارك كودك الخاص الآن واحصل على 10 عملات لكل صديق يسجل ويؤكد حسابه!',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReferredUserTile(BuildContext context, ReferredUserItem user) {
+    final isVerified = user.status == 'verified';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundImage: AssetImage(avatarAssetPath(user.avatarKey)),
+        ),
+        title: Text(
+          user.displayName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text('انضم في: ${user.joinedAt}'),
+        trailing: Chip(
+          avatar: Icon(
+            isVerified
+                ? Icons.check_circle_rounded
+                : Icons.hourglass_top_rounded,
+            size: 16,
+            color: isVerified ? Colors.green : Colors.orange,
+          ),
+          label: Text(
+            isVerified ? '+${user.earnedCoins} عملة' : 'قيد التأكيد',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isVerified ? Colors.green : Colors.orange,
+            ),
+          ),
+          backgroundColor: isVerified
+              ? Colors.green.withValues(alpha: 0.1)
+              : Colors.orange.withValues(alpha: 0.1),
+          side: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: iconColor, size: 28),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+```
+
+---
+
 ### File: `lib\features\reports\market_report_screen.dart`
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/backend_repository.dart';
@@ -23705,6 +34587,12 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           _report = report;
           _locked = false;
         });
+        await ref.read(freePlanInterstitialProvider).showAd(
+              enabled:
+                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                  true,
+              ignoreFrequencyGate: true,
+            );
       }
     } on ApiException catch (error) {
       if (mounted) {
@@ -23788,15 +34676,12 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           ),
         ),
       );
-      if (execution.chargedPoints > 0) {
-        await ref
-            .read(freePlanInterstitialProvider)
-            .recordMeaningfulAction(
-              enabled:
-                  ref.read(sessionControllerProvider).profile?.adsEnabled ==
-                  true,
-            );
-      }
+      await ref.read(freePlanInterstitialProvider).showAd(
+            enabled:
+                ref.read(sessionControllerProvider).profile?.adsEnabled ==
+                true,
+            ignoreFrequencyGate: true,
+          );
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _error = error.message);
@@ -23814,8 +34699,15 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isInvestment =
+        _report?.reportType == 'investment' ||
+        widget.preview?.reportType == 'investment';
     return Scaffold(
-      appBar: AppBar(title: const Text('تقرير أفضل 10')),
+      appBar: AppBar(
+        title: Text(
+          isInvestment ? 'تقرير الاستثمار والقيمة العادلة' : 'تقرير أفضل 10',
+        ),
+      ),
       body: SafeArea(child: _buildBody(context)),
     );
   }
@@ -23832,23 +34724,29 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.lock_outline_rounded, size: 52),
+                  const Icon(Icons.lock_rounded, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'أسماء الأسهم وتفاصيلها محمية حتى فتح التقرير.',
+                    'تقرير جلسة ${_formatArabicDate(widget.preview?.targetSessionDate ?? DateTime.now())}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'التكلفة: ${widget.preview?.unlockCostCoins ?? '1.00'} عملة',
+                    'يحتوي التقرير على ${widget.preview?.itemCount ?? 10} فرص استثمارية وتحليلية مرتبة ومفصلة.',
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
                     onPressed: _loading ? null : _unlock,
                     icon: const Icon(Icons.lock_open_rounded),
-                    label: const Text('فتح التقرير'),
+                    label: Text(
+                      'فتح التقرير (${widget.preview?.unlockCostCoins ?? '1.00'} عملة)',
+                    ),
                   ),
                 ],
               ),
@@ -23871,6 +34769,10 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           ),
         ],
       );
+    }
+
+    if (report.reportType == 'investment') {
+      return _InvestmentReportTabs(report: report);
     }
 
     return _ReportTabs(report: report);
@@ -24119,6 +35021,14 @@ class _SafeReportItemCard extends StatelessWidget {
           leading: CircleAvatar(child: Text('${item.rank}')),
           title: Text(item.ticker, textDirection: TextDirection.ltr),
           subtitle: const Text('تعذر عرض بعض تفاصيل هذا السهم.'),
+          trailing: FilledButton.tonalIcon(
+            onPressed: () => context.push('/stocks/${item.ticker}'),
+            icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+            label: const Text(
+              'معلومات وشارت السهم',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ),
       );
     }
@@ -24156,6 +35066,23 @@ class _ReportItemCard extends StatelessWidget {
     final riskLevel = _riskLabel(_text(risk['risk_level']));
     final reasons = _collectReasons(engines);
 
+    final sectorQuality = _map(payload['sector_quality']);
+    final marketData = _map(payload['market_data']);
+    final sectorName = _text(sectorQuality['sector_name']).isNotEmpty
+        ? _text(sectorQuality['sector_name'])
+        : _text(marketData['sector']);
+    final qualityLabel = _text(sectorQuality['quality_label']).isNotEmpty
+        ? _text(sectorQuality['quality_label'])
+        : (item.score >= 75
+              ? 'متفوق على قطاع $sectorName'
+              : (item.score >= 50
+                    ? 'متوافق مع قطاع $sectorName'
+                    : 'أقل من متوسط قطاع $sectorName'));
+
+    final sectorTrendAr = _text(sectorQuality['sector_trend_ar']).isNotEmpty
+        ? _text(sectorQuality['sector_trend_ar'])
+        : 'صاعد 📈';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -24185,6 +35112,18 @@ class _ReportItemCard extends StatelessWidget {
                 Chip(label: Text('${item.score.toStringAsFixed(1)} / 100')),
               ],
             ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: FilledButton.tonalIcon(
+                onPressed: () => context.push('/stocks/${item.ticker}'),
+                icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+                label: const Text(
+                  'معلومات وشارت السهم',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -24197,7 +35136,57 @@ class _ReportItemCard extends StatelessWidget {
                 _MetricChip(label: 'السعر', value: _price(price)),
                 _MetricChip(label: 'الاتجاه', value: trend),
                 _MetricChip(label: 'المخاطرة', value: riskLevel),
+                if (sectorName.isNotEmpty)
+                  _MetricChip(label: 'القطاع', value: sectorName),
+                _MetricChip(label: 'اتجاه القطاع', value: sectorTrendAr),
               ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.pie_chart_outline_rounded,
+                    size: 18,
+                    color: Colors.amber,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'جودة السهم مقابل القطاع',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                        ),
+                        Text(
+                          qualityLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             if (entry > 0 || stop > 0 || target1 > 0) ...[
               const SizedBox(height: 14),
@@ -24272,6 +35261,11 @@ class _SafeExtendedItemCard extends StatelessWidget {
           leading: CircleAvatar(child: Text('${item.rank}')),
           title: Text(item.ticker, textDirection: TextDirection.ltr),
           subtitle: const Text('تعذر عرض بعض تفاصيل هذا السهم.'),
+          trailing: OutlinedButton.icon(
+            onPressed: () => context.push('/stocks/${item.ticker}'),
+            icon: const Icon(Icons.show_chart_rounded, size: 16),
+            label: const Text('معلومات السهم'),
+          ),
         ),
       );
     }
@@ -24327,6 +35321,18 @@ class _ExtendedItemCard extends StatelessWidget {
                 ),
                 Chip(label: Text('${item.score.toStringAsFixed(1)} / 100')),
               ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: FilledButton.tonalIcon(
+                onPressed: () => context.push('/stocks/${item.ticker}'),
+                icon: const Icon(Icons.candlestick_chart_rounded, size: 18),
+                label: const Text(
+                  'معلومات وشارت السهم',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -24479,6 +35485,8 @@ double _number(Object? value) {
   return double.tryParse('$value') ?? 0;
 }
 
+List<dynamic> _list(Object? value) => value is List ? value : const <dynamic>[];
+
 int _integer(Object? value) => _number(value).round();
 
 String _price(double value) => value > 0 ? value.toStringAsFixed(2) : '—';
@@ -24548,6 +35556,610 @@ String _reasonLabel(String reason) {
   return labels[reason] ?? reason;
 }
 
+class _InvestmentTabGroup {
+  const _InvestmentTabGroup({
+    required this.label,
+    required this.icon,
+    required this.items,
+  });
+
+  final String label;
+  final IconData icon;
+  final List<MarketReportItem> items;
+}
+
+List<_InvestmentTabGroup> _buildInvestmentTabGroups(MarketReport report) {
+  final allItems = report.items;
+  final valueItems = allItems.where((item) {
+    final cat = _text(item.payload['investment_category']);
+    final margin = _number(item.payload['margin_of_safety_pct']);
+    return cat == 'value' || margin >= 20.0;
+  }).toList();
+
+  final divItems = allItems.where((item) {
+    final cat = _text(item.payload['investment_category']);
+    final div = _number(item.payload['dividend_yield_pct']);
+    return cat == 'dividend' || div >= 5.0;
+  }).toList();
+
+  final growthItems = allItems.where((item) {
+    final cat = _text(item.payload['investment_category']);
+    final roe = _number(item.payload['roe_pct']);
+    return cat == 'growth' || roe >= 15.0;
+  }).toList();
+
+  final safetyItems = allItems.where((item) {
+    final margin = _number(item.payload['margin_of_safety_pct']);
+    return margin >= 25.0;
+  }).toList();
+
+  final groups = <_InvestmentTabGroup>[
+    _InvestmentTabGroup(
+      label: 'أفضل الفرص',
+      icon: Icons.stars_rounded,
+      items: allItems,
+    ),
+    if (valueItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'أسهم القيمة',
+        icon: Icons.security_rounded,
+        items: valueItems,
+      ),
+    if (divItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'توزيعات كاش',
+        icon: Icons.payments_rounded,
+        items: divItems,
+      ),
+    if (growthItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'أسهم النمو',
+        icon: Icons.trending_up_rounded,
+        items: growthItems,
+      ),
+    if (safetyItems.isNotEmpty)
+      _InvestmentTabGroup(
+        label: 'أعلى هامش أمان',
+        icon: Icons.verified_user_rounded,
+        items: safetyItems,
+      ),
+  ];
+  return groups;
+}
+
+class _InvestmentReportTabs extends StatelessWidget {
+  const _InvestmentReportTabs({required this.report});
+
+  final MarketReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = _buildInvestmentTabGroups(report);
+    return DefaultTabController(
+      length: groups.length,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              for (final group in groups)
+                Tab(
+                  icon: Icon(group.icon, size: 20),
+                  text: '${group.label} (${group.items.length})',
+                ),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                for (final group in groups)
+                  ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _InvestmentSummaryCard(summary: report.marketSummary),
+                      const SizedBox(height: 14),
+                      Text(
+                        '${group.label} (${group.items.length})',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      for (var i = 0; i < group.items.length; i++) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _InvestmentStockCard(item: group.items[i]),
+                        ),
+                        if (i == 1 && group.items.length > 2) ...[
+                          const FreePlanNativeAd(),
+                          const SizedBox(height: 14),
+                        ],
+                      ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InvestmentSummaryCard extends StatelessWidget {
+  const _InvestmentSummaryCard({required this.summary});
+
+  final Map<String, dynamic> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _text(summary['title']);
+    final description = _text(summary['description']);
+    final horizon = _text(summary['horizon']);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.account_balance_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title.isEmpty ? 'تقرير الاستثمار والقيمة العادلة' : title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(description, style: Theme.of(context).textTheme.bodySmall),
+            ],
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _MetricChip(
+                  label: 'الأفق الزمني',
+                  value: horizon.isEmpty ? '6 - 36 شهراً' : horizon,
+                ),
+                const _MetricChip(
+                  label: 'المصدر',
+                  value: 'TradingView المالية',
+                ),
+                const _MetricChip(
+                  label: 'نوع التحليل',
+                  value: 'قيمة مالية وأرباح',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InvestmentStockCard extends StatelessWidget {
+  const _InvestmentStockCard({required this.item});
+
+  final MarketReportItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final payload = item.payload;
+    final ticker = item.ticker;
+    final rawCompanyName = _text(payload['company_name']);
+    final companyName = rawCompanyName.isEmpty ? ticker : rawCompanyName;
+    final sector = _text(payload['sector']);
+    final currentPrice = _number(payload['current_price']);
+    final fairValue = payload['fair_value'] != null
+        ? _number(payload['fair_value'])
+        : null;
+    final marginOfSafety = payload['margin_of_safety_pct'] != null
+        ? _number(payload['margin_of_safety_pct'])
+        : null;
+    final peRatio = payload['pe_ratio'] != null
+        ? _number(payload['pe_ratio'])
+        : null;
+    final divYield = payload['dividend_yield_pct'] != null
+        ? _number(payload['dividend_yield_pct'])
+        : null;
+    final roe = payload['roe_pct'] != null ? _number(payload['roe_pct']) : null;
+    final category = _text(payload['investment_category']);
+    final strengths = _list(payload['strengths']);
+
+    final targetPrice = payload['expected_target_price'] != null
+        ? _number(payload['expected_target_price'])
+        : fairValue;
+    final timeframe = _text(payload['expected_timeframe']);
+    final expectedTimeframe = timeframe.isNotEmpty ? timeframe : '6 - 12 شهراً';
+    final expectedReturn = payload['expected_return_pct'] != null
+        ? _number(payload['expected_return_pct'])
+        : marginOfSafety;
+
+    final (categoryLabel, categoryColor, categoryIcon) = switch (category) {
+      'dividend' => ('سهم توزيعات كاش', Colors.teal, Icons.payments_rounded),
+      'growth' => ('سهم نمو واعد', Colors.blue, Icons.trending_up_rounded),
+      'value' => ('سهم قيمة وهامش أمان', Colors.purple, Icons.security_rounded),
+      _ => ('سهم متوازن', Colors.indigo, Icons.balance_rounded),
+    };
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  child: Text(
+                    '#${item.rank}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ticker,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        companyName,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${item.score.toStringAsFixed(1)} / 100',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.green,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(
+                  avatar: Icon(categoryIcon, size: 16, color: categoryColor),
+                  label: Text(
+                    categoryLabel,
+                    style: TextStyle(
+                      color: categoryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  backgroundColor: categoryColor.withValues(alpha: 0.1),
+                ),
+                if (sector.isNotEmpty) Chip(label: Text(sector)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.flag_rounded,
+                        size: 18,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 6),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'القيمة المتوقعة (المستهدف)',
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                          Text(
+                            targetPrice != null
+                                ? '${targetPrice.toStringAsFixed(2)} ج'
+                                : '—',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                              color: Colors.green.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (expectedReturn != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${expectedReturn >= 0 ? '+' : ''}${expectedReturn.toStringAsFixed(1)}% عائد',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: expectedReturn >= 0
+                              ? Colors.green.shade800
+                              : Colors.red,
+                        ),
+                      ),
+                    ),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 4),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'المدة المتوقعة',
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                          Text(
+                            expectedTimeframe,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.green.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      const Text(
+                        'السعر الحالي',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${currentPrice.toStringAsFixed(2)} ج',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (fairValue != null)
+                    Column(
+                      children: [
+                        const Text(
+                          'القيمة العادلة',
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${fairValue.toStringAsFixed(2)} ج',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (marginOfSafety != null)
+                    Column(
+                      children: [
+                        const Text(
+                          'هامش الأمان',
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${marginOfSafety >= 0 ? '+' : ''}${marginOfSafety.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            color: marginOfSafety >= 0
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (peRatio != null)
+                  Expanded(
+                    child: _InvestmentMetricTile(
+                      label: 'مكرر الربحية',
+                      value: '${peRatio.toStringAsFixed(1)}x',
+                    ),
+                  ),
+                if (divYield != null)
+                  Expanded(
+                    child: _InvestmentMetricTile(
+                      label: 'عائد التوزيعات',
+                      value: '${divYield.toStringAsFixed(1)}%',
+                      highlight: divYield >= 7.0,
+                    ),
+                  ),
+                if (roe != null)
+                  Expanded(
+                    child: _InvestmentMetricTile(
+                      label: 'عائد حقوق الملكية',
+                      value: '${roe.toStringAsFixed(1)}%',
+                    ),
+                  ),
+              ],
+            ),
+            if (strengths.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final s in strengths.take(2))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            size: 15,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _text(s),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () => context.push('/stocks/$ticker'),
+              icon: const Icon(Icons.candlestick_chart_rounded, size: 20),
+              label: const Text(
+                'معلومات وشارت السهم',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InvestmentMetricTile extends StatelessWidget {
+  const _InvestmentMetricTile({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  final String label;
+  final String value;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      decoration: BoxDecoration(
+        color: highlight
+            ? Colors.green.withValues(alpha: 0.1)
+            : Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: highlight ? Colors.green : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 ```
 
 ---
@@ -24565,6 +36177,17 @@ final latestReportPreviewProvider =
       return ref.watch(backendRepositoryProvider).getLatestReportPreview();
     });
 
+final reportHistoryProvider = FutureProvider.autoDispose<MarketReportHistory>((
+  ref,
+) {
+  return ref.watch(backendRepositoryProvider).getReportHistory();
+});
+
+final investmentReportPreviewProvider =
+    FutureProvider.autoDispose<MarketReportPreview?>((ref) {
+      return ref.watch(backendRepositoryProvider).getInvestmentReportPreview();
+    });
+
 ```
 
 ---
@@ -24577,60 +36200,229 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models.dart';
+import '../monetization/free_plan_ads.dart';
 import 'report_providers.dart';
 
-class ReportsScreen extends ConsumerWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final preview = ref.watch(latestReportPreviewProvider);
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final historyState = ref.watch(reportHistoryProvider);
+    final investmentState = ref.watch(investmentReportPreviewProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('تقارير السوق')),
       body: RefreshIndicator(
         onRefresh: () async {
+          ref.invalidate(reportHistoryProvider);
           ref.invalidate(latestReportPreviewProvider);
+          ref.invalidate(investmentReportPreviewProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
             Text(
-              'أحدث التقارير التحليلية للبورصة المصرية',
+              'التقارير التحليلية للبورصة المصرية',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
+            const SizedBox(height: 14),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(
+                  value: 0,
+                  icon: Icon(Icons.bolt_rounded),
+                  label: Text('تداول ومضاربة'),
+                ),
+                ButtonSegment(
+                  value: 1,
+                  icon: Icon(Icons.account_balance_rounded),
+                  label: Text('استثمار وقيمة عادلة'),
+                ),
+              ],
+              selected: {_selectedTab},
+              onSelectionChanged: (selection) {
+                setState(() => _selectedTab = selection.first);
+              },
+            ),
             const SizedBox(height: 16),
-            preview.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Center(
+            if (_selectedTab == 1) ...[
+              Card(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded),
-                      const SizedBox(height: 12),
-                      Text('تعذر تحميل التقارير.'),
-                      TextButton(
-                        onPressed: () =>
-                            ref.invalidate(latestReportPreviewProvider),
-                        child: const Text('إعادة المحاولة'),
+                      Icon(
+                        Icons.shield_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'تحليل مالي أساسي للشركات الرابحة ذات هوامش الأمان والتوزيعات النقدية ومكررات الربحية الجذابة (أفق 6 - 36 شهراً).',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              data: (report) => report == null
-                  ? const Center(
+              const SizedBox(height: 16),
+              investmentState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline_rounded),
+                        const SizedBox(height: 12),
+                        const Text('تعذر تحميل تقرير الاستثمار.'),
+                        TextButton(
+                          onPressed: () =>
+                              ref.invalidate(investmentReportPreviewProvider),
+                          child: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                data: (preview) {
+                  if (preview == null) {
+                    return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40),
-                        child: Text('لا توجد تقارير متاحة حاليًا.'),
+                        child: Text('لا توجد بيانات استثمارية متاحة حالياً.'),
                       ),
-                    )
-                  : _ReportPreviewCard(report: report),
-            ),
-            const SizedBox(height: 24),
+                    );
+                  }
+                  return _ReportPreviewCard(report: preview);
+                },
+              ),
+            ] else ...[
+              historyState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stackTrace) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline_rounded),
+                        const SizedBox(height: 12),
+                        const Text('تعذر تحميل التقارير.'),
+                        TextButton(
+                          onPressed: () =>
+                              ref.invalidate(reportHistoryProvider),
+                          child: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                data: (history) {
+                  final reports = history.reports;
+                  final days = history.historyDaysAllowed;
+                  final daysText = days >= 365
+                      ? '${(days / 365).round()} سنة'
+                      : '$days يوماً';
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Card(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.5),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.history_toggle_off_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'سجل خطتك الحالية: $daysText',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => context.push('/monetization'),
+                                child: const Text('ترقية الخطة'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (reports.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Text(
+                              'لا توجد تقارير متاحة في نطاق خطتك حالياً.',
+                            ),
+                          ),
+                        )
+                      else ...[
+                        Text(
+                          'أحدث تقرير',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        _ReportPreviewCard(report: reports.first),
+                        if (reports.length > 1) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            'أرشيف التقارير السابقة (${reports.length - 1})',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          for (final pastReport in reports.skip(1))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _ReportPreviewCard(report: pastReport),
+                            ),
+                        ],
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+            const SizedBox(height: 16),
+            const FreePlanNativeAd(),
+            const SizedBox(height: 16),
             const Text(
               'ملاحظة: يتم إصدار تقارير السوق بشكل دوري بناءً على مسح شامل لجميع الأسهم.',
               style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -24651,6 +36443,28 @@ class _ReportPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final target = report.targetSessionDate;
+    final isInvestment = report.reportType == 'investment';
+
+    final title = isInvestment
+        ? (report.marketSummary['title'] as String? ??
+            'تقرير أفضل الفرص الاستثمارية والقيمة العادلة')
+        : 'تقرير جلسة ${target.day}/${target.month}/${target.year}';
+
+    final chip1Text = isInvestment
+        ? '${report.itemCount} شركة استثمارية'
+        : '${report.itemCount} فرص مؤهلة';
+
+    final chip2Text = isInvestment
+        ? 'مجاني بالكامل'
+        : (report.unlocked
+            ? 'مفتوح بالفعل'
+            : '${report.unlockCostCoins} عملة للفتح');
+
+    final bodyText = isInvestment
+        ? (report.marketSummary['description'] as String? ??
+            'مسح شامل لجميع الأسهم وتصنيف حسب الخصم عن القيمة العادلة والقوة المالية.')
+        : 'المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -24660,13 +36474,15 @@ class _ReportPreviewCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.auto_graph_rounded,
+                  isInvestment
+                      ? Icons.account_balance_rounded
+                      : Icons.auto_graph_rounded,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'تقرير جلسة ${target.day}/${target.month}/${target.year}',
+                    title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -24679,32 +36495,436 @@ class _ReportPreviewCard extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
-                Chip(label: Text('${report.itemCount} فرص مؤهلة')),
-                Chip(
-                  label: Text(
-                    report.unlocked
-                        ? 'مفتوح بالفعل'
-                        : '${report.unlockCostCoins} عملة للفتح',
-                  ),
-                ),
+                Chip(label: Text(chip1Text)),
+                Chip(label: Text(chip2Text)),
               ],
             ),
             const SizedBox(height: 16),
-            const Text('المقدمة مجانية ولا تعرض أسماء الأسهم قبل فتح التقرير.'),
+            Text(bodyText),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: () =>
                   context.push('/reports/${report.reportId}', extra: report),
               icon: Icon(
-                report.unlocked
+                report.unlocked || isInvestment
                     ? Icons.visibility_rounded
                     : Icons.lock_open_rounded,
               ),
-              label: Text(report.unlocked ? 'عرض التقرير' : 'فتح التقرير'),
+              label: Text(
+                report.unlocked || isInvestment ? 'عرض التقرير' : 'فتح التقرير',
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+```
+
+---
+
+### File: `lib\features\reports\screens\sector_leaderboard_screen.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
+import '../../auth/session_controller.dart';
+
+class SectorItem {
+  const SectorItem({
+    required this.ticker,
+    required this.companyName,
+    required this.rank,
+    required this.score,
+    required this.entryPrice,
+    required this.targetPrice,
+    required this.stopLoss,
+    required this.volumeZscore,
+    required this.atr,
+    required this.signal,
+  });
+
+  final String ticker;
+  final String companyName;
+  final int rank;
+  final int score;
+  final double entryPrice;
+  final double targetPrice;
+  final double stopLoss;
+  final double volumeZscore;
+  final double atr;
+  final String signal;
+
+  factory SectorItem.fromJson(Map<String, dynamic> json) {
+    return SectorItem(
+      ticker: json['ticker'] as String,
+      companyName: json['company_name'] as String,
+      rank: (json['rank'] as num).toInt(),
+      score: (json['score'] as num).toInt(),
+      entryPrice: (json['entry_price'] as num).toDouble(),
+      targetPrice: (json['target_price'] as num).toDouble(),
+      stopLoss: (json['stop_loss'] as num).toDouble(),
+      volumeZscore: (json['volume_zscore'] as num).toDouble(),
+      atr: (json['atr'] as num).toDouble(),
+      signal: json['signal'] as String,
+    );
+  }
+}
+
+class SectorLeaderboardScreen extends ConsumerStatefulWidget {
+  const SectorLeaderboardScreen({super.key});
+
+  static Route<void> route() {
+    return MaterialPageRoute<void>(
+      builder: (_) => const SectorLeaderboardScreen(),
+    );
+  }
+
+  @override
+  ConsumerState<SectorLeaderboardScreen> createState() =>
+      _SectorLeaderboardScreenState();
+}
+
+class _SectorLeaderboardScreenState
+    extends ConsumerState<SectorLeaderboardScreen> {
+  String _selectedSector = 'banking';
+  bool _isLoading = false;
+  List<SectorItem> _items = [];
+  String _sectorName = 'قطاع البنوك';
+
+  final Map<String, String> _sectorMap = {
+    'banking': 'قطاع البنوك',
+    'real_estate': 'قطاع العقارات والأراضي',
+    'technology': 'قطاع التكنولوجيا والاتصالات',
+    'financial_services': 'قطاع الخدمات المالية والسيولة',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReport();
+  }
+
+  Future<void> _fetchReport() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.get<Map<String, dynamic>>(
+        '/reports/sectors/$_selectedSector/leaderboard',
+      );
+
+      final data = response.data?['data'] as Map<String, dynamic>? ?? response.data ?? {};
+      final list = (data['items'] as List<dynamic>? ?? [])
+          .map((e) => SectorItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      ref.invalidate(sessionControllerProvider);
+
+      if (mounted) {
+        setState(() {
+          _items = list;
+          _sectorName = data['sector_name'] as String? ?? _sectorMap[_selectedSector]!;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final userCoins = ref.watch(sessionControllerProvider).profile?.balanceCoins ?? '0';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('تقرير ترقية ومقارنة القطاعات'),
+        centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(left: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.monetization_on, size: 16, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  '$userCoins عملة',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Sector Dropdown Selector & Cost Badge
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'اختر القطاع للتحليل:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Chip(
+                            avatar: const Icon(Icons.stars, size: 14, color: Colors.amber),
+                            label: const Text('2.0 عملة / تقرير'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedSector,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: _sectorMap.entries.map((entry) {
+                          return DropdownMenuItem<String>(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null && val != _selectedSector) {
+                            setState(() {
+                              _selectedSector = val;
+                            });
+                            _fetchReport();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                // Sector Leader Spotlight Card
+                if (_items.isNotEmpty) ...[
+                  Card(
+                    color: theme.colorScheme.primaryContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.workspace_premium, color: Colors.amber, size: 28),
+                              const SizedBox(width: 8),
+                              Text(
+                                'السهم القائد لقطاع $_sectorName',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _items[0].ticker,
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          Text(
+                            _items[0].companyName,
+                            style: const TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'إشارة التحليل: ${_items[0].signal} | تقييم الجودة: ${_items[0].score}/100',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // Leaderboard Table Section Header
+                Text(
+                  'ترتيب أسهم القطاع والمخاطرة',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+
+                // Leaderboard List
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final item = _items[index];
+                    return Card(
+                      elevation: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 14,
+                                  backgroundColor: index == 0
+                                      ? Colors.amber
+                                      : theme.colorScheme.primaryContainer,
+                                  child: Text(
+                                    '#${item.rank}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${item.ticker} - ${item.companyName}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        'سعر الدخول: ${item.entryPrice} ج.م | المستهدف: ${item.targetPrice} ج.م',
+                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    item.signal,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _SubMetric(label: 'وقف الخسارة', value: '${item.stopLoss}'),
+                                _SubMetric(label: 'زخم السيولة (Z)', value: '${item.volumeZscore}'),
+                                _SubMetric(label: 'مذبذبات المخاطرة (ATR)', value: '${item.atr}'),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubMetric extends StatelessWidget {
+  const _SubMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: Colors.grey),
+        ),
+      ],
     );
   }
 }
@@ -25011,6 +37231,110 @@ import '../../domain/models.dart';
 final walletSummaryProvider = FutureProvider.autoDispose<WalletSummary>((ref) {
   return ref.watch(backendRepositoryProvider).getWallet();
 });
+
+```
+
+---
+
+### File: `lib\shared\widgets\floating_trading_room_button.dart`
+
+```dart
+import 'package:flutter/material.dart';
+
+import '../../features/community/screens/trading_session_chat_screen.dart';
+
+class FloatingTradingRoomButton extends StatefulWidget {
+  const FloatingTradingRoomButton({
+    super.key,
+    this.votesCount = 0,
+    this.votesTarget = 40,
+  });
+
+  final int votesCount;
+  final int votesTarget;
+
+  @override
+  State<FloatingTradingRoomButton> createState() =>
+      _FloatingTradingRoomButtonState();
+}
+
+class _FloatingTradingRoomButtonState extends State<FloatingTradingRoomButton> {
+  Offset _position = const Offset(16, 200);
+
+  void _openChatScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const TradingSessionChatScreen(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
+    return Positioned(
+      left: _position.dx,
+      top: _position.dy,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            _position += details.delta;
+            _position = Offset(
+              _position.dx.clamp(0.0, screenSize.width - 64),
+              _position.dy.clamp(50.0, screenSize.height - 120),
+            );
+          });
+        },
+        onTap: _openChatScreen,
+        child: Material(
+          elevation: 6,
+          shape: const CircleBorder(),
+          color: const Color(0xFF0088CC), // Telegram brand blue
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              // Live Votes / Telegram Badge
+              Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: Text(
+                    '${widget.votesCount}/${widget.votesTarget}',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 ```
 
@@ -25480,6 +37804,48 @@ void main() {
 
 ---
 
+### File: `test\app_theme_test.dart`
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sahmi_kasban_mobile/app/app_theme_provider.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  test('themeModeProvider defaults to ThemeMode.dark', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final initialMode = container.read(themeModeProvider);
+    expect(initialMode, ThemeMode.dark);
+  });
+
+  test('themeModeProvider updates state and persists choice', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final notifier = container.read(themeModeProvider.notifier);
+    await notifier.setThemeMode(ThemeMode.light);
+
+    expect(container.read(themeModeProvider), ThemeMode.light);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('app_theme_mode'), 'light');
+  });
+}
+
+```
+
+---
+
 ### File: `test\community_models_test.dart`
 
 ```dart
@@ -25802,11 +38168,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CommunityDiscussionCard(
-            discussion: _discussion(),
-            showStatus: true,
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: CommunityDiscussionCard(
+              discussion: _discussion(),
+              showStatus: true,
+            ),
           ),
         ),
       ),
@@ -25816,9 +38184,10 @@ void main() {
     expect(find.text('COMI'), findsOneWidget);
     expect(find.text('الجلسة القادمة'), findsOneWidget);
     expect(find.text('منشورة'), findsOneWidget);
+    await tester.pumpAndSettle();
   });
 
-  testWidgets('discussion creation screen explains wallet hold', (
+  testWidgets('discussion creation screen explains free community posts', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -25826,7 +38195,7 @@ void main() {
     );
 
     expect(find.text('إنشاء مناقشة'), findsOneWidget);
-    expect(find.textContaining('حجز 0.5 عملة مؤقتًا'), findsOneWidget);
+    expect(find.textContaining('المناقشات والتوقعات مجانية بالكامل'), findsOneWidget);
     expect(find.text('اختر السهم'), findsOneWidget);
 
     await tester.drag(find.byType(ListView), const Offset(0, -700));
@@ -26292,6 +38661,7 @@ void main() {
     expect(find.text('الأربعاء 29 يوليو 2026'), findsOneWidget);
     expect(find.text('ملخص السوق'), findsOneWidget);
     expect(find.text('COMI'), findsOneWidget);
+    expect(find.text('معلومات وشارت السهم'), findsOneWidget);
     expect(find.text('خطة التداول'), findsOneWidget);
     expect(find.textContaining('السعر أعلى من متوسط 20 جلسة'), findsOneWidget);
     expect(find.textContaining('{'), findsNothing);
@@ -27246,44 +39616,27 @@ void main() {
 ```dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sahmi_kasban_mobile/features/market/stock_comparison_models.dart';
+import 'package:sahmi_kasban_mobile/features/monetization/ad_frequency_gate.dart';
 import 'package:sahmi_kasban_mobile/features/monetization/free_plan_ads.dart';
 
 void main() {
-  group('InterstitialFrequencyPolicy', () {
-    const policy = InterstitialFrequencyPolicy(
-      actionsPerAd: 3,
-      minimumInterval: Duration(minutes: 4),
-    );
+  group('AdFrequencyGate and InterstitialFrequencyPolicy', () {
+    const policy = InterstitialFrequencyPolicy(actionsPerAd: 3);
+    final gate = AdFrequencyGate(minimumInterval: const Duration(minutes: 4));
     final now = DateTime(2026, 7, 29, 8);
 
-    test('requires enough meaningful actions', () {
-      expect(
-        policy.canShow(meaningfulActions: 2, now: now, lastShownAt: null),
-        isFalse,
-      );
-      expect(
-        policy.canShow(meaningfulActions: 3, now: now, lastShownAt: null),
-        isTrue,
-      );
+    test('tracks actionsPerAd correctly', () {
+      expect(policy.actionsPerAd, 3);
     });
 
-    test('enforces the minimum interval after an impression', () {
-      expect(
-        policy.canShow(
-          meaningfulActions: 3,
-          now: now,
-          lastShownAt: now.subtract(const Duration(minutes: 3)),
-        ),
-        isFalse,
-      );
-      expect(
-        policy.canShow(
-          meaningfulActions: 3,
-          now: now,
-          lastShownAt: now.subtract(const Duration(minutes: 4)),
-        ),
-        isTrue,
-      );
+    test('AdFrequencyGate enforces interval after dismissal', () {
+      expect(gate.canShow(now), isTrue);
+      gate.markShowing();
+      expect(gate.canShow(now), isFalse);
+      gate.markDismissed(at: now.subtract(const Duration(minutes: 3)));
+      expect(gate.canShow(now), isFalse);
+      gate.markDismissed(at: now.subtract(const Duration(minutes: 4)));
+      expect(gate.canShow(now), isTrue);
     });
   });
 
@@ -27544,6 +39897,10 @@ AppConfig buildConfig({
     admobIosNativeId: 'ca-app-pub-$iosPublisher/1000000004',
     admobAndroidInterstitialId: 'ca-app-pub-$androidPublisher/1000000005',
     admobIosInterstitialId: 'ca-app-pub-$iosPublisher/1000000006',
+    admobAndroidAppOpenId: 'ca-app-pub-$androidPublisher/1000000007',
+    admobIosAppOpenId: 'ca-app-pub-$iosPublisher/1000000008',
+    admobAndroidRewardedInterstitialId: 'ca-app-pub-$androidPublisher/1000000009',
+    admobIosRewardedInterstitialId: 'ca-app-pub-$iosPublisher/1000000010',
   );
 }
 
