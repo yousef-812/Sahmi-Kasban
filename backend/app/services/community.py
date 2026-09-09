@@ -499,6 +499,35 @@ def list_user_discussions(
     return [DiscussionView(discussion=item, author=user) for item in discussions], total
 
 
+def _purge_discussion_children(db: Session, discussion: Discussion) -> None:
+    """Delete all rows that reference a discussion before deleting it."""
+    db.execute(
+        delete(DiscussionReaction).where(DiscussionReaction.discussion_id == discussion.id)
+    )
+    db.execute(
+        delete(DiscussionImpression).where(DiscussionImpression.discussion_id == discussion.id)
+    )
+    db.execute(delete(DiscussionReport).where(DiscussionReport.discussion_id == discussion.id))
+    db.execute(
+        delete(DiscussionModerationEvent).where(
+            DiscussionModerationEvent.discussion_id == discussion.id
+        )
+    )
+    db.execute(delete(DiscussionAppeal).where(DiscussionAppeal.discussion_id == discussion.id))
+    db.execute(
+        delete(PredictionVerification).where(
+            PredictionVerification.discussion_id == discussion.id
+        )
+    )
+    db.execute(delete(AIPersonaLog).where(AIPersonaLog.discussion_id == discussion.id))
+    db.execute(
+        update(CommunityAdminEvent)
+        .where(CommunityAdminEvent.discussion_id == discussion.id)
+        .values(discussion_id=None)
+    )
+    db.delete(discussion)
+
+
 def delete_discussion(
     db: Session,
     *,
@@ -532,32 +561,7 @@ def delete_discussion(
             details={"reason_code": "author_deleted"},
         )
 
-    db.execute(
-        delete(DiscussionReaction).where(DiscussionReaction.discussion_id == discussion.id)
-    )
-    db.execute(
-        delete(DiscussionImpression).where(DiscussionImpression.discussion_id == discussion.id)
-    )
-    db.execute(delete(DiscussionReport).where(DiscussionReport.discussion_id == discussion.id))
-    db.execute(
-        delete(DiscussionModerationEvent).where(
-            DiscussionModerationEvent.discussion_id == discussion.id
-        )
-    )
-    db.execute(delete(DiscussionAppeal).where(DiscussionAppeal.discussion_id == discussion.id))
-    db.execute(
-        delete(PredictionVerification).where(
-            PredictionVerification.discussion_id == discussion.id
-        )
-    )
-    db.execute(delete(AIPersonaLog).where(AIPersonaLog.discussion_id == discussion.id))
-    db.execute(
-        update(CommunityAdminEvent)
-        .where(CommunityAdminEvent.discussion_id == discussion.id)
-        .values(discussion_id=None)
-    )
-
-    db.delete(discussion)
+    _purge_discussion_children(db, discussion)
     db.flush()
     return discussion
 
@@ -832,3 +836,34 @@ def unpin_ended_discussions(db: Session, moment: datetime | None = None) -> int:
         db.commit()
 
     return unpinned_count
+
+
+def delete_ended_pinned_discussions(db: Session, moment: datetime | None = None) -> int:
+    """Delete pinned (featured) discussions whose trading session has already ended.
+
+    This is the startup safety net for the honest-pin rule: after a deploy we
+    never want a fetched discussion that its session ended to still appear
+    featured in the feed. Freshly pinned discussions for upcoming sessions are
+    left untouched.
+    """
+    pinned = db.scalars(
+        select(Discussion).where(Discussion.is_pinned == True)  # noqa: E712
+    ).all()
+
+    deleted_count = 0
+    for disc in pinned:
+        if is_discussion_ended(disc, moment=moment):
+            logger.info(
+                "Pinned discussion session ended; deleting: id=%s ticker=%s target_date=%s title=%s",
+                disc.id,
+                disc.ticker,
+                disc.target_date,
+                disc.title,
+            )
+            _purge_discussion_children(db, disc)
+            deleted_count += 1
+
+    if deleted_count > 0:
+        db.commit()
+
+    return deleted_count

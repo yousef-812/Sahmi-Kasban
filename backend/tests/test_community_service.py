@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import UTC, date, datetime
+from uuid import uuid4
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,6 +13,7 @@ from app.services.community import (
     DiscussionReportError,
     apply_moderation_decision,
     create_discussion,
+    delete_ended_pinned_discussions,
     list_published_discussions,
     mute_user,
     report_discussion,
@@ -215,3 +219,76 @@ def test_reports_and_mutes_are_idempotent(db_session: Session) -> None:
 
     stored = db_session.scalar(select(Discussion).where(Discussion.id == submission.discussion.id))
     assert stored is not None
+
+
+def make_pinned_discussion(
+    db: Session,
+    *,
+    user_id,
+    target_date: date,
+    period_type: str = "next_session",
+) -> Discussion:
+    discussion = Discussion(
+        id=uuid4(),
+        user_id=user_id,
+        ticker="COMI",
+        title="منشور مثبت لاختبار التنظيف",
+        content="منشور مثبت يتم استخدامه لاختبار تنظيف المنشورات المنتهية جلستها.",
+        period_type=period_type,
+        status="published",
+        moderation_result={"review_stage": "completed"},
+        is_pinned=True,
+        target_date=target_date,
+        frozen_prediction={
+            "ticker": "COMI",
+            "direction": "up",
+            "target_price": 108.0,
+            "deadline": "نهاية الجلسة",
+        },
+    )
+    db.add(discussion)
+    db.flush()
+    return discussion
+
+
+def test_delete_ended_pinned_discussions_only_removes_ended_sessions(
+    db_session: Session,
+) -> None:
+    user = create_user(db_session, "community-cleanup@example.com")
+    moment = datetime(2026, 1, 5, 13, tzinfo=UTC)
+    ended = make_pinned_discussion(
+        db_session,
+        user_id=user.id,
+        target_date=date(2026, 1, 2),
+    )
+    active = make_pinned_discussion(
+        db_session,
+        user_id=user.id,
+        target_date=date(2026, 1, 6),
+    )
+    db_session.commit()
+
+    deleted = delete_ended_pinned_discussions(db_session, moment=moment)
+
+    assert deleted == 1
+    assert db_session.scalar(select(Discussion).where(Discussion.id == ended.id)) is None
+    assert db_session.scalar(select(Discussion).where(Discussion.id == active.id)) is not None
+    assert active.is_pinned is True
+
+
+def test_delete_ended_pinned_discussions_is_idempotent(db_session: Session) -> None:
+    user = create_user(db_session, "community-cleanup-idempotent@example.com")
+    moment = datetime(2026, 1, 5, 13, tzinfo=UTC)
+    ended = make_pinned_discussion(
+        db_session,
+        user_id=user.id,
+        target_date=date(2026, 1, 2),
+    )
+    db_session.commit()
+
+    first = delete_ended_pinned_discussions(db_session, moment=moment)
+    second = delete_ended_pinned_discussions(db_session, moment=moment)
+
+    assert first == 1
+    assert second == 0
+    assert db_session.scalar(select(Discussion).where(Discussion.id == ended.id)) is None

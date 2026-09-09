@@ -23,6 +23,7 @@ from app.market_data.broadcaster import get_quote_broadcaster
 from app.market_data.catalog import ensure_market_instrument_catalog
 from app.middleware.request_context import RequestContextMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.services.community import delete_ended_pinned_discussions
 
 settings = get_settings()
 enforce_production_readiness(settings)
@@ -39,6 +40,16 @@ async def _warm_market_instrument_catalog() -> None:
         logger.exception("Market instrument catalog warm-up failed")
 
 
+async def _cleanup_ended_pinned_discussions() -> None:
+    try:
+        with SessionLocal() as db:
+            deleted = delete_ended_pinned_discussions(db)
+            if deleted:
+                logger.info("Startup cleanup deleted %d ended pinned discussion(s).", deleted)
+    except Exception:
+        logger.exception("Startup pinned-discussion cleanup failed")
+
+
 async def _community_ai_retry_scheduler() -> None:
     """Retry discussions that were paused while the AI provider was unavailable."""
 
@@ -53,6 +64,7 @@ async def _community_ai_retry_scheduler() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     warmup_task: asyncio.Task[None] | None = None
+    cleanup_task: asyncio.Task[None] | None = None
     market_scheduler_task: asyncio.Task[None] | None = None
     weekly_grant_task: asyncio.Task[None] | None = None
     ai_retry_task: asyncio.Task[None] | None = None
@@ -60,6 +72,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     broadcaster = get_quote_broadcaster()
     if settings.app_env is not Environment.TEST:
         warmup_task = asyncio.create_task(_warm_market_instrument_catalog())
+        cleanup_task = asyncio.create_task(_cleanup_ended_pinned_discussions())
         market_scheduler_task = asyncio.create_task(run_daily_scan_scheduler())
         weekly_grant_task = asyncio.create_task(run_weekly_grant_scheduler())
         news_crawler_task = asyncio.create_task(run_news_crawler_scheduler())
@@ -70,6 +83,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await broadcaster.stop()
     for task in (
         warmup_task,
+        cleanup_task,
         market_scheduler_task,
         weekly_grant_task,
         ai_retry_task,

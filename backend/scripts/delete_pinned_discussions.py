@@ -3,20 +3,11 @@ from __future__ import annotations
 import logging
 import sys
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import select
 
 from app.db.session import SessionLocal
-from app.models import (
-    AIPersonaLog,
-    CommunityAdminEvent,
-    Discussion,
-    DiscussionAppeal,
-    DiscussionImpression,
-    DiscussionModerationEvent,
-    DiscussionReaction,
-    DiscussionReport,
-    PredictionVerification,
-)
+from app.models import Discussion
+from app.services.community import _purge_discussion_children
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,9 +17,10 @@ def delete_pinned_discussions() -> int:
     """Delete all currently pinned (featured) discussions from the community feed.
 
     This is meant to be run manually after a server deploy when legacy pinned
-    discussions must be removed. Pinned discussions are automatically unpinned
-    by the scheduler when their session ends (`unpin_ended_discussions`); this
-    script is the manual fallback for cleanups.
+    discussions must be removed. Pinned discussions are automatically removed
+    at startup once their session ends (`delete_ended_pinned_discussions` in
+    the app lifespan); this script is the manual fallback for a full cleanup
+    of every pinned discussion regardless of its session state.
     """
     with SessionLocal() as db:
         pinned = db.scalars(
@@ -50,46 +42,7 @@ def delete_pinned_discussions() -> int:
             )
 
         for discussion in pinned:
-            discussion_id = discussion.id
-            db.execute(
-                delete(DiscussionReaction).where(
-                    DiscussionReaction.discussion_id == discussion_id
-                )
-            )
-            db.execute(
-                delete(DiscussionImpression).where(
-                    DiscussionImpression.discussion_id == discussion_id
-                )
-            )
-            db.execute(
-                delete(DiscussionReport).where(
-                    DiscussionReport.discussion_id == discussion_id
-                )
-            )
-            db.execute(
-                delete(DiscussionModerationEvent).where(
-                    DiscussionModerationEvent.discussion_id == discussion_id
-                )
-            )
-            db.execute(
-                delete(DiscussionAppeal).where(
-                    DiscussionAppeal.discussion_id == discussion_id
-                )
-            )
-            db.execute(
-                delete(PredictionVerification).where(
-                    PredictionVerification.discussion_id == discussion_id
-                )
-            )
-            db.execute(
-                delete(AIPersonaLog).where(AIPersonaLog.discussion_id == discussion_id)
-            )
-            db.execute(
-                update(CommunityAdminEvent)
-                .where(CommunityAdminEvent.discussion_id == discussion_id)
-                .values(discussion_id=None)
-            )
-            db.delete(discussion)
+            _purge_discussion_children(db, discussion)
 
         db.commit()
         logger.info("Deleted %d pinned discussion(s).", len(pinned))
