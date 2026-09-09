@@ -1,10 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 import '../news_models.dart';
 import '../news_providers.dart';
@@ -19,69 +16,16 @@ class NewsDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
-  WebViewController? _webViewController;
-  bool _isLoadingWebView = true;
-  bool _hasWebViewError = false;
-  bool _showFullWebView = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initWebView();
-  }
-
-  void _initWebView() {
-    // initialize webview on mobile platforms
-    if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS)) {
-      try {
-        final uri = Uri.tryParse(widget.article.url);
-        if (uri != null) {
-          final controller = WebViewController()
-            ..setJavaScriptMode(JavaScriptMode.unrestricted)
-            ..setNavigationDelegate(
-              NavigationDelegate(
-                onPageStarted: (_) {
-                  if (mounted) setState(() => _isLoadingWebView = true);
-                },
-                onPageFinished: (_) {
-                  if (mounted) setState(() => _isLoadingWebView = false);
-                },
-                onWebResourceError: (error) {
-                  debugPrint('WebView error: ${error.description}');
-                  if (mounted) {
-                    setState(() {
-                      _isLoadingWebView = false;
-                      _hasWebViewError = true;
-                    });
-                  }
-                },
-              ),
-            )
-            ..loadRequest(uri);
-          _webViewController = controller;
-        }
-      } catch (e) {
-        debugPrint('Failed to initialize WebView: $e');
-        _hasWebViewError = true;
-      }
-    } else {
-      _isLoadingWebView = false;
-    }
-  }
-
-  Future<void> _openExternalBrowser() async {
-    final uri = Uri.tryParse(widget.article.url);
-    if (uri != null && await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   Future<void> _shareArticle() async {
-    final text = '${widget.article.title}\n\n${widget.article.url}';
+    final article = widget.article;
+    final text = [
+      article.title,
+      '',
+      'المصدر: ${article.sourceName}',
+      article.url,
+    ].join('\n');
     // ignore: deprecated_member_use
-    await Share.share(text, subject: widget.article.title);
+    await Share.share(text, subject: article.title);
   }
 
   String _timeAgo(DateTime dt) {
@@ -97,22 +41,15 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     final colorScheme = theme.colorScheme;
     final article = widget.article;
 
-    final initialContent = article.content.trim();
-    final needsFetch = initialContent.isEmpty;
-
-    String content = initialContent;
-    var isLoadingContent = false;
-    var contentFailed = false;
-    if (needsFetch) {
-      final detailAsync = ref.watch(newsArticleDetailProvider(article.id));
-      isLoadingContent = detailAsync.isLoading;
-      contentFailed = detailAsync.hasError;
-      if (detailAsync.hasValue &&
-          detailAsync.value!.content.trim().isNotEmpty) {
-        content = detailAsync.value!.content.trim();
-      }
-    }
+    // المحتوى الكامل يُجلب دائماً من الـ API (مش في القوائم عشان خفة الحجم)
+    final detailAsync = ref.watch(newsArticleDetailProvider(article.id));
+    final detail = detailAsync.value;
+    final content = detail?.content.isNotEmpty == true
+        ? detail!.content.trim()
+        : (article.content.isNotEmpty ? article.content.trim() : '');
     final hasContent = content.isNotEmpty;
+    final isLoadingContent = detailAsync.isLoading;
+    final contentFailed = detailAsync.hasError;
 
     return Scaffold(
       appBar: AppBar(
@@ -125,11 +62,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             icon: const Icon(Icons.share_rounded),
             tooltip: 'مشاركة الخبر',
             onPressed: _shareArticle,
-          ),
-          IconButton(
-            icon: const Icon(Icons.open_in_browser_rounded),
-            tooltip: 'فتح في المتصفح الخارجي',
-            onPressed: _openExternalBrowser,
           ),
         ],
       ),
@@ -235,8 +167,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               const SizedBox(height: 16),
             ],
 
-            // حالات تحميل/فشل المحتوى عند الحاجة لجلب تفاصيل
-            if (needsFetch && isLoadingContent) ...[
+            // حالة تحميل المحتوى الكامل
+            if (isLoadingContent) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -262,7 +194,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               const SizedBox(height: 16),
             ],
 
-            if (needsFetch && contentFailed && !isLoadingContent) ...[
+            // فشل تحميل المحتوى — مع إعادة المحاولة
+            if (contentFailed && !isLoadingContent && !hasContent) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -272,8 +205,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline_rounded,
-                        color: colorScheme.error),
+                    Icon(Icons.error_outline_rounded, color: colorScheme.error),
                     const SizedBox(width: 10),
                     const Expanded(child: Text('تعذّر تحميل المحتوى الكامل')),
                     TextButton(
@@ -377,70 +309,14 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               const SizedBox(height: 16),
             ],
 
-            // In-App WebView Toggle / Container
-            if (_webViewController != null && !_hasWebViewError) ...[
-              const Divider(height: 32),
-              Row(
-                children: [
-                  Icon(
-                    Icons.language_rounded,
-                    size: 20,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'عرض الصفحة الأصلية داخل التطبيق',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() => _showFullWebView = !_showFullWebView);
-                    },
-                    icon: Icon(
-                      _showFullWebView
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                    ),
-                    label: Text(_showFullWebView ? 'إخفاء' : 'عرض'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (_showFullWebView)
-                Container(
-                  height: 600,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Stack(
-                      children: [
-                        WebViewWidget(controller: _webViewController!),
-                        if (_isLoadingWebView)
-                          const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _openExternalBrowser,
-                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                    label: const Text('فتح الخبر في المتصفح الخارجي'),
+                    onPressed: _shareArticle,
+                    icon: const Icon(Icons.share_rounded, size: 18),
+                    label: const Text('مشاركة الخبر مع مصدره'),
                   ),
                 ),
               ],
