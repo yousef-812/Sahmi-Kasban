@@ -1,7 +1,7 @@
 """Add target_date column to discussions table and relax period_type constraint.
 
-Revision ID: 0038_discussion_target_date
-Revises: 0037_news_articles
+Revision ID: 0039_discussion_target_date
+Revises: 0038_news_urls_text
 Create Date: 2026-09-09
 """
 from __future__ import annotations
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0038_discussion_target_date"
-down_revision: str | None = "0037_news_articles"
+revision: str = "0039_discussion_target_date"
+down_revision: str | None = "0038_news_urls_text"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
