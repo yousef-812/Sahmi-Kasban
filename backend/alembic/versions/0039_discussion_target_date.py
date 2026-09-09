@@ -22,9 +22,14 @@ def upgrade() -> None:
     op.add_column("discussions", sa.Column("target_date", sa.Date(), nullable=True))
     op.create_index(op.f("ix_discussions_target_date"), "discussions", ["target_date"])
 
-    # Drop old period_type constraint if exists
-    with op.batch_alter_table("discussions") as batch_op:
-        batch_op.drop_constraint("discussion_period_type_allowed", type_="check")
+    # Drop old period_type check constraint — use IF EXISTS so this is safe on
+    # databases where the constraint was never created or already removed.
+    op.execute(
+        "ALTER TABLE discussions DROP CONSTRAINT IF EXISTS ck_discussions_discussion_period_type_allowed"
+    )
+    op.execute(
+        "ALTER TABLE discussions DROP CONSTRAINT IF EXISTS discussion_period_type_allowed"
+    )
 
 
 def downgrade() -> None:
