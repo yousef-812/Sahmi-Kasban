@@ -267,3 +267,149 @@ def test_unknown_ticker_is_rejected_before_provider_call(
     )
     assert response.status_code == 404
     assert provider.calls == 0
+
+
+def test_price_move_regenerates_analysis_instead_of_reusing_old(
+    monkeypatch,
+    client: TestClient,
+    fake_email_service,
+) -> None:
+    class MovingPriceMarketDataProvider(FakeMarketDataProvider):
+        async def get_history(self, ticker: str, *, period: str, interval: str) -> CandleSeries:
+            self.calls += 1
+            price = 100.0 if self.calls == 1 else 110.0
+            start = datetime(2025, 9, 1, tzinfo=UTC)
+            candles: list[dict[str, object]] = []
+            for index in range(220):
+                close = price if index == 219 else price + (index * 0.01)
+                candles.append(
+                    {
+                        "timestamp": (start + timedelta(days=index)).isoformat(),
+                        "open": round(close - 0.3, 6),
+                        "high": round(close + 0.8, 6),
+                        "low": round(close - 0.9, 6),
+                        "close": round(close, 6),
+                        "volume": 1_000_000 + (index * 1000),
+                    }
+                )
+            return CandleSeries(
+                ticker=ticker.upper(),
+                provider=self.name,
+                interval=interval,
+                period=period,
+                fetched_at=datetime(2026, 7, 25, 8, tzinfo=UTC),
+                data_as_of=datetime.fromisoformat(str(candles[-1]["timestamp"])),
+                fingerprint=f"fingerprint-{price}",
+                candles=tuple(candles),
+            )
+
+    import app.services.stock_analysis as stock_analysis_module
+
+    async def _no_index(*_args, **_kwargs) -> None:
+        return None
+
+    async def _live_price_110(*_args, **_kwargs) -> float:
+        return 110.0
+
+    monkeypatch.setattr(stock_analysis_module, "_fetch_index_or_none", _no_index)
+    monkeypatch.setattr(stock_analysis_module, "_fetch_live_price", _live_price_110)
+    provider = MovingPriceMarketDataProvider()
+    install_market_dependencies(provider, FakeStockAIService())
+    headers = register_and_login(client, fake_email_service)
+
+    first = client.post(
+        "/api/v1/stocks/COMI/analysis",
+        headers=headers,
+        json={"language": "ar"},
+    )
+    assert first.status_code == 200
+    first_payload = first.json()
+    assert first_payload["cached"] is False
+    assert first_payload["charged_points"] == 50
+    assert first_payload["payload"]["price_at_analysis"] == 100.0
+
+    second = client.post(
+        "/api/v1/stocks/COMI/analysis",
+        headers=headers,
+        json={"language": "ar"},
+    )
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["analysis_id"] != first_payload["analysis_id"]
+    assert second_payload["cached"] is False
+    assert second_payload["charged_points"] == 50
+    assert second_payload["payload"]["price_at_analysis"] == 110.0
+    assert provider.calls == 2
+
+
+def test_index_price_move_regenerates_analysis_instead_of_reusing_old(
+    monkeypatch,
+    client: TestClient,
+    fake_email_service,
+) -> None:
+    class MovingPriceIndexDataProvider(FakeMarketDataProvider):
+        async def get_history(self, ticker: str, *, period: str, interval: str) -> CandleSeries:
+            self.calls += 1
+            price = 2000.0 if self.calls == 1 else 2100.0
+            start = datetime(2025, 9, 1, tzinfo=UTC)
+            candles: list[dict[str, object]] = []
+            for index in range(220):
+                close = price if index == 219 else price + (index * 10.0)
+                candles.append(
+                    {
+                        "timestamp": (start + timedelta(days=index)).isoformat(),
+                        "open": round(close - 0.3, 6),
+                        "high": round(close + 0.8, 6),
+                        "low": round(close - 0.9, 6),
+                        "close": round(close, 6),
+                        "volume": 1_000_000 + (index * 1000),
+                    }
+                )
+            return CandleSeries(
+                ticker=ticker.upper(),
+                provider=self.name,
+                interval=interval,
+                period=period,
+                fetched_at=datetime(2026, 7, 25, 8, tzinfo=UTC),
+                data_as_of=datetime.fromisoformat(str(candles[-1]["timestamp"])),
+                fingerprint=f"fingerprint-{price}",
+                candles=tuple(candles),
+            )
+
+    import app.services.stock_analysis as stock_analysis_module
+
+    async def _live_index_price_2100(*_args, **_kwargs) -> float:
+        return 2100.0
+
+    monkeypatch.setattr(
+        stock_analysis_module,
+        "_fetch_live_index_price",
+        _live_index_price_2100,
+    )
+    provider = MovingPriceIndexDataProvider()
+    install_market_dependencies(provider, FakeStockAIService())
+    headers = register_and_login(client, fake_email_service)
+
+    first = client.post(
+        "/api/v1/market/indices/EGX30/analysis",
+        headers=headers,
+        json={"language": "ar"},
+    )
+    assert first.status_code == 200
+    first_payload = first.json()
+    assert first_payload["cached"] is False
+    assert first_payload["charged_points"] == 50
+    assert first_payload["payload"]["price_at_analysis"] == 2000.0
+
+    second = client.post(
+        "/api/v1/market/indices/EGX30/analysis",
+        headers=headers,
+        json={"language": "ar"},
+    )
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["analysis_id"] != first_payload["analysis_id"]
+    assert second_payload["cached"] is False
+    assert second_payload["charged_points"] == 50
+    assert second_payload["payload"]["price_at_analysis"] == 2100.0
+    assert provider.calls == 2

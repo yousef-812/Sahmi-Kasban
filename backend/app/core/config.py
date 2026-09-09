@@ -90,6 +90,7 @@ class Settings(BaseSettings):
     analysis_risk_per_trade: float = 0.01
     analysis_max_position_value: float = 40_000.0
     analysis_engine_version: str = "core-v2.5"
+    analysis_price_reuse_tolerance_pct: float = 0.5
 
     historical_replay_provider_concurrency: int = 5
     historical_replay_cpu_concurrency: int = 2
@@ -204,6 +205,8 @@ class Settings(BaseSettings):
             raise ValueError("ANALYSIS_RISK_PER_TRADE must be between 0 and 0.10")
         if self.analysis_max_position_value <= 0:
             raise ValueError("ANALYSIS_MAX_POSITION_VALUE must be positive")
+        if not 0.05 <= self.analysis_price_reuse_tolerance_pct <= 20:
+            raise ValueError("ANALYSIS_PRICE_REUSE_TOLERANCE_PCT must be 0.05..20")
         if not 1 <= self.historical_replay_provider_concurrency <= 10:
             raise ValueError("HISTORICAL_REPLAY_PROVIDER_CONCURRENCY must be 1..10")
         if not 1 <= self.historical_replay_cpu_concurrency <= 8:

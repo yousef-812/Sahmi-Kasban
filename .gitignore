@@ -26,3 +26,12 @@ firebase-service-account.json
 google-services.json
 **/google-services.json
 
+# Local build artifacts
+build_output/
+latest_build/
+latest_build_v*/
+windows_app/
+sahmi_kasban_windows_app/
+sahmi_kasban_windows_app_v*/
+*.upk
+

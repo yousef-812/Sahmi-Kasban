@@ -366,6 +366,17 @@ class AdminRepository {
     }
   }
 
+  Future<Map<String, dynamic>> fetchStockReport() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/admin/stock-report',
+      );
+      return _required(response.data);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<Map<String, dynamic>> upgradeUserPlan({
     required String userId,
     required String planCode,

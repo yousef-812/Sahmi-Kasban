@@ -17,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from app.core.config import Environment, get_settings
 from app.market_data.cache import get_cached_or_fresh_history
 from app.market_data.types import CandleSeries, MarketDataProvider
 from app.models import StockAnalysis, User, UserStockAnalysisAccess, WalletEntry
@@ -320,6 +320,109 @@ def latest_owned_stock_analysis(
     )
 
 
+def _complete_analysis_by_cache_key(db: Session, cache_key: str) -> StockAnalysis | None:
+    return db.scalar(
+        select(StockAnalysis).where(
+            StockAnalysis.cache_key == cache_key,
+            StockAnalysis.status == "complete",
+        )
+    )
+
+
+def _analysis_price(analysis: StockAnalysis) -> float | None:
+    """Price recorded when the analysis was computed, used for freshness checks.
+
+    Prefers the explicit ``price_at_analysis`` field and falls back to the
+    technical engine's last close so older payloads still work.
+    """
+    payload = analysis.payload if isinstance(analysis.payload, dict) else {}
+    price_at_analysis = payload.get("price_at_analysis")
+    if isinstance(price_at_analysis, (int, float)):
+        return float(price_at_analysis)
+    analysis_data = payload.get("analysis", {}) if isinstance(payload.get("analysis"), dict) else {}
+    engines = analysis_data.get("engines", {}) if isinstance(analysis_data.get("engines"), dict) else {}
+    technical = engines.get("technical", {}) if isinstance(engines.get("technical"), dict) else {}
+    details = technical.get("details", {}) if isinstance(technical.get("details"), dict) else {}
+    close = details.get("close")
+    if isinstance(close, (int, float)):
+        return float(close)
+    return None
+
+
+def _last_candle_close(series: CandleSeries) -> float | None:
+    if not series.candles:
+        return None
+    last = series.candles[-1]
+    close = last.get("close") if isinstance(last, dict) else None
+    if isinstance(close, (int, float)):
+        return float(close)
+    return None
+
+
+def _prices_match(
+    live_price: float | None,
+    analysis_price: float | None,
+    *,
+    tolerance_pct: float,
+) -> bool:
+    """Whether a stored analysis is still fresh at ``live_price``.
+
+    A missing price (either side) defaults to reuse: the fingerprint-based
+    cache already guarantees the same underlying data for that case.
+    """
+    if live_price is None or analysis_price is None:
+        return True
+    if analysis_price == 0:
+        return live_price == 0
+    return abs(live_price - analysis_price) <= analysis_price * tolerance_pct / 100.0
+
+
+async def _fetch_live_price(db: Session, ticker: str) -> float | None:
+    """Best-effort live price used to decide whether a stored analysis is stale.
+
+    Returns ``None`` (falling back to fingerprint-based reuse) whenever a live
+    quote is unavailable or the environment cannot make network calls.
+    """
+    if get_settings().app_env is Environment.TEST:
+        return None
+    try:
+        from app.market_data.quotes import fetch_single_quote
+
+        quote = await fetch_single_quote(db, ticker)
+        if quote is not None and quote.current_price is not None:
+            return float(quote.current_price)
+    except Exception as exc:
+        logger.info("Live price unavailable for %s; reusing by fingerprint: %s", ticker, exc)
+    return None
+
+
+async def _fetch_live_index_price(ticker: str) -> float | None:
+    """Best-effort live index quote used for the same freshness reuse decision.
+
+    Indices are not part of the stock scanner, so this uses the dedicated index
+    quote path instead of ``fetch_single_quote``.
+    """
+    if get_settings().app_env is Environment.TEST:
+        return None
+    try:
+        from app.market_data.indices import fetch_index_quote
+
+        quote = await fetch_index_quote(ticker)
+        if quote is not None and quote.current_price is not None:
+            return float(quote.current_price)
+    except Exception as exc:
+        logger.info("Live index price unavailable for %s; reusing by fingerprint: %s", ticker, exc)
+    return None
+
+
+def _price_freshness_allows_reuse(analysis: StockAnalysis, live_price: float | None) -> bool:
+    return _prices_match(
+        live_price,
+        _analysis_price(analysis),
+        tolerance_pct=get_settings().analysis_price_reuse_tolerance_pct,
+    )
+
+
 async def execute_stock_analysis(
     db: Session,
     *,
@@ -338,12 +441,34 @@ async def execute_stock_analysis(
     )
     index_series = await _fetch_index_or_none(db, provider, series.ticker)
     cache_key = _analysis_cache_key(series, language, index_series)
-    existing = db.scalar(
-        select(StockAnalysis).where(
-            StockAnalysis.cache_key == cache_key,
-            StockAnalysis.status == "complete",
+    existing = _complete_analysis_by_cache_key(db, cache_key)
+    if existing is not None:
+        live_price = await _fetch_live_price(db, series.ticker)
+        if _price_freshness_allows_reuse(existing, live_price):
+            return _deliver_existing_analysis(
+                db,
+                user=user,
+                analysis=existing,
+                analysis_cost_points=analysis_cost_points,
+                market_snapshot_cached=market_snapshot_cached,
+            )
+        logger.info(
+            "Live price for %s moved beyond %s%% reuse tolerance (analysis %s); "
+            "refreshing history for a fresh analysis",
+            series.ticker,
+            settings.analysis_price_reuse_tolerance_pct,
+            existing.id,
         )
-    )
+        series, market_snapshot_cached = await get_cached_or_fresh_history(
+            db,
+            provider,
+            ticker,
+            force_refresh=True,
+        )
+        index_series = await _fetch_index_or_none(db, provider, series.ticker)
+        cache_key = _analysis_cache_key(series, language, index_series)
+
+    existing = _complete_analysis_by_cache_key(db, cache_key)
     if existing is not None:
         return _deliver_existing_analysis(
             db,
@@ -428,6 +553,7 @@ async def execute_stock_analysis(
 
     payload = {
         "version": settings.analysis_engine_version,
+        "price_at_analysis": _last_candle_close(series),
         "market_data": {
             "provider": series.provider,
             "interval": series.interval,
@@ -554,12 +680,37 @@ async def execute_index_analysis(
         min_candles=200,
     )
     cache_key = _analysis_cache_key(series, language, key_prefix="index-analysis")
-    existing = db.scalar(
-        select(StockAnalysis).where(
-            StockAnalysis.cache_key == cache_key,
-            StockAnalysis.status == "complete",
+    existing = _complete_analysis_by_cache_key(db, cache_key)
+    if existing is not None:
+        live_price = await _fetch_live_index_price(series.ticker)
+        if _price_freshness_allows_reuse(existing, live_price):
+            return _deliver_existing_analysis(
+                db,
+                user=user,
+                analysis=existing,
+                analysis_cost_points=analysis_cost_points,
+                market_snapshot_cached=market_snapshot_cached,
+            )
+        logger.info(
+            "Live index price for %s moved beyond %s%% reuse tolerance (analysis %s); "
+            "refreshing history for a fresh analysis",
+            series.ticker,
+            settings.analysis_price_reuse_tolerance_pct,
+            existing.id,
         )
-    )
+        series, market_snapshot_cached = await get_cached_or_fresh_history(
+            db,
+            provider,
+            info.ticker,
+            period="2y",
+            interval="1d",
+            cache_minutes=index_settings.market_data_cache_minutes,
+            min_candles=200,
+            force_refresh=True,
+        )
+        cache_key = _analysis_cache_key(series, language, key_prefix="index-analysis")
+
+    existing = _complete_analysis_by_cache_key(db, cache_key)
     if existing is not None:
         return _deliver_existing_analysis(
             db,
@@ -626,6 +777,7 @@ async def execute_index_analysis(
 
     payload = {
         "version": settings.analysis_engine_version,
+        "price_at_analysis": _last_candle_close(series),
         "market_data": {
             "provider": series.provider,
             "interval": series.interval,

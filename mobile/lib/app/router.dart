@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/observability/app_observability.dart';
 import '../domain/models.dart';
 import '../features/admin/admin_dashboard_screen.dart';
+import '../features/admin/admin_stock_report_screen.dart';
 import '../features/admin/admin_wallet_credit_screen.dart';
 import '../features/admin/ai_failures_admin_screen.dart';
 import '../features/admin/historical_replay_control_screen.dart';
@@ -185,6 +186,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/admin/stock-report',
+        builder: (context, state) => const AdminStockReportScreen(),
       ),
       GoRoute(
         path: '/admin/ai-failures',

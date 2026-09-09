@@ -1,12 +1,13 @@
 from fastapi import APIRouter
 
-from app.api.routes.admin_backtests import router as admin_backtests_router
 from app.api.routes.admin_ai_failures import router as admin_ai_failures_router
+from app.api.routes.admin_backtests import router as admin_backtests_router
 from app.api.routes.admin_operations import router as admin_operations_router
 from app.api.routes.admin_performance_recovery import (
     router as admin_performance_recovery_router,
 )
 from app.api.routes.admin_replays import router as admin_replays_router
+from app.api.routes.admin_stock_report import router as admin_stock_report_router
 from app.api.routes.admin_wallet import router as admin_wallet_router
 from app.api.routes.ai_copilot import router as ai_copilot_router
 from app.api.routes.analysis_history import router as analysis_history_router
@@ -21,6 +22,8 @@ from app.api.routes.health import router as health_router
 from app.api.routes.labs import router as labs_router
 from app.api.routes.market import router as market_router
 from app.api.routes.monetization import router as monetization_router
+from app.api.routes.news import admin_news_router, stock_news_router
+from app.api.routes.news import router as news_router
 from app.api.routes.notifications import router as notifications_router
 from app.api.routes.performance import router as performance_router
 from app.api.routes.profile import router as profile_router
@@ -32,7 +35,6 @@ from app.api.routes.sector_reports import router as sector_reports_router
 from app.api.routes.trading_chat import router as trading_chat_router
 from app.api.routes.version_check import router as version_check_router
 from app.api.routes.wallet import router as wallet_router
-from app.api.routes.news import admin_news_router, router as news_router, stock_news_router
 from app.api.routes.watchlist import router as watchlist_router
 
 api_router = APIRouter()
@@ -69,4 +71,5 @@ api_router.include_router(admin_wallet_router)
 api_router.include_router(admin_backtests_router)
 api_router.include_router(admin_ai_failures_router)
 api_router.include_router(admin_replays_router)
+api_router.include_router(admin_stock_report_router)
 api_router.include_router(quality_admin_router)

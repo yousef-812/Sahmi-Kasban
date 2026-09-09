@@ -9,6 +9,7 @@ import '../../core/network/api_exception.dart';
 import 'admin_models.dart';
 import 'admin_providers.dart';
 import 'admin_repository.dart';
+import 'admin_stock_report_screen.dart';
 import 'historical_replay_models.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -17,11 +18,16 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 10,
+      length: 11,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الإدارة'),
           actions: [
+            IconButton(
+              onPressed: () => context.push('/admin/stock-report'),
+              icon: const Icon(Icons.analytics_outlined),
+              tooltip: 'تقرير الأسهم الإداري',
+            ),
             IconButton(
               onPressed: () => context.push('/admin/ai-failures'),
               icon: const Icon(Icons.bug_report_outlined),
@@ -46,6 +52,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Tab(text: 'وظائف إعادة اللعب'),
               Tab(text: 'إعادة التقرير'),
               Tab(text: 'ملاحظات المستخدمين'),
+              Tab(text: 'تقرير الأسهم'),
             ],
           ),
         ),
@@ -61,6 +68,7 @@ class AdminDashboardScreen extends StatelessWidget {
             _ReplayJobsTab(),
             _RegenerateReportTab(),
             _UserFeedbacksTab(),
+            _StockReportTab(),
           ],
         ),
       ),
@@ -1699,5 +1707,14 @@ class _UserFeedbacksTabState extends ConsumerState<_UserFeedbacksTab> {
         ],
       ),
     );
+  }
+}
+
+class _StockReportTab extends StatelessWidget {
+  const _StockReportTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const StockReportTab();
   }
 }

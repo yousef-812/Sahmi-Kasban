@@ -6,6 +6,7 @@ import os
 
 from app.jobs.generate_daily_top10 import run_daily_top10_scan
 from app.jobs.generate_investment_report import run_investment_report_scan
+from app.jobs.generate_stock_report import run_stock_report_scan
 from app.jobs.persona_scheduler import trigger_persona_discussions_job
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,15 @@ async def run_daily_scan_scheduler() -> None:
             raise
         except Exception:
             logger.exception("Scheduled daily EGX scan failed")
+
+        try:
+            stock_result = await run_stock_report_scan()
+            if stock_result.get("status") == "created":
+                logger.info("Admin stock report created by scheduler: %s", stock_result)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Scheduled admin stock report scan failed")
 
         try:
             persona_res = await trigger_persona_discussions_job()
