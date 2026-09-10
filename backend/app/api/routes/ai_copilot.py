@@ -124,7 +124,10 @@ def _resolve_query_tickers(db, *, explicit: str | None, question: str) -> list[s
     except Exception:
         known = frozenset()
     try:
-        for ticker, _score in extract_tickers_from_text(question or "", known):
+        # Uppercase first so lowercase mentions (e.g. "phar") match too.
+        # Arabic text is unaffected; candidates are validated against
+        # known tickers inside the extractor.
+        for ticker, _score in extract_tickers_from_text((question or "").upper(), known):
             clean = ticker.strip().upper()
             if clean and clean not in ordered:
                 ordered.append(clean)
