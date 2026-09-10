@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import traceback
 from datetime import UTC, datetime, timedelta
@@ -15,12 +16,15 @@ from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.admin import is_admin_email
 from app.market_data.provider import get_market_data_provider
 from app.market_data.quotes import fetch_single_quote
-from app.models import AiFailureLog, User
+from app.models import AiFailureLog, MarketInstrumentCatalog, User
 from app.services.community_ai import get_community_ai_service
+from app.services.news import extract_tickers_from_text
 from app.services.referral import ensure_user_referral_code
 from app.services.wallet import InsufficientBalanceError, debit_points, get_wallet_account
 
 logger = logging.getLogger(__name__)
+
+MAX_QUERY_TICKERS = 5
 
 router = APIRouter(prefix="/ai-copilot", tags=["ai_copilot"])
 CommunityAIService = Annotated[SahmiAIService, Depends(get_community_ai_service)]
@@ -54,7 +58,7 @@ def _num(value: object, default: float = 0.0) -> float:
     return result if result == result else default
 
 
-def _build_history_context(candles: list[dict]) -> str:
+def _build_history_context(candles: list[dict], *, recent_n: int = 10) -> str:
     """Compact historical context (last sessions + trend stats) for the AI prompt."""
     rows: list[tuple[str, float, float, float, float]] = []
     for candle in candles:
@@ -78,7 +82,7 @@ def _build_history_context(candles: list[dict]) -> str:
     first_open = rows[0][1]
 
     lines = ["📊 البيانات التاريخية للسهم (آخر الجلسات — الأحدث أخيراً):"]
-    for stamp, o, _h, _l, c in rows[-10:]:
+    for stamp, o, _h, _l, c in rows[-recent_n:]:
         day_change = ((c - o) / o * 100.0) if o > 0 else 0.0
         lines.append(f"- {stamp}: إغلاق {c:.2f} ({day_change:+.2f}%)")
 
@@ -101,6 +105,42 @@ def _build_history_context(candles: list[dict]) -> str:
         f"| متوسط 20 = {sma20:.2f} | الاتجاه: {trend}"
     )
     return "\n".join(lines) + "\n\n"
+
+
+def _resolve_query_tickers(db, *, explicit: str | None, question: str) -> list[str]:
+    """Tickers for a copilot query: explicit field first, then symbols/names
+    mentioned in the question text. Never raises."""
+    ordered: list[str] = []
+    if explicit and explicit.strip():
+        ordered.append(explicit.strip().upper())
+    try:
+        known = frozenset(
+            db.scalars(
+                select(MarketInstrumentCatalog.ticker).where(
+                    MarketInstrumentCatalog.active.is_(True)
+                )
+            ).all()
+        )
+    except Exception:
+        known = frozenset()
+    try:
+        for ticker, _score in extract_tickers_from_text(question or "", known):
+            clean = ticker.strip().upper()
+            if clean and clean not in ordered:
+                ordered.append(clean)
+    except Exception:
+        pass
+    return ordered[:MAX_QUERY_TICKERS]
+
+
+async def _safe_history(provider, ticker: str) -> list[dict]:
+    """Daily candles for a ticker. Returns [] on any failure."""
+    try:
+        series = await provider.get_history(ticker, period="1mo", interval="1d")
+        return [dict(c) for c in series.candles]
+    except Exception:
+        logger.warning("AI copilot history fetch failed for %s", ticker)
+        return []
 
 
 @router.post("/query", response_model=AiCopilotQueryResponse)
@@ -169,37 +209,56 @@ async def query_ai_copilot(
                 detail="رصيد العملات غير كافٍ لاستخدام المساعد الذكي (التكلفة 0.5 عملة)",
             ) from exc
 
-    # 4. Fetch live market quote for accurate real-time stock price
-    market_context = ""
-    history_context = ""
-    quote_price_strict = ""
-    company_name_strict = ""
-    if body.ticker:
-        quote = await fetch_single_quote(db, body.ticker)
-        if quote:
-            change_str = f"{quote.change_percent:+.2f}%" if quote.change_percent is not None else "غير متوفر"
-            quote_price_strict = f"{quote.current_price}" if quote.current_price is not None else ""
-            company_name_strict = quote.description or quote.ticker
-            market_context = (
-                f"🚨 بيانات رسمية مؤكدة ومحدثة الآن لسهم ({quote.ticker} — {quote.description}):\n"
-                f"- السعر الحالي اللحظي والمعتمد: {quote.current_price or 'غير متوفر'} جنيه\n"
-                f"- التغير اليومي: {change_str}\n"
-                f"- سعر الفتح: {quote.open_price or 'غير متوفر'} جنيه\n"
-                f"- أعلى سعر للجلسة: {quote.session_high or 'غير متوفر'} جنيه\n"
-                f"- أدنى سعر للجلسة: {quote.session_low or 'غير متوفر'} جنيه\n"
-                f"- حجم التداول: {quote.volume or 'غير متوفر'}\n"
-                f"- القطاع: {quote.sector or 'غير متوفر'}\n\n"
-            )
-        # 4b. Historical candles so the AI can discuss trend/supports.
-        # Failure here must never block the query (quote-only fallback).
-        try:
-            provider = get_market_data_provider()
-            series = await provider.get_history(
-                body.ticker.strip().upper(), period="1mo", interval="1d"
-            )
-            history_context = _build_history_context([dict(c) for c in series.candles])
-        except Exception:
-            logger.warning("AI copilot history fetch failed for %s", body.ticker)
+    # 4. Resolve tickers (explicit field + symbols mentioned in the question)
+    # and fetch live quote + historical candles for each of them.
+    tickers = _resolve_query_tickers(db, explicit=body.ticker, question=body.question)
+    market_blocks: list[str] = []
+    strict_price_lines: list[str] = []
+    primary_ticker = tickers[0] if tickers else None
+
+    if tickers:
+        provider = get_market_data_provider()
+        histories = await asyncio.gather(*[_safe_history(provider, t) for t in tickers])
+        for index, (ticker, candles) in enumerate(zip(tickers, histories, strict=True)):
+            try:
+                quote = await fetch_single_quote(db, ticker)
+            except Exception:
+                quote = None
+            if quote is None and not candles:
+                continue
+            name = (quote.description or ticker) if quote else ticker
+            if quote:
+                change_str = (
+                    f"{quote.change_percent:+.2f}%"
+                    if quote.change_percent is not None
+                    else "غير متوفر"
+                )
+                if quote.current_price is not None:
+                    strict_price_lines.append(
+                        f"- {ticker} ({name}): {quote.current_price} جنيه"
+                    )
+                market_blocks.append(
+                    f"🚨 بيانات رسمية مؤكدة ومحدثة الآن لسهم ({ticker} — {name}):\n"
+                    f"- السعر الحالي اللحظي والمعتمد: {quote.current_price or 'غير متوفر'} جنيه\n"
+                    f"- التغير اليومي: {change_str}\n"
+                    f"- سعر الفتح: {quote.open_price or 'غير متوفر'} جنيه\n"
+                    f"- أعلى سعر للجلسة: {quote.session_high or 'غير متوفر'} جنيه\n"
+                    f"- أدنى سعر للجلسة: {quote.session_low or 'غير متوفر'} جنيه\n"
+                    f"- حجم التداول: {quote.volume or 'غير متوفر'}\n"
+                    f"- القطاع: {quote.sector or 'غير متوفر'}\n"
+                )
+            else:
+                market_blocks.append(
+                    f"سهم ({ticker} — {name}): لا توجد بيانات لحظية متاحة حالياً.\n"
+                )
+            if candles:
+                market_blocks.append(
+                    _build_history_context(candles, recent_n=10 if index == 0 else 5)
+                )
+
+    market_context = "\n".join(market_blocks)
+    if market_context:
+        market_context += "\n"
 
     # 5. Build prompt with conversation memory and live market quote
     history_str = ""
@@ -213,24 +272,32 @@ async def query_ai_copilot(
         if history_items:
             history_str = "سياق المحادثة السابقة بينك وبين المستخدم:\n" + "\n".join(history_items) + "\n\n"
 
+    analyzed_line = ""
+    if tickers:
+        analyzed_line = f"الأسهم التي تم جلب بياناتها لتحليلها: { '، '.join(tickers)}\n\n"
+    strict_block = ""
+    if strict_price_lines:
+        strict_block = "الأسعار المعتمدة (ممنوع تغييرها):\n" + "\n".join(strict_price_lines) + "\n"
+
     prompt = (
         f"أنت مساعد الذكاء الاصطناعي لسوق الأسهم في تطبيق سهمي كسبان.\n"
         f"{market_context}"
-        f"{history_context}"
         f"{history_str}"
         f"سؤال المستخدم الحالي: {body.question}\n"
-        f"{f'السهم المطلوب: {body.ticker}' if body.ticker else ''}\n\n"
+        f"{analyzed_line}"
         f"تعليمات الإجابة الصارمة:\n"
-        f"1. تنبيه مؤكد: سعر سهم {body.ticker or ''} ({company_name_strict}) الحالي والمعتمد هو بالضبط ({quote_price_strict} جنيه). يمنع منعاً باتاً تغيير السعر أو اختراع اسم شركة أخرى غير {company_name_strict}!\n"
-        f"2. اعتمد حتماً ورسمياً على السعر الحالي ({quote_price_strict} جنيه) كإغلاق ومرجع أساسي عند تحديد الدعم والمقاومة، ولا تذكر أي أسعار قديمة أو افتراضية مخالفة.\n"
-        f"3. قدم تحليلاً مالياً وتقنياً دقيقاً بأسلوب حواري مبسط وشامل.\n"
+        f"1. تنبيه مؤكد:\n{strict_block}"
+        f"يمنع منعاً باتاً تغيير أي سعر أو اختراع أسعار أو شركات غير مذكورة أعلاه!\n"
+        f"2. اعتمد حتماً ورسمياً على الأسعار المعتمدة أعلاه كإغلاق ومرجع أساسي عند تحديد الدعم والمقاومة لكل سهم، ولا تذكر أي أسعار قديمة أو افتراضية مخالفة.\n"
+        f"3. قدم تحليلاً مالياً وتقنياً دقيقاً بأسلوب حواري مبسط وشامل. عند ذكر أكثر من سهم حلل كل سهم باختصار ثم قارن بينهم.\n"
         f"4. اختم إجابتك دائماً بدعوة غير مباشرة تشجع المستخدم على نشر توقع ومناقشة في المجتمع (مثال: 'ما هو انطباعك أنت لأسعار الجلسة القادمة؟ شارك توقعك الآن في المجتمع وادعم المتداولين!').\n"
         f"5. عند الحديث عن الاتجاه أو الدعوم والمقاومات استخدم البيانات التاريخية المذكورة أعلاه فقط (الجلسات الأخيرة والمتوسطات)، ولا تخترع قمماً أو قيعاناً غير مذكورة.\n"
+        f"6. ممنوع الرد بعبارات مثل 'لا تتوفر بيانات' عن أي سهم مذكور أعلاه ببياناته — البيانات أمامك وحللها مباشرة.\n"
     )
 
     try:
         raw_answer = await ai_service.generate_market_insight(
-            ticker=body.ticker or "COMI",
+            ticker=primary_ticker or "COMI",
             technical_data={"question": body.question, "prompt": prompt},
         )
         answer = raw_answer if isinstance(raw_answer, str) else str(raw_answer)
