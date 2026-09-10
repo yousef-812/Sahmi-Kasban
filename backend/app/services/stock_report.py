@@ -376,7 +376,7 @@ async def generate_stock_report(
                     current_price=current_price,
                     price_change_pct=change_pct,
                     fair_value=metrics.fair_value if metrics else None,
-                    expected_recovery_pct=round(fair_upside, 1)
+                    expected_recovery_pct=round(min(fair_upside, 999.9), 1)
                     if fair_upside is not None and fair_upside > 0
                     else None,
                     bounce_score=signal.score,
