@@ -34,13 +34,13 @@ async def run_stock_report_scan(moment: datetime | None = None) -> dict[str, obj
             "detail": f"{source_date.isoformat()} is not an EGX trading session",
         }
 
-    target_hour = settings.investment_scan_hour
-    target_minute = settings.investment_scan_minute
+    target_hour = settings.stock_report_scan_hour
+    target_minute = settings.stock_report_scan_minute
     if (local.hour, local.minute) < (target_hour, target_minute):
         return {
             "status": "skipped",
             "reason": "before_scan_time",
-            "detail": f"Stock report scheduled for {target_hour:02d}:{target_minute:02d} Cairo time",
+            "detail": f"Stock report scheduled for {target_hour:02d}:{target_minute:02d} Cairo time (after session end)",
         }
 
     with SessionLocal() as db:

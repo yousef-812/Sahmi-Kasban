@@ -102,6 +102,8 @@ class Settings(BaseSettings):
     egx_holidays: str = ""
     investment_scan_hour: int = 14
     investment_scan_minute: int = 45
+    stock_report_scan_hour: int = 16
+    stock_report_scan_minute: int = 0
     daily_scan_hour: int = 15
     daily_scan_minute: int = 0
     daily_scan_max_concurrency: int = 4
@@ -223,6 +225,10 @@ class Settings(BaseSettings):
             raise ValueError("DAILY_SCAN_HOUR must be between 0 and 23")
         if not 0 <= self.daily_scan_minute <= 59:
             raise ValueError("DAILY_SCAN_MINUTE must be between 0 and 59")
+        if not 0 <= self.stock_report_scan_hour <= 23:
+            raise ValueError("STOCK_REPORT_SCAN_HOUR must be between 0 and 23")
+        if not 0 <= self.stock_report_scan_minute <= 59:
+            raise ValueError("STOCK_REPORT_SCAN_MINUTE must be between 0 and 59")
         if not 1 <= self.daily_scan_max_concurrency <= 20:
             raise ValueError("DAILY_SCAN_MAX_CONCURRENCY must be between 1 and 20")
         if self.daily_scan_min_average_turnover_egp < 0:

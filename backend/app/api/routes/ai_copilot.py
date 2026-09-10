@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import traceback
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -12,11 +13,14 @@ from sqlalchemy import func, select
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.admin import is_admin_email
+from app.market_data.provider import get_market_data_provider
 from app.market_data.quotes import fetch_single_quote
 from app.models import AiFailureLog, User
 from app.services.community_ai import get_community_ai_service
 from app.services.referral import ensure_user_referral_code
 from app.services.wallet import InsufficientBalanceError, debit_points, get_wallet_account
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai-copilot", tags=["ai_copilot"])
 CommunityAIService = Annotated[SahmiAIService, Depends(get_community_ai_service)]
@@ -40,6 +44,63 @@ class AiCopilotQueryResponse(BaseModel):
     answer: str
     ticker: str | None
     coins_deducted: float = 0.5
+
+
+def _num(value: object, default: float = 0.0) -> float:
+    try:
+        result = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+    return result if result == result else default
+
+
+def _build_history_context(candles: list[dict]) -> str:
+    """Compact historical context (last sessions + trend stats) for the AI prompt."""
+    rows: list[tuple[str, float, float, float, float]] = []
+    for candle in candles:
+        close = _num(candle.get("close"))
+        if close <= 0:
+            continue
+        stamp = str(candle.get("timestamp") or "")[:10]
+        rows.append(
+            (
+                stamp,
+                _num(candle.get("open"), close),
+                _num(candle.get("high"), close),
+                _num(candle.get("low"), close),
+                close,
+            )
+        )
+    if len(rows) < 5:
+        return ""
+    closes = [r[4] for r in rows]
+    last = closes[-1]
+    first_open = rows[0][1]
+
+    lines = ["📊 البيانات التاريخية للسهم (آخر الجلسات — الأحدث أخيراً):"]
+    for stamp, o, _h, _l, c in rows[-10:]:
+        day_change = ((c - o) / o * 100.0) if o > 0 else 0.0
+        lines.append(f"- {stamp}: إغلاق {c:.2f} ({day_change:+.2f}%)")
+
+    window = closes[-20:]
+    hi, lo = max(window), min(window)
+    month_change = ((last - first_open) / first_open * 100.0) if first_open > 0 else 0.0
+    sma5 = sum(closes[-5:]) / min(5, len(closes))
+    sma20 = sum(window) / len(window)
+    pos = ((last - lo) / (hi - lo) * 100.0) if hi > lo else 50.0
+    trend = (
+        "صاعد (فوق متوسط 5 و20)"
+        if last > sma5 >= sma20
+        else "هابط (تحت متوسط 5 و20)"
+        if last < sma5 <= sma20
+        else "عرضي/مختلط"
+    )
+    lines.append(
+        f"الخلاصة: تغير ~شهر {month_change:+.2f}% | أعلى {hi:.2f} وأدنى {lo:.2f} "
+        f"(20 جلسة) | السعر عند {pos:.0f}% من المدى | متوسط 5 = {sma5:.2f} "
+        f"| متوسط 20 = {sma20:.2f} | الاتجاه: {trend}"
+    )
+    return "\n".join(lines) + "\n\n"
 
 
 @router.post("/query", response_model=AiCopilotQueryResponse)
@@ -110,6 +171,7 @@ async def query_ai_copilot(
 
     # 4. Fetch live market quote for accurate real-time stock price
     market_context = ""
+    history_context = ""
     quote_price_strict = ""
     company_name_strict = ""
     if body.ticker:
@@ -128,6 +190,16 @@ async def query_ai_copilot(
                 f"- حجم التداول: {quote.volume or 'غير متوفر'}\n"
                 f"- القطاع: {quote.sector or 'غير متوفر'}\n\n"
             )
+        # 4b. Historical candles so the AI can discuss trend/supports.
+        # Failure here must never block the query (quote-only fallback).
+        try:
+            provider = get_market_data_provider()
+            series = await provider.get_history(
+                body.ticker.strip().upper(), period="1mo", interval="1d"
+            )
+            history_context = _build_history_context([dict(c) for c in series.candles])
+        except Exception:
+            logger.warning("AI copilot history fetch failed for %s", body.ticker)
 
     # 5. Build prompt with conversation memory and live market quote
     history_str = ""
@@ -144,6 +216,7 @@ async def query_ai_copilot(
     prompt = (
         f"أنت مساعد الذكاء الاصطناعي لسوق الأسهم في تطبيق سهمي كسبان.\n"
         f"{market_context}"
+        f"{history_context}"
         f"{history_str}"
         f"سؤال المستخدم الحالي: {body.question}\n"
         f"{f'السهم المطلوب: {body.ticker}' if body.ticker else ''}\n\n"
@@ -151,7 +224,8 @@ async def query_ai_copilot(
         f"1. تنبيه مؤكد: سعر سهم {body.ticker or ''} ({company_name_strict}) الحالي والمعتمد هو بالضبط ({quote_price_strict} جنيه). يمنع منعاً باتاً تغيير السعر أو اختراع اسم شركة أخرى غير {company_name_strict}!\n"
         f"2. اعتمد حتماً ورسمياً على السعر الحالي ({quote_price_strict} جنيه) كإغلاق ومرجع أساسي عند تحديد الدعم والمقاومة، ولا تذكر أي أسعار قديمة أو افتراضية مخالفة.\n"
         f"3. قدم تحليلاً مالياً وتقنياً دقيقاً بأسلوب حواري مبسط وشامل.\n"
-        f"4. اختم إجابتك دائماً بدعوة غير مباشرة تشجع المستخدم على نشر توقع ومناقشة في المجتمع (مثال: 'ما هو انطباعك أنت لأسعار الجلسة القادمة؟ شارك توقعك الآن في المجتمع وادعم المتداولين!')."
+        f"4. اختم إجابتك دائماً بدعوة غير مباشرة تشجع المستخدم على نشر توقع ومناقشة في المجتمع (مثال: 'ما هو انطباعك أنت لأسعار الجلسة القادمة؟ شارك توقعك الآن في المجتمع وادعم المتداولين!').\n"
+        f"5. عند الحديث عن الاتجاه أو الدعوم والمقاومات استخدم البيانات التاريخية المذكورة أعلاه فقط (الجلسات الأخيرة والمتوسطات)، ولا تخترع قمماً أو قيعاناً غير مذكورة.\n"
     )
 
     try:
