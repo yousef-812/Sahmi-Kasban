@@ -254,92 +254,89 @@ class _TradingSessionChatScreenState
                             ),
                           ),
                         )
-                      : Column(
-                          children: [
-                            Expanded(
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(12),
-                                itemCount: _messages.length,
-                                itemBuilder: (context, index) {
-                                  final msg = _messages[index];
-                                  return Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Container(
-                                      margin: const EdgeInsets.only(bottom: 8),
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: theme.colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            msg['user_name'] as String? ?? 'متداول',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.amber,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            msg['content'] as String? ?? '',
-                                            style: const TextStyle(fontSize: 13),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            if (_isSessionOpen)
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                color: theme.colorScheme.surface,
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _textController,
-                                        decoration: const InputDecoration(
-                                          hintText: 'اكتب رسالتك في الغرفة المباشرة...',
-                                          border: OutlineInputBorder(),
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 8,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      icon: const Icon(Icons.send_rounded),
-                                      onPressed: _isSending ? null : _sendMessage,
-                                    ),
-                                  ],
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = _messages[index];
+                            return Align(
+                              alignment: Alignment.centerRight,
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                              )
-                            else
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                color: Colors.amber.withValues(alpha: 0.1),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.info_outline_rounded, size: 16),
-                                    SizedBox(width: 8),
                                     Text(
-                                      'المحادثة المباشرة متاحة فقط بين 10:00 صباحاً و 2:30 مساءً بتوقيت مصر.',
-                                      style: TextStyle(fontSize: 12),
+                                      msg['user_name'] as String? ?? 'متداول',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.amber,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      msg['content'] as String? ?? '',
+                                      style: const TextStyle(fontSize: 13),
                                     ),
                                   ],
                                 ),
                               ),
-                          ],
+                            );
+                          },
                         ),
             ),
+
+            // Message input — always visible while the session is open
+            if (_isSessionOpen)
+              Container(
+                padding: const EdgeInsets.all(8),
+                color: theme.colorScheme.surface,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _textController,
+                        decoration: const InputDecoration(
+                          hintText: 'اكتب رسالتك في الغرفة المباشرة...',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.send_rounded),
+                      onPressed: _isSending ? null : _sendMessage,
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(12),
+                color: Colors.amber.withValues(alpha: 0.1),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'المحادثة المباشرة متاحة فقط بين 10:00 صباحاً و 2:30 مساءً بتوقيت مصر.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

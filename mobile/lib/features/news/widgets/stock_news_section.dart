@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../auth/session_controller.dart';
 import '../news_providers.dart';
 import 'news_card.dart';
 
-/// سكشن الأخبار المختصر في صفحة تفاصيل السهم (آخر 3 أخبار)
+/// سكشن الأخبار المختصر في صفحة تفاصيل السهم (آخر 3 أخبار) — للأدمن فقط
 class StockNewsSection extends ConsumerWidget {
   const StockNewsSection({super.key, required this.ticker});
   final String ticker;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isAdmin =
+        ref.watch(sessionControllerProvider).profile?.isAdmin == true;
+    if (!isAdmin) return const SizedBox.shrink();
+
     final newsAsync = ref.watch(stockNewsProvider(ticker));
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;

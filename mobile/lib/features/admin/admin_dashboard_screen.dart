@@ -114,6 +114,19 @@ class _OverviewTab extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 18),
+          Card(
+            child: ListTile(
+              leading: const Icon(
+                Icons.newspaper_rounded,
+                color: Color(0xFF0088CC),
+              ),
+              title: const Text('الأخبار المالية'),
+              subtitle: const Text('عرض آخر أخبار السوق والأسهم (للأدمن فقط)'),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () => context.push('/news'),
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               const Expanded(child: Text('حالة المزودات')),

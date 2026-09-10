@@ -283,6 +283,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (location.startsWith('/admin') && session.profile?.isAdmin != true) {
         return '/home';
       }
+      // الأخبار متاحة للأدمن فقط
+      final newsRoute = location == '/news' ||
+          location.startsWith('/news/') ||
+          (location.startsWith('/stocks/') && location.endsWith('/news'));
+      if (newsRoute && session.profile?.isAdmin != true) {
+        return '/home';
+      }
       if (publicAccountRoute ||
           location == '/splash' ||
           location == '/onboarding') {

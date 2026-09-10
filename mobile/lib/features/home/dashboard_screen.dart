@@ -15,7 +15,6 @@ import '../community/community_providers.dart';
 import '../community/community_repository.dart';
 import '../market/stock_analysis_tab.dart';
 import '../market/stocks_screen.dart';
-import '../news/screens/news_feed_screen.dart';
 import '../notifications/notification_providers.dart';
 import '../reports/reports_screen.dart';
 
@@ -39,10 +38,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  // الأخبار متاحة للأدمن فقط عبر لوحة الإدارة — ليست في الشريط السفلي.
   static const _navItems = <(String, IconData, String)>[
     ('stocks', Icons.home_rounded, 'الرئيسية'),
     ('reports', Icons.assessment_outlined, 'التقارير'),
-    ('news', Icons.newspaper_rounded, 'الأخبار'),
     ('analyze', Icons.query_stats_outlined, 'تحليل سهم'),
     ('community', Icons.forum_outlined, 'المجتمع'),
     ('profile', Icons.person_outline_rounded, 'الملف الشخصي'),
@@ -51,7 +50,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(sessionControllerProvider).profile;
-    final selectedIndex = ref.watch(dashboardTabProvider);
+    final rawIndex = ref.watch(dashboardTabProvider);
+    // حماية من index قديم خارج النطاق بعد إزالة تبويب الأخبار.
+    final selectedIndex = rawIndex.clamp(0, _navItems.length - 1);
 
     return Scaffold(
       appBar: AppBar(
@@ -183,11 +184,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             label: 'التقارير',
           ),
           NavigationDestination(
-            icon: Icon(Icons.newspaper_outlined),
-            selectedIcon: Icon(Icons.newspaper_rounded),
-            label: 'الأخبار',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.query_stats_outlined),
             selectedIcon: Icon(Icons.query_stats_rounded),
             label: 'تحليل سهم',
@@ -214,12 +210,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 1:
         return const ReportsScreen();
       case 2:
-        return const NewsFeedScreen();
-      case 3:
         return const StockAnalysisTab();
-      case 4:
+      case 3:
         return const CommunityFeedTab();
-      case 5:
+      case 4:
         return const ProfileTab();
       default:
         return const StocksScreen();
@@ -849,6 +843,7 @@ class _DraggableTradingRoomBallState extends State<_DraggableTradingRoomBall> {
       top: _top,
       left: _left,
       child: GestureDetector(
+        onTap: () => context.push('/trading-chat'),
         onPanUpdate: (details) {
           setState(() {
             _top = (_top! + details.delta.dy).clamp(60.0, size.height - 140.0);
@@ -857,45 +852,43 @@ class _DraggableTradingRoomBallState extends State<_DraggableTradingRoomBall> {
         },
         child: Tooltip(
           message: 'شات الجلسة المباشرة (10 ص - 2:30 م)',
-          child: Material(
-            elevation: 10,
-            shadowColor: const Color(0xFF0088CC).withValues(alpha: 0.5),
-            shape: const CircleBorder(),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () => context.push('/trading-chat'),
-              child: Container(
-                width: 58,
-                height: 58,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0088CC), Color(0xFF0288D1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+          child: Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0088CC), Color(0xFF0288D1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0088CC).withValues(alpha: 0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.forum_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'شات الجلسة',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
                   ),
                 ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.forum_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'شات الجلسة',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
         ),
