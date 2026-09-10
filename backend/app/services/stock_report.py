@@ -287,6 +287,19 @@ async def generate_stock_report(
     candle_tasks = [_fetch_candles(t) for t in tickers_for_price[:100]]
     candle_results = await asyncio.gather(*candle_tasks)
 
+    # Retry once for transient provider failures so a single flaky fetch
+    # doesn't drop a ticker from the whole daily report.
+    failed = [t for t, candles in candle_results if not candles]
+    if failed:
+        await asyncio.sleep(2)
+        retry_results = await asyncio.gather(*[_fetch_candles(t) for t in failed])
+        retried = {t: candles for t, candles in retry_results if candles}
+        if retried:
+            logger.info("Stock report: retry recovered %d tickers", len(retried))
+            candle_results = [
+                (t, retried.get(t) or candles) for t, candles in candle_results
+            ]
+
     candle_map: dict[str, list[dict]] = {}
     price_map: dict[str, tuple[float, float]] = {}
     for ticker, candles in candle_results:
