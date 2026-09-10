@@ -63,7 +63,7 @@ class SahmiTheme {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF008955),
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size(64, 52),
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -142,7 +142,7 @@ class SahmiTheme {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF00C875),
           foregroundColor: const Color(0xFF0F172A),
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size(64, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

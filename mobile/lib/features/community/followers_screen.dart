@@ -127,6 +127,7 @@ class _FollowUserTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
@@ -148,7 +149,10 @@ class _FollowUserTile extends ConsumerWidget {
             Expanded(
               child: Text(
                 item.displayName,
-                style: const TextStyle(fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
