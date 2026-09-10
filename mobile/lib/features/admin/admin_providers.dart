@@ -24,6 +24,11 @@ final adminUsersProvider = FutureProvider.autoDispose<List<AdminUserItem>>((
   return ref.watch(adminRepositoryProvider).users();
 });
 
+final activeNowUsersProvider =
+    FutureProvider.autoDispose<List<ActiveNowUser>>((ref) {
+      return ref.watch(adminRepositoryProvider).activeNowUsers();
+    });
+
 final adminAuditProvider = FutureProvider.autoDispose<List<AdminAuditItem>>((
   ref,
 ) {

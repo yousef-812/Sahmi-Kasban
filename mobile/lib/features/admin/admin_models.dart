@@ -173,6 +173,32 @@ class AdminUserItem {
   }
 }
 
+class ActiveNowUser {
+  const ActiveNowUser({
+    required this.userId,
+    required this.displayName,
+    required this.avatarKey,
+    required this.email,
+    required this.lastSeenAt,
+  });
+
+  final String userId;
+  final String displayName;
+  final String avatarKey;
+  final String email;
+  final DateTime lastSeenAt;
+
+  factory ActiveNowUser.fromJson(Map<String, dynamic> json) {
+    return ActiveNowUser(
+      userId: json['user_id'] as String,
+      displayName: json['display_name'] as String? ?? '',
+      avatarKey: json['avatar_key'] as String? ?? 'avatar_01',
+      email: json['email'] as String? ?? '',
+      lastSeenAt: DateTime.parse(json['last_seen_at'] as String),
+    );
+  }
+}
+
 class AdminAuditItem {
   const AdminAuditItem({
     required this.action,

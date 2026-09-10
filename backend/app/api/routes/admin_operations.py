@@ -11,6 +11,8 @@ from app.api.dependencies import CurrentAdmin, DatabaseSession
 from app.market_data.provider import get_market_data_provider
 from app.market_data.types import MarketDataProvider
 from app.schemas.operations import (
+    ActiveNowListResponse,
+    ActiveNowUserResponse,
     AdminAuditEventResponse,
     AdminAuditListResponse,
     AdminBroadcastRequest,
@@ -37,6 +39,7 @@ from app.schemas.performance import (
 )
 from app.services.admin_operations import (
     get_admin_overview,
+    list_active_now_users,
     list_admin_audit_events,
     list_admin_users,
     list_latest_service_health,
@@ -151,6 +154,22 @@ def admin_users(
     )
     return AdminUserListResponse(
         items=[AdminUserListItem(**item) for item in items],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/users/active-now", response_model=ActiveNowListResponse)
+def admin_active_now_users(
+    db: DatabaseSession,
+    _admin: CurrentAdmin,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> ActiveNowListResponse:
+    items, total = list_active_now_users(db, limit=limit, offset=offset)
+    return ActiveNowListResponse(
+        items=[ActiveNowUserResponse(**item) for item in items],
         total=total,
         limit=limit,
         offset=offset,

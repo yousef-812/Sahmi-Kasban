@@ -5,9 +5,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sahmi_kasban.ai import SahmiAIService
+from sqlalchemy import select
 
 from app.api.dependencies import CurrentUser, DatabaseSession, OptionalUser
 from app.market_calendar import EGXTradingCalendar
+from app.models import PushDevice
 from app.schemas.accounts import MessageResponse
 from app.schemas.community import (
     CoinTipRequest,
@@ -58,6 +60,12 @@ from app.services.community_safety import (
     CommunityRateLimitError,
     create_safe_discussion,
 )
+from app.services.notifications import (
+    FCMPushSender,
+    _decrypt_token,
+    create_notification,
+)
+from app.services.operations_settings import get_bool_setting
 from app.services.social import (
     get_author_prediction_stats,
     get_public_user_profile,
@@ -438,6 +446,16 @@ def toggle_follow_user(
             follower_id=current_user.id,
             following_id=user_id,
         )
+        if is_following:
+            try:
+                _notify_user_followed(
+                    db,
+                    followed_id=user_id,
+                    follower_id=current_user.id,
+                    follower_name=current_user.display_name,
+                )
+            except Exception:
+                pass
         return FollowToggleResponse(
             is_following=is_following,
             followers_count=followers_count,
@@ -452,6 +470,47 @@ def toggle_follow_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
+
+
+def _notify_user_followed(
+    db,
+    *,
+    followed_id: UUID,
+    follower_id: UUID,
+    follower_name: str,
+) -> None:
+    """Inbox + push notification to the followed user. Never raises."""
+    if not get_bool_setting(db, "notifications_enabled"):
+        return
+    title = "متابع جديد"
+    body = f"{follower_name} بدأ بمتابعتك"
+    data = {"kind": "follow", "follower_id": str(follower_id)}
+    create_notification(
+        db,
+        user_id=followed_id,
+        title=title,
+        body=body,
+        category="follow",
+        data=data,
+    )
+    devices = db.scalars(
+        select(PushDevice).where(
+            PushDevice.user_id == followed_id,
+            PushDevice.enabled.is_(True),
+        )
+    ).all()
+    sender = FCMPushSender()
+    for device in devices:
+        try:
+            sender.send(
+                token=_decrypt_token(device.encrypted_token),
+                title=title,
+                body=body,
+                data=data,
+            )
+        except Exception:
+            pass
+    db.flush()
 
 
 @router.get(

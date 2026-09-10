@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/avatar_assets.dart';
 import '../../core/network/api_exception.dart';
+import '../community/screens/user_profile_screen.dart';
 import 'admin_models.dart';
 import 'admin_providers.dart';
 import 'admin_repository.dart';
@@ -99,7 +101,14 @@ class _OverviewTab extends ConsumerWidget {
               runSpacing: 10,
               children: [
                 _Metric('إجمالي المسجلين', item.usersTotal),
-                _Metric('النشطون الآن', item.usersActiveNow),
+                _Metric(
+                  'النشطون الآن',
+                  item.usersActiveNow,
+                  onTap: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => const _ActiveNowDialog(),
+                  ),
+                ),
                 _Metric('حسابات مفعلة', item.usersVerified),
                 _Metric('غير مفعلة', item.usersUnverified),
                 _Metric('النشطون بالحساب', item.usersActive),
@@ -528,25 +537,118 @@ class _AuditTab extends ConsumerWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric(this.label, this.value);
+  const _Metric(this.label, this.value, {this.onTap});
   final String label;
   final Object value;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 155,
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text('$value', style: Theme.of(context).textTheme.headlineMedium),
-            Text(label, textAlign: TextAlign.center),
-          ],
+  Widget build(BuildContext context) {
+    final card = SizedBox(
+      width: 155,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text('$value', style: Theme.of(context).textTheme.headlineMedium),
+              Text(label, textAlign: TextAlign.center),
+              if (onTap != null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text(
+                    'اضغط للعرض',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+    if (onTap == null) return card;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: card,
+    );
+  }
+}
+
+class _ActiveNowDialog extends ConsumerWidget {
+  const _ActiveNowDialog();
+
+  String _seenAgo(DateTime seenAt) {
+    final diff = DateTime.now().toUtc().difference(seenAt.toUtc());
+    if (diff.inMinutes < 1) return 'الآن';
+    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
+    return 'منذ ${diff.inHours} ساعة';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeAsync = ref.watch(activeNowUsersProvider);
+    return AlertDialog(
+      title: const Text('الحسابات النشطة الآن'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 420,
+        child: activeAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(child: Text('تعذر التحميل: $error')),
+          data: (users) {
+            if (users.isEmpty) {
+              return const Center(child: Text('لا يوجد نشطون حالياً.'));
+            }
+            return ListView.separated(
+              shrinkWrap: true,
+              itemCount: users.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final user = users[index];
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  leading: CircleAvatar(
+                    backgroundImage: AssetImage(
+                      avatarAssetPath(user.avatarKey),
+                    ),
+                  ),
+                  title: Text(
+                    user.displayName.isNotEmpty ? user.displayName : user.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    '${user.email} • ${_seenAgo(user.lastSeenAt)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_left_rounded),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      UserProfileScreen.route(
+                        userId: user.userId,
+                        initialDisplayName: user.displayName,
+                        initialAvatarKey: user.avatarKey,
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إغلاق'),
+        ),
+      ],
+    );
+  }
 }
 
 class _Loading extends StatelessWidget {

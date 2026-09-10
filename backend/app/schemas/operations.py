@@ -69,6 +69,21 @@ class AdminUserListResponse(BaseModel):
     offset: int = Field(ge=0)
 
 
+class ActiveNowUserResponse(BaseModel):
+    user_id: UUID
+    display_name: str
+    avatar_key: str
+    email: str
+    last_seen_at: datetime
+
+
+class ActiveNowListResponse(BaseModel):
+    items: list[ActiveNowUserResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(gt=0)
+    offset: int = Field(ge=0)
+
+
 class AdminAuditEventResponse(BaseModel):
     id: UUID
     actor_user_id: UUID | None

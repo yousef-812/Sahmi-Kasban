@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sahmi_kasban.ai import AIProviderError, SahmiAIService
-from sqlalchemy import func, or_, select
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.market_data.types import MarketDataProvider
@@ -64,6 +64,55 @@ def get_admin_overview(db: Session, *, moment: datetime | None = None) -> dict:
         "unread_notifications": count(Notification, Notification.read_at.is_(None)),
         "app_version": "1.0.9+36",
     }
+
+
+def list_active_now_users(
+    db: Session,
+    *,
+    limit: int = 50,
+    offset: int = 0,
+    moment: datetime | None = None,
+) -> tuple[list[dict], int]:
+    """Users with a non-revoked auth session updated in the last hour.
+
+    Same definition as `users_active_now` in the overview.
+    Returns ([{user_id, display_name, avatar_key, email, last_seen_at}], total).
+    """
+    current = moment or datetime.now(UTC)
+    h1 = current - timedelta(hours=1)
+
+    last_seen = (
+        select(func.max(AuthSession.updated_at))
+        .where(
+            AuthSession.user_id == User.id,
+            AuthSession.revoked_at.is_(None),
+            AuthSession.updated_at >= h1,
+        )
+        .correlate(User)
+        .scalar_subquery()
+    )
+    filters = [User.deleted_at.is_(None), last_seen.is_not(None)]
+
+    total = int(db.scalar(select(func.count(User.id)).where(*filters)) or 0)
+    rows = db.execute(
+        select(User, last_seen.label("last_seen_at"))
+        .where(*filters)
+        .order_by(desc(last_seen))
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    items = [
+        {
+            "user_id": user.id,
+            "display_name": user.display_name,
+            "avatar_key": user.avatar_key,
+            "email": user.email,
+            "last_seen_at": seen,
+        }
+        for user, seen in rows
+    ]
+    return items, total
 
 
 def list_admin_users(

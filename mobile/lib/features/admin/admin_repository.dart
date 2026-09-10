@@ -78,6 +78,20 @@ class AdminRepository {
     }
   }
 
+  Future<List<ActiveNowUser>> activeNowUsers({int limit = 50}) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/admin/operations/users/active-now',
+        queryParameters: <String, dynamic>{'limit': limit},
+      );
+      return _list(_required(response.data)['items'])
+          .map((item) => ActiveNowUser.fromJson(_map(item)))
+          .toList(growable: false);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<Map<String, dynamic>> creditUserCoins({
     required String userId,
     required int amountCoins,
