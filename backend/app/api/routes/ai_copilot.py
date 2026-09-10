@@ -107,9 +107,16 @@ def _build_history_context(candles: list[dict], *, recent_n: int = 10) -> str:
     return "\n".join(lines) + "\n\n"
 
 
-def _resolve_query_tickers(db, *, explicit: str | None, question: str) -> list[str]:
+def _resolve_query_tickers(
+    db,
+    *,
+    explicit: str | None,
+    question: str,
+    history_texts: list[str] | None = None,
+) -> list[str]:
     """Tickers for a copilot query: explicit field first, then symbols/names
-    mentioned in the question text. Never raises."""
+    mentioned in the question, then in recent conversation history (so
+    follow-ups like "كمل" keep their data context). Never raises."""
     ordered: list[str] = []
     if explicit and explicit.strip():
         ordered.append(explicit.strip().upper())
@@ -123,16 +130,21 @@ def _resolve_query_tickers(db, *, explicit: str | None, question: str) -> list[s
         )
     except Exception:
         known = frozenset()
-    try:
-        # Uppercase first so lowercase mentions (e.g. "phar") match too.
-        # Arabic text is unaffected; candidates are validated against
-        # known tickers inside the extractor.
-        for ticker, _score in extract_tickers_from_text((question or "").upper(), known):
-            clean = ticker.strip().upper()
-            if clean and clean not in ordered:
-                ordered.append(clean)
-    except Exception:
-        pass
+
+    def _harvest(text: str) -> None:
+        try:
+            for ticker, _score in extract_tickers_from_text((text or "").upper(), known):
+                clean = ticker.strip().upper()
+                if clean and clean not in ordered and len(ordered) < MAX_QUERY_TICKERS:
+                    ordered.append(clean)
+        except Exception:
+            pass
+
+    _harvest(question or "")
+    for past in reversed(history_texts or []):
+        if len(ordered) >= MAX_QUERY_TICKERS:
+            break
+        _harvest(past)
     return ordered[:MAX_QUERY_TICKERS]
 
 
@@ -212,9 +224,12 @@ async def query_ai_copilot(
                 detail="رصيد العملات غير كافٍ لاستخدام المساعد الذكي (التكلفة 0.5 عملة)",
             ) from exc
 
-    # 4. Resolve tickers (explicit field + symbols mentioned in the question)
-    # and fetch live quote + historical candles for each of them.
-    tickers = _resolve_query_tickers(db, explicit=body.ticker, question=body.question)
+    # 4. Resolve tickers (explicit field + symbols mentioned in the question
+    # or recent history) and fetch live quote + historical candles for each.
+    history_texts = [item.text for item in (body.history or []) if item.text]
+    tickers = _resolve_query_tickers(
+        db, explicit=body.ticker, question=body.question, history_texts=history_texts
+    )
     market_blocks: list[str] = []
     strict_price_lines: list[str] = []
     primary_ticker = tickers[0] if tickers else None
