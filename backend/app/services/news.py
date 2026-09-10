@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import logging
 import re
 from datetime import UTC, datetime
@@ -14,7 +13,6 @@ import httpx
 from sqlalchemy import desc, or_, select
 from sqlalchemy.orm import Session
 
-from app.models.market_data import MarketInstrumentCatalog
 from app.models.news import NewsArticle, NewsArticleTicker
 from app.schemas.news import NewsArticleResponse, NewsListResponse
 
@@ -25,7 +23,14 @@ try:
 except ImportError:  # pragma: no cover - fallback عند عدم التثبيت
     trafilatura = None  # type: ignore[assignment]
 
+try:
+    from bs4 import BeautifulSoup
+except ImportError:  # pragma: no cover - fallback عند عدم التثبيت
+    BeautifulSoup = None  # type: ignore[assignment, misc]
+
 _MAX_CONTENT_LENGTH = 100_000
+_HTML_FETCH_TIMEOUT = 25.0
+_HTML_FETCH_RETRIES = 3
 
 # ─── مصادر RSS ────────────────────────────────────────────────────────────────
 
@@ -218,27 +223,141 @@ async def fetch_rss_source(source: dict[str, str]) -> list[dict]:
 
 # ─── استخراج المحتوى الكامل للمقال ──────────────────────────────────────────
 
-async def fetch_article_content(url: str) -> str:
-    """جلب المحتوى الكامل لصفحة الخبر عبر trafilatura.
+_FETCH_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,*/*;q=0.8",
+    "Accept-Language": "ar,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Referer": "https://www.google.com/",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "cross-site",
+    "Upgrade-Insecure-Requests": "1",
+}
 
-    ترجع نص المقال مع فواصل أسطر بين الفقرات، أو سلسلة فارغة عند الفشل.
-    """
-    if trafilatura is None or not url:
+
+def _is_google_news_url(url: str) -> bool:
+    """روابط Google News غالباً redirect لصفحة وسيطة وليست المقال المباشر."""
+    lowered = url.lower()
+    return "news.google.com" in lowered
+
+
+def _extract_text_with_soup(html: str) -> str:
+    """استخراج نص المقال من HTML عبر BeautifulSoup كحل بديل."""
+    if BeautifulSoup is None or not html:
         return ""
-
     try:
-        html = await asyncio.to_thread(trafilatura.fetch_url, url)
-        if not html:
-            return ""
-        text = await asyncio.to_thread(trafilatura.extract, html)
-        if not text:
-            return ""
-        paragraphs = [p.strip() for p in text.splitlines() if p.strip()]
-        result = "\n\n".join(paragraphs)
-        return result[:_MAX_CONTENT_LENGTH]
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup(["script", "style", "nav", "header", "footer", "aside", "form"]):
+            tag.decompose()
+        body = soup.body or soup
+        paragraphs: list[str] = []
+        for node in body.find_all(["p", "h1", "h2", "h3", "h4", "li"]):
+            text = re.sub(r"\s+", " ", node.get_text(" ", strip=True)).strip()
+            if len(text) >= 40:
+                paragraphs.append(text)
+        if len(paragraphs) >= 3:
+            return "\n\n".join(paragraphs)[:_MAX_CONTENT_LENGTH]
+        # Fallback: كل نص الـ body
+        raw = body.get_text("\n", strip=True)
+        lines = [re.sub(r"\s+", " ", ln).strip() for ln in raw.splitlines() if ln.strip()]
+        merged = "\n\n".join(lines)
+        return merged[: _MAX_CONTENT_LENGTH] if len(merged) >= 40 else ""
     except Exception:
-        logger.warning("Failed to extract full content for %s", url[:120])
         return ""
+
+
+async def _fetch_html(url: str) -> tuple[str, str]:
+    """جلب صفحة المقال عبر httpx بمحاكاة متصفح حقيقي مع إعادة محاولة.
+
+    يعالج أيضاً روابط Google News الوسيطة بفك الـ redirect للوصول للمقال الأصلي.
+    يرجع (html, final_url) حيث final_url هو الرابط النهائي بعد الـ redirects.
+    """
+    final_url = url
+    last_error: Exception | None = None
+
+    async with httpx.AsyncClient(
+        headers=_FETCH_HEADERS,
+        timeout=_HTML_FETCH_TIMEOUT,
+        follow_redirects=True,
+        max_redirects=6,
+        http2=False,
+    ) as client:
+        for attempt in range(1, _HTML_FETCH_RETRIES + 1):
+            try:
+                response = await client.get(final_url)
+                response.raise_for_status()
+                final_url = str(response.url)
+                # للمقالات العربية غالباً nافزة من Google بإصدارات ثابتة
+                html = response.text
+                if len(html) < 500 and "news.google.com" in str(response.url):
+                    continue
+                return html, final_url
+            except (httpx.HTTPStatusError, httpx.TransportError, httpx.TimeoutException) as exc:
+                last_error = exc
+                # لا نعيد المحاولة على أخطاء نهائية
+                if isinstance(exc, httpx.HTTPStatusError):
+                    status = exc.response.status_code
+                    if status in (403, 404, 410) and attempt >= 2:
+                        break
+                if attempt < _HTML_FETCH_RETRIES:
+                    await asyncio.sleep(1.5 * attempt)
+
+    logger.warning("HTML fetch failed for %s: %s", url[:120], last_error)
+    return "", final_url
+
+
+async def resolve_article_url(url: str) -> str:
+    """فك رابط Google News الوسيط وإرجاع رابط المقال الحقيقي.
+
+    يرجع الرابط الأصلي لو فشل الفك حتى لا يضيع الرابط.
+    """
+    if not url or not _is_google_news_url(url):
+        return url
+    _, resolved = await _fetch_html(url)
+    if not resolved or "news.google.com" in resolved:
+        return url
+    return resolved
+
+
+async def fetch_article_content_and_resolve(url: str) -> tuple[str, str]:
+    """جلب المحتوى الكامل مع فك رابط Google News الوسيط في جلب واحد.
+
+    يرجع (content, final_url).
+    """
+    if not url:
+        return "", url
+
+    html, final_url = await _fetch_html(url)
+    content = ""
+    if html:
+        # المحاولة الأولى: trafilatura لاستخراج الجوهر
+        if trafilatura is not None:
+            try:
+                text = await asyncio.to_thread(trafilatura.extract, html)
+                if text and len(text.strip()) >= 40:
+                    paragraphs = [p.strip() for p in text.splitlines() if p.strip()]
+                    content = "\n\n".join(paragraphs)[:_MAX_CONTENT_LENGTH]
+            except Exception:
+                logger.warning("trafilatura extraction failed for %s", url[:120])
+        if not content:
+            content = await asyncio.to_thread(_extract_text_with_soup, html)
+
+    if _is_google_news_url(url) and final_url and "news.google.com" not in final_url:
+        return content, final_url
+    return content, url
+
+
+async def fetch_article_content(url: str) -> str:
+    """جلب المحتوى الكامل لصفحة الخبر (لتوقيع قديم متوافق).
+
+    يرجع نص المقال مع فواصل أسطر بين الفقرات، أو سلسلة فارغة عند الفشل.
+    """
+    content, _ = await fetch_article_content_and_resolve(url)
+    return content
 
 
 # ─── حفظ في الـ Database ──────────────────────────────────────────────────────

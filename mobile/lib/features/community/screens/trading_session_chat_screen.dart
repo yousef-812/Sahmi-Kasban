@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
-import '../../auth/session_controller.dart';
 
 class TradingSessionChatScreen extends ConsumerStatefulWidget {
   const TradingSessionChatScreen({super.key});

@@ -11,7 +11,7 @@ from app.models.market_data import MarketInstrumentCatalog
 from app.models.news import NewsArticle
 from app.services.news import (
     RSS_SOURCES,
-    fetch_article_content,
+    fetch_article_content_and_resolve,
     fetch_rss_source,
     save_articles_to_db,
 )
@@ -31,12 +31,18 @@ def _get_known_tickers(db) -> frozenset[str]:
 
 
 async def _extract_contents(articles: list[dict]) -> None:
-    """استخراج المحتوى الكامل للمقالات الجديدة بالتوازي مع حد أقصى للتوازي."""
+    """استخراج المحتوى الكامل للمقالات الجديدة بالتوازي مع حد أقصى للتوازي.
+
+    كذلك يفك روابط Google News الوسيطة للوصول لرابط المقال الأصلي.
+    """
     semaphore = asyncio.Semaphore(_CONTENT_FETCH_CONCURRENCY)
 
     async def _extract_one(article: dict) -> None:
         async with semaphore:
-            article["content"] = await fetch_article_content(article["url"])
+            content, resolved = await fetch_article_content_and_resolve(article["url"])
+            article["content"] = content
+            if resolved and resolved != article["url"]:
+                article["url"] = resolved
 
     await asyncio.gather(*(_extract_one(a) for a in articles), return_exceptions=True)
 
@@ -50,7 +56,7 @@ async def run_news_crawl_once() -> int:
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     all_articles: list[dict] = []
-    for source, result in zip(RSS_SOURCES, results):
+    for source, result in zip(RSS_SOURCES, results, strict=False):
         if isinstance(result, Exception):
             logger.warning("News crawler: source %s failed: %s", source["key"], result)
         elif isinstance(result, list):

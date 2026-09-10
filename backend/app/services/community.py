@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -30,6 +31,8 @@ from app.services.wallet import (
     hold_points,
     release_hold,
 )
+
+logger = logging.getLogger(__name__)
 
 DISCUSSION_COST_POINTS = 0
 DISCUSSION_HOLD_ENTRY_TYPE = "discussion_submission_hold"

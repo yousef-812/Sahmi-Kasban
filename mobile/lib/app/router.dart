@@ -37,6 +37,7 @@ import '../features/referral/referral_screen.dart';
 import '../features/news/news_models.dart';
 import '../features/news/screens/news_detail_screen.dart';
 import '../features/news/screens/news_feed_screen.dart';
+import '../features/news/screens/news_article_webview_screen.dart';
 import '../features/news/screens/stock_news_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/reports/reports_screen.dart';
@@ -122,6 +123,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/news/detail',
         builder: (context, state) => NewsDetailScreen(
           article: state.extra as StockNewsArticle,
+        ),
+      ),
+      GoRoute(
+        path: '/news/webview',
+        builder: (context, state) => NewsArticleWebviewScreen(
+          title: state.uri.queryParameters['title'] ?? 'المقال',
+          url: state.uri.queryParameters['url'] ?? '',
         ),
       ),
       GoRoute(

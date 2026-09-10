@@ -28,6 +28,13 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     await Share.share(text, subject: article.title);
   }
 
+  void _openInAppWebview(String url, String title) {
+    context.push(
+      '/news/webview?url=${Uri.encodeComponent(url)}'
+      '&title=${Uri.encodeComponent(title)}',
+    );
+  }
+
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().toUtc().difference(dt.toUtc());
     if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
@@ -313,11 +320,17 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _shareArticle,
-                    icon: const Icon(Icons.share_rounded, size: 18),
-                    label: const Text('مشاركة الخبر مع مصدره'),
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => _openInAppWebview(article.url, article.title),
+                    icon: const Icon(Icons.menu_book_rounded, size: 18),
+                    label: const Text('قراءة المقال كاملاً داخل التطبيق'),
                   ),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  tooltip: 'مشاركة الخبر',
+                  onPressed: _shareArticle,
+                  icon: const Icon(Icons.share_rounded),
                 ),
               ],
             ),

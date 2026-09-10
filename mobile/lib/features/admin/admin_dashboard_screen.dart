@@ -517,7 +517,7 @@ class _AuditTab extends ConsumerWidget {
 class _Metric extends StatelessWidget {
   const _Metric(this.label, this.value);
   final String label;
-  final int value;
+  final Object value;
 
   @override
   Widget build(BuildContext context) => SizedBox(
