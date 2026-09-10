@@ -18,6 +18,7 @@ class AdminOverview {
     required this.verifiedPredictions,
     required this.walletPointsTotal,
     required this.notificationsToday,
+    this.appVersion = '1.0.9+36',
   });
 
   final int usersTotal;
@@ -34,6 +35,7 @@ class AdminOverview {
   final int verifiedPredictions;
   final int walletPointsTotal;
   final int notificationsToday;
+  final String appVersion;
 
   factory AdminOverview.fromJson(Map<String, dynamic> json) {
     int value(String key) => json[key] as int? ?? 0;
@@ -52,6 +54,7 @@ class AdminOverview {
       verifiedPredictions: value('verified_predictions'),
       walletPointsTotal: value('wallet_points_total'),
       notificationsToday: value('notifications_today'),
+      appVersion: json['app_version'] as String? ?? '1.0.9+36',
     );
   }
 }

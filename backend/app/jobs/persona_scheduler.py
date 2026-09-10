@@ -19,6 +19,17 @@ async def trigger_persona_discussions_job(moment: datetime | None = None) -> dic
 
         try:
             result = await run_ai_persona_discussions(db, moment=moment)
+            created = result.get("created_count", 0)
+            if created > 0:
+                from app.api.routes.trading_chat import send_event_notification
+                send_event_notification(
+                    db,
+                    title="مناقشات محللي السهم الذكي",
+                    body=f"تم نشر {created} مناقشات جديدة من محللي السهم الذكي. افتح التطبيق لمتابعتها.",
+                    category="persona_discussion",
+                    data={"created_count": str(created)},
+                )
+                db.commit()
             logger.info("AI personas job execution result: %s", result)
             return result
         except Exception as exc:

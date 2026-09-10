@@ -23,14 +23,9 @@ class TradingSessionChatScreen extends ConsumerStatefulWidget {
 class _TradingSessionChatScreenState
     extends ConsumerState<TradingSessionChatScreen> {
   bool _isLoading = false;
-  bool _isVoting = false;
   bool _isSending = false;
 
-  int _votesCount = 0;
-  int _votesTarget = 40;
-  bool _isUnlocked = false;
   bool _isSessionOpen = false;
-  bool _hasVoted = false;
 
   List<Map<String, dynamic>> _messages = [];
   final TextEditingController _textController = TextEditingController();
@@ -58,17 +53,11 @@ class _TradingSessionChatScreenState
 
       if (mounted) {
         setState(() {
-          _votesCount = (data['votes_count'] as num?)?.toInt() ?? 0;
-          _votesTarget = (data['votes_target'] as num?)?.toInt() ?? 40;
-          _isUnlocked = data['is_unlocked'] as bool? ?? false;
           _isSessionOpen = data['is_session_open'] as bool? ?? false;
-          _hasVoted = data['has_voted'] as bool? ?? false;
         });
       }
 
-      if (_isUnlocked) {
-        await _fetchMessages();
-      }
+      await _fetchMessages();
     } catch (e) {
       // Ignore network status fetch error initially
     } finally {
@@ -95,63 +84,6 @@ class _TradingSessionChatScreenState
       }
     } catch (e) {
       // Ignore
-    }
-  }
-
-  Future<void> _vote() async {
-    if (_isVoting || _hasVoted) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('التصويت لفتح الغرفة'),
-        content: const Text(
-          'تكلفة التصويت 0.5 عملة. إذا لم تصل الغرفة إلى 40 صوتًا قبل الساعة 3:00 مساءً، سيتم استرداد العملات تلقائيًا.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('تأكيد التصويت — 0.5 عملة'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _isVoting = true);
-    try {
-      final apiClient = ref.read(apiClientProvider);
-      await apiClient.dio.post<Map<String, dynamic>>('/trading-chat/vote');
-
-      await ref.read(sessionControllerProvider.notifier).refreshProfile();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تصويتك بنجاح!')),
-        );
-      }
-      await _fetchStatus();
-    } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isVoting = false);
-      }
     }
   }
 
@@ -191,37 +123,11 @@ class _TradingSessionChatScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final userCoins = ref.watch(sessionControllerProvider).profile?.balanceCoins ?? '0';
-    final progress = (_votesCount / _votesTarget).clamp(0.0, 1.0);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('غرفة التداول اليومية المباشرة'),
         centerTitle: true,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(left: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.monetization_on, size: 16, color: Colors.amber),
-                const SizedBox(width: 4),
-                Text(
-                  '$userCoins عملة',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Column(
@@ -273,88 +179,77 @@ class _TradingSessionChatScreenState
               ),
             ),
 
-            // Daily Campaign Voting Card Header
+            // Session Status Banner
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'حالة التصويت اليومية:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Chip(
-                          avatar: const Icon(Icons.stars, size: 14, color: Colors.amber),
-                          label: Text('$_votesCount / $_votesTarget صوت'),
-                        ),
-                      ],
+                    Icon(
+                      _isSessionOpen ? Icons.wifi : Icons.wifi_off_rounded,
+                      color: _isSessionOpen ? Colors.green : Colors.orange,
+                      size: 28,
                     ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 10,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'ملاحظة: تكلفة التصويت 0.5 عملة. إذا لم تُفتح الغرفة بـ 40 صوتًا قبل الساعة 3:00 مساءً، سيتم رد العملات تلقائيًا إلى حسابك.',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 12),
-                    if (!_isUnlocked)
-                      FilledButton.icon(
-                        onPressed: (_hasVoted || _isVoting) ? null : _vote,
-                        icon: _isVoting
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.how_to_vote_rounded),
-                        label: Text(
-                          _hasVoted
-                              ? 'لقد قمت بالتصويت اليوم'
-                              : 'تصويت لفتح الغرفة — 0.5 عملة',
-                        ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isSessionOpen ? 'الغرفة مفتوحة الآن' : 'الغرفة مغلقة',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: _isSessionOpen ? Colors.green : Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ساعات العمل: 10:00 صباحاً - 2:30 مساءً بتوقيت مصر',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // Live Chat Area
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : !_isUnlocked
+                  : _messages.isEmpty
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(24),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
-                                  Icons.lock_clock_rounded,
+                                Icon(
+                                  _isSessionOpen ? Icons.chat_bubble_outline : Icons.chat_bubble_outline,
                                   size: 64,
                                   color: Colors.grey,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'الغرفة مغلقة حتى اكتمال 40 صوتًا',
+                                  _isSessionOpen
+                                      ? 'لم تُرسل رسائل بعد'
+                                      : 'الغرفة مغلقة حالياً',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
-                                  'صوت الآن بـ 0.5 عملة للمساهمة في فتح الغرفة لجلسة اليوم المباشرة (من 9 صباحاً إلى 3 مساءً).',
+                                Text(
+                                  _isSessionOpen
+                                      ? 'ابدأ المحادثة الآن!'
+                                      : 'افتح الغرفة في الموعد المحدد (10 ص - 2:30 م)',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.grey),
+                                  style: const TextStyle(color: Colors.grey),
                                 ),
                               ],
                             ),
@@ -437,7 +332,7 @@ class _TradingSessionChatScreenState
                                     Icon(Icons.info_outline_rounded, size: 16),
                                     SizedBox(width: 8),
                                     Text(
-                                      'المحادثة المباشرة تفتح فقط أثناء ساعات التداول (9 ص - 3 م).',
+                                      'المحادثة المباشرة متاحة فقط بين 10:00 صباحاً و 2:30 مساءً بتوقيت مصر.',
                                       style: TextStyle(fontSize: 12),
                                     ),
                                   ],

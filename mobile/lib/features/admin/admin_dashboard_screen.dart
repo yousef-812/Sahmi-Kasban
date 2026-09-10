@@ -109,6 +109,7 @@ class _OverviewTab extends ConsumerWidget {
                 _Metric('الاستئنافات', item.openAppeals),
                 _Metric('توقعات متحققة', item.verifiedPredictions),
                 _Metric('إشعارات اليوم', item.notificationsToday),
+                _Metric('إصدار التطبيق', item.appVersion),
               ],
             ),
           ),

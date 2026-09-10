@@ -48,6 +48,7 @@ class AdminOverviewResponse(BaseModel):
     wallet_points_total: int
     notifications_today: int = Field(ge=0)
     unread_notifications: int = Field(ge=0)
+    app_version: str = "1.0.9+36"
 
 
 class AdminUserListItem(BaseModel):

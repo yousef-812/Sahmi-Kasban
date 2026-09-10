@@ -115,7 +115,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: Color(0xFF0088CC),
               ),
               title: const Text('غرفة الدردشة المباشرة (شات الجلسة)'),
-              subtitle: const Text('دردشة الجلسة المشروطة بـ 40 صوتًا'),
+              subtitle: const Text('دردشة مباشرة من 10 ص حتى 2:30 م'),
               onTap: () {
                 context.push('/trading-chat');
                 Navigator.pop(context);
@@ -856,7 +856,7 @@ class _DraggableTradingRoomBallState extends State<_DraggableTradingRoomBall> {
           });
         },
         child: Tooltip(
-          message: 'شات الجلسة المباشرة (40 صوتًا)',
+          message: 'شات الجلسة المباشرة (10 ص - 2:30 م)',
           child: Material(
             elevation: 10,
             shadowColor: const Color(0xFF0088CC).withValues(alpha: 0.5),

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 from typing import Annotated
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -11,13 +11,16 @@ from sqlalchemy import func, select
 
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.config import get_settings
-from app.models import DailyChatMessage, DailyChatSessionVote
-from app.services.wallet import InsufficientBalanceError, debit_points
+from app.models import DailyChatMessage, DailyChatSessionVote, Notification, PushDevice, User
+from app.services.notifications import FCMPushSender, _decrypt_token, create_notification
+from app.services.operations_settings import get_bool_setting
 
 router = APIRouter(prefix="/trading-chat", tags=["trading_chat"])
 
-VOTE_COST_POINTS = 50  # 0.5 coins
-VOTE_TARGET = 40
+CHAT_START_HOUR = 10
+CHAT_START_MINUTE = 0
+CHAT_END_HOUR = 14
+CHAT_END_MINUTE = 30
 
 
 def get_cairo_now() -> datetime:
@@ -30,31 +33,19 @@ def get_cairo_today() -> date:
     return get_cairo_now().date()
 
 
-def is_cairo_trading_hours(now: datetime) -> bool:
-    # 09:00 to 15:00 Cairo time
-    hour = now.hour
-    return 9 <= hour < 15
+def is_chat_active_now(now: datetime | None = None) -> bool:
+    cairo = now or get_cairo_now()
+    start = datetime.combine(cairo.date(), time(CHAT_START_HOUR, CHAT_START_MINUTE), tzinfo=cairo.tzinfo)
+    end = datetime.combine(cairo.date(), time(CHAT_END_HOUR, CHAT_END_MINUTE), tzinfo=cairo.tzinfo)
+    return start <= cairo <= end
 
 
 class ChatStatusResponse(BaseModel):
     session_date: str
-    votes_count: int
-    votes_target: int = VOTE_TARGET
-    is_unlocked: bool
     is_session_open: bool
-    has_voted: bool
-    coins_cost: float = 0.5
-
-
-class VoteRequestResponse(BaseModel):
-    success: bool
-    message: str
-    votes_count: int
-    is_unlocked: bool
-
-
-class PostChatMessageRequest(BaseModel):
-    content: str = Field(min_length=1, max_length=1000)
+    chat_start_hour: int = CHAT_START_HOUR
+    chat_end_hour: int = CHAT_END_HOUR
+    chat_end_minute: int = CHAT_END_MINUTE
 
 
 class ChatMessageItem(BaseModel):
@@ -64,102 +55,106 @@ class ChatMessageItem(BaseModel):
     created_at: str
 
 
+class PostChatMessageRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=1000)
+
+
+def _send_chat_open_notifications(db, session_date: str) -> int:
+    if not get_bool_setting(db, "notifications_enabled"):
+        return 0
+    users = db.scalars(
+        select(User).where(User.status == "active", User.email_verified.is_(True))
+    ).all()
+    push_sender = FCMPushSender()
+    title = "غرفة التداول المباشرة مفتوحة الآن"
+    body = "غرفة الشات اليومية مفتوحة من 10:00 صباحاً حتى 2:30 مساءً. انضم الآن!"
+    data = {"route": "/trading-chat", "session_date": session_date}
+    sent = 0
+    for user in users:
+        create_notification(
+            db,
+            user_id=user.id,
+            title=title,
+            body=body,
+            category="trading_chat",
+            data=data,
+        )
+        devices = db.scalars(
+            select(PushDevice).where(
+                PushDevice.user_id == user.id,
+                PushDevice.enabled.is_(True),
+            )
+        ).all()
+        for device in devices:
+            try:
+                push_sender.send(
+                    token=_decrypt_token(device.encrypted_token),
+                    title=title,
+                    body=body,
+                    data=data,
+                )
+                sent += 1
+            except Exception:
+                pass
+    db.flush()
+    return sent
+
+
+def send_event_notification(
+    db,
+    *,
+    title: str,
+    body: str,
+    category: str,
+    data: dict | None = None,
+) -> int:
+    if not get_bool_setting(db, "notifications_enabled"):
+        return 0
+    users = db.scalars(
+        select(User).where(User.status == "active", User.email_verified.is_(True))
+    ).all()
+    push_sender = FCMPushSender()
+    payload_data = data or {}
+    sent = 0
+    for user in users:
+        create_notification(
+            db,
+            user_id=user.id,
+            title=title,
+            body=body,
+            category=category,
+            data=payload_data,
+        )
+        devices = db.scalars(
+            select(PushDevice).where(
+                PushDevice.user_id == user.id,
+                PushDevice.enabled.is_(True),
+            )
+        ).all()
+        for device in devices:
+            try:
+                push_sender.send(
+                    token=_decrypt_token(device.encrypted_token),
+                    title=title,
+                    body=body,
+                    data=payload_data,
+                )
+                sent += 1
+            except Exception:
+                pass
+    db.flush()
+    return sent
+
+
 @router.get("/status", response_model=ChatStatusResponse)
 def get_trading_chat_status(
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> ChatStatusResponse:
     cairo_now = get_cairo_now()
-    cairo_today = cairo_now.date()
-
-    votes_count = db.scalar(
-        select(func.count(DailyChatSessionVote.id)).where(
-            DailyChatSessionVote.session_date == cairo_today,
-            DailyChatSessionVote.refunded.is_(False),
-        )
-    ) or 0
-
-    user_vote = db.scalar(
-        select(DailyChatSessionVote).where(
-            DailyChatSessionVote.session_date == cairo_today,
-            DailyChatSessionVote.user_id == current_user.id,
-            DailyChatSessionVote.refunded.is_(False),
-        )
-    )
-
-    is_unlocked = votes_count >= VOTE_TARGET
-    is_session_open = is_unlocked and is_cairo_trading_hours(cairo_now)
-
     return ChatStatusResponse(
-        session_date=cairo_today.isoformat(),
-        votes_count=votes_count,
-        votes_target=VOTE_TARGET,
-        is_unlocked=is_unlocked,
-        is_session_open=is_session_open,
-        has_voted=user_vote is not None,
-        coins_cost=0.5,
-    )
-
-
-@router.post("/vote", response_model=VoteRequestResponse)
-def vote_to_open_chat(
-    db: DatabaseSession,
-    current_user: CurrentUser,
-) -> VoteRequestResponse:
-    cairo_today = get_cairo_today()
-
-    existing_vote = db.scalar(
-        select(DailyChatSessionVote).where(
-            DailyChatSessionVote.session_date == cairo_today,
-            DailyChatSessionVote.user_id == current_user.id,
-            DailyChatSessionVote.refunded.is_(False),
-        )
-    )
-    if existing_vote is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="لقد قمت بالتصويت لغرفة اليوم بالفعل.",
-        )
-
-    # Deduct 0.5 coins (50 points)
-    tx_id = f"chat_vote_{cairo_today.isoformat()}_{current_user.id}"
-    try:
-        debit_points(
-            db,
-            user_id=current_user.id,
-            amount_points=VOTE_COST_POINTS,
-            transaction_id=tx_id,
-            entry_type="trading_chat_vote",
-            details={"session_date": cairo_today.isoformat(), "coins": 0.5},
-        )
-    except InsufficientBalanceError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="رصيد العملات غير كافٍ. تكلفة التصويت 0.5 عملة.",
-        )
-
-    vote = DailyChatSessionVote(
-        user_id=current_user.id,
-        session_date=cairo_today,
-        coins_paid=0.5,
-    )
-    db.add(vote)
-    db.commit()
-
-    votes_count = db.scalar(
-        select(func.count(DailyChatSessionVote.id)).where(
-            DailyChatSessionVote.session_date == cairo_today,
-            DailyChatSessionVote.refunded.is_(False),
-        )
-    ) or 0
-
-    is_unlocked = votes_count >= VOTE_TARGET
-
-    return VoteRequestResponse(
-        success=True,
-        message="تم تصويتك لفتح الغرفة بنجاح!",
-        votes_count=votes_count,
-        is_unlocked=is_unlocked,
+        session_date=cairo_now.date().isoformat(),
+        is_session_open=is_chat_active_now(cairo_now),
     )
 
 
@@ -168,28 +163,12 @@ def get_chat_messages(
     db: DatabaseSession,
     current_user: CurrentUser,
 ) -> list[ChatMessageItem]:
-    cairo_now = get_cairo_now()
-    cairo_today = cairo_now.date()
-
-    votes_count = db.scalar(
-        select(func.count(DailyChatSessionVote.id)).where(
-            DailyChatSessionVote.session_date == cairo_today,
-            DailyChatSessionVote.refunded.is_(False),
-        )
-    ) or 0
-
-    if votes_count < VOTE_TARGET:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="غرفة التداول المباشر لم تصل إلى 40 صوتًا لليوم بعد.",
-        )
-
+    cairo_today = get_cairo_today()
     messages = db.scalars(
         select(DailyChatMessage)
         .where(DailyChatMessage.session_date == cairo_today)
         .order_by(DailyChatMessage.created_at.asc())
     ).all()
-
     return [
         ChatMessageItem(
             id=str(msg.id),
@@ -210,23 +189,10 @@ def post_chat_message(
     cairo_now = get_cairo_now()
     cairo_today = cairo_now.date()
 
-    votes_count = db.scalar(
-        select(func.count(DailyChatSessionVote.id)).where(
-            DailyChatSessionVote.session_date == cairo_today,
-            DailyChatSessionVote.refunded.is_(False),
-        )
-    ) or 0
-
-    if votes_count < VOTE_TARGET:
+    if not is_chat_active_now(cairo_now):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="الغرفة مغلقة حتى الوصول إلى 40 صوتًا.",
-        )
-
-    if not is_cairo_trading_hours(cairo_now):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="جلسة التداول المباشر متاحة فقط بين الساعة 9:00 صباحًا و 3:00 مساءً بتوقيت مصر.",
+            detail="غرفة التداول المباشر متاحة فقط بين الساعة 10:00 صباحاً و 2:30 مساءً بتوقيت مصر.",
         )
 
     author_name = current_user.display_name or current_user.full_name or "متداول"
@@ -235,7 +201,7 @@ def post_chat_message(
         user_id=current_user.id,
         session_date=cairo_today,
         user_name=author_name,
-        content=body.content.trim(),
+        content=body.content.strip(),
     )
     db.add(msg)
     db.commit()

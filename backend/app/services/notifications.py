@@ -231,11 +231,15 @@ class FCMPushSender:
         scopes = ["https://www.googleapis.com/auth/firebase.messaging"]
         raw = self.service_account_json
         if raw:
-            path = Path(raw)
-            if path.exists():
-                info = json.loads(path.read_text(encoding="utf-8"))
-            else:
+            if raw.strip().startswith("{"):
                 info = json.loads(raw)
+            else:
+                path = Path(raw)
+                if not path.is_file():
+                    raise FileNotFoundError(
+                        f"FCM_SERVICE_ACCOUNT_JSON references {raw!r} which is not a readable file"
+                    )
+                info = json.loads(path.read_text(encoding="utf-8"))
             return service_account.Credentials.from_service_account_info(
                 info,
                 scopes=scopes,

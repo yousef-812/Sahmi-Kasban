@@ -91,4 +91,45 @@ async def run_daily_scan_scheduler() -> None:
         except Exception:
             logger.exception("Scheduled automated prediction evaluation failed")
 
+        try:
+            from app.db.session import SessionLocal
+            from app.jobs.chat_cleanup import (
+                cleanup_weekly_chat_sessions,
+                should_send_chat_open_notification,
+                mark_chat_notification_sent,
+            )
+            from app.api.routes.trading_chat import _send_chat_open_notifications
+            from zoneinfo import ZoneInfo
+            from app.core.config import get_settings
+
+            settings = get_settings()
+            tz = ZoneInfo(settings.market_timezone)
+            from datetime import UTC, datetime
+            cairo_now = datetime.now(UTC).astimezone(tz)
+
+            with SessionLocal() as db:
+                cleanup_result = cleanup_weekly_chat_sessions(db)
+                if cleanup_result.get("deleted_messages", 0) > 0:
+                    logger.info("Weekly chat cleanup completed: %s", cleanup_result)
+
+                chat_start = cairo_now.replace(
+                    hour=10, minute=0, second=0, microsecond=0
+                )
+                chat_end = cairo_now.replace(
+                    hour=10, minute=5, second=0, microsecond=0
+                )
+                if chat_start <= cairo_now <= chat_end:
+                    if should_send_chat_open_notification():
+                        sent = _send_chat_open_notifications(
+                            db,
+                            session_date=cairo_now.date().isoformat(),
+                        )
+                        mark_chat_notification_sent()
+                        logger.info("Chat open notifications sent to %d devices", sent)
+
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Scheduled chat cleanup/notification job failed")
+
         await asyncio.sleep(interval)

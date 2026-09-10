@@ -62,6 +62,7 @@ def get_admin_overview(db: Session, *, moment: datetime | None = None) -> dict:
         ),
         "notifications_today": count(Notification, Notification.sent_at >= today_start),
         "unread_notifications": count(Notification, Notification.read_at.is_(None)),
+        "app_version": "1.0.9+36",
     }
 
 
