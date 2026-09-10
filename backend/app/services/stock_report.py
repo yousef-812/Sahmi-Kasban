@@ -86,16 +86,19 @@ def detect_bounce_pattern(
         return None
     consol_range = sum((highs[i] - lows[i]) / closes[i] for i in consol) / _BOUNCE_CONSOL_WINDOW
 
-    # 1. Latest surge leg (5 moves) fully before the consolidation window.
+    # 1. Surge legs (5 moves each) fully before the consolidation window.
+    # Latest leg sets timing; earliest leg sets the rally base.
+    first_start: int | None = None
     surge_start: int | None = None
-    surge_gain = 0.0
     for i in range(0, n - _BOUNCE_CONSOL_WINDOW - _BOUNCE_SURGE_WINDOW):
         if closes[i] <= 0:
             continue
         gain = (closes[i + _BOUNCE_SURGE_WINDOW] - closes[i]) / closes[i] * 100.0
         if gain >= _BOUNCE_SURGE_MIN_PCT:
-            surge_start, surge_gain = i, gain  # keep the latest
-    if surge_start is None:
+            if first_start is None:
+                first_start = i
+            surge_start = i  # keep the latest
+    if surge_start is None or first_start is None:
         return None
 
     surge_idx = range(surge_start, surge_start + _BOUNCE_SURGE_WINDOW + 1)
@@ -107,16 +110,21 @@ def detect_bounce_pattern(
     if range_ratio > _BOUNCE_MAX_RANGE_RATIO:
         return None
 
-    # 2. Healthy correction from the post-surge peak.
-    peak = max(highs[surge_start:])
+    # 2. Healthy correction from the post-rally peak, holding above
+    # the rally base (earliest surge-leg start).
+    base_close = closes[first_start]
+    if base_close <= 0:
+        return None
+    peak = max(highs[first_start:])
     last_close = closes[-1]
     if peak <= 0:
         return None
     pullback = (peak - last_close) / peak * 100.0
     if not (_BOUNCE_PULLBACK_MIN_PCT <= pullback <= _BOUNCE_PULLBACK_MAX_PCT):
         return None
-    if last_close < closes[surge_start]:
+    if last_close < base_close:
         return None
+    rally_gain = (peak - base_close) / base_close * 100.0
 
     # 4. Volume contraction (neutral when data is missing).
     surge_vol = sum(volumes[i] for i in surge_idx) / surge_len
@@ -125,7 +133,7 @@ def detect_bounce_pattern(
     if surge_vol > 0 and consol_vol > 0 and consol_vol > surge_vol:
         return None
 
-    score = surge_gain + pullback * 0.5
+    score = rally_gain + pullback * 0.5
     score += max(0.0, _BOUNCE_MAX_AVG_BODY_PCT - avg_body) * 4.0
     score += max(0.0, _BOUNCE_MAX_RANGE_RATIO - range_ratio) * 10.0
     if volume_confirmed:
@@ -134,7 +142,7 @@ def detect_bounce_pattern(
         score += min(fair_upside_pct, 50.0) * 0.1
 
     return BounceSignal(
-        surge_gain_pct=round(surge_gain, 1),
+        surge_gain_pct=round(rally_gain, 1),
         pullback_pct=round(pullback, 1),
         avg_body_pct=round(avg_body, 2),
         range_ratio=round(range_ratio, 2),
