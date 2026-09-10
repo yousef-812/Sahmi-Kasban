@@ -215,20 +215,17 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     return Semantics(
       label: 'إعلان مدمج',
       child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 8),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text('إعلان', style: Theme.of(context).textTheme.labelSmall),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: 320,
-                  minHeight: 90,
-                  maxHeight: 200,
-                ),
+                constraints: const BoxConstraints(maxHeight: 130),
                 child: AdWidget(ad: ad),
               ),
             ],
