@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 _BOUNCE_SURGE_WINDOW = 5          # sessions of the surge leg
 _BOUNCE_SURGE_MIN_PCT = 12.0     # min gain of the surge leg
 _BOUNCE_PULLBACK_MIN_PCT = 4.0   # min correction from the peak
-_BOUNCE_PULLBACK_MAX_PCT = 15.0  # max correction from the peak
+_BOUNCE_PULLBACK_MAX_PCT = 30.0  # max correction from the peak
 _BOUNCE_CONSOL_WINDOW = 5        # last N sessions must be small candles
 _BOUNCE_MAX_AVG_BODY_PCT = 1.5  # max avg candle body of consolidation
 _BOUNCE_MAX_RANGE_RATIO = 0.5   # consolidation avg range vs surge avg range
@@ -60,7 +60,7 @@ def detect_bounce_pattern(
     """Detect surge → small-candle correction pattern in daily candles.
 
     1. Latest 5-session window gaining >= 12% (surge leg).
-    2. Correction of 4–15% from the post-surge peak, holding above the
+    2. Correction of 4–30% from the post-surge peak, holding above the
        surge-start close.
     3. Last 5 candles are small: avg body <= 1.5% and avg range <= 50%
        of the surge-leg avg range.
@@ -173,8 +173,8 @@ async def generate_stock_report(
     """Generate the admin stock report with 3 sections:
 
     1. Stocks priced below fair value (margin_of_safety >= 15%)
-    2. Stocks that dropped >=10% in the last month
-    3. Bounce candidates (surge >= 12% in 5 sessions, then 4–15%
+    2. Stocks that dropped >=10% in the last ~22 sessions
+    3. Bounce candidates (surge >= 12% in 5 sessions, then 4–30%
        correction with small consolidation candles + volume contraction)
     """
     result = StockReportResult()
@@ -262,11 +262,11 @@ async def generate_stock_report(
     semaphore = asyncio.Semaphore(15)
 
     async def _fetch_candles(ticker: str) -> tuple[str, list[dict]]:
-        """Return (ticker, daily candles) or (ticker, []) on failure."""
+        """Return (ticker, daily candles ~3 months) or (ticker, []) on failure."""
         async with semaphore:
             try:
                 series = await provider.get_history(
-                    ticker, period="1mo", interval="1d"
+                    ticker, period="3mo", interval="1d"
                 )
                 candles = [dict(c) for c in series.candles]
                 if len(candles) < 5:
@@ -286,8 +286,10 @@ async def generate_stock_report(
             continue
         candle_map[ticker] = candles
         try:
+            # Month change over the last ~22 sessions (≈ 1 month).
+            window = candles[-22:] if len(candles) >= 22 else candles
             current_price = float(candles[-1]["close"])
-            first_price = float(candles[0]["open"])
+            first_price = float(window[0]["open"])
         except (TypeError, ValueError, KeyError):
             continue
         if first_price <= 0 or current_price <= 0:
