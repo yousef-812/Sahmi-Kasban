@@ -21,9 +21,17 @@ from app.models import (
     DiscussionReaction,
     DiscussionReport,
     PredictionVerification,
+    PushDevice,
     User,
+    UserFollow,
     UserMute,
 )
+from app.services.notifications import (
+    FCMPushSender,
+    _decrypt_token,
+    create_notification,
+)
+from app.services.operations_settings import get_bool_setting
 from app.services.wallet import (
     WalletHoldStateError,
     confirm_hold,
@@ -389,7 +397,70 @@ def apply_moderation_decision(
         details=moderation_details,
     )
     db.flush()
+    if action == "published" and actor_type != "system":
+        try:
+            _notify_followers_of_publication(db, discussion)
+        except Exception:
+            logger.exception(
+                "Failed to notify followers of discussion %s", discussion.id
+            )
     return discussion
+
+
+_MAX_PUBLICATION_FOLLOWER_NOTIFY = 500
+
+
+def _notify_followers_of_publication(db: Session, discussion: Discussion) -> None:
+    """Inbox + push notification to the author's followers. Never raises."""
+    if not get_bool_setting(db, "notifications_enabled"):
+        return
+    author = db.get(User, discussion.user_id)
+    author_name = author.display_name if author else "متداول"
+    follower_ids = db.scalars(
+        select(UserFollow.follower_id)
+        .where(UserFollow.following_id == discussion.user_id)
+        .limit(_MAX_PUBLICATION_FOLLOWER_NOTIFY)
+    ).all()
+    if not follower_ids:
+        return
+    short_title = (discussion.title or "").strip()[:80]
+    title = f"مناقشة جديدة من {author_name}"
+    body = f"{author_name} نشر مناقشة جديدة عن {discussion.ticker}: {short_title}"
+    data = {
+        "kind": "new_discussion",
+        "discussion_id": str(discussion.id),
+        "author_id": str(discussion.user_id),
+        "ticker": discussion.ticker or "",
+    }
+    sender = FCMPushSender()
+    for follower_id in follower_ids:
+        if follower_id == discussion.user_id:
+            continue
+        create_notification(
+            db,
+            user_id=follower_id,
+            title=title,
+            body=body,
+            category="new_discussion",
+            data=data,
+        )
+        devices = db.scalars(
+            select(PushDevice).where(
+                PushDevice.user_id == follower_id,
+                PushDevice.enabled.is_(True),
+            )
+        ).all()
+        for device in devices:
+            try:
+                sender.send(
+                    token=_decrypt_token(device.encrypted_token),
+                    title=title,
+                    body=body,
+                    data=data,
+                )
+            except Exception:
+                pass
+    db.flush()
 
 
 def get_discussion_view(db: Session, discussion_id: UUID) -> DiscussionView:
