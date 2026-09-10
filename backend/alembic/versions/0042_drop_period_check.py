@@ -9,7 +9,7 @@ As long as it exists, valid ISO-date period_type values (e.g. "2026-09-15",
 sent by PredictionDateDropdown) fail with a 500 CheckViolation even though
 the service layer accepts them. Drop every known variant defensively.
 
-Revision ID: 0042_drop_stale_period_type_check
+Revision ID: 0042_drop_period_check
 Revises: 0041_merge_heads
 Create Date: 2026-09-10
 """
@@ -19,7 +19,7 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "0042_drop_stale_period_type_check"
+revision: str = "0042_drop_period_check"
 down_revision: str | None = "0041_merge_heads"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
