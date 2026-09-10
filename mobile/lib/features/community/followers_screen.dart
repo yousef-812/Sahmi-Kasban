@@ -127,18 +127,7 @@ class _FollowUserTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      leading: CircleAvatar(
-        backgroundImage: AssetImage(avatarAssetPath(item.avatarKey)),
-      ),
-      title: Text(
-        item.displayName,
-        style: const TextStyle(fontWeight: FontWeight.w700),
-      ),
-      trailing: isSelf
-          ? null
-          : _busyButton(context, ref),
+    return InkWell(
       onTap: () {
         Navigator.of(context).push(
           UserProfileScreen.route(
@@ -148,6 +137,29 @@ class _FollowUserTile extends ConsumerWidget {
           ),
         );
       },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: AssetImage(avatarAssetPath(item.avatarKey)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.displayName,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (!isSelf) ...[
+              const SizedBox(width: 8),
+              _busyButton(context, ref),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
