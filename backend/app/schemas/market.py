@@ -14,6 +14,21 @@ class MarketInstrumentResponse(BaseModel):
     description: str = ""
 
 
+class StockSignatureResponse(BaseModel):
+    ticker: str
+    updated_at: str
+    overall_quality_score: float
+    approved_by_critic: bool
+    critic_confidence: float
+    critic_summary: str
+    dominant_cycle_sessions: int
+    cycle_stability_score: float
+    avg_sweep_depth_pct: float
+    bounce_probability_pct: float
+    fvg_fill_preference_pct: float
+
+
+
 class MarketInstrumentListResponse(BaseModel):
     source: str = "legacy_seed_registry"
     total_registry_size: int

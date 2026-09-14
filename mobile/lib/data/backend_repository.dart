@@ -256,6 +256,17 @@ class BackendRepository {
     }
   }
 
+  Future<Map<String, dynamic>?> getStockSignature(String ticker) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/stocks/${ticker.trim().toUpperCase()}/signature',
+      );
+      return _requiredData(response);
+    } on Object {
+      return null;
+    }
+  }
+
   Future<StockAnalysisResult?> getLatestOwnedStockAnalysis(
     String ticker,
   ) async {

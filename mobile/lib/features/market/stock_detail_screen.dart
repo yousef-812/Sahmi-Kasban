@@ -7,7 +7,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_windows/webview_windows.dart' as win_wv;
 
 import '../../core/network/api_exception.dart';
+import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
+import '../../widgets/algorithmic_signature_card.dart';
 import '../monetization/free_plan_ads.dart';
 import '../news/widgets/stock_news_section.dart';
 import 'market_quotes_providers.dart';
@@ -220,6 +222,8 @@ class _DetailContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TradingViewWidget(symbol: ticker, hideSideToolbar: hideSideToolbar),
+        const SizedBox(height: 12),
+        _StockSignatureSection(ticker: ticker),
         const SizedBox(height: 12),
         // ── أخبار السهم ──────────────────────────────────────
         StockNewsSection(ticker: ticker),
@@ -780,3 +784,26 @@ String _formatVolume(double? value) {
   }
   return value.toStringAsFixed(0);
 }
+
+class _StockSignatureSection extends ConsumerWidget {
+  const _StockSignatureSection({required this.ticker});
+
+  final String ticker;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: ref.read(backendRepositoryProvider).getStockSignature(ticker),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: AlgorithmicSignatureCard.fromMap(snapshot.data!),
+        );
+      },
+    );
+  }
+}
+

@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models.dart';
+import '../../widgets/algorithmic_signature_card.dart';
 import '../../widgets/structured_data_card.dart';
 import 'branded_analysis_card_dialog.dart';
 
@@ -60,6 +61,13 @@ class StockAnalysisReport extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _TradePlanCard(tradePlan: tradePlan, risk: risk),
+        if (_engineDetails(engines, 'algorithmic_signature').isNotEmpty) ...[
+          const SizedBox(height: 12),
+          AlgorithmicSignatureCard.fromMap({
+            'ticker': analysis.ticker,
+            'details': _engineDetails(engines, 'algorithmic_signature'),
+          }),
+        ],
         const SizedBox(height: 12),
         _TechnicalOverviewCard(
           technical: technical,

@@ -28,6 +28,7 @@ from app.schemas.market import (
     MarketQuotesResponse,
     StockAnalysisRequest,
     StockAnalysisResponse,
+    StockSignatureResponse,
     StockComparisonFailureResponse,
     StockComparisonItemResponse,
     StockComparisonRequest,
@@ -512,3 +513,32 @@ async def compare_stocks_investment_route(
         best_ticker=res["best_ticker"],
         summary=res["summary"],
     )
+
+
+@router.get("/stocks/{ticker}/signature", response_model=StockSignatureResponse)
+def get_stock_algorithmic_signature(
+    ticker: str,
+) -> StockSignatureResponse:
+    from sahmi_kasban.fingerprint import StockSignatureRegistry
+    registry = StockSignatureRegistry()
+    symbol = ticker.strip().upper()
+    sig = registry.get_signature(symbol)
+    if sig is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="البصمة الخوارزمية غير مسجلة لهذا السهم حالياً.",
+        )
+    return StockSignatureResponse(
+        ticker=symbol,
+        updated_at=sig.updated_at,
+        overall_quality_score=sig.overall_quality_score,
+        approved_by_critic=sig.ai_critic.approved,
+        critic_confidence=sig.ai_critic.confidence,
+        critic_summary=sig.ai_critic.summary,
+        dominant_cycle_sessions=sig.time_cycle.dominant_cycle_sessions,
+        cycle_stability_score=sig.time_cycle.stability_score,
+        avg_sweep_depth_pct=sig.accumulation_sweep.avg_sweep_depth_pct,
+        bounce_probability_pct=sig.accumulation_sweep.bounce_probability_pct,
+        fvg_fill_preference_pct=sig.accumulation_sweep.fvg_fill_preference_pct,
+    )
+
