@@ -7,6 +7,7 @@ from app.api.routes.admin_performance_recovery import (
     router as admin_performance_recovery_router,
 )
 from app.api.routes.admin_replays import router as admin_replays_router
+from app.api.routes.admin_stock_fingerprints import router as admin_stock_fingerprints_router
 from app.api.routes.admin_stock_report import router as admin_stock_report_router
 from app.api.routes.admin_wallet import router as admin_wallet_router
 from app.api.routes.ai_copilot import router as ai_copilot_router
@@ -72,4 +73,6 @@ api_router.include_router(admin_backtests_router)
 api_router.include_router(admin_ai_failures_router)
 api_router.include_router(admin_replays_router)
 api_router.include_router(admin_stock_report_router)
+api_router.include_router(admin_stock_fingerprints_router)
 api_router.include_router(quality_admin_router)
+

@@ -447,7 +447,45 @@ class AdminRepository {
     }
   }
 
+  Future<List<StockFingerprintItem>> listStockFingerprints() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/admin/stock-fingerprints/list',
+      );
+      final items = _list(_required(response.data)['signatures']);
+      return items.map((item) => StockFingerprintItem.fromJson(_map(item))).toList();
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<List<StockFingerprintItem>> rebuildStockFingerprints({String? ticker}) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/admin/stock-fingerprints/rebuild',
+        data: <String, dynamic>{if (ticker != null && ticker.isNotEmpty) 'ticker': ticker},
+      );
+      final items = _list(_required(response.data)['signatures']);
+      return items.map((item) => StockFingerprintItem.fromJson(_map(item))).toList();
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<Uint8List> downloadStockFingerprintsExcel() async {
+    try {
+      final response = await _apiClient.dio.get<Uint8List>(
+        '/admin/stock-fingerprints/export-excel',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data ?? Uint8List(0);
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   String _dateOnly(DateTime value) {
+
     return '${value.year.toString().padLeft(4, '0')}-'
         '${value.month.toString().padLeft(2, '0')}-'
         '${value.day.toString().padLeft(2, '0')}';

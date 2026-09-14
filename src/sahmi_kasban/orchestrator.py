@@ -6,6 +6,7 @@ from typing import Any
 import pandas as pd
 
 from sahmi_kasban.engines import (
+    AlgorithmicSignatureEngine,
     MarketEnvironmentEngine,
     MarketIndexEngine,
     MultiTimeframeEngine,
@@ -152,6 +153,7 @@ class SahmiKasbanAnalyzer:
             MarketEnvironmentEngine(self.config),
             TechnicalEngine(self.config),
             SMCEngine(self.config),
+            AlgorithmicSignatureEngine(self.config),
             MultiTimeframeEngine(self.config),
             QuantitativeEngine(self.config),
             SectorMomentumEngine(self.config),

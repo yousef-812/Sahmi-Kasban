@@ -367,3 +367,45 @@ Map<String, dynamic> _map(Object? value) {
   if (value is Map) return Map<String, dynamic>.from(value);
   return <String, dynamic>{};
 }
+
+class StockFingerprintItem {
+  const StockFingerprintItem({
+    required this.ticker,
+    required this.updatedAt,
+    required this.overallQualityScore,
+    required this.approvedByCritic,
+    required this.criticConfidence,
+    required this.criticSummary,
+    required this.dominantCycleSessions,
+    required this.cycleStabilityScore,
+    required this.avgSweepDepthPct,
+    required this.bounceProbabilityPct,
+  });
+
+  final String ticker;
+  final String updatedAt;
+  final double overallQualityScore;
+  final bool approvedByCritic;
+  final double criticConfidence;
+  final String criticSummary;
+  final int dominantCycleSessions;
+  final double cycleStabilityScore;
+  final double avgSweepDepthPct;
+  final double bounceProbabilityPct;
+
+  factory StockFingerprintItem.fromJson(Map<String, dynamic> json) {
+    return StockFingerprintItem(
+      ticker: (json['ticker'] as String? ?? '').toUpperCase(),
+      updatedAt: json['updated_at'] as String? ?? '',
+      overallQualityScore: (json['overall_quality_score'] as num? ?? 0.0).toDouble(),
+      approvedByCritic: json['approved_by_critic'] as bool? ?? false,
+      criticConfidence: (json['critic_confidence'] as num? ?? 0.0).toDouble(),
+      criticSummary: json['critic_summary'] as String? ?? '',
+      dominantCycleSessions: json['dominant_cycle_sessions'] as int? ?? 0,
+      cycleStabilityScore: (json['cycle_stability_score'] as num? ?? 0.0).toDouble(),
+      avgSweepDepthPct: (json['avg_sweep_depth_pct'] as num? ?? 0.0).toDouble(),
+      bounceProbabilityPct: (json['bounce_probability_pct'] as num? ?? 0.0).toDouble(),
+    );
+  }
+}
+

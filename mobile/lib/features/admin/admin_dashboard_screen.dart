@@ -36,6 +36,11 @@ class AdminDashboardScreen extends StatelessWidget {
               tooltip: 'سجل أعطال المساعد الذكي',
             ),
             IconButton(
+              onPressed: () => context.push('/admin/stock-fingerprints'),
+              icon: const Icon(Icons.fingerprint_outlined),
+              tooltip: 'إدارة البصمات الخوارزمية',
+            ),
+            IconButton(
               onPressed: () => context.push('/admin/performance'),
               icon: const Icon(Icons.assessment_outlined),
               tooltip: 'تشغيل سجل الأداء',

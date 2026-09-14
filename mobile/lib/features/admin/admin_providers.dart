@@ -39,3 +39,9 @@ final adminDiscussionsProvider =
     FutureProvider.autoDispose<List<AdminDiscussionItem>>((ref) {
       return ref.watch(adminRepositoryProvider).discussions();
     });
+
+final adminStockFingerprintsProvider =
+    FutureProvider.autoDispose<List<StockFingerprintItem>>((ref) {
+      return ref.watch(adminRepositoryProvider).listStockFingerprints();
+    });
+

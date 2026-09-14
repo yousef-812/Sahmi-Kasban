@@ -13,14 +13,16 @@ from sahmi_kasban.models import EngineResult, Signal
 # forecast. These weights preserve the previous relative directional weights.
 DEFAULT_WEIGHTS: dict[str, float] = {
     "market_environment": 0.15,
-    "technical": 0.225,
-    "smc": 0.225,
+    "technical": 0.20,
+    "smc": 0.20,
+    "algorithmic_signature": 0.15,
     "multi_timeframe": 0.15,
-    "quantitative": 0.15,
-    "sector_momentum": 0.10,
+    "quantitative": 0.10,
+    "sector_momentum": 0.05,
 }
 
 DIRECTIONAL_ENGINES = frozenset(DEFAULT_WEIGHTS)
+
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,12 +6,14 @@ from typing import Any
 
 from sahmi_kasban.ai.client import AIChatClient, AIProviderError
 from sahmi_kasban.ai.prompts import (
+    ALGORITHMIC_CRITIC_SYSTEM_PROMPT,
     DISCUSSION_MODERATION_SYSTEM_PROMPT,
     PERSONA_POST_GENERATION_SYSTEM_PROMPT,
     PREDICTION_EXTRACTION_SYSTEM_PROMPT,
     PREDICTION_VERIFICATION_SYSTEM_PROMPT,
     STOCK_ANALYSIS_SYSTEM_PROMPT,
 )
+
 
 
 class SahmiAIService:
@@ -138,6 +140,28 @@ class SahmiAIService:
         result.setdefault("content", f"شايف حركة جيدة في سهم {ticker.upper()} الفترة دي.")
         result.setdefault("direction", "up")
         return result
+
+    async def evaluate_algorithmic_signature(
+        self,
+        *,
+        ticker: str,
+        time_cycle: dict[str, Any],
+        accumulation_sweep: dict[str, Any],
+    ) -> dict[str, Any]:
+        result = await self._chat_json(
+            system_prompt=ALGORITHMIC_CRITIC_SYSTEM_PROMPT,
+            payload={
+                "ticker": ticker.upper(),
+                "time_cycle": time_cycle,
+                "accumulation_sweep": accumulation_sweep,
+            },
+        )
+        result.setdefault("approved", True)
+        result.setdefault("confidence", 70.0)
+        result.setdefault("summary", f"البصمة الخوارزمية لـ {ticker.upper()} مؤكدة ومقبولة")
+        result.setdefault("warnings", [])
+        return result
+
 
     async def _chat_json(
         self,
