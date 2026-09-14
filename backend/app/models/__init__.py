@@ -54,6 +54,7 @@ from app.models.operations import (
     NotificationDelivery,
     PushDevice,
     ServiceHealthEvent,
+    StockAlgorithmicSignatureModel,
 )
 from app.models.performance import (
     MarketReportEvaluation,
