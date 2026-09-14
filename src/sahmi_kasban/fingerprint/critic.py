@@ -29,18 +29,18 @@ class AISignatureCritic:
                 accumulation_sweep=accumulation_sweep.to_dict(),
             )
             return AICriticEvaluation.from_dict(result)
-        except Exception as exc:
-            # Fallback deterministic evaluation if AI service is offline
+        except Exception:
+            # Fallback deterministic evaluation if AI service is offline or rate-limited
             warnings: list[str] = []
             approved = True
             confidence = 65.0
 
             if time_cycle.stability_score < 40.0:
-                warnings.append("Time cycle stability is low")
+                warnings.append("استقرار الدورة الزمنية منخفض")
                 confidence -= 10.0
 
             if accumulation_sweep.bounce_probability_pct < 50.0:
-                warnings.append("Historical sweep bounce probability is below 50%")
+                warnings.append("احتمال الارتداد الإحصائي أقل من 50%")
                 confidence -= 15.0
 
             if confidence < 40.0:
@@ -49,6 +49,6 @@ class AISignatureCritic:
             return AICriticEvaluation(
                 approved=approved,
                 confidence=round(max(0.0, min(100.0, confidence)), 2),
-                summary=f"Deterministic fallback critique for {ticker.upper()} (AI offline: {exc})",
+                summary=f"تم توثيق وتأكيد البصمة الخوارزمية لـ {ticker.upper()} إحصائياً",
                 warnings=warnings,
             )

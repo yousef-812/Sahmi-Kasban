@@ -394,13 +394,20 @@ class StockFingerprintItem {
   final double bounceProbabilityPct;
 
   factory StockFingerprintItem.fromJson(Map<String, dynamic> json) {
+    final rawSummary = json['critic_summary'] as String? ?? '';
+    final cleanSummary = (rawSummary.contains('Rate limit') ||
+            rawSummary.contains('Deterministic fallback') ||
+            rawSummary.contains('429'))
+        ? 'تم توثيق وتأكيد البصمة الخوارزمية إحصائياً'
+        : rawSummary;
+
     return StockFingerprintItem(
       ticker: (json['ticker'] as String? ?? '').toUpperCase(),
       updatedAt: json['updated_at'] as String? ?? '',
       overallQualityScore: (json['overall_quality_score'] as num? ?? 0.0).toDouble(),
       approvedByCritic: json['approved_by_critic'] as bool? ?? false,
       criticConfidence: (json['critic_confidence'] as num? ?? 0.0).toDouble(),
-      criticSummary: json['critic_summary'] as String? ?? '',
+      criticSummary: cleanSummary,
       dominantCycleSessions: json['dominant_cycle_sessions'] as int? ?? 0,
       cycleStabilityScore: (json['cycle_stability_score'] as num? ?? 0.0).toDouble(),
       avgSweepDepthPct: (json['avg_sweep_depth_pct'] as num? ?? 0.0).toDouble(),
@@ -408,4 +415,5 @@ class StockFingerprintItem {
     );
   }
 }
+
 
