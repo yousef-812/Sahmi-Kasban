@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Any
 
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from sqlalchemy import select
 
 from app.api.dependencies import CurrentAdmin, DatabaseSession
+from app.market_data.egx_symbols import EGX_SEED_SYMBOLS
+from app.models import MarketInstrumentCatalog
 from sahmi_kasban.fingerprint import (
     AISignatureCritic,
     FingerprintExtractor,
@@ -16,8 +21,6 @@ from sahmi_kasban.fingerprint import (
     StockSignatureRegistry,
 )
 from sahmi_kasban.indicators import prepare_candles
-import pandas as pd
-
 
 router = APIRouter(prefix="/admin/stock-fingerprints", tags=["admin-stock-fingerprints"])
 
@@ -96,14 +99,22 @@ def list_signatures(
 @router.post("/rebuild", response_model=SignatureListResponse)
 async def rebuild_signatures(
     payload: RebuildSignatureRequest,
+    db: DatabaseSession,
     current_admin: CurrentAdmin,
 ) -> SignatureListResponse:
     registry = StockSignatureRegistry()
     critic = AISignatureCritic()
     extractor = FingerprintExtractor()
 
-    tickers = [payload.ticker.upper()] if payload.ticker else ["COMI", "EAST", "EKHO", "HRHO", "SWDY"]
-    from datetime import datetime, timezone
+    if payload.ticker and payload.ticker.strip():
+        tickers = [payload.ticker.strip().upper()]
+    else:
+        active_tickers = list(
+            db.scalars(
+                select(MarketInstrumentCatalog.ticker).where(MarketInstrumentCatalog.active.is_(True))
+            ).all()
+        )
+        tickers = active_tickers if active_tickers else list(EGX_SEED_SYMBOLS)
 
     for symbol in tickers:
         candles = prepare_candles(_mock_candles(symbol))
