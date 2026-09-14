@@ -1,7 +1,7 @@
 """Add stock_algorithmic_signatures table for persistent stock signatures.
 
-Revision ID: 0042_stock_algorithmic_signatures
-Revises: 0041_merge_heads
+Revision ID: 0043_stock_algorithmic_signatures
+Revises: 0042_drop_period_check
 Create Date: 2026-09-14
 """
 from __future__ import annotations
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0042_stock_algorithmic_signatures"
-down_revision: str | Sequence[str] | None = "0041_merge_heads"
+revision: str = "0043_stock_algorithmic_signatures"
+down_revision: str | Sequence[str] | None = "0042_drop_period_check"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
