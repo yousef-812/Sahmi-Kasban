@@ -112,6 +112,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             ListTile(
               leading: const Icon(
+                Icons.replay_rounded,
+                color: Colors.teal,
+              ),
+              title: const Text('محاكاة الجلسة الأخيرة'),
+              subtitle: const Text('شاهد شموع الجلسة تتحرك من جديد'),
+              onTap: () {
+                context.push('/replay');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
                 Icons.forum_rounded,
                 color: Color(0xFF0088CC),
               ),

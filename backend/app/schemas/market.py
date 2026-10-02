@@ -198,3 +198,19 @@ class StockInvestmentComparisonResponse(BaseModel):
     items: list[StockInvestmentAnalysisResponse]
     best_ticker: str
     summary: str
+
+
+class SessionReplayCandle(BaseModel):
+    timestamp: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float = 0
+
+
+class SessionReplayResponse(BaseModel):
+    ticker: str
+    session_date: str
+    interval: str
+    candles: list[SessionReplayCandle]

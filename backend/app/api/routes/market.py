@@ -26,6 +26,7 @@ from app.schemas.market import (
     MarketInstrumentResponse,
     MarketQuoteResponse,
     MarketQuotesResponse,
+    SessionReplayResponse,
     StockAnalysisRequest,
     StockAnalysisResponse,
     StockSignatureResponse,
@@ -293,6 +294,96 @@ async def analyze_market_index(
         ) from exc
 
     return _analysis_response(execution)
+
+
+@router.get("/market/session-replay", response_model=SessionReplayResponse)
+async def get_session_replay(
+    db: DatabaseSession,
+    current_user: CurrentUser,
+    provider: MarketProvider,
+    ticker: str = Query(min_length=1, max_length=16),
+    interval: str = Query(default="5m"),
+) -> SessionReplayResponse:
+    """Return intraday candles of the last closed session for chart replay.
+
+    The Flutter player steps through these candles from session open to
+    session close with adjustable playback speeds (1x..16x).
+    """
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from app.schemas.market import SessionReplayCandle
+
+    allowed = {"1m", "5m", "15m", "30m"}
+    normalized_interval = interval.strip().lower()
+    if normalized_interval not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="الفاصل الزمني غير مدعوم. استخدم 1m أو 5m أو 15m أو 30m.",
+        )
+    normalized_ticker = normalize_egx_ticker(ticker)
+    if not await market_instrument_exists(db, normalized_ticker):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير موجود في سوق EGX المدعوم.",
+        )
+    try:
+        series = await provider.get_history(
+            normalized_ticker,
+            period="5d",
+            interval=normalized_interval,
+        )
+    except (MarketDataUnavailableError, UnknownTickerError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="بيانات الجلسة غير متاحة مؤقتًا. أعد المحاولة بعد قليل.",
+        ) from exc
+
+    cairo = ZoneInfo("Africa/Cairo")
+    by_day: dict[str, list[dict]] = {}
+    for raw in series.candles:
+        try:
+            ts = datetime.fromisoformat(str(raw.get("timestamp")))
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=cairo)
+            day_key = ts.astimezone(cairo).date().isoformat()
+        except (ValueError, TypeError):
+            continue
+        by_day.setdefault(day_key, []).append(raw)
+    if not by_day:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="لا توجد شموع لحظية كافية لإعادة المحاكاة.",
+        )
+    # Last day with enough candles = last closed session available.
+    session_date = sorted(
+        (day for day, rows in by_day.items() if len(rows) >= 5),
+        reverse=True,
+    )
+    if not session_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="لا توجد جلسة مكتملة كافية لإعادة المحاكاة.",
+        )
+    chosen = session_date[0]
+    rows = sorted(by_day[chosen], key=lambda c: str(c.get("timestamp")))
+    candles = [
+        SessionReplayCandle(
+            timestamp=datetime.fromisoformat(str(c.get("timestamp"))),
+            open=float(c.get("open", 0)),
+            high=float(c.get("high", 0)),
+            low=float(c.get("low", 0)),
+            close=float(c.get("close", 0)),
+            volume=float(c.get("volume", 0) or 0),
+        )
+        for c in rows
+    ]
+    return SessionReplayResponse(
+        ticker=normalized_ticker,
+        session_date=chosen,
+        interval=normalized_interval,
+        candles=candles,
+    )
 
 
 @router.websocket("/market/quotes/stream")

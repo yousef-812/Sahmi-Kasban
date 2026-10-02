@@ -35,6 +35,7 @@ import '../features/performance/performance_report_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
 import '../features/referral/referral_screen.dart';
+import '../features/replay/session_replay_screen.dart';
 import '../features/news/news_models.dart';
 import '../features/news/screens/news_detail_screen.dart';
 import '../features/news/screens/news_feed_screen.dart';
@@ -141,6 +142,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/market/compare',
         builder: (context, state) => StockComparisonScreen(
           initialMode: state.uri.queryParameters['mode'],
+        ),
+      ),
+      GoRoute(
+        path: '/replay',
+        builder: (context, state) => SessionReplayScreen(
+          initialTicker: state.uri.queryParameters['ticker'],
         ),
       ),
       GoRoute(

@@ -515,6 +515,11 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
                   ),
                 ),
                 IconButton(
+                  icon: const Icon(Icons.replay_rounded),
+                  tooltip: 'محاكاة الجلسة الأخيرة',
+                  onPressed: () => context.push('/replay'),
+                ),
+                IconButton(
                   icon: const Icon(Icons.add_rounded),
                   tooltip: 'إضافة قائمة متابعة',
                   onPressed: _createWatchlist,
@@ -542,17 +547,72 @@ class _StocksScreenState extends ConsumerState<StocksScreen>
 
   Widget _buildActiveTabContent(List<MarketQuote> allQuotes) {
     if (_currentTabIndex == 0) {
-      // Tab 0: All stocks
+      // Tab 0: All stocks — الإعلان يتحرك مع السكرول داخل نفس الليست.
       final items = _filterQuotes(allQuotes);
-      return Column(
-        children: [
-          _CommunityBannerCard(
-            onTap: () {
-              ref.read(dashboardTabProvider.notifier).state = 3;
-            },
+      if (items.isEmpty) {
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: _CommunityBannerCard(
+                onTap: () {
+                  ref.read(dashboardTabProvider.notifier).state = 3;
+                },
+              ),
+            ),
+            const SliverToBoxAdapter(child: FreePlanNativeAd()),
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.search_off_rounded, size: 48),
+                    SizedBox(height: 12),
+                    Text(
+                      'لا توجد أسهم في هذه القائمة.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: _CommunityBannerCard(
+              onTap: () {
+                ref.read(dashboardTabProvider.notifier).state = 3;
+              },
+            ),
           ),
-          const FreePlanNativeAd(),
-          Expanded(child: _buildGrid(items)),
+          const SliverToBoxAdapter(child: FreePlanNativeAd()),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            sliver: SliverGrid(
+              gridDelegate:
+                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 220,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.92,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final quote = items[index];
+                  return StockQuoteCard(
+                    quote: quote,
+                    onTap: () => context.push('/stocks/${quote.ticker}'),
+                    onLongPress: () => _showLongPressBottomSheet(quote),
+                  );
+                },
+                childCount: items.length,
+              ),
+            ),
+          ),
         ],
       );
     } else if (_currentTabIndex == 1) {
