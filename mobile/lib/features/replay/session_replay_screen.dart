@@ -868,7 +868,7 @@ class _TvChartPainter extends CustomPainter {
       intraVol += t.tickVolume;
     }
     _candlePartial(
-      canvas,
+      canvas: canvas,
       open: cur.open,
       high: intraHigh,
       low: intraLow,
@@ -971,7 +971,7 @@ class _TvChartPainter extends CustomPainter {
     Color down,
   ) {
     _candlePartial(
-      canvas,
+      canvas: canvas,
       open: c.open,
       high: c.high,
       low: c.low,
