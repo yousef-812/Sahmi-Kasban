@@ -18,16 +18,16 @@ class ReplayCandle {
   bool get isUp => close >= open;
 
   factory ReplayCandle.fromJson(Map<String, dynamic> json) {
-    double num(dynamic v) =>
+    double asDouble(dynamic v) =>
         v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
     return ReplayCandle(
       timestamp: DateTime.tryParse('${json['timestamp']}')?.toLocal() ??
           DateTime.now(),
-      open: num(json['open']),
-      high: num(json['high']),
-      low: num(json['low']),
-      close: num(json['close']),
-      volume: num(json['volume']),
+      open: asDouble(json['open']),
+      high: asDouble(json['high']),
+      low: asDouble(json['low']),
+      close: asDouble(json['close']),
+      volume: asDouble(json['volume']),
     );
   }
 }
