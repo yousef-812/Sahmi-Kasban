@@ -20,7 +20,11 @@ uvicorn app.main:app --reload
 ```
 API docs: http://127.0.0.1:8000/docs
 
-Set `DATA_PROVIDER=csv` for local demo data or implement a licensed provider in `app/providers/base.py`. No fabricated live quotes are returned; absent data produces a clear provider error.
+Set `DATA_PROVIDER=csv` for local demo data. The experiment now reuses the repository's existing `backend/reusable_data_fetcher.py` WebSocket connector through `app/providers/tradingview.py`.
+
+To select it, set `DATA_PROVIDER=tradingview`. It is intentionally blocked unless `TRADINGVIEW_DATA_USAGE_AUTHORIZED=true` is explicitly set. Only enable that flag if written permission covers automated collection and algorithmic processing for this application. TradingView's published terms restrict automated data extraction and non-display algorithmic use; for an unlicensed use case, keep CSV mode or connect a licensed provider. The adapter does not bypass login, rate limits, or access controls.
+
+The TradingView adapter requests daily OHLCV candles using the existing `TradingViewConnector.get_historical()` method, normalizes the returned records, and passes them to the same indicator engine. No fabricated live quotes are returned; absent or invalid data produces a clear provider error.
 
 ## CSV format
 Put daily candles in `backend/data/{SYMBOL}.csv` with columns:
