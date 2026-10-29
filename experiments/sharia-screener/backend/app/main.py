@@ -2,6 +2,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from app.indicators import analyze
 from app.providers.base import CSVProvider, MarketDataError
+from app.providers.tradingview import TradingViewWebSocketProvider
+import os
 
 app = FastAPI(title="Sharia Screener API", version="0.1.0",
               description="Daily technical screening for a verified Sharia universe.")
@@ -19,7 +21,13 @@ def universe() -> list[str]:
 
 def analyze_symbol(symbol: str) -> dict:
     try:
-        candles = CSVProvider(str(DATA_DIR)).daily_candles(symbol)
+        provider_name = os.getenv("DATA_PROVIDER", "csv").strip().lower()
+        if provider_name == "tradingview":
+            candles = TradingViewWebSocketProvider().daily_candles(symbol)
+        elif provider_name == "csv":
+            candles = CSVProvider(str(DATA_DIR)).daily_candles(symbol)
+        else:
+            raise MarketDataError(f"Unsupported DATA_PROVIDER: {provider_name}")
         result = analyze(candles, symbol)
         latest = candles["timestamp"].max()
         result["data_freshness"] = str(latest)
@@ -30,7 +38,7 @@ def analyze_symbol(symbol: str) -> dict:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "sharia-screener", "mode": "csv-demo"}
+    return {"status": "ok", "service": "sharia-screener", "mode": os.getenv("DATA_PROVIDER", "csv").strip().lower()}
 
 
 @app.get("/api/v1/universe")
