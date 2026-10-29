@@ -1,0 +1,51 @@
+name: Sharia market data smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "EGX ticker to test (for example COMI)"
+        required: true
+        default: "COMI"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  live-data-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: experiments/sharia-screener/backend
+    env:
+      DATA_PROVIDER: tradingview
+      TRADINGVIEW_DATA_USAGE_AUTHORIZED: ${{ secrets.TRADINGVIEW_DATA_USAGE_AUTHORIZED }}
+      TRADINGVIEW_AUTH_TOKEN: ${{ secrets.TRADINGVIEW_AUTH_TOKEN }}
+      MARKET_DATA_TIMEOUT_SECONDS: "25"
+      MARKET_DATA_CANDLE_COUNT: "120"
+      SMOKE_TEST_SYMBOL: ${{ inputs.symbol }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: experiments/sharia-screener/backend/requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Verify live daily OHLCV data
+        run: python scripts/smoke_test_tradingview.py
+
+      - name: Explain next step
+        if: success()
+        run: |
+          echo "Live data smoke test passed for ${SMOKE_TEST_SYMBOL}."
+          echo "This confirms one symbol returned usable daily OHLCV candles during this run."
+          echo "It does not verify every Sharia-universe ticker or authorize production use."
