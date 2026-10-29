@@ -1,0 +1,2 @@
+# Add symbols only after verifying current EGX Sharia index eligibility.
+# One TradingView/vendor symbol per line, e.g. EGX:COMI (provider-specific).
