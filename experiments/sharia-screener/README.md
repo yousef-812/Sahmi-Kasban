@@ -49,3 +49,15 @@ The screenshot appears to label a custom indicator as "مؤشر القوة ال�
 
 ## Mobile client
 The `mobile/` folder contains setup notes and a minimal Flutter API client starter. Configure `API_BASE_URL` for the deployed server.
+
+## Live-data verification with GitHub Actions
+
+A manual workflow is available at **Actions → Sharia market data smoke test → Run workflow**. It tests one EGX symbol (default `COMI`) and requires at least 60 usable daily candles with valid OHLCV fields.
+
+Before running it, add repository Actions secrets:
+- `TRADINGVIEW_DATA_USAGE_AUTHORIZED`: set to `true` only if written permission explicitly covers automated collection and algorithmic processing for this application.
+- `TRADINGVIEW_AUTH_TOKEN`: the authorized account token, if required by the permitted integration.
+
+The workflow is intentionally manual and fails closed if the authorization secret is absent. A successful single-symbol check confirms only that the adapter returned usable data at that time; it does not validate every ticker, guarantee ongoing availability, or make this source suitable for production. Review the run logs and test several approved symbols before changing deployment settings.
+
+**Do not delete the CSV provider or switch the production default just because one smoke test passes.** Keep CSV as a fallback until the authorized provider has been validated across the universe and several sessions, and a permitted data source has been confirmed. The application default remains `DATA_PROVIDER=csv` until that review is complete.
