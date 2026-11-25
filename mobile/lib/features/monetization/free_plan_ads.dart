@@ -61,6 +61,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   @override
   void initState() {
     super.initState();
+    AdsConsent.notifier.addListener(_onConsentChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _syncAd();
     });
@@ -188,8 +189,14 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     ad?.dispose();
   }
 
+  void _onConsentChanged() {
+    if (!mounted) return;
+    setState(_syncAd);
+  }
+
   @override
   void dispose() {
+    AdsConsent.notifier.removeListener(_onConsentChanged);
     _disposeAd();
     super.dispose();
   }
@@ -267,7 +274,16 @@ class FreePlanInterstitialCoordinator {
   }) : _config = config,
        _gate = gate,
        _repository = repository,
-       _policy = policy;
+       _policy = policy {
+    AdsConsent.notifier.addListener(_dropAdIfNoConsent);
+  }
+
+  void _dropAdIfNoConsent() {
+    if (AdsConsent.canRequestAds) return;
+    _ad?.dispose();
+    _ad = null;
+    _loading = false;
+  }
 
   final AppConfig _config;
   final AdFrequencyGate _gate;
@@ -285,6 +301,10 @@ class FreePlanInterstitialCoordinator {
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
     if (!enabled || !isMobile) {
+      return;
+    }
+    if (!AdsConsent.canRequestAds) {
+      _dropAdIfNoConsent();
       return;
     }
     _loadIfNeeded();
@@ -307,6 +327,10 @@ class FreePlanInterstitialCoordinator {
       return;
     }
     _ad = null;
+    if (!AdsConsent.canRequestAds) {
+      ad.dispose();
+      return;
+    }
     _meaningfulActions = 0;
     _gate.markShowing();
     final adUnitId = defaultTargetPlatform == TargetPlatform.android
@@ -381,6 +405,10 @@ class FreePlanInterstitialCoordinator {
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
           _loading = false;
+          if (!AdsConsent.canRequestAds) {
+            ad.dispose();
+            return;
+          }
           _ad = ad;
           _repository?.recordAdTelemetry(
             adType: 'interstitial',
@@ -402,6 +430,7 @@ class FreePlanInterstitialCoordinator {
   }
 
   void dispose() {
+    AdsConsent.notifier.removeListener(_dropAdIfNoConsent);
     _ad?.dispose();
     _ad = null;
   }

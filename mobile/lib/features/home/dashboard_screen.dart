@@ -168,7 +168,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 subtitle: const Text('تغيير موافقتك على الإعلانات'),
                 onTap: () async {
                   Navigator.pop(context);
-                  await const ConsentManager().showPrivacyOptions();
+                  await ref.read(consentManagerProvider).showPrivacyOptions();
                   ref.invalidate(privacyOptionsRequiredProvider);
                 },
               ),

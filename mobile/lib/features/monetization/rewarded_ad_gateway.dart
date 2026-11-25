@@ -73,6 +73,15 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
           // Re-check right before show: another full-screen format may have
           // started while this ad was loading. Check and mark are synchronous,
           // so no other ad can slip in between.
+          if (!AdsConsent.canRequestAds) {
+            ad.dispose();
+            if (!completer.isCompleted) {
+              completer.completeError(
+                StateError('الإعلانات غير متاحة حالياً بسبب إعدادات الموافقة.'),
+              );
+            }
+            return;
+          }
           if (_gate?.isAnyAdShowing == true) {
             ad.dispose();
             _repository?.recordAdTelemetry(

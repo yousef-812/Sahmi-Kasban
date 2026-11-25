@@ -39,6 +39,7 @@ class AppOpenAdManager with WidgetsBindingObserver {
 
   Future<void> start() async {
     WidgetsBinding.instance.addObserver(this);
+    AdsConsent.notifier.addListener(_dropAdIfNoConsent);
     final prefs = await SharedPreferences.getInstance();
     final hasOpenedBefore = prefs.getBool(_prefsKey) ?? false;
     if (!hasOpenedBefore) {
@@ -52,7 +53,16 @@ class AppOpenAdManager with WidgetsBindingObserver {
     _loadAd();
   }
 
+  void _dropAdIfNoConsent() {
+    if (AdsConsent.canRequestAds) return;
+    _ad?.dispose();
+    _ad = null;
+    _adLoadedAt = null;
+    _loading = false;
+  }
+
   void dispose() {
+    AdsConsent.notifier.removeListener(_dropAdIfNoConsent);
     WidgetsBinding.instance.removeObserver(this);
     _ad?.dispose();
     _ad = null;
@@ -99,6 +109,10 @@ class AppOpenAdManager with WidgetsBindingObserver {
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
           _loading = false;
+          if (!AdsConsent.canRequestAds) {
+            ad.dispose();
+            return;
+          }
           _ad = ad;
           _adLoadedAt = DateTime.now();
           repository?.recordAdTelemetry(
@@ -128,6 +142,10 @@ class AppOpenAdManager with WidgetsBindingObserver {
   }
 
   void _showAdIfAvailable() {
+    if (!AdsConsent.canRequestAds) {
+      _dropAdIfNoConsent();
+      return;
+    }
     if (!_hasFreshAd) {
       _loadAd();
       return;

@@ -33,6 +33,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
   @override
   void initState() {
     super.initState();
+    AdsConsent.notifier.addListener(_onConsentChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _syncAd();
     });
@@ -80,7 +81,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
         onAdLoaded: (ad) {
           _retryAttempt = 0;
           _retryTimer?.cancel();
-          if (!mounted) {
+          if (!mounted || !AdsConsent.canRequestAds) {
             ad.dispose();
             return;
           }
@@ -150,8 +151,14 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
     _loadedAdUnitId = null;
   }
 
+  void _onConsentChanged() {
+    if (!mounted) return;
+    setState(_syncAd);
+  }
+
   @override
   void dispose() {
+    AdsConsent.notifier.removeListener(_onConsentChanged);
     _disposeAd();
     super.dispose();
   }

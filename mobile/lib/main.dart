@@ -30,7 +30,7 @@ Future<void> _initializeServices() async {
     }
 
     try {
-      final canRequestAds = await const ConsentManager()
+      final canRequestAds = await ConsentManager()
           .gatherConsent()
           .timeout(const Duration(seconds: 20));
       if (canRequestAds) {
