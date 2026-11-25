@@ -71,16 +71,24 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
             },
           );
           _gate?.markShowing();
-          ad.show(
-            onUserEarnedReward: (_, reward) {
-              userEarnedReward = true;
-              _repository?.recordAdTelemetry(
-                adType: 'rewarded',
-                eventType: 'reward_granted',
-                adUnitId: session.adUnitId,
-              );
-            },
-          );
+          try {
+            ad.show(
+              onUserEarnedReward: (_, reward) {
+                userEarnedReward = true;
+                _repository?.recordAdTelemetry(
+                  adType: 'rewarded',
+                  eventType: 'reward_granted',
+                  adUnitId: session.adUnitId,
+                );
+              },
+            );
+          } on Object catch (error) {
+            ad.dispose();
+            _gate?.markDismissed();
+            if (!completer.isCompleted) {
+              completer.completeError(StateError('تعذر عرض الإعلان: $error'));
+            }
+          }
         },
         onAdFailedToLoad: (error) {
           _repository?.recordAdTelemetry(
