@@ -11,16 +11,17 @@ from app.core.config import Environment, get_settings
 from app.core.observability import configure_observability
 from app.core.production_readiness import enforce_production_readiness
 from app.db.session import SessionLocal
+from app.jobs.news_crawler import run_news_crawler_scheduler
 from app.jobs.retry_pending_ai_reviews import (
     ai_provider_is_configured,
     retry_pending_ai_reviews,
 )
-from app.jobs.news_crawler import run_news_crawler_scheduler
 from app.jobs.scheduler import run_daily_scan_scheduler
 from app.jobs.weekly_grants import run_weekly_grant_scheduler
 from app.legal_pages import router as legal_router
 from app.market_data.broadcaster import get_quote_broadcaster
 from app.market_data.catalog import ensure_market_instrument_catalog
+from app.market_data.tradingview import close_shared_connector
 from app.middleware.request_context import RequestContextMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.services.community import delete_ended_pinned_discussions
@@ -81,6 +82,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             ai_retry_task = asyncio.create_task(_community_ai_retry_scheduler())
     yield
     await broadcaster.stop()
+    # إغلاق موصّل TradingView المشترك حتى لا يترك اتصالاً مفتوحاً عند الإيقاف.
+    await close_shared_connector()
     for task in (
         warmup_task,
         cleanup_task,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../news_providers.dart';
 import '../widgets/news_card.dart';
@@ -16,6 +17,17 @@ class StockNewsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('أخبار $ticker'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+          tooltip: 'رجوع',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),

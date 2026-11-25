@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import suppress
 from typing import Annotated
 from uuid import UUID
 
@@ -7,20 +9,30 @@ from sahmi_kasban.ai import SahmiAIService
 from app.api.dependencies import CurrentUser, DatabaseSession
 from app.core.security import InvalidAccessTokenError, decode_access_token
 from app.db.session import SessionLocal
-from app.market_data.broadcaster import get_quote_broadcaster
+from app.market_data.broadcaster import get_analysis_broadcaster, get_quote_broadcaster
 from app.market_data.catalog import market_instrument_exists, search_market_instruments
 from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.fundamental import compare_stocks_investment, get_stock_investment_metric
+from app.market_data.global_market import get_global_market
 from app.market_data.indices import fetch_index_quote, fetch_market_indices, index_exists
+from app.market_data.order_flow import (
+    detect_whales,
+    get_market_depth,
+    get_order_book,
+    get_recent_trades,
+)
 from app.market_data.provider import get_market_data_provider
 from app.market_data.quotes import fetch_market_quotes, fetch_single_quote
+from app.market_data.top_of_book import get_top_of_book
 from app.market_data.types import (
     MarketDataProvider,
     MarketDataUnavailableError,
     UnknownTickerError,
 )
 from app.models import User
+from app.schemas.global_market import GlobalMarketResponse
 from app.schemas.market import (
+    MarketBreadthResponse,
     MarketIndicesResponse,
     MarketInstrumentListResponse,
     MarketInstrumentResponse,
@@ -29,15 +41,29 @@ from app.schemas.market import (
     SessionReplayResponse,
     StockAnalysisRequest,
     StockAnalysisResponse,
-    StockSignatureResponse,
     StockComparisonFailureResponse,
     StockComparisonItemResponse,
     StockComparisonRequest,
     StockComparisonResponse,
+    StockFlowResponse,
     StockInvestmentAnalysisResponse,
     StockInvestmentComparisonRequest,
     StockInvestmentComparisonResponse,
+    StockSignatureResponse,
+    StockVolumeProfileResponse,
 )
+from app.schemas.market_status import MarketStatusResponse
+from app.schemas.order_flow import (
+    MarketDepthResponse,
+    OrderBookResponse,
+    RecentTradesResponse,
+    TopOfBookResponse,
+    WhaleDetectionResponse,
+)
+from app.schemas.sentiment import SymbolSentimentResponse
+from app.services.market_breadth import compute_market_breadth
+from app.services.market_status import market_status
+from app.services.sentiment import compute_symbol_sentiment
 from app.services.stock_analysis import (
     StockAnalysisExecution,
     StockAnalysisExecutionError,
@@ -53,6 +79,8 @@ from app.services.stock_comparisons import (
     StockComparisonExecution,
     execute_stock_comparison,
 )
+from app.services.stock_flow import compute_stock_flow
+from app.services.volume_profile import compute_volume_profile
 from app.services.wallet import InsufficientBalanceError, points_to_coins
 
 router = APIRouter(tags=["market"])
@@ -162,6 +190,32 @@ async def get_market_instruments(
         total_registry_size=total,
         items=[MarketInstrumentResponse(**instrument.to_dict()) for instrument in instruments],
     )
+
+
+@router.get("/market/status", response_model=MarketStatusResponse)
+async def get_market_status() -> MarketStatusResponse:
+    return MarketStatusResponse(**market_status())
+
+
+@router.get("/market/global", response_model=GlobalMarketResponse)
+async def get_global_market_snapshot(
+    db: DatabaseSession,
+    force_refresh: bool = Query(default=False),
+) -> GlobalMarketResponse:
+    """لقطة السوق العالمي/الماكرو (مؤشرات عالمية + فوركس + معادن/طاقة).
+
+    عامة بلا مصادقة — بنفس قاعدة ``/market/status`` و``/market/instruments``:
+    قراءة فقط للسياق العام، لا بيانات مستخدم ولا استهلاك رصيد.
+    """
+    return GlobalMarketResponse(**await get_global_market(db, force_refresh=force_refresh))
+
+
+@router.get("/market/breadth", response_model=MarketBreadthResponse)
+async def get_market_breadth(
+    db: DatabaseSession,
+) -> MarketBreadthResponse:
+    """اتساع السوق — صاعد/هابط/ثابت + أداء قطاعي (عامة، بلا مصادقة)."""
+    return MarketBreadthResponse(**await compute_market_breadth(db))
 
 
 def _quote_response(quote) -> MarketQuoteResponse:
@@ -420,6 +474,63 @@ async def stream_market_quotes(
         await broadcaster.disconnect(websocket)
 
 
+@router.websocket("/market/analysis/stream")
+async def stream_analysis_events(
+    websocket: WebSocket,
+    token: str | None = Query(default=None),
+) -> None:
+    """Real-time analysis events: ``signal.updated`` (public) + ``alert.created`` (per user).
+
+    Authentication mirrors ``/market/quotes/stream``: an optional JWT via the
+    ``token`` query parameter. An invalid token rejects the connection
+    (1008); without a token the subscriber still receives every
+    ``signal.updated`` event but never user-scoped ``alert.created`` events.
+    The server emits ``{"type": "ping"}`` heartbeats while idle and answers
+    client ``"ping"`` frames with ``"pong"``.
+    """
+    user_id: UUID | None = None
+    if token:
+        try:
+            payload = decode_access_token(token)
+            uid = UUID(payload["sub"])
+            token_version = int(payload["ver"])
+            with SessionLocal() as db:
+                user = db.get(User, uid)
+                if user is None or user.status != "active" or user.auth_version != token_version:
+                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                    return
+            user_id = uid
+        except (InvalidAccessTokenError, ValueError, TypeError, KeyError):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+    broadcaster = get_analysis_broadcaster()
+    subscriber = await broadcaster.subscribe(user_id=user_id)
+    try:
+        await websocket.accept()
+        await websocket.send_json(
+            {
+                "type": "connected",
+                "authenticated": user_id is not None,
+                "heartbeat_seconds": broadcaster.heartbeat_seconds,
+            }
+        )
+        sender = asyncio.create_task(broadcaster.pump(websocket, subscriber))
+        try:
+            while True:
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+        except (WebSocketDisconnect, Exception):
+            pass
+        finally:
+            sender.cancel()
+            with suppress(asyncio.CancelledError):
+                await sender
+    finally:
+        await broadcaster.unsubscribe(subscriber)
+
+
 @router.get("/market/quotes/{ticker}", response_model=MarketQuoteResponse)
 async def get_market_quote_for_ticker(
     ticker: str,
@@ -592,6 +703,58 @@ async def get_stock_investment_analysis(
     return StockInvestmentAnalysisResponse(**metric)
 
 
+@router.get("/stocks/{ticker}/sentiment", response_model=SymbolSentimentResponse)
+def get_stock_sentiment(
+    ticker: str,
+    db: DatabaseSession,
+    days: int = Query(default=7, ge=1, le=90),
+) -> SymbolSentimentResponse:
+    """معنويات أخبار السهم خلال آخر ``days`` يومًا (عامة، بلا مصادقة — مثل /stocks/{ticker}/news)."""
+    try:
+        normalized_ticker = normalize_egx_ticker(ticker)
+    except UnknownTickerError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير صالح.",
+        ) from exc
+    result = compute_symbol_sentiment(db, normalized_ticker, days=days)
+    return SymbolSentimentResponse(**result)
+
+
+@router.get("/stocks/{ticker}/flow", response_model=StockFlowResponse)
+async def get_stock_flow(
+    ticker: str,
+    db: DatabaseSession,
+    days: int = Query(default=90, ge=1, le=250),
+) -> StockFlowResponse:
+    """ضغط الشراء/البيع المقدّر من OHLCV (CLV×الحجم) — عامة، بلا مصادقة، مثل /sentiment."""
+    try:
+        normalized_ticker = normalize_egx_ticker(ticker)
+    except UnknownTickerError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير صالح.",
+        ) from exc
+    return StockFlowResponse(**await compute_stock_flow(db, normalized_ticker, days=days))
+
+
+@router.get("/stocks/{ticker}/volume-profile", response_model=StockVolumeProfileResponse)
+async def get_stock_volume_profile(
+    ticker: str,
+    db: DatabaseSession,
+    days: int = Query(default=250, ge=5, le=250),
+) -> StockVolumeProfileResponse:
+    """حجم السعر (POC/منطقة القيمة 70%) من OHLCV — عامة، مثل /flow."""
+    try:
+        normalized_ticker = normalize_egx_ticker(ticker)
+    except UnknownTickerError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير صالح.",
+        ) from exc
+    return StockVolumeProfileResponse(**await compute_volume_profile(db, normalized_ticker, days=days))
+
+
 @router.post("/market/comparisons/investment", response_model=StockInvestmentComparisonResponse)
 async def compare_stocks_investment_route(
     request: StockInvestmentComparisonRequest,
@@ -611,6 +774,7 @@ def get_stock_algorithmic_signature(
     ticker: str,
 ) -> StockSignatureResponse:
     from sahmi_kasban.fingerprint import StockSignatureRegistry
+
     registry = StockSignatureRegistry()
     symbol = ticker.strip().upper()
     sig = registry.get_signature(symbol)
@@ -627,9 +791,84 @@ def get_stock_algorithmic_signature(
         critic_confidence=sig.ai_critic.confidence,
         critic_summary=sig.ai_critic.summary,
         dominant_cycle_sessions=sig.time_cycle.dominant_cycle_sessions,
-        cycle_stability_score=sig.time_cycle.stability_score,
+        cycle_stability_score=sig.time_cycle.cycle_stability_score,
         avg_sweep_depth_pct=sig.accumulation_sweep.avg_sweep_depth_pct,
         bounce_probability_pct=sig.accumulation_sweep.bounce_probability_pct,
         fvg_fill_preference_pct=sig.accumulation_sweep.fvg_fill_preference_pct,
     )
 
+
+async def _require_supported_ticker(db: DatabaseSession, ticker: str) -> str:
+    try:
+        normalized_ticker = normalize_egx_ticker(ticker)
+    except UnknownTickerError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير صالح.",
+        ) from exc
+    if not await market_instrument_exists(db, normalized_ticker):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="رمز السهم غير موجود في سوق EGX المدعوم.",
+        )
+    return normalized_ticker
+
+
+@router.get("/market/orderbook/{ticker}", response_model=OrderBookResponse)
+async def get_market_order_book(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> OrderBookResponse:
+    """دفتر الأوامر — يرجع ``available: false`` صادقًا ما لم يوجد مزوّد عمق مدعوم."""
+    normalized_ticker = await _require_supported_ticker(db, ticker)
+    return OrderBookResponse(**await get_order_book(db, normalized_ticker))
+
+
+@router.get("/market/trades/{ticker}", response_model=RecentTradesResponse)
+async def get_market_recent_trades(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+    limit: int = Query(default=200, ge=1, le=1000),
+) -> RecentTradesResponse:
+    """آخر الصفقات — يرجع ``available: false`` صادقًا ما لم يوجد مزوّد صفقات مدعوم."""
+    normalized_ticker = await _require_supported_ticker(db, ticker)
+    return RecentTradesResponse(**await get_recent_trades(db, normalized_ticker, limit=limit))
+
+
+@router.get("/market/bulk-trades", response_model=WhaleDetectionResponse)
+async def get_market_bulk_trades(
+    db: DatabaseSession,
+    current_user: CurrentUser,
+    ticker: str = Query(min_length=1, max_length=16),
+    value_threshold: float | None = Query(default=None, gt=0),
+) -> WhaleDetectionResponse:
+    """كشف الصفقات الضخمة كإشارة بديلة (دوران يومي استثنائي) — لا صفقات فردية."""
+    normalized_ticker = await _require_supported_ticker(db, ticker)
+    return WhaleDetectionResponse(
+        **await detect_whales(db, normalized_ticker, value_threshold=value_threshold)
+    )
+
+
+@router.get("/market/depth/{ticker}", response_model=MarketDepthResponse)
+async def get_market_depth_summary(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+    levels: int = Query(default=10, ge=1, le=50),
+) -> MarketDepthResponse:
+    """ملخّص عمق السوق — نفس قواعد الإتاحة الصادقة لدفتر الأوامر."""
+    normalized_ticker = await _require_supported_ticker(db, ticker)
+    return MarketDepthResponse(**await get_market_depth(db, normalized_ticker, levels=levels))
+
+
+@router.get("/market/top-of-book/{ticker}", response_model=TopOfBookResponse)
+async def get_market_top_of_book(
+    ticker: str,
+    db: DatabaseSession,
+    current_user: CurrentUser,
+) -> TopOfBookResponse:
+    """أفضل سعر bid/ask لحظي (بدون أحجام) — متاح عبر اشتراك TradingView WS."""
+    normalized_ticker = await _require_supported_ticker(db, ticker)
+    return TopOfBookResponse(**await get_top_of_book(normalized_ticker))

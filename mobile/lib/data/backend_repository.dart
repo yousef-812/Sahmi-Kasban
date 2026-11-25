@@ -341,6 +341,21 @@ class BackendRepository {
     }
   }
 
+  Future<EarningsCalendarSnapshot> getEarningsCalendar(
+    String ticker, {
+    int days = 90,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/market/earnings-calendar',
+        queryParameters: <String, dynamic>{'ticker': ticker, 'days': days},
+      );
+      return EarningsCalendarSnapshot.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<StockInvestmentComparisonResult> compareStocksInvestment(
     List<String> tickers,
   ) async {
@@ -559,6 +574,67 @@ class BackendRepository {
         '/referrals/me',
       );
       return ReferralStats.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  /// `GET /watchlist` — قائمة متابعة المستخدم.
+  Future<WatchlistSnapshot> getWatchlist() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/watchlist',
+      );
+      return WatchlistSnapshot.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  /// `POST /watchlist` — إضافة رمز واحد للمتابعة.
+  Future<WatchlistSnapshot> addToWatchlist(String ticker) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/watchlist',
+        data: <String, dynamic>{'ticker': ticker},
+      );
+      return WatchlistSnapshot.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  /// `DELETE /watchlist/{ticker}` — إزالة رمز من المتابعة.
+  Future<WatchlistSnapshot> removeFromWatchlist(String ticker) async {
+    try {
+      final response = await _apiClient.dio.delete<Map<String, dynamic>>(
+        '/watchlist/$ticker',
+      );
+      return WatchlistSnapshot.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  /// `POST /watchlist/refresh/{ticker}` — تحديث إشارة رمز في المتابعة.
+  Future<WatchlistSnapshot> refreshWatchlistSignal(String ticker) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/watchlist/refresh/$ticker',
+      );
+      return WatchlistSnapshot.fromJson(_requiredData(response));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  /// `GET /portfolio/analytics` — تحليلات المحفظة (ارتباط/تنويع/قطاعات).
+  Future<PortfolioAnalyticsSnapshot> getPortfolioAnalytics() async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/portfolio/analytics',
+      );
+      return PortfolioAnalyticsSnapshot.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }

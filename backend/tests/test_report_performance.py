@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -279,3 +279,54 @@ def test_due_report_backfill_skips_future_reports(
     )
     assert evaluation is not None
     assert evaluation.status == "complete"
+
+
+def test_due_report_backfill_reaches_reports_beyond_filled_candidate_window(
+    db_session: Session,
+) -> None:
+    limit = 2
+    window = limit * 4
+    for offset in range(window):
+        older = _create_report(
+            db_session,
+            target_session_date=date(2026, 7, 1) + timedelta(days=offset),
+            items=({"ticker": f"OLD{offset}", "price_at_analysis": 10},),
+        )
+        db_session.add(
+            MarketReportEvaluation(
+                report_id=older.id,
+                target_session_date=older.target_session_date,
+                status="complete",
+                attempt_count=1,
+                evaluated_count=1,
+                started_at=_moment(27),
+                completed_at=_moment(27),
+                last_attempt_at=_moment(27),
+                details={"evaluator_version": "report-performance-v1"},
+            )
+        )
+    db_session.commit()
+    newest = _create_report(
+        db_session,
+        target_session_date=date(2026, 7, 27),
+        items=({"ticker": "NEWEST", "price_at_analysis": 10},),
+    )
+    provider = FakePerformanceProvider({"NEWEST": (_candle(27, open_price=10, high=11, low=9, close=10.5),)})
+
+    result = asyncio.run(
+        evaluate_due_market_reports(
+            db_session,
+            provider=provider,
+            moment=_moment(28),
+            limit=limit,
+        )
+    )
+
+    assert result.scanned_reports == 1
+    assert result.completed_reports == 1
+    evaluation = db_session.scalar(
+        select(MarketReportEvaluation).where(MarketReportEvaluation.report_id == newest.id)
+    )
+    assert evaluation is not None
+    assert evaluation.status == "complete"
+    assert evaluation.evaluated_count == 1

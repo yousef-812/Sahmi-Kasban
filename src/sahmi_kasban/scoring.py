@@ -19,10 +19,28 @@ DEFAULT_WEIGHTS: dict[str, float] = {
     "multi_timeframe": 0.15,
     "quantitative": 0.10,
     "sector_momentum": 0.05,
+    "news_sentiment": 0.05,  # optional context evidence; neutral 50 when absent
 }
 
 DIRECTIONAL_ENGINES = frozenset(DEFAULT_WEIGHTS)
 
+# Optional evidence merged in only when AnalysisConfig.enable_fundamentals is
+# set. It stays out of DEFAULT_WEIGHTS (and therefore out of
+# DIRECTIONAL_ENGINES): the investment engine scores long-horizon valuation
+# quality (P/E, dividends, ROE, debt), not swing-trade direction, so it moves
+# the blended score but never casts a bullish/bearish vote or triggers the
+# directional-conflict logic. Keeping it out of DEFAULT_WEIGHTS also guarantees
+# the default path is unchanged when the flag is off.
+FUNDAMENTAL_WEIGHTS: dict[str, float] = {"investment": 0.10}
+
+
+def score_weights(*, enable_fundamentals: bool = False) -> dict[str, float]:
+    """Weight mapping for one analysis run (fundamentals is opt-in at 0.10)."""
+
+    weights = dict(DEFAULT_WEIGHTS)
+    if enable_fundamentals:
+        weights.update(FUNDAMENTAL_WEIGHTS)
+    return weights
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +81,7 @@ def calculate_score_diagnostics(
     used_weight = 0.0
     observations: list[tuple[float, float]] = []
     failed: list[str] = []
+    error_count = 0
 
     bullish: list[str] = []
     bearish: list[str] = []
@@ -73,6 +92,8 @@ def calculate_score_diagnostics(
         if result is None or result.status == "error" or weight <= 0:
             if result is None or (result is not None and result.status == "error"):
                 failed.append(name)
+            if result is not None and result.status == "error":
+                error_count += 1
             continue
 
         reliability = max(0.25, result.confidence / 100.0)
@@ -117,7 +138,9 @@ def calculate_score_diagnostics(
     conflict = bool(bullish and bearish)
 
     confidence = base_confidence * (0.70 + 0.30 * consensus)
-    confidence -= min(15.0, len(failed) * 5.0)
+    # Engines absent from the mapping are reported in failed_engines but only
+    # engines that ran and errored reduce confidence.
+    confidence -= min(15.0, error_count * 5.0)
     if conflict:
         confidence -= 10.0
 

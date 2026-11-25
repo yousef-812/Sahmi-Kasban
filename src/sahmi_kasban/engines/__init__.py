@@ -3,6 +3,7 @@ from sahmi_kasban.engines.investment import FundamentalInvestmentEngine, Investm
 from sahmi_kasban.engines.market import MarketEnvironmentEngine, StockQualificationEngine
 from sahmi_kasban.engines.market_index import MarketIndexEngine
 from sahmi_kasban.engines.multi_timeframe import MultiTimeframeEngine
+from sahmi_kasban.engines.news_sentiment import NewsSentimentEngine
 from sahmi_kasban.engines.opportunity_quality import OpportunityQualityEngine
 from sahmi_kasban.engines.quantitative import QuantitativeEngine
 from sahmi_kasban.engines.risk import RiskEngine
@@ -18,6 +19,7 @@ __all__ = [
     "MarketEnvironmentEngine",
     "MarketIndexEngine",
     "MultiTimeframeEngine",
+    "NewsSentimentEngine",
     "OpportunityQualityEngine",
     "QuantitativeEngine",
     "RiskEngine",

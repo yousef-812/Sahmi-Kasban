@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../news_providers.dart';
 import '../widgets/news_card.dart';
@@ -53,6 +54,20 @@ class _NewsFeedScreenState extends ConsumerState<NewsFeedScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('الأخبار'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+          tooltip: 'رجوع',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+      ),
       body: Column(
         children: [
           // شريط البحث برمز السهم واسم الشركة

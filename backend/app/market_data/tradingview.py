@@ -13,6 +13,56 @@ from reusable_data_fetcher import TradingViewConnector, get_tv_symbol
 
 logger = logging.getLogger(__name__)
 
+# موصّل WebSocket واحد مشترك لكل الرموز.
+#
+# فتح موصّل جديد وإغلاقه لكل سهم يجعل التطبيق يُجري مئات مصافحات WebSocket مع
+# data.tradingview.com أثناء تجديد السكانر، فيتجاوز حد الباقة المجانية بعد نحو 10
+# اتصالات ويرجع TradingView series_error: resolve error لكل الرموز المتبقية.
+# تحقّقنا عملياً من IP فرانكفورت على 20 رمزاً: أول 10 نجحوا والباقي فشل كلّه.
+# السكانر يعالج الرموز تباعاً (refresh_scanner_snapshot) فاتصال واحد مشترك يكفي،
+# ولا يتأثر بفشل رمز واحد لأن طلب واحد فقط يكون قيد الانتظار في كل مرة.
+_SHARED_CONNECTOR: TradingViewConnector | None = None
+
+
+def _shared_connector() -> TradingViewConnector:
+    """موصّل مشترك يُنشأ عند أول استخدام ويُعاد استخدامه لكل الرموز."""
+    global _SHARED_CONNECTOR
+    settings = get_settings()
+    connector = _SHARED_CONNECTOR
+    if connector is None:
+        connector = TradingViewConnector(
+            auth_token=settings.tradingview_auth_token,
+            timeout_seconds=settings.market_data_timeout_seconds,
+        )
+        _SHARED_CONNECTOR = connector
+    # تُطبَّق الإعدادات في كل استدعاء حتى يتبع الموصّل أي تغيير فيها أثناء التشغيل.
+    connector.auth_token = settings.tradingview_auth_token
+    connector.timeout_seconds = settings.market_data_timeout_seconds
+    connector.URL = settings.tradingview_websocket_url
+    connector.HEADERS = {
+        "Origin": settings.tradingview_origin,
+        "User-Agent": settings.tradingview_user_agent,
+    }
+    return connector
+
+
+async def close_shared_connector() -> None:
+    """إغلاق الموصّل المشترك عند إيقاف التطبيق.
+
+    يُعاد فتحه تلقائياً عند أول طلب لاحق. أي فشل هنا يُبتلع عمداً: مهمة هذه
+    الدالة أن تُغلق بلطف، وأخطاؤها (مثل event loop سبق أن أُغلِق قبل وصولنا،
+    كما يحدث في اختبارات TestClient) لا يجب أن تُفشل إيقاف التطبيق.
+    """
+    global _SHARED_CONNECTOR
+    connector = _SHARED_CONNECTOR
+    _SHARED_CONNECTOR = None
+    if connector is None:
+        return
+    try:
+        await connector.close()
+    except Exception:  # noqa: BLE001 — إغلاق لطيف أثناء الإيقاف
+        logger.debug("Shared TradingView connector close failed", exc_info=True)
+
 
 def _tradingview_interval(interval: str) -> str:
     normalized = interval.strip().lower()
@@ -115,15 +165,7 @@ class TradingViewMarketDataProvider:
         tradingview_interval = _tradingview_interval(interval)
         count = _history_count(period, interval)
 
-        connector = TradingViewConnector(
-            auth_token=settings.tradingview_auth_token,
-            timeout_seconds=settings.market_data_timeout_seconds,
-        )
-        connector.URL = settings.tradingview_websocket_url
-        connector.HEADERS = {
-            "Origin": settings.tradingview_origin,
-            "User-Agent": settings.tradingview_user_agent,
-        }
+        connector = _shared_connector()
         try:
             raw_candles = await connector.get_historical(
                 provider_symbol,
@@ -133,8 +175,8 @@ class TradingViewMarketDataProvider:
             )
         except Exception as exc:
             raise MarketDataUnavailableError(f"TradingView websocket failed for {provider_symbol}") from exc
-        finally:
-            await connector.close()
+        # لا يُغلق الموصّل هنا — يُعاد استخدامه لكل الرموز لتجنّب مئات المصافحات
+        # التي تتجاوز حد الباقة المجانية (انظر _shared_connector).
 
         candles = _normalize_candles(raw_candles)
         if not candles:

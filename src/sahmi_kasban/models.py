@@ -53,6 +53,9 @@ class AnalysisConfig:
     sr_resistance_proximity_pct: float = 1.0
     sr_resistance_penalty: float = 26.0
     sr_support_bonus: float = 8.0
+    # WP-25: run FundamentalInvestmentEngine and blend it into the score.
+    # Default OFF so the existing pipeline stays bit-for-bit unchanged.
+    enable_fundamentals: bool = False
 
     def __post_init__(self) -> None:
         if self.capital <= 0:

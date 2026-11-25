@@ -34,6 +34,17 @@ _fundamental_cache: list[dict[str, Any]] | None = None
 _fundamental_cache_at: datetime | None = None
 _fundamental_cache_lock = asyncio.Lock()
 
+# Earnings calendar columns on the very same scanner feed used above
+# (`settings.tradingview_scanner_url`). `earnings_release_next_date` is a Unix
+# epoch in seconds (UTC); `earnings_per_share_forecast_next_fq` is the next
+# fiscal-quarter EPS forecast. Verified against the live feed: the date column
+# returns real values for a subset of EGX symbols.
+_EARNINGS_COLUMNS = [
+    "name",
+    "earnings_release_next_date",
+    "earnings_per_share_forecast_next_fq",
+]
+
 
 @dataclass(frozen=True, slots=True)
 class FundamentalQuote:
@@ -121,6 +132,77 @@ async def _fetch_fundamental_scanner_data() -> dict[str, FundamentalQuote]:
         result[ticker] = quote
 
     return result
+
+
+async def fetch_egx_earnings_events() -> list[dict[str, Any]]:
+    """Scheduled earnings releases from the existing TradingView scanner feed.
+
+    Reuses the exact feed, headers, and ticker normalization of
+    ``_fetch_fundamental_scanner_data`` — no third-party source is introduced
+    (see ``docs/MARKET_DATA_STRATEGY.md``). Symbols without a usable next
+    earnings date are skipped; feed failures propagate so the caller can
+    report ``available: false`` instead of inventing dates.
+    """
+    settings = get_settings()
+    payload = {
+        "filter": [{"left": "type", "operation": "equal", "right": "stock"}],
+        "options": {"lang": "ar"},
+        "markets": ["egypt"],
+        "symbols": {"query": {"types": []}, "tickers": []},
+        "columns": _EARNINGS_COLUMNS,
+        "sort": {"sortBy": "market_cap_basic", "sortOrder": "desc"},
+        "range": [0, settings.market_instrument_catalog_max_symbols],
+    }
+    headers = {
+        "Origin": settings.tradingview_origin,
+        "Referer": f"{settings.tradingview_origin}/",
+        "User-Agent": settings.tradingview_user_agent,
+    }
+    timeout = httpx.Timeout(settings.market_instrument_catalog_timeout_seconds)
+
+    async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
+        response = await client.post(settings.tradingview_scanner_url, json=payload)
+        response.raise_for_status()
+        raw_data = response.json().get("data", [])
+
+    events: list[dict[str, Any]] = []
+    for item in raw_data:
+        symbol_str = str(item.get("s", "")).strip().upper()
+        if ":" in symbol_str:
+            _, raw_ticker = symbol_str.split(":", 1)
+        else:
+            d = item.get("d", [])
+            raw_ticker = str(d[0]).strip().upper() if d else ""
+
+        try:
+            ticker = normalize_egx_ticker(raw_ticker)
+        except (UnknownTickerError, ValueError):
+            continue
+        except Exception:
+            continue
+
+        d = item.get("d", [])
+        if len(d) < len(_EARNINGS_COLUMNS):
+            continue
+
+        epoch = _parse_float(d[1])
+        if not ticker or epoch is None or epoch <= 0:
+            continue
+
+        estimate_eps = _parse_float(d[2])
+        events.append(
+            {
+                "ticker": ticker,
+                "event_date": datetime.fromtimestamp(epoch, tz=UTC).date(),
+                "estimate_eps": estimate_eps,
+                "raw": {
+                    "earnings_release_next_date": int(epoch),
+                    "earnings_per_share_forecast_next_fq": estimate_eps,
+                },
+            }
+        )
+
+    return events
 
 
 async def get_egx_investment_rankings(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, date, datetime, timedelta
 
 from fastapi.testclient import TestClient
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.jobs import historical_replays as replay_worker
 from app.market_data.cache import get_cached_or_fresh_history
-from app.market_data.types import CandleSeries
+from app.market_data.types import CandleSeries, MarketDataUnavailableError
 
 PASSWORD = "StrongPass123"
 
@@ -121,6 +122,57 @@ def test_five_year_history_is_reused_from_persisted_snapshot(
     assert provider.calls == 1
     assert second.fingerprint == first.fingerprint
     assert second.period == "5y"
+
+
+def test_stale_snapshot_is_served_when_provider_fetch_fails(
+    db_session: Session,
+    caplog,
+) -> None:
+    seeded, seeded_cached = asyncio.run(
+        get_cached_or_fresh_history(
+            db_session,
+            CountingProvider(),
+            "COMI",
+            period="5y",
+            interval="1d",
+            cache_minutes=24 * 60,
+            min_candles=200,
+            now=datetime(2026, 7, 30, tzinfo=UTC),
+        )
+    )
+    db_session.commit()
+    assert seeded_cached is False
+
+    class FailingProvider:
+        name = "failing-provider"
+
+        async def get_history(
+            self,
+            ticker: str,
+            *,
+            period: str,
+            interval: str,
+        ) -> CandleSeries:
+            raise MarketDataUnavailableError("provider is down")
+
+    with caplog.at_level(logging.WARNING, logger="app.market_data.cache"):
+        served, cached = asyncio.run(
+            get_cached_or_fresh_history(
+                db_session,
+                FailingProvider(),
+                "COMI",
+                period="5y",
+                interval="1d",
+                force_refresh=True,
+                min_candles=200,
+                now=datetime(2026, 7, 31, tzinfo=UTC),
+            )
+        )
+
+    assert cached is True
+    assert served.fingerprint == seeded.fingerprint
+    assert served.candles == seeded.candles
+    assert "serving stale snapshot" in caplog.text
 
 
 def test_replay_can_pause_resume_and_cancel_without_running_on_api(

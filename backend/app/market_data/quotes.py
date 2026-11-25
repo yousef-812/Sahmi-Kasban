@@ -4,8 +4,6 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
-from datetime import time as datetime_time
-from zoneinfo import ZoneInfo
 
 import httpx
 from sqlalchemy import select
@@ -18,10 +16,9 @@ from app.market_data.egx_symbols import (
     sanitize_arabic_description,
 )
 from app.models import MarketDataSnapshot, MarketInstrumentCatalog
+from app.services.market_status import market_status
 
 logger = logging.getLogger(__name__)
-
-_CAIRO = ZoneInfo("Africa/Cairo")
 
 _QUOTE_COLUMNS = [
     "name",
@@ -458,37 +455,14 @@ class _SessionState:
 
 def _session_state(now_utc: datetime) -> _SessionState:
     settings = get_settings()
-    now = now_utc.astimezone(_CAIRO)
-    open_time = datetime_time.fromisoformat(settings.egx_session_open_time)
-    close_time = datetime_time.fromisoformat(settings.egx_session_close_time)
     reset_minutes = timedelta(minutes=settings.egx_session_reset_before_minutes)
-
-    # Cairo weekday(): Sun=6, Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5.
-    is_market_day = now.weekday() in {6, 0, 1, 2, 3}
-    in_hours = open_time <= now.time() < close_time
-    market_open = is_market_day and in_hours
-
-    if is_market_day and now.time() < open_time:
-        next_open = now.replace(
-            hour=open_time.hour,
-            minute=open_time.minute,
-            second=0,
-            microsecond=0,
-        )
-    else:
-        days_ahead = 1
-        while (now + timedelta(days=days_ahead)).weekday() not in {6, 0, 1, 2, 3}:
-            days_ahead += 1
-        next_day = now + timedelta(days=days_ahead)
-        next_open = next_day.replace(
-            hour=open_time.hour,
-            minute=open_time.minute,
-            second=0,
-            microsecond=0,
-        )
-
-    reset_change_percent = market_open and next_open - now <= reset_minutes
-    session_date = now.date() if is_market_day else None
+    status = market_status(now_utc)
+    market_open = bool(status["is_open"])
+    session_date = date.fromisoformat(status["date"]) if status["is_trading_day"] else None
+    next_open = datetime.fromisoformat(status["next_open"]) if status["next_open"] else None
+    reset_change_percent = (
+        market_open and next_open is not None and next_open - _as_utc(now_utc) <= reset_minutes
+    )
     return _SessionState(
         market_open=market_open,
         session_date=session_date,

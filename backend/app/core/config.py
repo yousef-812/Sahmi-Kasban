@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     market_data_cache_minutes: int = 720
     market_data_timeout_seconds: float = 20.0
     market_data_min_candles: int = 200
+    market_data_depth_provider: str = "none"
 
     tradingview_websocket_url: str = "wss://data.tradingview.com/socket.io/websocket"
     tradingview_scanner_url: str = "https://scanner.tradingview.com/egypt/scan"
@@ -91,6 +92,7 @@ class Settings(BaseSettings):
     analysis_max_position_value: float = 40_000.0
     analysis_engine_version: str = "core-v2.5"
     analysis_price_reuse_tolerance_pct: float = 0.5
+    analysis_enable_fundamentals: bool = False
 
     historical_replay_provider_concurrency: int = 5
     historical_replay_cpu_concurrency: int = 2
@@ -111,6 +113,10 @@ class Settings(BaseSettings):
     daily_scan_min_nonzero_volume_ratio: float = 0.80
     daily_report_size: int = 10
     daily_report_cost_points: int = 100
+    scanner_refresh_enabled: bool = True
+    scanner_refresh_minutes: int = 15
+    signal_evaluation_enabled: bool = True
+    signal_evaluation_minutes: int = 5
 
     google_play_package_name: str = "com.sahmikasban.sahmi_kasban_mobile"
     google_play_verification_mode: str = "disabled"
@@ -174,6 +180,8 @@ class Settings(BaseSettings):
             raise ValueError("MARKET_DATA_TIMEOUT_SECONDS must be positive")
         if self.market_data_min_candles < 60:
             raise ValueError("MARKET_DATA_MIN_CANDLES must be at least 60")
+        if self.market_data_depth_provider.strip().lower() not in {"none", "tradingview"}:
+            raise ValueError("MARKET_DATA_DEPTH_PROVIDER must be one of: none, tradingview")
         if not self.tradingview_websocket_url.startswith("wss://"):
             raise ValueError("TRADINGVIEW_WEBSOCKET_URL must use wss://")
         if not self.tradingview_scanner_url.startswith("https://"):
@@ -239,6 +247,10 @@ class Settings(BaseSettings):
             raise ValueError("DAILY_REPORT_SIZE must be between 1 and 10")
         if self.daily_report_cost_points <= 0:
             raise ValueError("DAILY_REPORT_COST_POINTS must be positive")
+        if not 1 <= self.scanner_refresh_minutes <= 1440:
+            raise ValueError("SCANNER_REFRESH_MINUTES must be between 1 and 1440")
+        if not 1 <= self.signal_evaluation_minutes <= 1440:
+            raise ValueError("SIGNAL_EVALUATION_MINUTES must be between 1 and 1440")
         if self.google_play_verification_mode not in {"disabled", "stub", "live"}:
             raise ValueError("GOOGLE_PLAY_VERIFICATION_MODE must be disabled, stub, or live")
         if self.admob_ssv_verification_mode not in {"disabled", "stub", "live"}:

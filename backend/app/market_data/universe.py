@@ -57,15 +57,28 @@ def _replay_failure_quarantine(
     return {str(row.ticker).upper() for row in rows}
 
 
+def _provider_backed_catalog_exists(db: Session) -> bool:
+    return bool(
+        db.scalar(
+            select(func.count())
+            .select_from(MarketInstrumentCatalog)
+            .where(MarketInstrumentCatalog.source == "tradingview_scanner")
+        )
+    )
+
+
 def tradable_market_universe(
     db: Session,
     *,
     min_failures: int = DEFAULT_FAILURE_QUARANTINE_THRESHOLD,
 ) -> TradableUniverse:
+    filters = [MarketInstrumentCatalog.active.is_(True)]
+    if _provider_backed_catalog_exists(db):
+        filters.append(MarketInstrumentCatalog.source != "legacy_seed")
     active = tuple(
         db.scalars(
             select(MarketInstrumentCatalog.ticker)
-            .where(MarketInstrumentCatalog.active.is_(True))
+            .where(*filters)
             .order_by(MarketInstrumentCatalog.ticker.asc())
         ).all()
     )

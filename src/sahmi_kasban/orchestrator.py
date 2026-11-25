@@ -7,9 +7,11 @@ import pandas as pd
 
 from sahmi_kasban.engines import (
     AlgorithmicSignatureEngine,
+    FundamentalInvestmentEngine,
     MarketEnvironmentEngine,
     MarketIndexEngine,
     MultiTimeframeEngine,
+    NewsSentimentEngine,
     OpportunityQualityEngine,
     QuantitativeEngine,
     RiskEngine,
@@ -21,7 +23,7 @@ from sahmi_kasban.engines import (
 )
 from sahmi_kasban.indicators import enrich_indicators, prepare_candles, safe_float
 from sahmi_kasban.models import AnalysisConfig, AnalysisReport, EngineResult, TradePlan
-from sahmi_kasban.scoring import calculate_score_diagnostics, score_to_signal
+from sahmi_kasban.scoring import calculate_score_diagnostics, score_to_signal, score_weights
 
 _REQUIRED_PREPARED_COLUMNS = frozenset(
     {
@@ -157,8 +159,14 @@ class SahmiKasbanAnalyzer:
             MultiTimeframeEngine(self.config),
             QuantitativeEngine(self.config),
             SectorMomentumEngine(self.config),
+            NewsSentimentEngine(self.config),
             RiskEngine(self.config),
         ]
+
+        if self.config.enable_fundamentals:
+            # Valuation overlay, not a timing stage: it only reads fundamentals
+            # from the context, so keep RiskEngine as the last pipeline engine.
+            pipeline.insert(-1, FundamentalInvestmentEngine(self.config))
 
         for engine in pipeline:
             try:
@@ -220,7 +228,10 @@ class SahmiKasbanAnalyzer:
                 warnings.append(f"Engine market_index failed: {exc}")
             results[market_index.name] = market_index
 
-        diagnostics = calculate_score_diagnostics(results)
+        diagnostics = calculate_score_diagnostics(
+            results,
+            score_weights(enable_fundamentals=self.config.enable_fundamentals),
+        )
         final_score = diagnostics.final_score
         confidence = diagnostics.confidence
         risk_result = results.get("risk", EngineResult("risk", 0, 0))

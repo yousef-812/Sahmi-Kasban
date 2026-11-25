@@ -25,11 +25,13 @@ from app.models import (
     MarketReportItem,
     MarketReportUnlock,
     MarketScanRun,
+    Signal,
     User,
 )
 from app.services.market_index import fetch_index_series, resolve_index_name
 from app.services.operations_settings import get_int_setting
 from app.services.report_selection import classify_report_item
+from app.services.signal_lifecycle import open_signal
 from app.services.stock_analysis import DISCLAIMER_AR
 from app.services.wallet import debit_points, get_wallet_account
 
@@ -562,6 +564,60 @@ def _mark_scan_failed(
     db.commit()
 
 
+def _plan_number(plan: dict[str, Any], key: str) -> float | None:
+    raw = plan.get(key)
+    if raw is None:
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _open_report_buy_signals(
+    db: Session,
+    *,
+    report: MarketReport,
+    candidates: list[Candidate],
+) -> int:
+    """Open a lifecycle signal for every BUY pick carrying a complete trade plan."""
+    opened = 0
+    for candidate in candidates:
+        if candidate.signal != "BUY":
+            continue
+        analysis = candidate.analysis if isinstance(candidate.analysis, dict) else {}
+        plan = analysis.get("trade_plan") if isinstance(analysis.get("trade_plan"), dict) else {}
+        entry = _plan_number(plan, "entry")
+        stop = _plan_number(plan, "stop_loss")
+        target_1 = _plan_number(plan, "target_1")
+        if entry is None or stop is None or target_1 is None:
+            continue
+        try:
+            existing = db.scalar(
+                select(Signal.id).where(
+                    Signal.ref_report_id == report.id,
+                    Signal.ticker == candidate.ticker,
+                )
+            )
+            if existing is not None:
+                continue
+            open_signal(
+                db,
+                ticker=candidate.ticker,
+                direction="long",
+                entry=entry,
+                stop=stop,
+                targets=(target_1, _plan_number(plan, "target_2"), _plan_number(plan, "target_3")),
+                source="daily_top10",
+                ref_report_id=report.id,
+            )
+            opened += 1
+        except (TypeError, ValueError):
+            logger.warning("Daily report auto-signal skipped for %s", candidate.ticker)
+    return opened
+
+
 async def generate_daily_top10_report(
     db: Session,
     *,
@@ -791,5 +847,12 @@ async def generate_daily_top10_report(
             },
         )
         raise
+
+    try:
+        opened_signals = _open_report_buy_signals(db, report=report, candidates=selected)
+        if opened_signals:
+            logger.info("Opened %s daily top-10 signals for report %s", opened_signals, report.id)
+    except Exception:
+        logger.exception("Failed to auto-open signals for report %s", report.id)
 
     return DailyReportGenerationResult(report=report, scan_run=run, created=True)

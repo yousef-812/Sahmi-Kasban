@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -10,6 +11,8 @@ from app.core.config import get_settings
 from app.market_data.egx_symbols import normalize_egx_ticker
 from app.market_data.types import CandleSeries, MarketDataProvider, MarketDataUnavailableError
 from app.models import MarketDataSnapshot
+
+logger = logging.getLogger(__name__)
 
 
 def _as_utc(value: datetime) -> datetime:

@@ -28,6 +28,7 @@ class NewsArticle(TimestampMixin, Base):
     summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
     url: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    resolved_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_name: Mapped[str] = mapped_column(String(100), nullable=False)
     source_key: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     image_url: Mapped[str | None] = mapped_column(Text, nullable=True)

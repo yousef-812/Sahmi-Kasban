@@ -115,3 +115,53 @@ def test_universe_quarantines_repeated_failures_but_keeps_recovered_symbols(
     assert rows["RECOVER"].active is True
     assert rows["DEAD"].active is False
     assert rows["EGS60121C018"].active is False
+
+
+def _catalog_row(ticker: str, source: str, *, now: datetime) -> MarketInstrumentCatalog:
+    return MarketInstrumentCatalog(
+        ticker=ticker,
+        provider_symbol=f"EGX:{ticker}",
+        exchange="EGX",
+        description=ticker,
+        source=source,
+        active=True,
+        last_seen_at=now,
+    )
+
+
+def test_legacy_seed_symbols_stay_scannable_before_any_provider_refresh(db_session: Session) -> None:
+    now = datetime.now(UTC)
+    db_session.add_all(
+        [
+            _catalog_row("SEEDA", "legacy_seed", now=now),
+            _catalog_row("SEEDB", "legacy_seed", now=now),
+        ]
+    )
+    db_session.commit()
+
+    universe = tradable_market_universe(db_session)
+
+    assert universe.tickers == ("SEEDA", "SEEDB")
+
+
+def test_provider_backed_catalog_drops_phantom_legacy_seeds_from_the_scan_universe(
+    db_session: Session,
+) -> None:
+    now = datetime.now(UTC)
+    db_session.add_all(
+        [
+            _catalog_row("COMI", "tradingview_scanner", now=now),
+            _catalog_row("ESRS", "legacy_seed", now=now),
+            _catalog_row("NISC", "legacy_seed", now=now),
+        ]
+    )
+    db_session.commit()
+
+    universe = tradable_market_universe(db_session)
+
+    assert universe.tickers == ("COMI",)
+
+    rows = {row.ticker: row for row in db_session.query(MarketInstrumentCatalog).all()}
+    assert rows["COMI"].active is True
+    assert rows["ESRS"].active is True
+    assert rows["NISC"].active is True

@@ -28,13 +28,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     await Share.share(text, subject: article.title);
   }
 
-  void _openInAppWebview(String url, String title) {
-    context.push(
-      '/news/webview?url=${Uri.encodeComponent(url)}'
-      '&title=${Uri.encodeComponent(title)}',
-    );
-  }
-
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().toUtc().difference(dt.toUtc());
     if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
@@ -57,12 +50,28 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     final hasContent = content.isNotEmpty;
     final isLoadingContent = detailAsync.isLoading;
     final contentFailed = detailAsync.hasError;
+    final paragraphs = content
+        .split('\n')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList(growable: false);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           article.sourceName,
           style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+          tooltip: 'رجوع',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
         ),
         actions: [
           IconButton(
@@ -228,46 +237,20 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
 
             // المحتوى الكامل للخبر (ناتيف داخل التطبيق)
             if (hasContent) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.article_outlined,
-                          size: 20,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'الخبر كاملاً',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final paragraph in paragraphs) ...[
                     Text(
-                      content,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        height: 1.7,
+                      paragraph,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        height: 1.75,
                         color: colorScheme.onSurface,
                       ),
                     ),
+                    const SizedBox(height: 12),
                   ],
-                ),
+                ],
               ),
               const SizedBox(height: 16),
             ] else if (article.summary.isNotEmpty) ...[
@@ -314,19 +297,59 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+            ] else if (!isLoadingContent) ...[
+              // لا محتوى ولا ملخص — حالة فارغة داخل التطبيق (بلا أي خروج لتطبيق/موقع آخر)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.article_outlined,
+                      size: 40,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'تعذّر جلب تفاصيل الخبر',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'جرّب تحديث الصفحة بعد قليل.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => ref
+                          .invalidate(newsArticleDetailProvider(article.id)),
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
 
             const SizedBox(height: 8),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => _openInAppWebview(article.url, article.title),
-                    icon: const Icon(Icons.menu_book_rounded, size: 18),
-                    label: const Text('قراءة المقال كاملاً داخل التطبيق'),
-                  ),
-                ),
-                const SizedBox(width: 10),
                 IconButton(
                   tooltip: 'مشاركة الخبر',
                   onPressed: _shareArticle,

@@ -18,6 +18,7 @@ from app.api.routes.community_admin import router as community_admin_router
 from app.api.routes.community_admin_appeals import router as community_admin_appeals_router
 from app.api.routes.community_appeals import router as community_appeals_router
 from app.api.routes.community_verification import router as community_verification_router
+from app.api.routes.earnings import router as earnings_router
 from app.api.routes.feedback import router as feedback_router
 from app.api.routes.health import router as health_router
 from app.api.routes.labs import router as labs_router
@@ -27,12 +28,16 @@ from app.api.routes.news import admin_news_router, stock_news_router
 from app.api.routes.news import router as news_router
 from app.api.routes.notifications import router as notifications_router
 from app.api.routes.performance import router as performance_router
+from app.api.routes.portfolio_analytics import router as portfolio_analytics_router
 from app.api.routes.profile import router as profile_router
 from app.api.routes.quality import admin_router as quality_admin_router
 from app.api.routes.quality import public_router as quality_public_router
 from app.api.routes.referrals import router as referrals_router
 from app.api.routes.reports import router as reports_router
+from app.api.routes.scanner import router as scanner_router
 from app.api.routes.sector_reports import router as sector_reports_router
+from app.api.routes.signals import alerts_router as signals_alerts_router
+from app.api.routes.signals import router as signals_router
 from app.api.routes.trading_chat import router as trading_chat_router
 from app.api.routes.version_check import router as version_check_router
 from app.api.routes.wallet import router as wallet_router
@@ -51,7 +56,11 @@ api_router.include_router(ai_copilot_router)
 api_router.include_router(sector_reports_router)
 api_router.include_router(trading_chat_router)
 api_router.include_router(market_router)
+api_router.include_router(earnings_router)
 api_router.include_router(watchlist_router)
+api_router.include_router(scanner_router)
+api_router.include_router(signals_router)
+api_router.include_router(signals_alerts_router)
 api_router.include_router(news_router)
 api_router.include_router(stock_news_router)
 api_router.include_router(admin_news_router)
@@ -59,6 +68,7 @@ api_router.include_router(analysis_history_router)
 api_router.include_router(reports_router)
 api_router.include_router(labs_router)
 api_router.include_router(performance_router)
+api_router.include_router(portfolio_analytics_router)
 api_router.include_router(monetization_router)
 api_router.include_router(notifications_router)
 api_router.include_router(community_router)

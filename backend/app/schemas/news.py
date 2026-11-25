@@ -12,6 +12,7 @@ class NewsArticleResponse(BaseModel):
     summary: str
     content: str | None = None
     url: str
+    resolved_url: str | None = None
     source_name: str
     source_key: str
     image_url: str | None

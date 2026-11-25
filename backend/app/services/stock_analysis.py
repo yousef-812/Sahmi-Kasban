@@ -19,10 +19,12 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Environment, get_settings
 from app.market_data.cache import get_cached_or_fresh_history
+from app.market_data.fundamental import get_stock_investment_metric
 from app.market_data.types import CandleSeries, MarketDataProvider
 from app.models import StockAnalysis, User, UserStockAnalysisAccess, WalletEntry
 from app.services.market_index import fetch_index_series, resolve_index_name
 from app.services.operations_settings import get_int_setting
+from app.services.sentiment import compute_symbol_sentiment
 from app.services.wallet import (
     InsufficientBalanceError,
     debit_points,
@@ -68,6 +70,58 @@ async def _fetch_index_or_none(
         return None
 
 
+def _news_sentiment_context(db: Session, ticker: str) -> dict[str, object] | None:
+    """Build the news-sentiment analysis context, degrading gracefully.
+
+    Returns the two keys consumed by the core ``news_sentiment`` engine, or
+    ``None`` when the sentiment computation fails so the analysis path keeps
+    running without news evidence (engine falls back to neutral 50).
+    """
+    try:
+        sentiment = compute_symbol_sentiment(db, ticker)
+    except Exception as exc:
+        logger.warning("News sentiment unavailable for %s; analyzing without it: %s", ticker, exc)
+        return None
+    return {
+        "news_sentiment": sentiment["score"],
+        "news_sample_size": sentiment["sample_size"],
+    }
+
+
+# Keys consumed by the core ``investment`` engine
+# (src/sahmi_kasban/engines/investment.py::analyze), read from the context.
+_FUNDAMENTAL_CONTEXT_KEYS = (
+    "pe_ratio",
+    "pb_ratio",
+    "dividend_yield_pct",
+    "roe_pct",
+    "total_debt",
+    "market_cap",
+    "net_income",
+    "eps",
+)
+
+
+async def _fundamentals_context(db: Session, ticker: str) -> dict[str, object] | None:
+    """Build the fundamentals analysis context, degrading gracefully.
+
+    Runs only when ``analysis_enable_fundamentals`` is on (default off). Like
+    ``_news_sentiment_context``, any failure returns ``None`` so a fundamentals
+    problem can never break an analysis; the core engine then scores on
+    whatever it got (neutral 50-ish when the keys are absent).
+    """
+    if not get_settings().analysis_enable_fundamentals:
+        return None
+    try:
+        metric = await get_stock_investment_metric(db, ticker)
+    except Exception as exc:
+        logger.warning("Fundamentals unavailable for %s; analyzing without them: %s", ticker, exc)
+        return None
+    if not metric:
+        return None
+    return {key: metric.get(key) for key in _FUNDAMENTAL_CONTEXT_KEYS}
+
+
 def _json_default(value: Any) -> object:
     if isinstance(value, (datetime, date)):
         return value.isoformat()
@@ -104,6 +158,10 @@ def _analysis_cache_key(
         "index_ticker": index_series.ticker if index_series else None,
         "index_fingerprint": index_series.fingerprint if index_series else None,
     }
+    # Only added when the flag is on so the default-path cache key (and every
+    # previously stored analysis) stays bit-for-bit identical.
+    if settings.analysis_enable_fundamentals:
+        identity["enable_fundamentals"] = True
     canonical = json.dumps(identity, sort_keys=True, separators=(",", ":"))
     return f"{key_prefix}:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -491,8 +549,16 @@ async def execute_stock_analysis(
         risk_per_trade=settings.analysis_risk_per_trade,
         max_position_value=settings.analysis_max_position_value,
         min_history=adaptive_min_history,
+        enable_fundamentals=settings.analysis_enable_fundamentals,
     )
     analyzer = SahmiKasbanAnalyzer(config)
+    context: dict[str, object] = {}
+    news_context = _news_sentiment_context(db, series.ticker)
+    if news_context:
+        context.update(news_context)
+    fundamentals_context = await _fundamentals_context(db, series.ticker)
+    if fundamentals_context:
+        context.update(fundamentals_context)
     try:
         report = analyzer.analyze(
             series.ticker,
@@ -502,6 +568,7 @@ async def execute_stock_analysis(
                 if index_series is not None
                 else None
             ),
+            context=context or None,
         )
     except Exception as exc:
         db.rollback()

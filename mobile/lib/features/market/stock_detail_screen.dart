@@ -11,8 +11,23 @@ import '../../data/backend_repository.dart';
 import '../../domain/models.dart';
 import '../../widgets/algorithmic_signature_card.dart';
 import '../monetization/free_plan_ads.dart';
+import '../flow/stock_flow_card.dart';
+import '../flow/stock_flow_providers.dart';
 import '../news/widgets/stock_news_section.dart';
+import '../order_flow/order_flow_card.dart';
+import '../order_flow/order_flow_providers.dart';
+import '../order_flow/top_of_book_card.dart';
+import '../scanner/scanner_providers.dart';
+import '../sentiment/sentiment_card.dart';
+import '../sentiment/sentiment_providers.dart';
+import '../signals/signals_card.dart';
+import '../signals/signals_providers.dart';
+import '../volume_profile/volume_profile_card.dart';
+import '../volume_profile/volume_profile_providers.dart';
+import 'indicators_card.dart';
 import 'market_quotes_providers.dart';
+import 'stock_fundamentals_card.dart';
+import 'stock_fundamentals_providers.dart';
 import 'stock_quote_card.dart';
 
 class StockDetailScreen extends ConsumerStatefulWidget {
@@ -105,6 +120,22 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     _autoFullscreen = false;
   }
 
+  Future<void> _refreshAll() async {
+    ref.invalidate(stockSentimentProvider(widget.ticker));
+    ref.invalidate(whaleActivityProvider(widget.ticker));
+    ref.invalidate(orderBookProvider(widget.ticker));
+    ref.invalidate(recentTradesProvider(widget.ticker));
+    ref.invalidate(marketDepthProvider(widget.ticker));
+    ref.invalidate(topOfBookProvider(widget.ticker));
+    ref.invalidate(stockFlowProvider(widget.ticker));
+    ref.invalidate(volumeProfileProvider(widget.ticker));
+    ref.invalidate(scannerTechnicalSymbolProvider(widget.ticker));
+    ref.invalidate(stockInvestmentProvider(widget.ticker));
+    ref.invalidate(earningsCalendarProvider(widget.ticker));
+    ref.invalidate(signalsListProvider(SignalsFilter(ticker: widget.ticker)));
+    await ref.read(stockQuoteProvider(widget.ticker).notifier).refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final quoteState = ref.watch(stockQuoteProvider(widget.ticker));
@@ -147,6 +178,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
           onToggleSideToolbar: (hide) =>
               setState(() => _hideSideToolbar = hide),
           onOpenFullscreen: _openFullscreenChart,
+          onRefresh: _refreshAll,
         ),
       ),
     );
@@ -160,6 +192,7 @@ class _DetailContent extends StatelessWidget {
     required this.hideSideToolbar,
     required this.onToggleSideToolbar,
     required this.onOpenFullscreen,
+    required this.onRefresh,
   });
 
   final MarketQuote quote;
@@ -167,12 +200,16 @@ class _DetailContent extends StatelessWidget {
   final bool hideSideToolbar;
   final ValueChanged<bool> onToggleSideToolbar;
   final VoidCallback onOpenFullscreen;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      children: [
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _Header(quote: quote),
@@ -225,6 +262,30 @@ class _DetailContent extends StatelessWidget {
         const SizedBox(height: 12),
         _StockSignatureSection(ticker: ticker),
         const SizedBox(height: 12),
+        // ── لوحة المؤشرات الفنية (WP-28) ────────────────────────
+        StockIndicatorsCard(ticker: ticker),
+        const SizedBox(height: 12),
+        // ── معنويات الأخبار (WP-17) ─────────────────────────────
+        StockSentimentCard(ticker: ticker),
+        const SizedBox(height: 12),
+        // ── أفضل سعر bid/ask لحظي (WP-27) ──────────────────────
+        TopOfBookCard(ticker: ticker),
+        const SizedBox(height: 12),
+        // ── ضغط الشراء والبيع من OHLCV (WP-29) ─────────────────
+        StockFlowCard(ticker: ticker),
+        const SizedBox(height: 12),
+        // ── حجم السعر POC/منطقة القيمة (WP-30) ────────────────
+        VolumeProfileCard(ticker: ticker),
+        const SizedBox(height: 12),
+        // ── الأساسيات والأرباح (WP-31) ─────────────────────────
+        StockFundamentalsCard(ticker: ticker),
+        const SizedBox(height: 12),
+        // ── إشارات السهم (WP-32) ───────────────────────────────
+        StockSignalsCard(ticker: ticker),
+        const SizedBox(height: 12),
+        // ── تدفق الأوامر ونشاط الحيتان (WP-19) ──────────────────
+        StockOrderFlowSection(ticker: ticker),
+        const SizedBox(height: 12),
         // ── أخبار السهم ──────────────────────────────────────
         StockNewsSection(ticker: ticker),
         const SizedBox(height: 4),
@@ -233,7 +294,8 @@ class _DetailContent extends StatelessWidget {
           child: FreePlanNativeAd(),
         ),
         const SizedBox(height: 8),
-      ],
+        ],
+      ),
     );
   }
 }

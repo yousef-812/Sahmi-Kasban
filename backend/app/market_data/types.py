@@ -72,3 +72,109 @@ class MarketDataProvider(Protocol):
         interval: str,
     ) -> CandleSeries:
         """Return normalized OHLCV candles for a supported EGX ticker."""
+
+
+DEPTH_CAP_ORDER_BOOK = "order_book"
+DEPTH_CAP_TRADES = "trades"
+DEPTH_CAP_DEPTH = "depth"
+DEPTH_CAP_TOP_OF_BOOK = "top_of_book"
+
+
+@dataclass(frozen=True, slots=True)
+class DepthLevel:
+    price: float
+    size: float
+
+    def to_dict(self) -> dict[str, float]:
+        return {"price": self.price, "size": self.size}
+
+
+@dataclass(frozen=True, slots=True)
+class OrderBookData:
+    ticker: str
+    provider: str
+    as_of: datetime | None
+    bids: tuple[DepthLevel, ...]
+    asks: tuple[DepthLevel, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RecentTradeItem:
+    price: float
+    size: float
+    turnover_egp: float
+    side: str = "unknown"
+    executed_at: datetime | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "executed_at": self.executed_at,
+            "price": self.price,
+            "size": self.size,
+            "turnover_egp": self.turnover_egp,
+            "side": self.side,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class RecentTradeData:
+    ticker: str
+    provider: str
+    items: tuple[RecentTradeItem, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DepthSummaryData:
+    ticker: str
+    provider: str
+    as_of: datetime | None
+    levels: int
+    bid_levels: tuple[DepthLevel, ...]
+    ask_levels: tuple[DepthLevel, ...]
+    spread: float | None
+    mid_price: float | None
+
+    @property
+    def total_bid_volume(self) -> float:
+        return sum(level.size for level in self.bid_levels)
+
+    @property
+    def total_ask_volume(self) -> float:
+        return sum(level.size for level in self.ask_levels)
+
+
+class DepthProvider(Protocol):
+    """Level-2 depth feed — independent of the candles ``MarketDataProvider``.
+
+    A provider advertises only the feed kinds it truly supports via
+    ``capabilities`` (constants ``DEPTH_CAP_*``). Consumers must check
+    the capability before calling the matching method, and implementations
+    of unsupported methods should raise ``MarketDataUnavailableError``.
+    """
+
+    name: str
+    capabilities: frozenset[str]
+
+    async def get_order_book(
+        self,
+        ticker: str,
+        *,
+        levels: int = 10,
+    ) -> OrderBookData:
+        """Return the level-2 order book (bids/asks ladder)."""
+
+    async def get_recent_trades(
+        self,
+        ticker: str,
+        *,
+        limit: int = 200,
+    ) -> RecentTradeData:
+        """Return the most recent executed trades (time & sales)."""
+
+    async def get_market_depth(
+        self,
+        ticker: str,
+        *,
+        levels: int = 10,
+    ) -> DepthSummaryData:
+        """Return an aggregated market-depth summary."""

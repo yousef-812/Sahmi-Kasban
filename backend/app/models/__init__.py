@@ -22,6 +22,7 @@ from app.models.community import (
     UserMute,
 )
 from app.models.comparisons import StockComparison
+from app.models.earnings import EarningsCalendar
 from app.models.entities import (
     AiFailureLog,
     CoinTipHistory,
@@ -47,6 +48,7 @@ from app.models.monetization import (
     RewardedAdClaim,
     RewardedAdSession,
 )
+from app.models.news import NewsArticle, NewsArticleTicker
 from app.models.operations import (
     AppSetting,
     DeveloperFeedback,
@@ -62,13 +64,16 @@ from app.models.performance import (
     MarketReportOutcomeRevision,
 )
 from app.models.replays import AnalysisReplayJob, AnalysisReplayRow, AnalysisReplayTicker
-from app.models.news import NewsArticle, NewsArticleTicker
+from app.models.scanner import ScannerSnapshot
+from app.models.signals import Alert, Signal, SignalEvent
 from app.models.watchlist import WatchlistItem
 
 __all__ = [
     "AIPersonaLog",
     "AccountToken",
     "AdEventLog",
+    "Alert",
+    "AiFailureLog",
     "CoinTipHistory",
     "AnalysisBacktestObservation",
     "AnalysisBacktestResult",
@@ -81,6 +86,8 @@ __all__ = [
     "AuthSession",
     "BillingPurchase",
     "CommunityAdminEvent",
+    "DailyChatMessage",
+    "DailyChatSessionVote",
     "DeveloperFeedback",
     "Discussion",
     "DiscussionAppeal",
@@ -88,6 +95,7 @@ __all__ = [
     "DiscussionModerationEvent",
     "DiscussionReaction",
     "DiscussionReport",
+    "EarningsCalendar",
     "LabsBacktestJob",
     "MarketDataSnapshot",
     "MarketInstrumentCatalog",
@@ -106,8 +114,12 @@ __all__ = [
     "PushDevice",
     "RewardedAdClaim",
     "RewardedAdSession",
+    "ScannerSnapshot",
     "SectorReport",
     "ServiceHealthEvent",
+    "Signal",
+    "SignalEvent",
+    "StockAlgorithmicSignatureModel",
     "StockAnalysis",
     "StockComparison",
     "Subscription",

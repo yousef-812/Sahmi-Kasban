@@ -38,7 +38,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
-  // الأخبار متاحة للأدمن فقط عبر لوحة الإدارة — ليست في الشريط السفلي.
+  // الأخبار متاحة للجميع — ليست في الشريط السفلي.
   static const _navItems = <(String, IconData, String)>[
     ('stocks', Icons.home_rounded, 'الرئيسية'),
     ('reports', Icons.assessment_outlined, 'التقارير'),
@@ -131,6 +131,78 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               subtitle: const Text('دردشة مباشرة من 10 ص حتى 2:30 م'),
               onTap: () {
                 context.push('/trading-chat');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.document_scanner_outlined,
+                color: Colors.indigoAccent,
+              ),
+              title: const Text('الماسح الشامل'),
+              subtitle: const Text('فحوصات تقنية وفيبوناتشي وهارمونيك'),
+              onTap: () {
+                context.push('/scanner');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.show_chart_rounded,
+                color: Colors.green,
+              ),
+              title: const Text('الإشارات'),
+              subtitle: const Text('إشارات شراء وبيع مباشرة مع الأهداف'),
+              onTap: () {
+                context.push('/signals');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.public_rounded,
+                color: Colors.blueAccent,
+              ),
+              title: const Text('الأسواق'),
+              subtitle: const Text('العالمي + اتساع السوق + حالة الجلسة'),
+              onTap: () {
+                context.push('/markets');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.bookmark_rounded,
+                color: Colors.green,
+              ),
+              title: const Text('قائمة المتابعة'),
+              subtitle: const Text('أسهمك المضافة + إشاراتها'),
+              onTap: () {
+                context.push('/watchlist');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.analytics_rounded,
+                color: Colors.purple,
+              ),
+              title: const Text('تحليلات المحفظة'),
+              subtitle: const Text('ارتباط/تنويع/قطاعات المراكز المفتوحة'),
+              onTap: () {
+                context.push('/portfolio');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.notifications_active_outlined,
+                color: Colors.orangeAccent,
+              ),
+              title: const Text('التنبيهات'),
+              subtitle: const Text('تنبيهات الإشارات والإشعارات'),
+              onTap: () {
+                context.push('/alerts');
                 Navigator.pop(context);
               },
             ),

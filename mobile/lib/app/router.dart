@@ -22,7 +22,11 @@ import '../features/community/my_discussions_screen.dart';
 import '../features/community/screens/trading_session_chat_screen.dart';
 import '../features/home/dashboard_screen.dart';
 import '../features/market/stock_analysis_screen.dart';
+import '../features/markets/markets_screen.dart';
 import '../features/market/stock_comparison_screen.dart';
+import '../features/order_flow/dom_screen.dart';
+import '../features/portfolio/portfolio_screen.dart';
+import '../features/watchlist/watchlist_screen.dart';
 import '../features/market/stock_detail_screen.dart';
 import '../features/market/stocks_screen.dart';
 import '../features/market/index_detail_screen.dart';
@@ -36,10 +40,13 @@ import '../features/performance/performance_screen.dart';
 import '../features/profile/profile_edit_screen.dart';
 import '../features/referral/referral_screen.dart';
 import '../features/replay/session_replay_screen.dart';
+import '../features/scanner/scanner_screen.dart';
+import '../features/signals/alerts_screen.dart';
+import '../features/signals/signal_detail_screen.dart';
+import '../features/signals/signals_screen.dart';
 import '../features/news/news_models.dart';
 import '../features/news/screens/news_detail_screen.dart';
 import '../features/news/screens/news_feed_screen.dart';
-import '../features/news/screens/news_article_webview_screen.dart';
 import '../features/news/screens/stock_news_screen.dart';
 import '../features/reports/market_report_screen.dart';
 import '../features/reports/reports_screen.dart';
@@ -128,13 +135,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: '/news/webview',
-        builder: (context, state) => NewsArticleWebviewScreen(
-          title: state.uri.queryParameters['title'] ?? 'المقال',
-          url: state.uri.queryParameters['url'] ?? '',
-        ),
-      ),
-      GoRoute(
         path: '/reports',
         builder: (context, state) => const ReportsScreen(),
       ),
@@ -154,6 +154,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/market/analyze/:ticker',
         builder: (context, state) =>
             StockAnalysisScreen(ticker: state.pathParameters['ticker']!),
+      ),
+      GoRoute(
+        path: '/scanner',
+        builder: (context, state) => const ScannerScreen(),
+      ),
+      GoRoute(
+        path: '/signals',
+        builder: (context, state) => const SignalsScreen(),
+      ),
+      GoRoute(
+        path: '/signals/:id',
+        builder: (context, state) =>
+            SignalDetailScreen(signalId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/markets',
+        builder: (context, state) => const MarketsScreen(),
+      ),
+      GoRoute(
+        path: '/watchlist',
+        builder: (context, state) => const WatchlistScreen(),
+      ),
+      GoRoute(
+        path: '/portfolio',
+        builder: (context, state) => const PortfolioScreen(),
+      ),
+      GoRoute(
+        path: '/market/dom/:ticker',
+        builder: (context, state) =>
+            DOMScreen(ticker: state.pathParameters['ticker']!),
+      ),
+      GoRoute(
+        path: '/alerts',
+        builder: (context, state) => const AlertsScreen(),
       ),
       GoRoute(
         path: '/profile/edit',
@@ -293,13 +327,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return publicAccountRoute ? null : '/login';
       }
       if (location.startsWith('/admin') && session.profile?.isAdmin != true) {
-        return '/home';
-      }
-      // الأخبار متاحة للأدمن فقط
-      final newsRoute = location == '/news' ||
-          location.startsWith('/news/') ||
-          (location.startsWith('/stocks/') && location.endsWith('/news'));
-      if (newsRoute && session.profile?.isAdmin != true) {
         return '/home';
       }
       if (publicAccountRoute ||

@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import asyncio
+import html as html_module
+import json
 import logging
 import re
+import urllib.parse
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from uuid import UUID
@@ -204,6 +207,8 @@ async def fetch_rss_source(source: dict[str, str]) -> list[dict]:
             continue
 
         summary = getattr(entry, "summary", "") or getattr(entry, "description", "")
+        # فك الكيانات أولاً (&nbsp; وغيرها) ثم إزالة الوسوم — العكس يُبقي "nbsp;" كنص ظاهر
+        summary = html_module.unescape(summary)
         summary = re.sub(r"<[^>]+>", " ", summary).strip()
         summary = re.sub(r"\s+", " ", summary)[:4500]
 
@@ -230,7 +235,12 @@ _FETCH_HEADERS = {
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,*/*;q=0.8",
     "Accept-Language": "ar,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
+    # لا نضبط Accept-Encoding يدوياً. طلبنا السابق "gzip, deflate, br" جعل بعض
+    # الناشرين يعيدون Content-Encoding: br، وhttpx لا يفك brotli ما لم تكن مكتبة
+    # brotli مثبتة — فترجع بايتات خام تحوي NUL وتُستخرج كقمامة. تحقّقنا عملياً
+    # من IP فرانكفورت على elbalad.news: مع br يرجع 72 بايت NUL و87 حرفاً عربياً،
+    # وبدونه يرجع gzip يفكّه httpx سليماً (10046 حرفاً عربياً). ترك السطر للـ
+    # httpx يضبط ترميزاً يقدر يفكّه بنفسه.
     "Referer": "https://www.google.com/",
     "Sec-Fetch-Dest": "document",
     "Sec-Fetch-Mode": "navigate",
@@ -243,6 +253,57 @@ def _is_google_news_url(url: str) -> bool:
     """روابط Google News غالباً redirect لصفحة وسيطة وليست المقال المباشر."""
     lowered = url.lower()
     return "news.google.com" in lowered
+
+
+# ─── كشف صفحات موافقة Google (consent / challenge) ─────────────────────────────
+
+# أسماء لغات تظهر كقائمة في صفحة موافقة Google — العدد منها يكشف الصفحة حتى لو
+# تم دمج الأسطر أو فصلها بشرطة مائلة (/).
+_CONSENT_LANGUAGE_NAMES = frozenset({
+    "العربية", "Bahasa Indonesia", "Bahasa Melayu", "Català", "Čeština",
+    "Dansk", "Deutsch", "English", "Español", "Suomi", "Français",
+    "Hrvatski", "Magyar", "Italiano", "Latviešu", "Lietuvių", "Nederlands",
+    "Norsk", "Polski", "Português", "Română", "Slovenščina", "Svenska",
+    "Tiếng Việt", "Türkçe", "Ελληνικά", "Русский", "Українська",
+    "עברית", "हिन्दी", "ภาษาไทย", "한국어", "日本語", "简体中文", "繁體中文",
+})
+
+
+def _is_language_list_text(text: str) -> bool:
+    """كشف النص المهيمن على شكل قائمة لغات (كصفحة موافقة Google)."""
+    language_hits = 0
+    dashed_lines = 0
+    for segment in re.split(r"[\n/]+", text):
+        core = segment.strip()
+        if not core or len(core) > 40:
+            continue
+        if core.startswith("-"):
+            body = core.lstrip("-–—•* ").strip()
+            if not body:
+                continue
+            core = body
+            dashed_lines += 1
+        if core in _CONSENT_LANGUAGE_NAMES:
+            language_hits += 1
+    if language_hits >= 4:
+        return True
+    return dashed_lines >= 8 and language_hits >= 1
+
+
+def is_consent_page(text: str) -> bool:
+    """كشف نص صفحة موافقة Google/تحديات الـ cookie لمنع تخزينه كمحتوى مقال.
+
+    العلامات: نص "قبل المتابعة" العربي، أو ذكر cookie وGoogle معاً (بأي حالة)،
+    أو نص مهيمن على شكل قائمة لغات قصيرة.
+    """
+    if not text:
+        return False
+    if "قبل المتابعة" in text:
+        return True
+    lowered = text.lower()
+    if "cookie" in lowered and "google" in lowered:
+        return True
+    return _is_language_list_text(text)
 
 
 def _extract_text_with_soup(html: str) -> str:
@@ -268,6 +329,53 @@ def _extract_text_with_soup(html: str) -> str:
         return merged[: _MAX_CONTENT_LENGTH] if len(merged) >= 40 else ""
     except Exception:
         return ""
+
+
+# محارف التحكم غير المسموح بها في نص مقال حقيقي (بما فيها NUL الذي يرفضه
+# PostgreSQL في أعمدة النصوص بـ DataError).
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+# المحارف التي يُتوقع أن تغطي النص العربي/اللاتيني المُستخرج من مقال.
+_PROSE_CODEPOINTS = (
+    (0x20, 0x7E),    # ASCII printable
+    (0x00A0, 0x024F),  # Latin-1 Supplement .. Latin Extended-B
+    (0x0600, 0x06FF),  # Arabic
+    (0x0750, 0x077F),  # Arabic Supplement
+    (0x2000, 0x206F),  # General Punctuation
+    (0xFB50, 0xFDFF),  # Arabic Presentation Forms-A
+    (0xFE70, 0xFEFF),  # Arabic Presentation Forms-B
+)
+
+
+def _sanitize_extracted_text(text: str) -> str:
+    """إزالة محارف التحكم (بما فيها NUL) من نص مُستخرج."""
+    return _CONTROL_CHARS_RE.sub("", text)
+
+
+def _looks_like_prose(text: str) -> bool:
+    """هل يبدو النص نصاً حقيقياً وليس قمامة ثنائية؟
+
+    بعض الناشرين (خلف Cloudflare مثلاً، أو عند الجلب من عناوين IP غير مألوفة)
+    يعيدون استجابة مضغوطة بلا ترويسة Content-Encoding، فيتعامل معها httpx كنص
+    خام فتظهر بايتات NUL ورموز عشوائية. حفظها في عمود text بـ PostgreSQL يرفع
+    DataError ويكسر الجلسة، وإظهارها للمستخدم قمامة. نرفض النص الذي تتجاوز فيه
+    المحارف غير المألوفة نسبة صغيرة.
+    """
+    if not text:
+        return False
+    suspicious = 0
+    total = 0
+    for ch in text:
+        if ch.isspace():
+            continue
+        total += 1
+        cp = ord(ch)
+        if any(lo <= cp <= hi for lo, hi in _PROSE_CODEPOINTS):
+            continue
+        suspicious += 1
+    if total == 0:
+        return False
+    return (suspicious / total) <= 0.15
 
 
 async def _fetch_html(url: str) -> tuple[str, str]:
@@ -310,6 +418,185 @@ async def _fetch_html(url: str) -> tuple[str, str]:
     return "", final_url
 
 
+# ─── فك رابط Google News إلى رابط المقال الحقيقي (بدون متصفح) ─────────────────
+#
+# مرحلتان مُتحقَّق منهما عملياً:
+#   (1) GET لصفحة المقال https://news.google.com/rss/articles/<slug> بمتصفح حقيقي
+#       ترجع هيكل JS (~600KB وليس صفحة الموافقة) يحوي:
+#       data-n-a-sg (التوقيع) و data-n-a-ts (طابع زمني unix) و data-n-a-id (المعرّف).
+#   (2) POST إلى https://news.google.com/_/DotsSplashUi/data/batchexecute بجسم
+#       f.req منسّق بدقّة، والرابط الحقيقي يُقرأ من استجابة garturlres.
+
+_GOOGLE_NEWS_RESOLVE_TIMEOUT = 15.0
+_GOOGLE_NEWS_RESOLVE_ATTEMPTS = 2
+_GOOGLE_NEWS_ARTICLE_PREFIX = "https://news.google.com/rss/articles/"
+_GOOGLE_NEWS_BATCHEXECUTE_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute"
+
+_GOOGLE_NEWS_ARTICLE_ID_RE = re.compile(r"[A-Za-z0-9_\-=+]{4,}")
+_GOOGLE_NEWS_SIGNATURE_RE = re.compile(r'data-n-a-sg="([^"]+)"')
+_GOOGLE_NEWS_TIMESTAMP_RE = re.compile(r'data-n-a-ts="([^"]+)"')
+_GOOGLE_NEWS_GARTURLRES_RE = re.compile(r'garturlres\\",\\"(https?://[^"\\]+)')
+
+_GOOGLE_NEWS_RESOLVE_HEADERS = {
+    "User-Agent": _FETCH_HEADERS["User-Agent"],
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+}
+
+# كوكي الموافقة الذي يتجاوز تدفق consent.google.com. من عناوين IP داخل الاتحاد
+# الأوروبي تعيد جوجل روابط /rss/articles/ إلى consent.google.com (GDPR) بدل صفحة
+# الـ JS shell التي تحمل data-n-a-sg، فيفشل استخراج التوقيع. تحقّقنا عملياً من IP
+# فرانكفورت: بدونه يرجع consent.google.com بلا توقيع، ومعه يرجع news.google.com
+# بتوقيع وطابع زمني سليمين. (الطريقة القديمة CONSENT=YES+ لم تعد تعمل.)
+#
+# يُضبط عبر cookie jar وليس عبر هيدر Cookie: httpx يبني هيدر Cookie من الـ jar
+# ويتجاهل أي Cookie مكتوب في headers عند وجود العميل.
+_GOOGLE_NEWS_RESOLVE_COOKIES = {"SOCS": "CAI"}
+
+
+def _google_news_slug(url: str) -> str | None:
+    """استخراج معرّف المقال (slug) من رابط Google News."""
+    path = url.split("?", 1)[0].split("#", 1)[0].rstrip("/")
+    if "/articles/" not in path:
+        return None
+    slug = path.rsplit("/", 1)[-1]
+    if _GOOGLE_NEWS_ARTICLE_ID_RE.fullmatch(slug):
+        return slug
+    return None
+
+
+async def _google_news_fetch_signature(
+    client: httpx.AsyncClient, article_id: str
+) -> tuple[str, str] | None:
+    """المرحلة 1: جلب صفحة المقال واستخراج data-n-a-sg و data-n-a-ts من هيكل JS."""
+    stage_url = f"{_GOOGLE_NEWS_ARTICLE_PREFIX}{article_id}"
+    for attempt in range(_GOOGLE_NEWS_RESOLVE_ATTEMPTS):
+        try:
+            response = await client.get(stage_url)
+            response.raise_for_status()
+        except (httpx.HTTPStatusError, httpx.TransportError):
+            if attempt + 1 < _GOOGLE_NEWS_RESOLVE_ATTEMPTS:
+                await asyncio.sleep(0.5)
+            continue
+        signature_match = _GOOGLE_NEWS_SIGNATURE_RE.search(response.text)
+        timestamp_match = _GOOGLE_NEWS_TIMESTAMP_RE.search(response.text)
+        if not signature_match or not timestamp_match:
+            # ليس هيكل JS المتوقع (مثلاً صفحة موافقة) — إعادة المحاولة لا تفيد
+            logger.warning("Google News stage-1 shell missing signature for %s", article_id)
+            return None
+        signature = signature_match.group(1)
+        timestamp = timestamp_match.group(1)
+        if not signature or not timestamp.isdigit():
+            return None
+        return signature, timestamp
+    return None
+
+
+def _find_garturlres(value: object) -> str | None:
+    """بحث تعاودي عن ["garturlres", الرابط] داخل استجابة batchexecute."""
+    if isinstance(value, str) and value.startswith("["):
+        try:
+            parsed = json.loads(value)
+        except ValueError:
+            return None
+        if (
+            isinstance(parsed, list)
+            and len(parsed) >= 2
+            and parsed[0] == "garturlres"
+            and isinstance(parsed[1], str)
+        ):
+            return parsed[1]
+        return None
+    if isinstance(value, list):
+        for item in value:
+            found = _find_garturlres(item)
+            if found:
+                return found
+    return None
+
+
+def _parse_garturlres(response_text: str) -> str | None:
+    """استخراج رابط المقال الحقيقي من نص استجابة batchexecute."""
+    match = _GOOGLE_NEWS_GARTURLRES_RE.search(response_text)
+    if match:
+        return match.group(1)
+    try:
+        payload = json.loads(response_text.split(")]}'", 1)[1].strip())
+    except (ValueError, IndexError):
+        return None
+    return _find_garturlres(payload)
+
+
+async def _google_news_batchexecute(
+    client: httpx.AsyncClient, article_id: str, timestamp: str, signature: str
+) -> str | None:
+    """المرحلة 2: POST إلى batchexecute واستخراج رابط الناشر من garturlres."""
+    inner = json.dumps(
+        [
+            "garturlreq",
+            [
+                ["X", "X", ["X", "X"], None, None, 1, 1, "US:en", None, 1,
+                 None, None, None, None, None, 0, 1],
+                "X", "X", 1, [1, 1, 1], 1, 1, None, 0, 0, None, 0,
+            ],
+            article_id, int(timestamp), signature,
+        ],
+        separators=(",", ":"),
+    )
+    freq = json.dumps([[["Fbv4je", inner, None, "generic"]]])
+    body = urllib.parse.urlencode({"f.req": freq}).encode()
+    post_headers = {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"}
+    for attempt in range(_GOOGLE_NEWS_RESOLVE_ATTEMPTS):
+        try:
+            response = await client.post(
+                _GOOGLE_NEWS_BATCHEXECUTE_URL, content=body, headers=post_headers
+            )
+            response.raise_for_status()
+        except (httpx.HTTPStatusError, httpx.TransportError):
+            if attempt + 1 < _GOOGLE_NEWS_RESOLVE_ATTEMPTS:
+                await asyncio.sleep(0.5)
+            continue
+        return _parse_garturlres(response.text)
+    return None
+
+
+async def resolve_google_news_url(url: str) -> str | None:
+    """فك رابط Google News إلى رابط المقال الحقيقي عند الناشر (بدون متصفح).
+
+    ينفّذ مرحلتين: (1) GET لصفحة المقال لاستخراج التوقيع والطابع الزمني من هيكل
+    الـ JS، ثم (2) POST إلى DotsSplashUi/data/batchexecute وقراءة garturlres.
+
+    يرجع رابط الناشر، أو None لو الرابط ليس من Google News أو فشلت أي مرحلة أو
+    بقي الناتج على news.google.com. لا يرمي استثناءات إطلاقاً.
+    """
+    if not url or not _is_google_news_url(url):
+        return None
+    try:
+        article_id = _google_news_slug(url)
+        if not article_id:
+            return None
+        async with httpx.AsyncClient(
+            headers=_GOOGLE_NEWS_RESOLVE_HEADERS,
+            cookies=_GOOGLE_NEWS_RESOLVE_COOKIES,
+            timeout=_GOOGLE_NEWS_RESOLVE_TIMEOUT,
+            follow_redirects=True,
+            http2=False,
+        ) as client:
+            credentials = await _google_news_fetch_signature(client, article_id)
+            if credentials is None:
+                return None
+            signature, timestamp = credentials
+            resolved = await _google_news_batchexecute(client, article_id, timestamp, signature)
+        if not resolved or not resolved.startswith(("http://", "https://")):
+            return None
+        if _is_google_news_url(resolved):
+            return None
+        return resolved
+    except Exception:
+        logger.warning("Google News resolve failed for %s", url[:120], exc_info=True)
+        return None
+
+
 async def resolve_article_url(url: str) -> str:
     """فك رابط Google News الوسيط وإرجاع رابط المقال الحقيقي.
 
@@ -323,15 +610,28 @@ async def resolve_article_url(url: str) -> str:
     return resolved
 
 
-async def fetch_article_content_and_resolve(url: str) -> tuple[str, str]:
+async def fetch_article_content_and_resolve(
+    url: str, *, resolve_google_news: bool = False
+) -> tuple[str, str]:
     """جلب المحتوى الكامل مع فك رابط Google News الوسيط في جلب واحد.
 
-    يرجع (content, final_url).
+    عند تفعيل resolve_google_news يُفك الرابط أولاً عبر resolve_google_news_url ثم
+    تُجلب صفحة الناشر مباشرة، وعند فشل الفك يُرجع للمسار القديم (متابعة الـ
+    redirects). الزحف لا يفعّل هذا الخيار عمداً حتى لا يُحمّل الناشرين وقت الزحف —
+    الفك يتم عند أول قراءة للتفصيل فقط (انظر get_article_detail_content).
+
+    يرجع (content, final_url)، ورفض نص صفحة الموافقة يمنع تخزينه كمحتوى مقال.
     """
     if not url:
         return "", url
 
-    html, final_url = await _fetch_html(url)
+    fetch_url = url
+    if resolve_google_news and _is_google_news_url(url):
+        resolved = await resolve_google_news_url(url)
+        if resolved:
+            fetch_url = resolved
+
+    html, final_url = await _fetch_html(fetch_url)
     content = ""
     if html:
         # المحاولة الأولى: trafilatura لاستخراج الجوهر
@@ -346,8 +646,27 @@ async def fetch_article_content_and_resolve(url: str) -> tuple[str, str]:
         if not content:
             content = await asyncio.to_thread(_extract_text_with_soup, html)
 
-    if _is_google_news_url(url) and final_url and "news.google.com" not in final_url:
-        return content, final_url
+    # بعض الناشرين يعيدون استجابة مضغوطة بلا ترويسة Content-Encoding من عناوين IP
+    # غير مألوفة، فتنفك كنص خام يحوي بايتات NUL. حفظها يرفع DataError من
+    # PostgreSQL ويكسر الجلسة. ننظّفها ثم نرفض أي نص لا يبدو نثرًا حقيقياً.
+    if content:
+        content = _sanitize_extracted_text(content)
+        if content and not _looks_like_prose(content):
+            logger.warning(
+                "Extracted content looks like binary garbage — discarding for %s", url[:120]
+            )
+            content = ""
+
+    if is_consent_page(content):
+        logger.warning("Consent/challenge page detected — discarding content for %s", url[:120])
+        return "", url
+
+    if _is_google_news_url(url):
+        if final_url and final_url != url and not _is_google_news_url(final_url):
+            return content, final_url
+        if fetch_url != url:
+            return content, fetch_url
+        return content, url
     return content, url
 
 
@@ -446,6 +765,7 @@ def _to_response(
         summary=article.summary,
         content=article.content if include_content else None,
         url=article.url,
+        resolved_url=article.resolved_url,
         source_name=article.source_name,
         source_key=article.source_key,
         image_url=article.image_url,
@@ -594,14 +914,34 @@ async def get_article_detail_content(db: Session, article_id: UUID) -> NewsArtic
     if not article or not article.is_active:
         return None
 
-    if not article.content:
-        content = await fetch_article_content(article.url)
-        if content:
+    # لا نفكّ redirect لروابط Google News أثناء الزحف عمداً: كل مقال يكلّف طلب شبكة
+    # واحد، وفعله وقت الزحف يبطئ الزحف ويحمّل الناشرين — الفك يتم عند أول قراءة للتفصيل فقط.
+    unresolved = article.resolved_url is None and _is_google_news_url(article.url)
+    if not article.content or unresolved:
+        content, final_url = await fetch_article_content_and_resolve(
+            article.url, resolve_google_news=True
+        )
+        changed = False
+        stored_is_consent = bool(article.content) and is_consent_page(article.content)
+        if content and (not article.content or stored_is_consent):
             article.content = content[:_MAX_CONTENT_LENGTH]
+            changed = True
+        elif stored_is_consent:
+            # نص موافقة قديم مخزّن — لا يُعرض للمستخدم أبداً
+            article.content = None
+            changed = True
+        if final_url and not _is_google_news_url(final_url) and final_url != article.resolved_url:
+            article.resolved_url = final_url
+            changed = True
+        if changed:
             try:
                 db.commit()
             except Exception:
+                # rollback إلزامي: بدونه تبقى الجلسة في حالة transaction مكسورة،
+                # فيرمي أي وصول لاحق لخصائص المقال PendingRollbackError ويتحوّل
+                # الطلب كله إلى HTTP 500 بدل إعادة المقال بمحتواه القديم.
                 logger.exception("Failed to persist lazy article content %s", article_id)
+                db.rollback()
 
     tickers_map = _load_tickers_for_articles(db, [article.id])
     return _to_response(article, tickers_map.get(article.id, []), include_content=True)

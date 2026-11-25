@@ -629,6 +629,10 @@ List<dynamic> _list(Object? value) {
   return value is List ? value : const <dynamic>[];
 }
 
+DateTime? _dateTime(Object? value) {
+  return value is String && value.isNotEmpty ? DateTime.tryParse(value) : null;
+}
+
 class StockInvestmentAnalysis {
   const StockInvestmentAnalysis({
     required this.ticker,
@@ -727,6 +731,278 @@ class StockInvestmentComparisonResult {
           .toList(growable: false),
       bestTicker: json['best_ticker'] as String? ?? '',
       summary: json['summary'] as String? ?? '',
+    );
+  }
+}
+
+/// موعد إعلان أرباح مسجّل من مصدر حقيقي — مطابق لـ EarningsEventResponse.
+class EarningsEvent {
+  const EarningsEvent({
+    required this.ticker,
+    required this.eventDate,
+    this.period,
+    this.estimateEps,
+    this.actualEps,
+    required this.source,
+  });
+
+  final String ticker;
+  final DateTime eventDate;
+  final String? period;
+  final double? estimateEps;
+  final double? actualEps;
+  final String source;
+
+  factory EarningsEvent.fromJson(Map<String, dynamic> json) {
+    return EarningsEvent(
+      ticker: json['ticker'] as String? ?? '',
+      eventDate: DateTime.tryParse(json['event_date'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      period: json['period'] as String?,
+      estimateEps: _asDouble(json['estimate_eps']),
+      actualEps: _asDouble(json['actual_eps']),
+      source: json['source'] as String? ?? '',
+    );
+  }
+}
+
+/// استجابة تقويم الأرباح — `available:false` عند غياب بيانات حقيقية.
+class EarningsCalendarSnapshot {
+  const EarningsCalendarSnapshot({
+    this.ticker,
+    required this.days,
+    required this.available,
+    this.source,
+    this.items = const [],
+    this.asOf,
+  });
+
+  final String? ticker;
+  final int days;
+  final bool available;
+  final String? source;
+  final List<EarningsEvent> items;
+  final DateTime? asOf;
+
+  factory EarningsCalendarSnapshot.fromJson(Map<String, dynamic> json) {
+    return EarningsCalendarSnapshot(
+      ticker: json['ticker'] as String?,
+      days: json['days'] as int? ?? 0,
+      available: json['available'] == true,
+      source: json['source'] as String?,
+      items: _list(json['items'])
+          .map((e) => EarningsEvent.fromJson(_map(e)))
+          .toList(growable: false),
+      asOf: _dateTime(json['as_of']),
+    );
+  }
+}
+
+/// عنصر قائمة المتابعة — مطابق لـ WatchlistItemOut.
+class WatchlistItem {
+  const WatchlistItem({
+    required this.ticker,
+    required this.addedAt,
+    this.lastSignal,
+    this.lastScore,
+    this.lastPrice,
+    this.lastChangePct,
+    this.lastCheckedAt,
+    this.notes = const {},
+  });
+
+  final String ticker;
+  final DateTime addedAt;
+  final String? lastSignal;
+  final double? lastScore;
+  final double? lastPrice;
+  final double? lastChangePct;
+  final DateTime? lastCheckedAt;
+  final Map<String, dynamic> notes;
+
+  factory WatchlistItem.fromJson(Map<String, dynamic> json) {
+    return WatchlistItem(
+      ticker: json['ticker'] as String? ?? '',
+      addedAt: DateTime.tryParse(json['added_at'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      lastSignal: json['last_signal'] as String?,
+      lastScore: _asDouble(json['last_score']),
+      lastPrice: _asDouble(json['last_price']),
+      lastChangePct: _asDouble(json['last_change_pct']),
+      lastCheckedAt: _dateTime(json['last_checked_at']),
+      notes: Map<String, dynamic>.from(json['notes'] as Map? ?? {}),
+    );
+  }
+}
+
+/// استجابة قائمة المتابعة الكاملة — مطابق لـ WatchlistResponse.
+class WatchlistSnapshot {
+  const WatchlistSnapshot({
+    required this.items,
+    required this.count,
+    required this.maxItems,
+  });
+
+  final List<WatchlistItem> items;
+  final int count;
+  final int maxItems;
+
+  factory WatchlistSnapshot.fromJson(Map<String, dynamic> json) {
+    return WatchlistSnapshot(
+      items: _list(json['items'])
+          .map((e) => WatchlistItem.fromJson(_map(e)))
+          .toList(growable: false),
+      count: json['count'] as int? ?? 0,
+      maxItems: json['max_items'] as int? ?? 50,
+    );
+  }
+}
+
+/// موضع محفظة مفتوح — مطابق لـ PortfolioPositionOut.
+class PortfolioPosition {
+  const PortfolioPosition({
+    required this.ticker,
+    required this.direction,
+    required this.entry,
+    required this.stop,
+    this.currentPrice,
+    required this.weight,
+    this.sector,
+    this.unrealizedPct,
+  });
+
+  final String ticker;
+  final String direction;
+  final double entry;
+  final double stop;
+  final double? currentPrice;
+  final double weight;
+  final String? sector;
+  final double? unrealizedPct;
+
+  factory PortfolioPosition.fromJson(Map<String, dynamic> json) {
+    return PortfolioPosition(
+      ticker: json['ticker'] as String? ?? '',
+      direction: json['direction'] as String? ?? '',
+      entry: _asDouble(json['entry']) ?? 0.0,
+      stop: _asDouble(json['stop']) ?? 0.0,
+      currentPrice: _asDouble(json['current_price']),
+      weight: _asDouble(json['weight']) ?? 0.0,
+      sector: json['sector'] as String?,
+      unrealizedPct: _asDouble(json['unrealized_pct']),
+    );
+  }
+}
+
+/// مصفوفة الارتباط — مطابق لـ PortfolioCorrelationOut.
+class PortfolioCorrelation {
+  const PortfolioCorrelation({
+    required this.lookbackSessions,
+    required this.minObservations,
+    required this.tickers,
+    required this.matrix,
+  });
+
+  final int lookbackSessions;
+  final int minObservations;
+  final List<String> tickers;
+  final Map<String, Map<String, double?>> matrix;
+
+  factory PortfolioCorrelation.fromJson(Map<String, dynamic> json) {
+    return PortfolioCorrelation(
+      lookbackSessions: json['lookback_sessions'] as int? ?? 0,
+      minObservations: json['min_observations'] as int? ?? 0,
+      tickers: _list(json['tickers']).map((e) => e.toString()).toList(),
+      matrix: (json['matrix'] as Map<String, dynamic>? ?? {})
+          .map((k, v) => MapEntry(
+                k,
+                (v as Map<String, dynamic>? ?? {})
+                    .map((k2, v2) => MapEntry(k2, _asDouble(v2))),
+              )),
+    );
+  }
+}
+
+/// مقاييس التنويع — مطابق لـ PortfolioDiversificationOut.
+class PortfolioDiversification {
+  const PortfolioDiversification({
+    required this.herfindahl,
+    required this.effectivePositions,
+    required this.concentrationFlag,
+    required this.concentrationThreshold,
+  });
+
+  final double herfindahl;
+  final double effectivePositions;
+  final bool concentrationFlag;
+  final double concentrationThreshold;
+
+  factory PortfolioDiversification.fromJson(Map<String, dynamic> json) {
+    return PortfolioDiversification(
+      herfindahl: _asDouble(json['herfindahl']) ?? 0.0,
+      effectivePositions: _asDouble(json['effective_positions']) ?? 0.0,
+      concentrationFlag: json['concentration_flag'] == true,
+      concentrationThreshold: _asDouble(json['concentration_threshold']) ?? 0.0,
+    );
+  }
+}
+
+/// جزء قائمة المتابعة من التحليل — مطابق لـ PortfolioWatchlistOut.
+class PortfolioWatchlistRef {
+  const PortfolioWatchlistRef({
+    required this.count,
+    required this.tickers,
+  });
+
+  final int count;
+  final List<String> tickers;
+
+  factory PortfolioWatchlistRef.fromJson(Map<String, dynamic> json) {
+    return PortfolioWatchlistRef(
+      count: json['count'] as int? ?? 0,
+      tickers: _list(json['tickers']).map((e) => e.toString()).toList(),
+    );
+  }
+}
+
+/// استجابة تحليل المحفظة الكاملة — مطابق لـ PortfolioAnalyticsResponse.
+class PortfolioAnalyticsSnapshot {
+  const PortfolioAnalyticsSnapshot({
+    required this.asOf,
+    required this.positionCount,
+    required this.positions,
+    required this.correlation,
+    required this.diversification,
+    required this.sectorExposure,
+    required this.watchlist,
+    required this.warnings,
+    required this.analyticsVersion,
+  });
+
+  final DateTime asOf;
+  final int positionCount;
+  final List<PortfolioPosition> positions;
+  final PortfolioCorrelation correlation;
+  final PortfolioDiversification diversification;
+  final Map<String, double> sectorExposure;
+  final PortfolioWatchlistRef watchlist;
+  final List<String> warnings;
+  final String analyticsVersion;
+
+  factory PortfolioAnalyticsSnapshot.fromJson(Map<String, dynamic> json) {
+    return PortfolioAnalyticsSnapshot(
+      asOf: _dateTime(json['as_of']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      positionCount: json['position_count'] as int? ?? 0,
+      positions: _list(json['positions'])
+          .map((e) => PortfolioPosition.fromJson(_map(e)))
+          .toList(growable: false),
+      correlation: PortfolioCorrelation.fromJson(_map(json['correlation'])),
+      diversification: PortfolioDiversification.fromJson(_map(json['diversification'])),
+      sectorExposure: (json['sector_exposure'] as Map<String, dynamic>? ?? {})
+          .map((k, v) => MapEntry(k, _asDouble(v) ?? 0.0)),
+      watchlist: PortfolioWatchlistRef.fromJson(_map(json['watchlist'])),
+      warnings: _list(json['warnings']).map((e) => e.toString()).toList(),
+      analyticsVersion: json['analytics_version'] as String? ?? 'v1',
     );
   }
 }

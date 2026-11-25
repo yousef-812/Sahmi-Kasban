@@ -566,10 +566,16 @@ async def evaluate_due_market_reports(
 ) -> DueReportEvaluationResult:
     current = _aware(moment)
     calendar = EGXTradingCalendar.from_settings()
+    finished_evaluations = select(MarketReportEvaluation.report_id).where(
+        MarketReportEvaluation.status == "complete"
+    )
     reports = tuple(
         db.scalars(
             select(MarketReport)
-            .where(MarketReport.status == "complete")
+            .where(
+                MarketReport.status == "complete",
+                MarketReport.id.not_in(finished_evaluations),
+            )
             .order_by(MarketReport.target_session_date, MarketReport.id)
             .limit(max(limit * 4, limit))
         ).all()

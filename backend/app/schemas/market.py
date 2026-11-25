@@ -28,7 +28,6 @@ class StockSignatureResponse(BaseModel):
     fvg_fill_preference_pct: float
 
 
-
 class MarketInstrumentListResponse(BaseModel):
     source: str = "legacy_seed_registry"
     total_registry_size: int
@@ -214,3 +213,64 @@ class SessionReplayResponse(BaseModel):
     session_date: str
     interval: str
     candles: list[SessionReplayCandle]
+
+
+class StockFlowResponse(BaseModel):
+    """ضغط الشراء/البيع المقدّر من OHLCV (CLV×الحجم) — تقدير لا أوامر فعلية."""
+
+    available: bool
+    ticker: str
+    buy_share_pct: float | None = None
+    sell_share_pct: float | None = None
+    buy_volume: float | None = None
+    sell_volume: float | None = None
+    net_volume: float | None = None
+    ad_trend: int = 0
+    mfi14: float | None = None
+    obv_trend: int = 0
+    verdict: str = "neutral"
+    window_days: int = 0
+    as_of: datetime | None = None
+    reason: str | None = None
+
+
+class VolumeProfileBin(BaseModel):
+    price_low: float
+    price_high: float
+    volume: float
+
+
+class StockVolumeProfileResponse(BaseModel):
+    """حجم السعر (POC/منطقة القيمة) من OHLCV — تقريب يومي لا بيانات intrabar."""
+
+    available: bool
+    ticker: str
+    poc: float | None = None
+    value_area_high: float | None = None
+    value_area_low: float | None = None
+    bins: list[VolumeProfileBin] = Field(default_factory=list)
+    above_value_pct: float | None = None
+    below_value_pct: float | None = None
+    window_days: int = 0
+    as_of: datetime | None = None
+    reason: str | None = None
+
+
+class SectorPerformance(BaseModel):
+    sector: str
+    avg_change_pct: float
+    symbols: int
+
+
+class MarketBreadthResponse(BaseModel):
+    """اتساع السوق: صاعد/هابط/ثابت + نسبة AD + أداء قطاعي."""
+
+    available: bool
+    advancers: int = 0
+    decliners: int = 0
+    unchanged: int = 0
+    total: int = 0
+    advance_decline_ratio: float | None = None
+    sector_performance: list[SectorPerformance] = Field(default_factory=list)
+    as_of: datetime | None = None
+    reason: str | None = None
