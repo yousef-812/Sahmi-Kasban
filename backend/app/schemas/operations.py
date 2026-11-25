@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.core.app_release import LATEST_APP_VERSION
+
 SettingValue = int | float | bool | str
 PushPlatform = Literal["android", "ios", "web"]
 BroadcastAudience = Literal["all", "active", "plan", "user_ids"]
@@ -48,7 +50,7 @@ class AdminOverviewResponse(BaseModel):
     wallet_points_total: int
     notifications_today: int = Field(ge=0)
     unread_notifications: int = Field(ge=0)
-    app_version: str = "1.0.9+36"
+    app_version: str = LATEST_APP_VERSION
 
 
 class AdminUserListItem(BaseModel):

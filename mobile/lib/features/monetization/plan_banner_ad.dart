@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../../core/ads/consent_manager.dart';
 import '../../core/config/app_config.dart';
 import '../auth/session_controller.dart';
 import 'monetization_repository.dart';
@@ -32,6 +33,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
   @override
   void initState() {
     super.initState();
+    AdsConsent.notifier.addListener(_onConsentChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _syncAd();
     });
@@ -49,6 +51,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
         widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
 
     if (!enabled ||
+        !AdsConsent.canRequestAds ||
         kIsWeb ||
         (defaultTargetPlatform != TargetPlatform.android &&
             defaultTargetPlatform != TargetPlatform.iOS)) {
@@ -78,7 +81,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
         onAdLoaded: (ad) {
           _retryAttempt = 0;
           _retryTimer?.cancel();
-          if (!mounted) {
+          if (!mounted || !AdsConsent.canRequestAds) {
             ad.dispose();
             return;
           }
@@ -148,8 +151,14 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
     _loadedAdUnitId = null;
   }
 
+  void _onConsentChanged() {
+    if (!mounted) return;
+    setState(_syncAd);
+  }
+
   @override
   void dispose() {
+    AdsConsent.notifier.removeListener(_onConsentChanged);
     _disposeAd();
     super.dispose();
   }

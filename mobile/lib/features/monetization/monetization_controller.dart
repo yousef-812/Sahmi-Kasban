@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../auth/session_controller.dart';
 import '../wallet/wallet_providers.dart';
+import 'ad_frequency_gate.dart';
 import 'monetization_models.dart';
 import 'monetization_repository.dart';
 import 'rewarded_ad_gateway.dart';
@@ -384,7 +385,10 @@ final inAppPurchaseProvider = Provider<InAppPurchase>((ref) {
 });
 
 final rewardedAdGatewayProvider = Provider<RewardedAdGateway>((ref) {
-  return GoogleRewardedAdGateway(ref.watch(monetizationRepositoryProvider));
+  return GoogleRewardedAdGateway(
+    ref.watch(monetizationRepositoryProvider),
+    ref.watch(adFrequencyGateProvider),
+  );
 });
 
 final monetizationControllerProvider =

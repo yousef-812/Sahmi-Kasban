@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../../core/ads/consent_manager.dart';
 import '../../core/config/app_config.dart';
 import '../auth/session_controller.dart';
 import 'ad_frequency_gate.dart';
@@ -25,10 +26,13 @@ class FreePlanAdShell extends ConsumerWidget {
         ref.read(freePlanInterstitialProvider).preload(enabled: true);
       });
     }
+    // Hide the banner while the keyboard is open so it never sits under a
+    // typing area (accidental taps on forms, login, search).
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Column(
       children: [
         Expanded(child: child),
-        PlanBannerAd(enabled: enabled),
+        PlanBannerAd(enabled: enabled && !keyboardOpen),
       ],
     );
   }
@@ -57,6 +61,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
   @override
   void initState() {
     super.initState();
+    AdsConsent.notifier.addListener(_onConsentChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _syncAd();
     });
@@ -74,7 +79,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     final isMobile = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
-    if (!enabled || !isMobile) {
+    if (!enabled || !isMobile || !AdsConsent.canRequestAds) {
       _disposeAd();
       return;
     }
@@ -184,8 +189,14 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     ad?.dispose();
   }
 
+  void _onConsentChanged() {
+    if (!mounted) return;
+    setState(_syncAd);
+  }
+
   @override
   void dispose() {
+    AdsConsent.notifier.removeListener(_onConsentChanged);
     _disposeAd();
     super.dispose();
   }
@@ -263,7 +274,16 @@ class FreePlanInterstitialCoordinator {
   }) : _config = config,
        _gate = gate,
        _repository = repository,
-       _policy = policy;
+       _policy = policy {
+    AdsConsent.notifier.addListener(_dropAdIfNoConsent);
+  }
+
+  void _dropAdIfNoConsent() {
+    if (AdsConsent.canRequestAds) return;
+    _ad?.dispose();
+    _ad = null;
+    _loading = false;
+  }
 
   final AppConfig _config;
   final AdFrequencyGate _gate;
@@ -281,6 +301,10 @@ class FreePlanInterstitialCoordinator {
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
     if (!enabled || !isMobile) {
+      return;
+    }
+    if (!AdsConsent.canRequestAds) {
+      _dropAdIfNoConsent();
       return;
     }
     _loadIfNeeded();
@@ -303,6 +327,10 @@ class FreePlanInterstitialCoordinator {
       return;
     }
     _ad = null;
+    if (!AdsConsent.canRequestAds) {
+      ad.dispose();
+      return;
+    }
     _meaningfulActions = 0;
     _gate.markShowing();
     final adUnitId = defaultTargetPlatform == TargetPlatform.android
@@ -361,7 +389,7 @@ class FreePlanInterstitialCoordinator {
     final isMobile = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
-    if (_loading || _ad != null || !isMobile) {
+    if (_loading || _ad != null || !isMobile || !AdsConsent.canRequestAds) {
       return;
     }
     final adUnitId = defaultTargetPlatform == TargetPlatform.android
@@ -377,6 +405,10 @@ class FreePlanInterstitialCoordinator {
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
           _loading = false;
+          if (!AdsConsent.canRequestAds) {
+            ad.dispose();
+            return;
+          }
           _ad = ad;
           _repository?.recordAdTelemetry(
             adType: 'interstitial',
@@ -398,6 +430,7 @@ class FreePlanInterstitialCoordinator {
   }
 
   void dispose() {
+    AdsConsent.notifier.removeListener(_dropAdIfNoConsent);
     _ad?.dispose();
     _ad = null;
   }

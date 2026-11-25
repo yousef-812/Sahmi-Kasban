@@ -8,6 +8,7 @@ from sahmi_kasban.ai import AIProviderError, SahmiAIService
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.app_release import LATEST_APP_VERSION
 from app.market_data.types import MarketDataProvider
 from app.models import (
     AuthSession,
@@ -62,7 +63,7 @@ def get_admin_overview(db: Session, *, moment: datetime | None = None) -> dict:
         ),
         "notifications_today": count(Notification, Notification.sent_at >= today_start),
         "unread_notifications": count(Notification, Notification.read_at.is_(None)),
-        "app_version": "1.0.9+36",
+        "app_version": LATEST_APP_VERSION,
     }
 
 

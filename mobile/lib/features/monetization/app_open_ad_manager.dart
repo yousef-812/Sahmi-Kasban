@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/ads/consent_manager.dart';
 import '../../core/config/app_config.dart';
 import 'ad_frequency_gate.dart';
 import 'monetization_repository.dart';
@@ -38,6 +39,7 @@ class AppOpenAdManager with WidgetsBindingObserver {
 
   Future<void> start() async {
     WidgetsBinding.instance.addObserver(this);
+    AdsConsent.notifier.addListener(_dropAdIfNoConsent);
     final prefs = await SharedPreferences.getInstance();
     final hasOpenedBefore = prefs.getBool(_prefsKey) ?? false;
     if (!hasOpenedBefore) {
@@ -51,7 +53,16 @@ class AppOpenAdManager with WidgetsBindingObserver {
     _loadAd();
   }
 
+  void _dropAdIfNoConsent() {
+    if (AdsConsent.canRequestAds) return;
+    _ad?.dispose();
+    _ad = null;
+    _adLoadedAt = null;
+    _loading = false;
+  }
+
   void dispose() {
+    AdsConsent.notifier.removeListener(_dropAdIfNoConsent);
     WidgetsBinding.instance.removeObserver(this);
     _ad?.dispose();
     _ad = null;
@@ -83,7 +94,9 @@ class AppOpenAdManager with WidgetsBindingObserver {
     final isMobile = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
-    if (_loading || _hasFreshAd || !isMobile) return;
+    if (_loading || _hasFreshAd || !isMobile || !AdsConsent.canRequestAds) {
+      return;
+    }
     final adUnitId = defaultTargetPlatform == TargetPlatform.android
         ? config.admobAndroidAppOpenId
         : config.admobIosAppOpenId;
@@ -96,6 +109,10 @@ class AppOpenAdManager with WidgetsBindingObserver {
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
           _loading = false;
+          if (!AdsConsent.canRequestAds) {
+            ad.dispose();
+            return;
+          }
           _ad = ad;
           _adLoadedAt = DateTime.now();
           repository?.recordAdTelemetry(
@@ -125,6 +142,10 @@ class AppOpenAdManager with WidgetsBindingObserver {
   }
 
   void _showAdIfAvailable() {
+    if (!AdsConsent.canRequestAds) {
+      _dropAdIfNoConsent();
+      return;
+    }
     if (!_hasFreshAd) {
       _loadAd();
       return;
