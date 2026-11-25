@@ -25,10 +25,13 @@ class FreePlanAdShell extends ConsumerWidget {
         ref.read(freePlanInterstitialProvider).preload(enabled: true);
       });
     }
+    // Hide the banner while the keyboard is open so it never sits under a
+    // typing area (accidental taps on forms, login, search).
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Column(
       children: [
         Expanded(child: child),
-        PlanBannerAd(enabled: enabled),
+        PlanBannerAd(enabled: enabled && !keyboardOpen),
       ],
     );
   }

@@ -52,11 +52,10 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           _report = report;
           _locked = false;
         });
-        await ref.read(freePlanInterstitialProvider).showAd(
+        await ref.read(freePlanInterstitialProvider).recordMeaningfulAction(
               enabled:
                   ref.read(sessionControllerProvider).profile?.adsEnabled ==
                   true,
-              ignoreFrequencyGate: true,
             );
       }
     } on ApiException catch (error) {
@@ -141,12 +140,7 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
           ),
         ),
       );
-      await ref.read(freePlanInterstitialProvider).showAd(
-            enabled:
-                ref.read(sessionControllerProvider).profile?.adsEnabled ==
-                true,
-            ignoreFrequencyGate: true,
-          );
+      // No interstitial right after a paid unlock: the user just spent coins.
     } on ApiException catch (error) {
       if (mounted) {
         setState(() => _error = error.message);
@@ -217,7 +211,6 @@ class _MarketReportScreenState extends ConsumerState<MarketReportScreen> {
               ),
             ),
           ),
-          const FreePlanNativeAd(),
           if (_error != null) _ErrorCard(message: _error!, retry: _unlock),
         ],
       );
@@ -362,7 +355,6 @@ class _ReportTabs extends StatelessWidget {
                     ),
                   ),
                   _MarketSummaryCard(summary: report.marketSummary),
-                  const FreePlanNativeAd(),
                 ],
               ),
             ),
