@@ -791,7 +791,7 @@ def get_stock_algorithmic_signature(
         critic_confidence=sig.ai_critic.confidence,
         critic_summary=sig.ai_critic.summary,
         dominant_cycle_sessions=sig.time_cycle.dominant_cycle_sessions,
-        cycle_stability_score=sig.time_cycle.cycle_stability_score,
+        cycle_stability_score=sig.time_cycle.stability_score,
         avg_sweep_depth_pct=sig.accumulation_sweep.avg_sweep_depth_pct,
         bounce_probability_pct=sig.accumulation_sweep.bounce_probability_pct,
         fvg_fill_preference_pct=sig.accumulation_sweep.fvg_fill_preference_pct,

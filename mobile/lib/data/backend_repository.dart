@@ -592,40 +592,41 @@ class BackendRepository {
   }
 
   /// `POST /watchlist` — إضافة رمز واحد للمتابعة.
+  /// الباك إند يرجع العنصر المضاف فقط، لذلك نعيد جلب القائمة كاملة.
   Future<WatchlistSnapshot> addToWatchlist(String ticker) async {
     try {
-      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+      await _apiClient.dio.post<Map<String, dynamic>>(
         '/watchlist',
         data: <String, dynamic>{'ticker': ticker},
       );
-      return WatchlistSnapshot.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
+    return getWatchlist();
   }
 
-  /// `DELETE /watchlist/{ticker}` — إزالة رمز من المتابعة.
+  /// `DELETE /watchlist/{ticker}` — إزالة رمز من المتابعة (204 بدون محتوى).
   Future<WatchlistSnapshot> removeFromWatchlist(String ticker) async {
     try {
-      final response = await _apiClient.dio.delete<Map<String, dynamic>>(
+      await _apiClient.dio.delete<Map<String, dynamic>>(
         '/watchlist/$ticker',
       );
-      return WatchlistSnapshot.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
+    return getWatchlist();
   }
 
-  /// `POST /watchlist/refresh/{ticker}` — تحديث إشارة رمز في المتابعة.
+  /// `POST /watchlist/{ticker}/refresh` — تحديث إشارة رمز في المتابعة.
   Future<WatchlistSnapshot> refreshWatchlistSignal(String ticker) async {
     try {
-      final response = await _apiClient.dio.post<Map<String, dynamic>>(
-        '/watchlist/refresh/$ticker',
+      await _apiClient.dio.post<Map<String, dynamic>>(
+        '/watchlist/$ticker/refresh',
       );
-      return WatchlistSnapshot.fromJson(_requiredData(response));
     } on Object catch (error) {
       throw _apiClient.mapError(error);
     }
+    return getWatchlist();
   }
 
   /// `GET /portfolio/analytics` — تحليلات المحفظة (ارتباط/تنويع/قطاعات).
