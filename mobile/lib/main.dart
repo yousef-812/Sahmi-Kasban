@@ -30,12 +30,16 @@ Future<void> _initializeServices() async {
     }
 
     try {
-      await const ConsentManager().gatherConsent().timeout(
-        const Duration(seconds: 10),
-      );
-      await MobileAds.instance.initialize().timeout(
-        const Duration(seconds: 10),
-      );
+      final canRequestAds = await const ConsentManager()
+          .gatherConsent()
+          .timeout(const Duration(seconds: 20));
+      if (canRequestAds) {
+        await MobileAds.instance.initialize().timeout(
+          const Duration(seconds: 10),
+        );
+      } else {
+        debugPrint('Ads stay off: consent does not allow ad requests.');
+      }
     } on Object catch (error, stackTrace) {
       debugPrint('Mobile Ads initialization skipped: $error\n$stackTrace');
     }

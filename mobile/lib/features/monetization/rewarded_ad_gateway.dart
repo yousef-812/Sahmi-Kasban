@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../../core/ads/consent_manager.dart';
+import 'ad_frequency_gate.dart';
 import 'monetization_models.dart';
 import 'monetization_repository.dart';
 
@@ -10,12 +12,18 @@ abstract interface class RewardedAdGateway {
 }
 
 class GoogleRewardedAdGateway implements RewardedAdGateway {
-  const GoogleRewardedAdGateway([this._repository]);
+  const GoogleRewardedAdGateway([this._repository, this._gate]);
 
   final MonetizationRepository? _repository;
+  final AdFrequencyGate? _gate;
 
   @override
   Future<bool> loadAndShow(RewardedAdSessionModel session) {
+    if (!AdsConsent.canRequestAds) {
+      return Future<bool>.error(
+        StateError('الإعلانات غير متاحة حالياً بسبب إعدادات الموافقة.'),
+      );
+    }
     final completer = Completer<bool>();
     RewardedAd.load(
       adUnitId: session.adUnitId,
@@ -41,12 +49,14 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
             },
             onAdDismissedFullScreenContent: (shownAd) {
               shownAd.dispose();
+              _gate?.markDismissed();
               if (!completer.isCompleted) {
                 completer.complete(userEarnedReward);
               }
             },
             onAdFailedToShowFullScreenContent: (shownAd, error) {
               shownAd.dispose();
+              _gate?.markDismissed();
               _repository?.recordAdTelemetry(
                 adType: 'rewarded',
                 eventType: 'failed_to_show',
@@ -60,6 +70,7 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
               }
             },
           );
+          _gate?.markShowing();
           ad.show(
             onUserEarnedReward: (_, reward) {
               userEarnedReward = true;

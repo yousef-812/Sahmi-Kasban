@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../../core/ads/consent_manager.dart';
 import '../../core/config/app_config.dart';
 import '../auth/session_controller.dart';
 import 'ad_frequency_gate.dart';
@@ -77,7 +78,7 @@ class _FreePlanNativeAdState extends ConsumerState<FreePlanNativeAd> {
     final isMobile = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
-    if (!enabled || !isMobile) {
+    if (!enabled || !isMobile || !AdsConsent.canRequestAds) {
       _disposeAd();
       return;
     }
@@ -364,7 +365,7 @@ class FreePlanInterstitialCoordinator {
     final isMobile = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
-    if (_loading || _ad != null || !isMobile) {
+    if (_loading || _ad != null || !isMobile || !AdsConsent.canRequestAds) {
       return;
     }
     final adUnitId = defaultTargetPlatform == TargetPlatform.android

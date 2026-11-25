@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../../core/ads/consent_manager.dart';
 import '../../core/config/app_config.dart';
 import '../auth/session_controller.dart';
 import 'monetization_repository.dart';
@@ -49,6 +50,7 @@ class _PlanBannerAdState extends ConsumerState<PlanBannerAd> {
         widget.enabledOverride ?? (widget.enabled && (profile?.adsEnabled == true));
 
     if (!enabled ||
+        !AdsConsent.canRequestAds ||
         kIsWeb ||
         (defaultTargetPlatform != TargetPlatform.android &&
             defaultTargetPlatform != TargetPlatform.iOS)) {

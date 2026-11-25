@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/ads/consent_manager.dart';
 import '../../core/config/app_config.dart';
 import 'ad_frequency_gate.dart';
 import 'monetization_repository.dart';
@@ -83,7 +84,9 @@ class AppOpenAdManager with WidgetsBindingObserver {
     final isMobile = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS);
-    if (_loading || _hasFreshAd || !isMobile) return;
+    if (_loading || _hasFreshAd || !isMobile || !AdsConsent.canRequestAds) {
+      return;
+    }
     final adUnitId = defaultTargetPlatform == TargetPlatform.android
         ? config.admobAndroidAppOpenId
         : config.admobIosAppOpenId;
