@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+from app.core.app_release import LATEST_APP_VERSION, LATEST_APP_VERSION_CODE
 
 router = APIRouter(prefix="/app", tags=["app"])
 
 
 class AppVersionResponse(BaseModel):
-    latest_version: str = "1.0.9+36"
-    latest_version_code: int = 36
+    latest_version: str = LATEST_APP_VERSION
+    latest_version_code: int = LATEST_APP_VERSION_CODE
     min_required_version_code: int = 1
     play_store_url: str = (
         "https://play.google.com/store/apps/details?id=com.sahmikasban.sahmi_kasban_mobile"

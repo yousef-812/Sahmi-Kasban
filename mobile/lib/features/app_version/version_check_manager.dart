@@ -1,10 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/network/api_client.dart';
 
-const int currentAppVersionCode = 36;
+/// Reads the installed build number (Android versionCode) from the platform,
+/// so it always matches the installed APK/AAB instead of a hand-edited constant.
+Future<int?> readInstalledBuildNumber() async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return int.tryParse(info.buildNumber.trim());
+  } on Object {
+    return null;
+  }
+}
+
+/// Whether to prompt, and whether the prompt is mandatory.
+class UpdateDecision {
+  const UpdateDecision({required this.shouldPrompt, required this.force});
+  final bool shouldPrompt;
+  final bool force;
+}
+
+/// Pure comparison of the installed build number against server data.
+/// An unknown installed build never prompts (fail quiet, never nag or lock).
+UpdateDecision evaluateUpdate(int? installedBuild, AppVersionInfo info) {
+  if (installedBuild == null || installedBuild <= 0) {
+    return const UpdateDecision(shouldPrompt: false, force: false);
+  }
+  final outdated = info.latestVersionCode > installedBuild;
+  final belowMin = installedBuild < info.minRequiredVersionCode;
+  final force = belowMin || (info.forceUpdate && outdated);
+  return UpdateDecision(shouldPrompt: outdated || belowMin, force: force);
+}
 
 class AppVersionInfo {
   const AppVersionInfo({
@@ -27,14 +56,16 @@ class AppVersionInfo {
 
   factory AppVersionInfo.fromJson(Map<String, dynamic> json) {
     return AppVersionInfo(
-      latestVersion: (json['latest_version'] as String?) ?? '1.0.8+35',
-      latestVersionCode: (json['latest_version_code'] as num?)?.toInt() ?? 35,
+      latestVersion: (json['latest_version'] as String?) ?? '',
+      latestVersionCode: (json['latest_version_code'] as num?)?.toInt() ?? 0,
       minRequiredVersionCode:
           (json['min_required_version_code'] as num?)?.toInt() ?? 1,
-      playStoreUrl: (json['play_store_url'] as String?) ??
+      playStoreUrl:
+          (json['play_store_url'] as String?) ??
           'https://play.google.com/store/apps/details?id=com.sahmikasban.sahmi_kasban_mobile',
       titleAr: (json['title_ar'] as String?) ?? 'يتوفر تحديث جديد للتطبيق',
-      messageAr: (json['message_ar'] as String?) ??
+      messageAr:
+          (json['message_ar'] as String?) ??
           'يتوفر إصدار أحدث للتطبيق يحتوي على تحسينات هامة وميزات جديدة. يرجى التحديث الآن للحصول على أفضل تجربة.',
       forceUpdate: (json['force_update'] as bool?) ?? false,
     );
@@ -42,14 +73,20 @@ class AppVersionInfo {
 }
 
 class VersionCheckManager {
-  VersionCheckManager(this._apiClient);
+  VersionCheckManager(
+    this._apiClient, {
+    Future<int?> Function() installedBuild = readInstalledBuildNumber,
+  }) : _installedBuild = installedBuild;
 
   final ApiClient _apiClient;
+  final Future<int?> Function() _installedBuild;
   bool _hasPromptedThisSession = false;
 
   Future<AppVersionInfo?> checkVersion() async {
     try {
-      final response = await _apiClient.dio.get<Map<String, dynamic>>('/app/version');
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/app/version',
+      );
       if (response.data != null) {
         return AppVersionInfo.fromJson(response.data!);
       }
@@ -67,11 +104,12 @@ class VersionCheckManager {
       return;
     }
 
-    final isOutdated = versionInfo.latestVersionCode > currentAppVersionCode;
-    final isForceUpdate = versionInfo.forceUpdate ||
-        currentAppVersionCode < versionInfo.minRequiredVersionCode;
+    final installed = await _installedBuild();
+    if (!context.mounted) return;
+    final decision = evaluateUpdate(installed, versionInfo);
+    final isForceUpdate = decision.force;
 
-    if (isOutdated || isForceUpdate) {
+    if (decision.shouldPrompt) {
       _hasPromptedThisSession = true;
       showDialog<void>(
         context: context,
@@ -109,7 +147,10 @@ class VersionCheckManager {
                   onPressed: () async {
                     final uri = Uri.parse(versionInfo.playStoreUrl);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                   icon: const Icon(Icons.open_in_new_rounded),

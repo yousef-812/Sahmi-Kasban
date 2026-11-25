@@ -279,8 +279,11 @@ class _Header extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              runSpacing: 8,
+              spacing: 12,
               children: [
                 Text(
                   formatPrice(quote.currentPrice),
@@ -290,7 +293,6 @@ class _Header extends StatelessWidget {
                     color: accent,
                   ),
                 ),
-                const SizedBox(width: 12),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
@@ -302,7 +304,6 @@ class _Header extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Spacer(),
                 if (quote.volume != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
@@ -460,34 +461,69 @@ class _QuickActions extends ConsumerWidget {
   final String ticker;
   final MarketQuote quote;
 
+  static Widget _label(String text) => FittedBox(
+    fit: BoxFit.scaleDown,
+    child: Text(text, maxLines: 1, softWrap: false),
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final analyze = FilledButton.icon(
+      onPressed: () => context.push('/market/analyze/${quote.ticker}'),
+      icon: const Icon(Icons.auto_graph_rounded),
+      label: _label('تحليل'),
+    );
+    final compare = OutlinedButton.icon(
+      onPressed: () => context.push('/market/compare'),
+      icon: const Icon(Icons.compare_arrows_rounded),
+      label: _label('مقارنة'),
+    );
+    final ask = FilledButton.tonalIcon(
+      onPressed: () => context.push('/ai-copilot?ticker=${quote.ticker}'),
+      icon: const Icon(Icons.auto_awesome_rounded),
+      label: _label('استفسار AI'),
+    );
+    // With large text or a narrow screen, stack full-width buttons so the
+    // Arabic labels never wrap or clip.
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final width = MediaQuery.sizeOf(context).width;
+    // Large text: stack full-width. Narrow screens: two buttons, then the AI
+    // button full width. Labels never wrap or shrink to unreadable sizes.
+    if (scale > 1.15) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          analyze,
+          const SizedBox(height: 8),
+          compare,
+          const SizedBox(height: 8),
+          ask,
+        ],
+      );
+    }
+    if (width < 420) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: analyze),
+              const SizedBox(width: 8),
+              Expanded(child: compare),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ask,
+        ],
+      );
+    }
     return Row(
       children: [
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: () => context.push('/market/analyze/${quote.ticker}'),
-            icon: const Icon(Icons.auto_graph_rounded),
-            label: const Text('تحليل'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => context.push('/market/compare'),
-            icon: const Icon(Icons.compare_arrows_rounded),
-            label: const Text('مقارنة'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: FilledButton.tonalIcon(
-            onPressed: () =>
-                context.push('/ai-copilot?ticker=${quote.ticker}'),
-            icon: const Icon(Icons.auto_awesome_rounded),
-            label: const Text('استفسار AI'),
-          ),
-        ),
+        Expanded(child: analyze),
+        const SizedBox(width: 8),
+        Expanded(child: compare),
+        const SizedBox(width: 8),
+        Expanded(child: ask),
       ],
     );
   }
@@ -677,7 +713,11 @@ class _TradingViewWidgetState extends State<TradingViewWidget> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.show_chart, size: 44, color: Color(0xFF2FA87B)),
+                  const Icon(
+                    Icons.show_chart,
+                    size: 44,
+                    color: Color(0xFF2FA87B),
+                  ),
                   const SizedBox(height: 10),
                   Text(
                     'شارت $symbol (TradingView)',
@@ -806,4 +846,3 @@ class _StockSignatureSection extends ConsumerWidget {
     );
   }
 }
-
