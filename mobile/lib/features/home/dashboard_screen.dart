@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/app_theme_provider.dart';
+import '../../core/ads/consent_manager.dart';
 import '../../core/avatar_assets.dart';
 import '../../domain/models.dart';
 import '../../core/network/api_client.dart';
@@ -159,6 +160,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Navigator.pop(context);
               },
             ),
+            if (ref.watch(privacyOptionsRequiredProvider).valueOrNull ==
+                true)
+              ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: const Text('خيارات الخصوصية والإعلانات'),
+                subtitle: const Text('تغيير موافقتك على الإعلانات'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await const ConsentManager().showPrivacyOptions();
+                  ref.invalidate(privacyOptionsRequiredProvider);
+                },
+              ),
             if (profile?.isAdmin == true) ...[
               const Divider(),
               ListTile(

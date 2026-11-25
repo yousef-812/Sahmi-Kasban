@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// Session-wide answer to "may this app request ads right now?".
@@ -18,6 +19,10 @@ class AdsConsent {
   @visibleForTesting
   static void debugSet(bool value) => canRequestAds = value;
 }
+
+final privacyOptionsRequiredProvider = FutureProvider<bool>((ref) {
+  return const ConsentManager().isPrivacyOptionsRequired();
+});
 
 class ConsentManager {
   const ConsentManager();
@@ -52,6 +57,50 @@ class ConsentManager {
 
     final allowed = await ConsentInformation.instance.canRequestAds();
     AdsConsent.canRequestAds = allowed;
+    if (allowed) _sdkStarted = true;
     return allowed;
   }
+
+  /// True when the SDK says a privacy-options entry point must be offered
+  /// (for example EEA/UK users). False on any error or unsupported platform.
+  Future<bool> isPrivacyOptionsRequired() async {
+    if (kIsWeb) return false;
+    try {
+      final status = await ConsentInformation.instance
+          .getPrivacyOptionsRequirementStatus();
+      return status == PrivacyOptionsRequirementStatus.required;
+    } on Object catch (error) {
+      debugPrint('UMP privacy options status failed: $error');
+      return false;
+    }
+  }
+
+  /// Opens the UMP privacy options form, then re-reads the SDK's answer so a
+  /// changed choice takes effect for later ad requests. Never throws.
+  Future<void> showPrivacyOptions() async {
+    final done = Completer<void>();
+    try {
+      ConsentForm.showPrivacyOptionsForm((FormError? error) {
+        if (error != null) {
+          debugPrint('UMP privacy options error: ${error.message}');
+        }
+        if (!done.isCompleted) done.complete();
+      });
+      await done.future.timeout(const Duration(minutes: 10));
+    } on Object catch (error) {
+      debugPrint('UMP privacy options failed: $error');
+    }
+    try {
+      final allowed = await ConsentInformation.instance.canRequestAds();
+      if (allowed && !AdsConsent.canRequestAds && !_sdkStarted) {
+        await MobileAds.instance.initialize();
+        _sdkStarted = true;
+      }
+      AdsConsent.canRequestAds = allowed;
+    } on Object catch (error) {
+      debugPrint('UMP consent re-check failed: $error');
+    }
+  }
 }
+
+bool _sdkStarted = false;

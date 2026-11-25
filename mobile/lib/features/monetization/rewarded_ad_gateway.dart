@@ -70,6 +70,24 @@ class GoogleRewardedAdGateway implements RewardedAdGateway {
               }
             },
           );
+          // Re-check right before show: another full-screen format may have
+          // started while this ad was loading. Check and mark are synchronous,
+          // so no other ad can slip in between.
+          if (_gate?.isAnyAdShowing == true) {
+            ad.dispose();
+            _repository?.recordAdTelemetry(
+              adType: 'rewarded',
+              eventType: 'failed_to_show',
+              adUnitId: session.adUnitId,
+              errorMessage: 'another full-screen ad was showing',
+            );
+            if (!completer.isCompleted) {
+              completer.completeError(
+                StateError('إعلان آخر معروض الآن، حاول مرة أخرى بعد قليل.'),
+              );
+            }
+            return;
+          }
           _gate?.markShowing();
           try {
             ad.show(
