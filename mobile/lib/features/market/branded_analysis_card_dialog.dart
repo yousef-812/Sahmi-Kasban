@@ -4,10 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-class BrandedAnalysisCardDialog extends StatefulWidget {
+import '../referral/referral_screen.dart';
+import 'analysis_card_text.dart';
+
+class BrandedAnalysisCardDialog extends ConsumerStatefulWidget {
   const BrandedAnalysisCardDialog({
     required this.ticker,
     required this.signal,
@@ -32,19 +36,36 @@ class BrandedAnalysisCardDialog extends StatefulWidget {
 --------------------------------------------------''';
 
   @override
-  State<BrandedAnalysisCardDialog> createState() =>
+  ConsumerState<BrandedAnalysisCardDialog> createState() =>
       _BrandedAnalysisCardDialogState();
 }
 
-class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
+class _BrandedAnalysisCardDialogState
+    extends ConsumerState<BrandedAnalysisCardDialog> {
   final GlobalKey _repaintKey = GlobalKey();
   Uint8List? _imageBytes;
   bool _isGenerating = true;
   bool _isActionInProgress = false;
+  String? _inviteCode;
+  bool _codeReady = false;
 
   @override
   void initState() {
     super.initState();
+    _loadInviteCodeThenRender();
+  }
+
+  Future<void> _loadInviteCodeThenRender() async {
+    try {
+      final stats = await ref
+          .read(referralStatsProvider.future)
+          .timeout(const Duration(seconds: 3));
+      _inviteCode = stats.referralCode;
+    } catch (e) {
+      debugPrint('Invite code unavailable for share card: $e');
+    }
+    if (!mounted) return;
+    setState(() => _codeReady = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _generateImage();
     });
@@ -58,7 +79,7 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
           _repaintKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
       if (boundary != null) {
-        final image = await boundary.toImage(pixelRatio: 2.8);
+        final image = await boundary.toImage(pixelRatio: 3.0);
         final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
         if (mounted && byteData != null) {
           setState(() {
@@ -77,9 +98,7 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
   }
 
   String _buildCopyableText() {
-    final cleanExplanation = widget.explanation
-        .replaceAll(RegExp(r'[#*`_]'), '')
-        .trim();
+    final cleanExplanation = cleanAnalysisText(widget.explanation);
     final scoreStr =
         widget.score != null
             ? '${widget.score!.toStringAsFixed(1)}/100'
@@ -96,16 +115,16 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
     if (widget.tradePlan.isNotEmpty) {
       sb.writeln('--- خطة التداول الافتراضية ---');
       if (widget.tradePlan['entry'] != null) {
-        sb.writeln('سعر الدخول: ${widget.tradePlan['entry']}');
+        sb.writeln('سعر الدخول: ${formatPrice(widget.tradePlan['entry'])}');
       }
       if (widget.tradePlan['target_1'] != null) {
-        sb.writeln('الهدف الأول: ${widget.tradePlan['target_1']}');
+        sb.writeln('الهدف الأول: ${formatPrice(widget.tradePlan['target_1'])}');
       }
       if (widget.tradePlan['target_2'] != null) {
-        sb.writeln('الهدف الثاني: ${widget.tradePlan['target_2']}');
+        sb.writeln('الهدف الثاني: ${formatPrice(widget.tradePlan['target_2'])}');
       }
       if (widget.tradePlan['stop_loss'] != null) {
-        sb.writeln('وقف الخسارة: ${widget.tradePlan['stop_loss']}');
+        sb.writeln('وقف الخسارة: ${formatPrice(widget.tradePlan['stop_loss'])}');
       }
     }
     sb.writeln('\nملخص التحليل الفني:');
@@ -325,7 +344,9 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
                         width: 640,
                         child: RepaintBoundary(
                           key: _repaintKey,
-                          child: _BrandedCardExportContent(
+                          child: !_codeReady
+                              ? const SizedBox(height: 400)
+                              : _BrandedCardExportContent(
                             ticker: widget.ticker,
                             signal: widget.signal,
                             score: widget.score,
@@ -333,6 +354,7 @@ class _BrandedAnalysisCardDialogState extends State<BrandedAnalysisCardDialog> {
                             explanation: widget.explanation,
                             tradePlan: widget.tradePlan,
                             theme: theme,
+                            inviteCode: _inviteCode,
                           ),
                         ),
                       ),
@@ -488,8 +510,10 @@ class _BrandedCardExportContent extends StatelessWidget {
     required this.explanation,
     required this.tradePlan,
     required this.theme,
+    this.inviteCode,
   });
 
+  final String? inviteCode;
   final String ticker;
   final String signal;
   final double? score;
@@ -503,9 +527,7 @@ class _BrandedCardExportContent extends StatelessWidget {
     final scoreVal = score != null ? score!.toStringAsFixed(1) : '-';
     final confVal =
         confidence != null ? '${confidence!.toStringAsFixed(0)}%' : '-';
-    final cleanExplanation = explanation
-        .replaceAll(RegExp(r'[#*`_]'), '')
-        .trim();
+    final highlights = extractHighlights(explanation);
 
     return Container(
       width: 640,
@@ -699,7 +721,7 @@ class _BrandedCardExportContent extends StatelessWidget {
                         Expanded(
                           child: _ExportPlanCell(
                             label: 'سعر الدخول',
-                            value: '${tradePlan['entry']}',
+                            value: formatPrice(tradePlan['entry']) ?? '-',
                             color: Colors.white,
                           ),
                         ),
@@ -707,7 +729,7 @@ class _BrandedCardExportContent extends StatelessWidget {
                         Expanded(
                           child: _ExportPlanCell(
                             label: 'وقف الخسارة',
-                            value: '${tradePlan['stop_loss']}',
+                            value: formatPrice(tradePlan['stop_loss']) ?? '-',
                             color: Colors.redAccent,
                           ),
                         ),
@@ -715,7 +737,7 @@ class _BrandedCardExportContent extends StatelessWidget {
                         Expanded(
                           child: _ExportPlanCell(
                             label: 'الهدف الأول',
-                            value: '${tradePlan['target_1']}',
+                            value: formatPrice(tradePlan['target_1']) ?? '-',
                             color: Colors.greenAccent,
                           ),
                         ),
@@ -723,7 +745,7 @@ class _BrandedCardExportContent extends StatelessWidget {
                         Expanded(
                           child: _ExportPlanCell(
                             label: 'الهدف الثاني',
-                            value: '${tradePlan['target_2']}',
+                            value: formatPrice(tradePlan['target_2']) ?? '-',
                             color: Colors.green,
                           ),
                         ),
@@ -751,7 +773,7 @@ class _BrandedCardExportContent extends StatelessWidget {
                     Icon(Icons.notes_rounded, color: Colors.white70, size: 18),
                     SizedBox(width: 6),
                     Text(
-                      'ملخص التحليل الفني والمالي الكامل',
+                      'أهم النقاط',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -761,14 +783,44 @@ class _BrandedCardExportContent extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  cleanExplanation,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    height: 1.6,
-                  ),
-                ),
+                if (highlights.isEmpty)
+                  const Text(
+                    'التفاصيل الكاملة داخل تطبيق سهمي كسبان.',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      height: 1.6,
+                    ),
+                  )
+                else
+                  for (final item in highlights)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 6),
+                            child: Icon(
+                              Icons.circle,
+                              size: 6,
+                              color: Colors.amber,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                height: 1.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
               ],
             ),
           ),
@@ -782,9 +834,9 @@ class _BrandedCardExportContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Text(
+                const Text(
                   'تم استخراج هذا التحليل الشامل عبر تطبيق سهمي كسبان (Sahmi Kasban)',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -793,8 +845,8 @@ class _BrandedCardExportContent extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
+                const SizedBox(height: 4),
+                const Text(
                   'حمل تطبيق سهمي كسبان الآن من متجر بلاي للحصول على تحليلات دقيقة يومياً',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -802,6 +854,24 @@ class _BrandedCardExportContent extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
+                ),
+                if (inviteCode != null && inviteCode!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'كود الدعوة: $inviteCode',
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                const Text(
+                  'محتوى تعليمي وليس نصيحة استثمارية',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white54, fontSize: 10),
                 ),
               ],
             ),
