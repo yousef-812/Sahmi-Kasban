@@ -121,6 +121,7 @@ class DiscussionResponse(BaseModel):
     disagree_count: int = Field(default=0, ge=0)
     is_pinned: bool = False
     user_reaction: str | None = None
+    comments_count: int = Field(default=0, ge=0)
     author: DiscussionAuthorResponse
 
 
@@ -340,3 +341,33 @@ class AdminUserActionResponse(BaseModel):
     pending_rejected: int = Field(ge=0)
     published_hidden: int = Field(ge=0)
     idempotent: bool
+
+
+class DiscussionCommentCreateRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=500)
+    parent_id: UUID | None = None
+
+    @field_validator("content")
+    @classmethod
+    def _strip_content(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Comment cannot be empty")
+        return cleaned
+
+
+class DiscussionCommentResponse(BaseModel):
+    id: UUID
+    discussion_id: UUID
+    parent_id: UUID | None = None
+    content: str
+    created_at: datetime
+    author: DiscussionAuthorResponse
+    is_mine: bool = False
+
+
+class DiscussionCommentListResponse(BaseModel):
+    items: list[DiscussionCommentResponse]
+    total: int = Field(ge=0)
+    limit: int
+    offset: int

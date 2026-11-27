@@ -252,3 +252,37 @@ class DiscussionImpression(TimestampMixin, Base):
         index=True,
         nullable=False,
     )
+
+
+class DiscussionComment(TimestampMixin, Base):
+    """A comment (or one-level reply) on a published discussion."""
+
+    __tablename__ = "discussion_comments"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('visible', 'hidden')",
+            name="discussion_comment_status_allowed",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    discussion_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("discussions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    parent_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("discussion_comments.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+    )
+    content: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="visible", nullable=False)
