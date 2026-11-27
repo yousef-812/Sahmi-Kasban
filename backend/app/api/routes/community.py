@@ -8,6 +8,7 @@ from sahmi_kasban.ai import SahmiAIService
 from sqlalchemy import select
 
 from app.api.dependencies import CurrentUser, DatabaseSession, OptionalUser
+from app.core.admin import is_admin_email
 from app.market_calendar import EGXTradingCalendar
 from app.models import PushDevice
 from app.schemas.accounts import MessageResponse
@@ -135,6 +136,7 @@ def _discussion_response(
             predictions_count=predictions_count,
             success_rate=success_rate,
             is_following=is_following,
+            is_admin=is_admin_email(view.author.email),
         ),
     )
 

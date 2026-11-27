@@ -15,6 +15,7 @@ import 'community_providers.dart';
 import 'community_repository.dart';
 import 'real_view_tracker.dart';
 import 'screens/user_profile_screen.dart';
+import 'admin_badge.dart';
 
 class CommunityFeedTab extends ConsumerStatefulWidget {
   const CommunityFeedTab({super.key});
@@ -433,9 +434,15 @@ class _CommunityDiscussionCardState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            discussion.author.displayName,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                discussion.author.displayName,
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              if (discussion.author.isAdmin) const AdminBadge(),
+                            ],
                           ),
                           const SizedBox(height: 2),
                           Row(

@@ -47,6 +47,7 @@ class DiscussionAuthorResponse(BaseModel):
     predictions_count: int = 0
     success_rate: float = 0.0
     is_following: bool = False
+    is_admin: bool = False
 
 
 class FollowToggleResponse(BaseModel):

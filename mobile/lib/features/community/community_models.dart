@@ -6,6 +6,7 @@ class CommunityAuthor {
     this.predictionsCount = 0,
     this.successRate = 0.0,
     this.isFollowing = false,
+    this.isAdmin = false,
   });
 
   final String userId;
@@ -14,6 +15,7 @@ class CommunityAuthor {
   final int predictionsCount;
   final double successRate;
   final bool isFollowing;
+  final bool isAdmin;
 
   CommunityAuthor copyWith({
     String? userId,
@@ -22,6 +24,7 @@ class CommunityAuthor {
     int? predictionsCount,
     double? successRate,
     bool? isFollowing,
+    bool? isAdmin,
   }) {
     return CommunityAuthor(
       userId: userId ?? this.userId,
@@ -30,6 +33,7 @@ class CommunityAuthor {
       predictionsCount: predictionsCount ?? this.predictionsCount,
       successRate: successRate ?? this.successRate,
       isFollowing: isFollowing ?? this.isFollowing,
+      isAdmin: isAdmin ?? this.isAdmin,
     );
   }
 
@@ -41,6 +45,7 @@ class CommunityAuthor {
       predictionsCount: (json['predictions_count'] as num?)?.toInt() ?? 0,
       successRate: (json['success_rate'] as num?)?.toDouble() ?? 0.0,
       isFollowing: json['is_following'] as bool? ?? false,
+      isAdmin: json['is_admin'] as bool? ?? false,
     );
   }
 }

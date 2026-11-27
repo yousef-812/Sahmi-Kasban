@@ -128,6 +128,7 @@ def test_community_submission_list_report_and_mute_flow(
     assert public_item["id"] == discussion_id
     assert public_item["moderation_result"] == {}
     author_id = public_item["author"]["user_id"]
+    assert public_item["author"]["is_admin"] is False
 
     report = client.post(
         f"/api/v1/community/discussions/{discussion_id}/reports",

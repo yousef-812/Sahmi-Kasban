@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.dependencies import CurrentAdmin, DatabaseSession
+from app.core.admin import is_admin_email
 from app.schemas.community import (
     AdminDiscussionActionRequest,
     AdminDiscussionListResponse,
@@ -57,6 +58,7 @@ def _discussion_response(view: DiscussionView) -> DiscussionResponse:
             user_id=view.author.id,
             display_name=view.author.display_name,
             avatar_key=view.author.avatar_key,
+            is_admin=is_admin_email(view.author.email),
         ),
     )
 

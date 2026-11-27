@@ -13,6 +13,7 @@ import 'community_providers.dart';
 import 'community_repository.dart';
 import 'prediction_verification_card.dart';
 import 'real_view_tracker.dart';
+import 'admin_badge.dart';
 
 class CommunityDetailScreen extends ConsumerStatefulWidget {
   const CommunityDetailScreen({required this.discussionId, super.key});
@@ -240,10 +241,17 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Text(
-                                item.author.displayName,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      item.author.displayName,
+                                      style: Theme.of(context).textTheme.titleMedium
+                                          ?.copyWith(fontWeight: FontWeight.w800),
+                                    ),
+                                  ),
+                                  if (item.author.isAdmin) const AdminBadge(),
+                                ],
                               ),
                             ),
                             Chip(label: Text(item.ticker)),
