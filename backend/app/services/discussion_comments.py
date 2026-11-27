@@ -136,5 +136,7 @@ def delete_comment(db: Session, *, user: User, discussion_id: UUID, comment_id: 
         raise DiscussionNotFoundError("Comment not found")
     if comment.user_id != user.id and not is_admin_email(user.email):
         raise CommunityPermissionError("Not allowed to delete this comment")
+    for reply in db.scalars(select(DiscussionComment).where(DiscussionComment.parent_id == comment.id)):
+        db.delete(reply)
     db.delete(comment)
     db.commit()

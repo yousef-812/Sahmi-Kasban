@@ -519,6 +519,19 @@ class _CommunityDiscussionCardState
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Chip(label: Text(discussion.periodLabel)),
+                  if (discussion.status == 'published')
+                    ActionChip(
+                      avatar: const Icon(Icons.chat_bubble_outline, size: 14),
+                      label: Text('${discussion.commentsCount} تعليق'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => DiscussionCommentsScreen(
+                            discussionId: discussion.id,
+                            title: discussion.ticker,
+                          ),
+                        ),
+                      ),
+                    ),
                   if (widget.showStatus)
                     Chip(label: Text(discussion.statusLabel)),
                   if (isAuthor)
