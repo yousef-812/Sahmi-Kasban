@@ -91,6 +91,7 @@ def get_author_prediction_stats(db: Session, *, author_id: UUID) -> tuple[int, f
         select(func.count(Discussion.id)).where(
             Discussion.user_id == author_id,
             Discussion.status == "published",
+            Discussion.post_type == "prediction",
         )
     ) or 0
 

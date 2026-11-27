@@ -595,6 +595,7 @@ async def auto_evaluate_due_predictions(
         select(Discussion)
         .where(
             Discussion.status == "published",
+            Discussion.post_type == "prediction",
             Discussion.frozen_prediction.is_not(None),
             ~Discussion.id.in_(unverified_subquery),
         )

@@ -122,6 +122,7 @@ class DiscussionResponse(BaseModel):
     is_pinned: bool = False
     user_reaction: str | None = None
     comments_count: int = Field(default=0, ge=0)
+    post_type: str = "prediction"
     author: DiscussionAuthorResponse
 
 
@@ -371,3 +372,23 @@ class DiscussionCommentListResponse(BaseModel):
     total: int = Field(ge=0)
     limit: int
     offset: int
+
+
+class AdminGeneralPostRequest(BaseModel):
+    submission_key: str = Field(min_length=8, max_length=64)
+    title: str = Field(min_length=3, max_length=180)
+    content: str = Field(min_length=3, max_length=2000)
+    ticker: str | None = Field(default=None, min_length=2, max_length=24)
+
+    @field_validator("title", "content")
+    @classmethod
+    def _strip_text(cls, value: str) -> str:
+        cleaned = value.strip()
+        if len(cleaned) < 3:
+            raise ValueError("Text is too short")
+        return cleaned
+
+    @field_validator("ticker")
+    @classmethod
+    def _upper_ticker(cls, value: str | None) -> str | None:
+        return value.strip().upper() if value and value.strip() else None

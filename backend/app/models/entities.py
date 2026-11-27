@@ -254,6 +254,12 @@ class Discussion(TimestampMixin, Base):
     views_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
     target_date: Mapped[date | None] = mapped_column(Date, index=True, nullable=True)
+    post_type: Mapped[str] = mapped_column(
+        String(16),
+        default="prediction",
+        server_default="prediction",
+        nullable=False,
+    )
 
 
 class PredictionVerification(TimestampMixin, Base):

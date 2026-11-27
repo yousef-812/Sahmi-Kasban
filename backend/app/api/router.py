@@ -18,6 +18,7 @@ from app.api.routes.community_admin import router as community_admin_router
 from app.api.routes.community_admin_appeals import router as community_admin_appeals_router
 from app.api.routes.community_appeals import router as community_appeals_router
 from app.api.routes.community_comments import router as community_comments_router
+from app.api.routes.community_posts import router as community_posts_router
 from app.api.routes.community_verification import router as community_verification_router
 from app.api.routes.earnings import router as earnings_router
 from app.api.routes.feedback import router as feedback_router
@@ -74,6 +75,7 @@ api_router.include_router(monetization_router)
 api_router.include_router(notifications_router)
 api_router.include_router(community_router)
 api_router.include_router(community_comments_router)
+api_router.include_router(community_posts_router)
 api_router.include_router(community_appeals_router)
 api_router.include_router(community_verification_router)
 api_router.include_router(community_admin_router)
