@@ -131,6 +131,7 @@ def _discussion_response(
         is_pinned=discussion.is_pinned and not ended,
         user_reaction=user_reaction,
         comments_count=count_visible_comments(db, discussion.id),
+        post_type=discussion.post_type or "prediction",
         author=DiscussionAuthorResponse(
             user_id=view.author.id,
             display_name=view.author.display_name,

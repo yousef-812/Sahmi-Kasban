@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Discussion, User
+from app.models import Discussion
 from app.services.community import apply_moderation_decision
 
 PASSWORD = "StrongPass123"

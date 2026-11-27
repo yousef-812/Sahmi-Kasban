@@ -214,6 +214,7 @@ class CommunityDiscussion {
     this.targetDate,
     this.userReaction,
     this.commentsCount = 0,
+    this.postType = 'prediction',
   });
 
   final String id;
@@ -237,10 +238,16 @@ class CommunityDiscussion {
   final String? targetDate;
   final String? userReaction;
   final int commentsCount;
+  final String postType;
+
+  bool get isGeneralPost => postType == 'general';
 
   bool get canAppeal => status == 'rejected' || status == 'hidden';
 
   String get periodLabel {
+    if (isGeneralPost) {
+      return 'منشور';
+    }
     final parsed = DateTime.tryParse(periodType);
     if (parsed != null) {
       return _formatArabicDate(parsed);
@@ -284,6 +291,7 @@ class CommunityDiscussion {
       targetDate: json['target_date'] as String?,
       userReaction: json['user_reaction'] as String?,
       commentsCount: (json['comments_count'] as num?)?.toInt() ?? 0,
+      postType: json['post_type'] as String? ?? 'prediction',
     );
   }
 }

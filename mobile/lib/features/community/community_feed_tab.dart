@@ -497,7 +497,8 @@ class _CommunityDiscussionCardState
                       ),
                     ),
                   const SizedBox(width: 4),
-                  Chip(label: Text(discussion.ticker)),
+                  if (!discussion.isGeneralPost)
+                    Chip(label: Text(discussion.ticker)),
                 ],
               ),
               const SizedBox(height: 14),

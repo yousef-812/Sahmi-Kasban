@@ -255,7 +255,7 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                                 ],
                               ),
                             ),
-                            Chip(label: Text(item.ticker)),
+                            if (!item.isGeneralPost) Chip(label: Text(item.ticker)),
                             if (item.status == 'published')
                               IconButton(
                                 tooltip: 'التعليقات',
