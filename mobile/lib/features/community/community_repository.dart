@@ -205,6 +205,54 @@ class CommunityRepository {
     }
   }
 
+  Future<List<DiscussionComment>> listComments(String discussionId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/community/discussions/$discussionId/comments',
+        queryParameters: <String, dynamic>{'limit': 100},
+      );
+      final items = _requiredData(response.data)['items'] as List<dynamic>? ??
+          const <dynamic>[];
+      return items
+          .map((e) => DiscussionComment.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<DiscussionComment> addComment({
+    required String discussionId,
+    required String content,
+    String? parentId,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/community/discussions/$discussionId/comments',
+        data: <String, dynamic>{
+          'content': content,
+          if (parentId != null) 'parent_id': parentId,
+        },
+      );
+      return DiscussionComment.fromJson(_requiredData(response.data));
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
+  Future<void> deleteComment({
+    required String discussionId,
+    required String commentId,
+  }) async {
+    try {
+      await _apiClient.dio.delete<Map<String, dynamic>>(
+        '/community/discussions/$discussionId/comments/$commentId',
+      );
+    } on Object catch (error) {
+      throw _apiClient.mapError(error);
+    }
+  }
+
   Future<void> registerViews(List<String> discussionIds) async {
     if (discussionIds.isEmpty) return;
     try {

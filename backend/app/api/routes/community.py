@@ -61,6 +61,7 @@ from app.services.community_safety import (
     CommunityRateLimitError,
     create_safe_discussion,
 )
+from app.services.discussion_comments import count_visible_comments
 from app.services.notifications import (
     FCMPushSender,
     _decrypt_token,
@@ -129,6 +130,7 @@ def _discussion_response(
         disagree_count=disagree_count,
         is_pinned=discussion.is_pinned and not ended,
         user_reaction=user_reaction,
+        comments_count=count_visible_comments(db, discussion.id),
         author=DiscussionAuthorResponse(
             user_id=view.author.id,
             display_name=view.author.display_name,

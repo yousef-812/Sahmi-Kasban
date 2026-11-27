@@ -213,6 +213,7 @@ class CommunityDiscussion {
     this.isEnded = false,
     this.targetDate,
     this.userReaction,
+    this.commentsCount = 0,
   });
 
   final String id;
@@ -235,6 +236,7 @@ class CommunityDiscussion {
   final bool isEnded;
   final String? targetDate;
   final String? userReaction;
+  final int commentsCount;
 
   bool get canAppeal => status == 'rejected' || status == 'hidden';
 
@@ -281,6 +283,7 @@ class CommunityDiscussion {
       isEnded: json['is_ended'] as bool? ?? false,
       targetDate: json['target_date'] as String?,
       userReaction: json['user_reaction'] as String?,
+      commentsCount: (json['comments_count'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -595,4 +598,36 @@ String _formatArabicDate(DateTime value) {
   ];
   final local = value.toLocal();
   return '${weekdays[local.weekday - 1]} ${local.day} ${months[local.month - 1]}';
+}
+
+class DiscussionComment {
+  const DiscussionComment({
+    required this.id,
+    required this.discussionId,
+    required this.content,
+    required this.createdAt,
+    required this.author,
+    this.parentId,
+    this.isMine = false,
+  });
+
+  final String id;
+  final String discussionId;
+  final String? parentId;
+  final String content;
+  final DateTime createdAt;
+  final CommunityAuthor author;
+  final bool isMine;
+
+  factory DiscussionComment.fromJson(Map<String, dynamic> json) {
+    return DiscussionComment(
+      id: _requiredString(json, 'id'),
+      discussionId: _requiredString(json, 'discussion_id'),
+      parentId: json['parent_id'] as String?,
+      content: _requiredString(json, 'content'),
+      createdAt: _requiredDate(json, 'created_at'),
+      author: CommunityAuthor.fromJson(_requiredMap(json['author'])),
+      isMine: json['is_mine'] as bool? ?? false,
+    );
+  }
 }
