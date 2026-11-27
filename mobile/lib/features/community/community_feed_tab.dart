@@ -10,12 +10,13 @@ import '../../core/network/api_exception.dart';
 import '../../core/ui/app_notice.dart';
 import '../monetization/free_plan_ads.dart';
 import '../auth/session_controller.dart';
+import 'admin_badge.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
+import 'discussion_comments_screen.dart';
 import 'real_view_tracker.dart';
 import 'screens/user_profile_screen.dart';
-import 'admin_badge.dart';
 
 class CommunityFeedTab extends ConsumerStatefulWidget {
   const CommunityFeedTab({super.key});

@@ -8,12 +8,13 @@ import '../../core/avatar_assets.dart';
 import '../../core/network/api_exception.dart';
 import '../../widgets/structured_data_card.dart';
 import '../auth/session_controller.dart';
+import 'admin_badge.dart';
 import 'community_models.dart';
 import 'community_providers.dart';
 import 'community_repository.dart';
+import 'discussion_comments_screen.dart';
 import 'prediction_verification_card.dart';
 import 'real_view_tracker.dart';
-import 'admin_badge.dart';
 
 class CommunityDetailScreen extends ConsumerStatefulWidget {
   const CommunityDetailScreen({required this.discussionId, super.key});
@@ -255,6 +256,19 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
                               ),
                             ),
                             Chip(label: Text(item.ticker)),
+                            if (item.status == 'published')
+                              IconButton(
+                                tooltip: 'التعليقات',
+                                icon: const Icon(Icons.chat_bubble_outline),
+                                onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => DiscussionCommentsScreen(
+                                      discussionId: item.id,
+                                      title: item.ticker,
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 18),
